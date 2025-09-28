@@ -24,7 +24,7 @@ class InsightManager:
             insight = data.get('insight', '').strip()
 
             if not topic or not insight:
-                self.ui_logger.error("Insight generation failed: LLM returned empty topic or insight.")
+                self.ui_logger.system_message("Insight generation failed: LLM returned empty topic or insight.")
                 self.file_logger.log_error("Insight generation failed: LLM returned empty topic or insight.")
                 return
 
@@ -45,11 +45,11 @@ class InsightManager:
 
         except json.JSONDecodeError:
             error_msg = f"Insight generation failed: Could not decode JSON from LLM response: {json_str}"
-            self.ui_logger.error(error_msg)
+            self.ui_logger.system_message(error_msg)
             self.file_logger.log_error(error_msg)
         except Exception as e:
             error_msg = f"An unexpected error occurred while saving insight: {e}"
-            self.ui_logger.error(error_msg)
+            self.ui_logger.system_message(error_msg)
             self.file_logger.log_error(error_msg)
 
     def get_relevant_insights(self, query: str, max_insights: int = 3) -> list[str]:

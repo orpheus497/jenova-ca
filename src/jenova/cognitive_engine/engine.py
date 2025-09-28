@@ -14,17 +14,17 @@ class CognitiveEngine:
         self.turn_count = 0
         self.MAX_HISTORY_TURNS = 10 # Keep the last 10 conversation turns
 
-    def think(self, user_input: str) -> str:
+    def think(self, user_input: str, username: str) -> str:
         """Runs the full cognitive cycle: Retrieve, Plan, Execute, and Reflect."""
-        with self.ui_logger.cognitive_process(f"Cognitive cycle started for: '{user_input}'"):
-            self.file_logger.log_info(f"New query received: {user_input}")
+        with self.ui_logger.cognitive_process("Thinking..."):
+            self.file_logger.log_info(f"New query received from {username}: {user_input}")
             self.turn_count += 1
 
             context = self.memory_search.search_all(user_input)
-            plan = self._plan(user_input, context)
-            response = self._execute(user_input, context, plan)
+            plan = self._plan(user_input, context, username)
+            response = self._execute(user_input, context, plan, username)
 
-            self.history.append(f"User: {user_input}")
+            self.history.append(f"{username}: {user_input}")
             self.history.append(f"Jenova: {response}")
             if len(self.history) > self.MAX_HISTORY_TURNS * 2:
                 self.history = self.history[-(self.MAX_HISTORY_TURNS * 2):]
@@ -35,22 +35,22 @@ class CognitiveEngine:
 
         return response
 
-    def _plan(self, user_input: str, context: list[str]) -> str:
+    def _plan(self, user_input: str, context: list[str], username: str) -> str:
         context_str = "\n".join(f"- {c}" for c in context)
-        prompt = f"""== CONTEXT ==\n{context_str if context else "No context available."}\n\n== TASK ==\nBased on the user's query and the provided context, create a short, step-by-step plan to formulate a response. The plan can include generating a new insight if a novel conclusion is reached.\n\nUser: "{user_input}"\n\nPlan:"""
+        prompt = f"""== CONTEXT ==\n{context_str if context else "No context available."}\n\n== TASK ==\nBased on the user's query and the provided context, create a short, step-by-step plan to formulate a response. The plan can include generating a new insight if a novel conclusion is reached.\n\nUser ({username}): "{user_input}"\n\nPlan:"""
         with self.ui_logger.thinking_process("Formulating plan..."):
             plan = self.llm.generate(prompt, temperature=0.1, stop=["\n\n"])
         self.file_logger.log_info(f"Generated Plan: {plan}")
         return plan
 
-    def _execute(self, user_input: str, context: list[str], plan: str) -> str:
+    def _execute(self, user_input: str, context: list[str], plan: str, username: str) -> str:
         context_str = "\n".join(f"- {c}" for c in context)
         history_str = "\n".join(self.history)
         
         is_identity_query = "who are you" in user_input.lower() or "tell me about yourself" in user_input.lower()
         task_prompt = "Execute the plan to respond to the user's query. Your response must be grounded in your persona, the retrieved context, and the conversation history. Provide ONLY Jenova's response." if is_identity_query else "Execute the plan to respond to the user's query. Be direct and conversational. Do not re-introduce yourself unless asked. Provide ONLY Jenova's response."
 
-        prompt = f"""== RETRIEVED CONTEXT ==\n{context_str if context else "No context available."}\n\n== CONVERSATION HISTORY ==\n{history_str if self.history else "No history yet."}\n\n== YOUR INTERNAL PLAN ==\n{plan}\n\n== TASK ==\n{task_prompt}\n\nUser: "{user_input}"\n\nJenova:"""
+        prompt = f"""== RETRIEVED CONTEXT ==\n{context_str if context else "No context available."}\n\n== CONVERSATION HISTORY ==\n{history_str if self.history else "No history yet."}\n\n== YOUR INTERNAL PLAN ==\n{plan}\n\n== TASK ==\n{task_prompt}\n\nUser ({username}): "{user_input}"\n\nJenova:"""
         with self.ui_logger.thinking_process("Executing plan..."):
             response = self.llm.generate(prompt)
         self.file_logger.log_info(f"Generated Response: {response}")
@@ -118,7 +118,7 @@ Based on these guidelines, analyze the conversation below. For each insight, pro
             for insight in insights:
                 self.insight_manager.save_insight_from_json(json.dumps(insight))
         except json.JSONDecodeError:
-            self.ui_logger.error(f"Failed to decode insights from LLM response: {insights_json_str}")
+            self.ui_logger.system_message(f"Failed to decode insights from LLM response: {insights_json_str}")
 
     def reflect_on_insights(self):
         """Command to reflect on all existing insights and generate new, meta-insights."""

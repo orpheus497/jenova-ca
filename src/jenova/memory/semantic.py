@@ -49,7 +49,7 @@ class SemanticMemory:
                 self.ui_logger.info(f"Ingested {len(new_chunks)} chunks from RAG.md into Semantic Memory.")
                 self.file_logger.log_info(f"Ingested {len(new_chunks)} chunks from RAG.md into Semantic Memory.")
         except FileNotFoundError:
-            self.ui_logger.error("jenova/docs/RAG.md not found. Skipping RAG doc ingestion.")
+            self.ui_logger.system_message("jenova/docs/RAG.md not found. Skipping RAG doc ingestion.")
             self.file_logger.log_error("jenova/docs/RAG.md not found. Skipping RAG doc ingestion.")
 
     def search(self, query: str, n_results: int = 3) -> list[tuple[str, float]]:

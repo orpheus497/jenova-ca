@@ -139,9 +139,9 @@ The `install.sh` script provides a "scorched earth" installation, ensuring a cle
 
 ## 5. Usage and Commands
 
-Interaction with Jenova is primarily through natural language. The `TerminalUI` provides a clean, interactive command-line interface.
+Interaction with Jenova is primarily through natural language. The `TerminalUI` provides a clean, interactive command-line interface that now recognizes the user logged into the terminal.
 
--   **User Input:** Simply type your message and press Enter.
+-   **User Input:** Simply type your message and press Enter. The UI will display your username alongside your query.
 -   **Exiting:** To quit the application, type `exit` and press Enter.
 
 In addition to standard conversation, you can use the following commands to trigger specific cognitive functions:
@@ -242,4 +242,3 @@ This file defines the AI's personality and core directives.
     -   `type`: A description of the AI's nature.
 -   **`directives`**: A list of rules the AI must follow. These are injected into the system prompt.
 -   **`initial_facts`**: A list of foundational facts that are loaded into the AI's memory on first run.
-# jenova-ai

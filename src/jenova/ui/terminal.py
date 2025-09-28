@@ -1,4 +1,5 @@
 import os
+import getpass
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
@@ -20,6 +21,7 @@ class TerminalUI:
     def __init__(self, cognitive_engine: CognitiveEngine, logger: UILogger):
         self.engine = cognitive_engine
         self.logger = logger
+        self.username = getpass.getuser()
         history_path = os.path.join(self.engine.config['user_data_root'], ".jenova_history")
         self.session = PromptSession(history=FileHistory(history_path), auto_suggest=AutoSuggestFromHistory())
         self.prompt_style = Style.from_dict({'username': '#44ff44 bold', 'at': '#888888', 'hostname': '#ff00ff bold', 'prompt': '#888888'})
@@ -32,7 +34,7 @@ class TerminalUI:
 
         while True:
             try:
-                prompt_message = [('class:username', 'orpheus497'), ('class:at', '@'), ('class:hostname', 'Jenova'), ('class:prompt', '> ')]
+                prompt_message = [('class:username', self.username), ('class:at', '@'), ('class:hostname', 'Jenova'), ('class:prompt', '> ')]
                 user_input = self.session.prompt(prompt_message, style=self.prompt_style).strip()
 
                 if not user_input:
@@ -51,10 +53,10 @@ class TerminalUI:
                     elif command == '/memory-insight':
                         self.engine.develop_insights_from_memory()
                     else:
-                        self.logger.error(f"Unknown command: {command}")
+                        self.logger.system_message(f"Unknown command: {command}")
                 else:
                     # Regular conversation
-                    response = self.engine.think(user_input)
+                    response = self.engine.think(user_input, self.username)
                     self.logger.jenova_response(response)
 
             except (KeyboardInterrupt, EOFError):

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- (New features for the next version here)
+
+### Fixed
+- (fixes for the next version here)
+
+## [1.1.1] - 2025-09-28
+
+### Fixed
+- Fixed a bug that caused user input to be repeated in the UI.
+- The AI now correctly recognizes and can use the current user's username in conversation.
+- Corrected a crash in `UILogger` by replacing `error` method calls with `system_message`.
+- Removed fixed-width constraint on UI output panels to prevent text truncation.
+- The cognitive functions context wheel now displays a static "Thinking..." message.
+- Increased the number of search results retrieved from each memory type to improve utilization.
+
 ## [1.1.0] - 2025-09-28
 
 ### Added

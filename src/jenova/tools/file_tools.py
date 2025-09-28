@@ -32,6 +32,6 @@ class FileTools:
             return tool_pattern.sub(tool_success_message, response)
         except Exception as e:
             error_message = f"I encountered an error while trying to write the file: {e}"
-            self.ui_logger.error(f"Failed to write file: {e}")
+            self.ui_logger.system_message(f"Failed to write file: {e}")
             self.file_logger.log_error(f"Failed to write file: {e}")
             return tool_pattern.sub(error_message, response)

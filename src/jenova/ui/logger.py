@@ -21,7 +21,6 @@ class UILogger:
             title_align="center",
             subtitle=Text(attribution_text, style="cyan", justify="center"),
             border_style="bold magenta",
-            width=self.term_width
         )
         self.console.print(panel)
         self.console.print()
@@ -45,10 +44,10 @@ class UILogger:
         with self.console.status(f"[bold yellow]{message}[/bold yellow]", spinner="dots") as status:
             yield status
 
-    def user_query(self, text):
-        panel = Panel(Text(text, style="white"), title=f"orpheus497@Jenova", border_style="dark_green", width=self.term_width)
+    def user_query(self, text, username: str):
+        panel = Panel(Text(text, style="white"), title=f"{username}@Jenova", border_style="dark_green")
         self.console.print(panel)
 
     def jenova_response(self, text):
-        panel = Panel(Markdown(text, style="cyan"), title="Jenova", border_style="magenta", width=self.term_width)
+        panel = Panel(Markdown(text, style="cyan"), title="Jenova", border_style="magenta")
         self.console.print(panel)
