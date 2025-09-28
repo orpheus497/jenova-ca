@@ -74,3 +74,22 @@ class InsightManager:
                         except Exception:
                             continue
         return relevant_insights
+
+    def get_all_insights(self) -> list[dict]:
+        """Retrieves all insights from the insights directory."""
+        all_insights = []
+        if not os.path.exists(self.insights_root):
+            return []
+
+        for topic in os.listdir(self.insights_root):
+            topic_dir = os.path.join(self.insights_root, topic)
+            if os.path.isdir(topic_dir):
+                for insight_file in os.listdir(topic_dir):
+                    if insight_file.endswith('.json'):
+                        try:
+                            with open(os.path.join(topic_dir, insight_file), 'r', encoding='utf-8') as f:
+                                data = json.load(f)
+                                all_insights.append(data)
+                        except Exception:
+                            continue
+        return all_insights

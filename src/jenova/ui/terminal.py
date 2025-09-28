@@ -27,20 +27,35 @@ class TerminalUI:
     def run(self):
         self.logger.banner(BANNER, ATTRIBUTION)
         self.logger.info("Initialized and Ready.")
-        self.logger.info("Type your message to begin, or 'exit' to quit.\n")
+        self.logger.info("Type your message, use a command, or type 'exit' to quit.")
+        self.logger.info("Commands: /insight, /reflect, /memory-insight\n")
 
         while True:
             try:
                 prompt_message = [('class:username', 'orpheus497'), ('class:at', '@'), ('class:hostname', 'Jenova'), ('class:prompt', '> ')]
-                user_input = self.session.prompt(prompt_message, style=self.prompt_style)
+                user_input = self.session.prompt(prompt_message, style=self.prompt_style).strip()
 
-                if user_input.lower().strip() in ['exit', 'quit']:
-                    break
-                if not user_input.strip():
+                if not user_input:
                     continue
+
+                if user_input.lower() in ['exit', 'quit']:
+                    break
                 
-                response = self.engine.think(user_input)
-                self.logger.jenova_response(response)
+                # Command Handling
+                if user_input.startswith('/'):
+                    command = user_input.lower()
+                    if command == '/insight':
+                        self.engine.develop_insights_from_conversation()
+                    elif command == '/reflect':
+                        self.engine.reflect_on_insights()
+                    elif command == '/memory-insight':
+                        self.engine.develop_insights_from_memory()
+                    else:
+                        self.logger.error(f"Unknown command: {command}")
+                else:
+                    # Regular conversation
+                    response = self.engine.think(user_input)
+                    self.logger.jenova_response(response)
 
             except (KeyboardInterrupt, EOFError):
                 break
