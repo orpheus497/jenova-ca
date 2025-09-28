@@ -4,11 +4,11 @@ from chromadb.utils import embedding_functions
 from importlib import resources
 
 class SemanticMemory:
-    def __init__(self, config, ui_logger, file_logger):
+    def __init__(self, config, ui_logger, file_logger, db_path):
         self.config = config
         self.ui_logger = ui_logger
         self.file_logger = file_logger
-        self.db_path = os.path.join(config['user_data_root'], config['memory']['semantic_db_path'])
+        self.db_path = db_path
         os.makedirs(self.db_path, exist_ok=True)
         
         client = chromadb.PersistentClient(path=self.db_path)

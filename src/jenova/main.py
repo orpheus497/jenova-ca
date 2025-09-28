@@ -16,24 +16,35 @@ from jenova.tools.file_tools import FileTools
 from jenova.ui.logger import UILogger
 from jenova.utils.file_logger import FileLogger
 
+import getpass
+
 def main():
     """Main entry point for the perfected Jenova Cognitive Architecture."""
-    user_data_root = os.path.join(os.path.expanduser("~"), ".jenova-ai")
+    username = getpass.getuser()
+    user_data_root = os.path.join(os.path.expanduser("~"), ".jenova-ai", "users", username)
+    os.makedirs(user_data_root, exist_ok=True)
+    
     ui_logger = UILogger()
     file_logger = FileLogger(user_data_root=user_data_root)
 
     try:
         config = load_configuration(ui_logger, file_logger)
         config['user_data_root'] = user_data_root
+        insights_root = os.path.join(user_data_root, "insights")
         
         ui_logger.info(">> Initializing Intelligence Matrix...")
         llm_interface = LLMInterface(config, ui_logger, file_logger)
         file_tools = FileTools(config, ui_logger, file_logger)
-        insight_manager = InsightManager(config, ui_logger, file_logger)
+        insight_manager = InsightManager(config, ui_logger, file_logger, insights_root)
         
-        semantic_memory = SemanticMemory(config, ui_logger, file_logger)
-        episodic_memory = EpisodicMemory(config, ui_logger, file_logger)
-        procedural_memory = ProceduralMemory(config, ui_logger, file_logger)
+        # User-specific memory paths
+        episodic_mem_path = os.path.join(user_data_root, 'memory', 'episodic')
+        procedural_mem_path = os.path.join(user_data_root, 'memory', 'procedural')
+        semantic_mem_path = os.path.join(user_data_root, 'memory', 'semantic')
+
+        semantic_memory = SemanticMemory(config, ui_logger, file_logger, semantic_mem_path)
+        episodic_memory = EpisodicMemory(config, ui_logger, file_logger, episodic_mem_path)
+        procedural_memory = ProceduralMemory(config, ui_logger, file_logger, procedural_mem_path)
         
         semantic_memory.load_rag_document()
 

@@ -7,13 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- (New features for the next version here)
-
-### Fixed
-- (fixes for the next version here)
-
 ## [1.1.1] - 2025-09-28
+
+### Changed
+- Refactored the insight and memory systems to be user-specific, storing data in user-dedicated directories.
 
 ### Fixed
 - Fixed a bug that caused user input to be repeated in the UI.
@@ -22,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed fixed-width constraint on UI output panels to prevent text truncation.
 - The cognitive functions context wheel now displays a static "Thinking..." message.
 - Increased the number of search results retrieved from each memory type to improve utilization.
+- Fixed a bug where the application would not correctly recognize the current user, leading to impersonal and incorrect responses.
 
 ## [1.1.0] - 2025-09-28
 

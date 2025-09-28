@@ -20,7 +20,7 @@ class CognitiveEngine:
             self.file_logger.log_info(f"New query received from {username}: {user_input}")
             self.turn_count += 1
 
-            context = self.memory_search.search_all(user_input)
+            context = self.memory_search.search_all(user_input, username)
             plan = self._plan(user_input, context, username)
             response = self._execute(user_input, context, plan, username)
 
@@ -31,7 +31,7 @@ class CognitiveEngine:
 
             # Reflective insight generation every 5 turns
             if self.turn_count % 5 == 0:
-                self.generate_insight_from_history()
+                self.generate_insight_from_history(username)
 
         return response
 
@@ -56,7 +56,7 @@ class CognitiveEngine:
         self.file_logger.log_info(f"Generated Response: {response}")
         return response
 
-    def generate_insight_from_history(self):
+    def generate_insight_from_history(self, username: str):
         """Analyzes recent conversation history to generate and save a new, high-quality insight."""
         if len(self.history) < 2:
             return
@@ -65,7 +65,7 @@ class CognitiveEngine:
         conversation_segment = "\n".join(self.history[-8:])
 
         prompt = f"""
-Analyze the following conversation segment. Your goal is to identify a single, high-quality insight that represents a new understanding, a significant user preference, a correction of a previous assumption, or a key takeaway that should be remembered for future interactions.
+Analyze the following conversation segment involving the user '{username}'. Your goal is to identify a single, high-quality insight that represents a new understanding, a significant user preference, a correction of a previous assumption, or a key takeaway that should be remembered for future interactions with '{username}'.
 
 **Guidelines for a High-Quality Insight:**
 - **Novelty:** It should be something new that wasn't known before this conversation.
@@ -86,15 +86,15 @@ Format the output as a valid JSON object with "topic" and "insight" keys.
         with self.ui_logger.thinking_process("Generating insight from recent conversation..."):
             insight_json_str = self.llm.generate(prompt, temperature=0.2)
         
-        self.insight_manager.save_insight_from_json(insight_json_str)
+        self.insight_manager.save_insight_from_json(insight_json_str, username)
 
-    def develop_insights_from_conversation(self):
+    def develop_insights_from_conversation(self, username: str):
         """Command to develop insights from the full current conversation history."""
-        self.ui_logger.system_message("Developing new insights from the current conversation...")
+        self.ui_logger.system_message(f"Developing new insights for user '{username}' from the current conversation...")
         
         conversation_segment = "\n".join(self.history)
         prompt = f"""
-Analyze the following conversation. Your goal is to identify up to three high-quality insights that represent new understandings, significant user preferences, or key takeaways that should be remembered for future interactions.
+Analyze the following conversation involving '{username}'. Your goal is to identify up to three high-quality insights that represent new understandings, significant user preferences, or key takeaways that should be remembered for future interactions with this user.
 
 **Guidelines for a High-Quality Insight:**
 - **Novelty:** It should be something new that wasn't known before this conversation.
@@ -116,22 +116,22 @@ Based on these guidelines, analyze the conversation below. For each insight, pro
         try:
             insights = json.loads(insights_json_str)
             for insight in insights:
-                self.insight_manager.save_insight_from_json(json.dumps(insight))
+                self.insight_manager.save_insight_from_json(json.dumps(insight), username)
         except json.JSONDecodeError:
             self.ui_logger.system_message(f"Failed to decode insights from LLM response: {insights_json_str}")
 
-    def reflect_on_insights(self):
+    def reflect_on_insights(self, username: str):
         """Command to reflect on all existing insights and generate new, meta-insights."""
-        self.ui_logger.system_message("Reflecting on existing insights to generate meta-insights...")
+        self.ui_logger.system_message(f"Reflecting on existing insights for user '{username}' to generate meta-insights...")
         
-        all_insights = self.insight_manager.get_all_insights()
+        all_insights = self.insight_manager.get_all_insights(username)
         if not all_insights:
             self.ui_logger.system_message("No existing insights to reflect on.")
             return
 
         insights_str = "\n".join([f"- {i['topic']}: {i['content']}" for i in all_insights])
         prompt = f"""
-Analyze the following collection of insights. Your goal is to identify a new, higher-level 'meta-insight'.
+Analyze the following collection of insights for user '{username}'. Your goal is to identify a new, higher-level 'meta-insight'.
 
 **What is a Meta-Insight?**
 A meta-insight is a conclusion drawn from analyzing existing insights. It's about finding the connections, patterns, or underlying themes that are not obvious from any single insight. It synthesizes multiple pieces of knowledge into a more profound understanding.
@@ -151,18 +151,18 @@ Based on this, analyze the collection below and generate a single, powerful meta
         with self.ui_logger.thinking_process("Generating meta-insight..."):
             meta_insight_json_str = self.llm.generate(prompt, temperature=0.4)
         
-        self.insight_manager.save_insight_from_json(meta_insight_json_str)
+        self.insight_manager.save_insight_from_json(meta_insight_json_str, username)
 
-    def develop_insights_from_memory(self):
+    def develop_insights_from_memory(self, username: str):
         """Command to develop new insights from a broad search of long-term memory."""
-        self.ui_logger.system_message("Developing new insights from long-term memory...")
+        self.ui_logger.system_message(f"Developing new insights for user '{username}' from long-term memory...")
         
         # Use a broad query to get a wide range of memories
         context = self.memory_search.search_all("general knowledge and past experiences")
         context_str = "\n".join(f"- {c}" for c in context)
 
         prompt = f"""
-Analyze the following context from long-term memory. Your goal is to identify a single, high-quality insight that represents a new understanding or a key takeaway that should be remembered for future interactions.
+Analyze the following context from long-term memory for user '{username}'. Your goal is to identify a single, high-quality insight that represents a new understanding or a key takeaway that should be remembered for future interactions.
 
 **Guidelines for a High-Quality Insight:**
 - **Novelty:** It should be something new that wasn't known before.
@@ -183,4 +183,4 @@ Format the output as a valid JSON object with "topic" and "insight" keys.
         with self.ui_logger.thinking_process("Generating insight from memory..."):
             insight_json_str = self.llm.generate(prompt, temperature=0.3)
         
-        self.insight_manager.save_insight_from_json(insight_json_str)
+        self.insight_manager.save_insight_from_json(insight_json_str, username)

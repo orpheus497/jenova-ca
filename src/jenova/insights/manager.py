@@ -4,14 +4,14 @@ from datetime import datetime
 
 class InsightManager:
     """Manages the creation, storage, and retrieval of topical insights."""
-    def __init__(self, config, ui_logger, file_logger):
+    def __init__(self, config, ui_logger, file_logger, insights_root):
         self.config = config
         self.ui_logger = ui_logger
         self.file_logger = file_logger
-        self.insights_root = os.path.join(self.config['user_data_root'], "insights")
+        self.insights_root = insights_root
         os.makedirs(self.insights_root, exist_ok=True)
 
-    def save_insight_from_json(self, json_str: str):
+    def save_insight_from_json(self, json_str: str, username: str):
         """Parses a JSON string from the LLM and saves the insight."""
         try:
             # Clean the string to ensure it's valid JSON
@@ -28,19 +28,20 @@ class InsightManager:
                 self.file_logger.log_error("Insight generation failed: LLM returned empty topic or insight.")
                 return
 
-            topic_dir = os.path.join(self.insights_root, topic)
+            user_insights_dir = os.path.join(self.insights_root, username)
+            topic_dir = os.path.join(user_insights_dir, topic)
             os.makedirs(topic_dir, exist_ok=True)
             
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"insight_{timestamp}.json"
             filepath = os.path.join(topic_dir, filename)
 
-            insight_data = { "topic": topic, "content": insight, "timestamp": datetime.now().isoformat() }
+            insight_data = { "topic": topic, "content": insight, "timestamp": datetime.now().isoformat(), "user": username }
 
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(insight_data, f, indent=4)
             
-            self.ui_logger.info(f"New insight saved under topic '{topic}'")
+            self.ui_logger.info(f"New insight saved for user '{username}' under topic '{topic}'")
             self.file_logger.log_info(f"New insight saved: {filepath}")
 
         except json.JSONDecodeError:
@@ -52,16 +53,17 @@ class InsightManager:
             self.ui_logger.system_message(error_msg)
             self.file_logger.log_error(error_msg)
 
-    def get_relevant_insights(self, query: str, max_insights: int = 3) -> list[str]:
+    def get_relevant_insights(self, query: str, username: str, max_insights: int = 3) -> list[str]:
         """Scans insight topics and returns content from topics mentioned in the query."""
         relevant_insights = []
         query_lower = query.lower()
+        user_insights_dir = os.path.join(self.insights_root, username)
         
-        if not os.path.exists(self.insights_root):
+        if not os.path.exists(user_insights_dir):
             return []
 
-        for topic in os.listdir(self.insights_root):
-            topic_dir = os.path.join(self.insights_root, topic)
+        for topic in os.listdir(user_insights_dir):
+            topic_dir = os.path.join(user_insights_dir, topic)
             if os.path.isdir(topic_dir) and topic.replace('_', ' ') in query_lower:
                 for insight_file in sorted(os.listdir(topic_dir), reverse=True):
                     if insight_file.endswith('.json'):
@@ -75,14 +77,16 @@ class InsightManager:
                             continue
         return relevant_insights
 
-    def get_all_insights(self) -> list[dict]:
-        """Retrieves all insights from the insights directory."""
+    def get_all_insights(self, username: str) -> list[dict]:
+        """Retrieves all insights from the insights directory for a specific user."""
         all_insights = []
-        if not os.path.exists(self.insights_root):
+        user_insights_dir = os.path.join(self.insights_root, username)
+
+        if not os.path.exists(user_insights_dir):
             return []
 
-        for topic in os.listdir(self.insights_root):
-            topic_dir = os.path.join(self.insights_root, topic)
+        for topic in os.listdir(user_insights_dir):
+            topic_dir = os.path.join(user_insights_dir, topic)
             if os.path.isdir(topic_dir):
                 for insight_file in os.listdir(topic_dir):
                     if insight_file.endswith('.json'):

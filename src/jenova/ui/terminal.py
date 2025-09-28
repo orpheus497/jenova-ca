@@ -47,11 +47,11 @@ class TerminalUI:
                 if user_input.startswith('/'):
                     command = user_input.lower()
                     if command == '/insight':
-                        self.engine.develop_insights_from_conversation()
+                        self.engine.develop_insights_from_conversation(self.username)
                     elif command == '/reflect':
-                        self.engine.reflect_on_insights()
+                        self.engine.reflect_on_insights(self.username)
                     elif command == '/memory-insight':
-                        self.engine.develop_insights_from_memory()
+                        self.engine.develop_insights_from_memory(self.username)
                     else:
                         self.logger.system_message(f"Unknown command: {command}")
                 else:
