@@ -1,0 +1,62 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+eggs/
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+
+# Project-specific user data & logs
+.jenova-ai/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+*.egg-info/
+
+# Jenova Specific
+~/.jenova-ai/
+models/
+finetune/train.jsonl
+
+# Python virtual environment
+venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Large model files - Users should download these themselves
+models/
+
+# Jenova user-specific data and memory!
+# This is the most important part for privacy.
+# It prevents your personal chat logs, insights, and memory DBs from being uploaded.
+.jenova-ai/
+*.db
+/db_data/
+
+# Generated fine-tuning data
+finetune/train.jsonl
+
+# Build artifacts
+*.egg-info/
+/dist/
+/build/

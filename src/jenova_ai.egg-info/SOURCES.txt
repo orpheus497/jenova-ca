@@ -1,0 +1,13 @@
+MANIFEST.in
+setup.py
+src/jenova/config/___init___.py
+src/jenova/config/main_config.yaml
+src/jenova/config/persona.yaml
+src/jenova/docs/RAG.md
+src/jenova/docs/___init___.py
+src/jenova_ai.egg-info/PKG-INFO
+src/jenova_ai.egg-info/SOURCES.txt
+src/jenova_ai.egg-info/dependency_links.txt
+src/jenova_ai.egg-info/entry_points.txt
+src/jenova_ai.egg-info/requires.txt
+src/jenova_ai.egg-info/top_level.txt
