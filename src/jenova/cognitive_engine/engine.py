@@ -158,7 +158,7 @@ Based on this, analyze the collection below and generate a single, powerful meta
         self.ui_logger.system_message(f"Developing new insights for user '{username}' from long-term memory...")
         
         # Use a broad query to get a wide range of memories
-        context = self.memory_search.search_all("general knowledge and past experiences")
+        context = self.memory_search.search_all("general knowledge and past experiences", username)
         context_str = "\n".join(f"- {c}" for c in context)
 
         prompt = f"""

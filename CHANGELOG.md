@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The cognitive functions context wheel now displays a static "Thinking..." message.
 - Increased the number of search results retrieved from each memory type to improve utilization.
 - Fixed a bug where the application would not correctly recognize the current user, leading to impersonal and incorrect responses.
+- Fixed a `TypeError` in the `/memory-insight` command by passing the required `username` argument to the `MemorySearch.search_all()` method.
 
 ## [1.1.0] - 2025-09-28
 
