@@ -1,7 +1,0 @@
-llama-cpp-python
-chromadb
-sentence-transformers
-rich
-prompt-toolkit
-PyYAML
-numpy
