@@ -236,3 +236,4 @@ This file defines the AI's personality and core directives.
     -   `type`: A description of the AI's nature.
 -   **`directives`**: A list of rules the AI must follow. These are injected into the system prompt.
 -   **`initial_facts`**: A list of foundational facts that are loaded into the AI's memory on first run.
+# jenova-ai
