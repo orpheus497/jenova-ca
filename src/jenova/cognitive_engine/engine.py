@@ -1,4 +1,5 @@
 import json
+from jenova.cortex.proactive_engine import ProactiveEngine
 
 class CognitiveEngine:
     """The Perfected Cognitive Engine. Manages the refined cognitive cycle."""
