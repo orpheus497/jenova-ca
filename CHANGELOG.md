@@ -5,7 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.0] - 2025-10-01
+
+### Added
+- **Superior Intelligence**: Enhanced the Cortex to provide a more organized and developed cognitive graph.
+- **Insight Development**: Added a `/develop_insight <node_id>` command to generate a more detailed and developed version of an existing insight.
+- **Psychological Memory**: The Cortex now analyzes the sentiment of new nodes and adds it as metadata, providing a psychological dimension to the cognitive graph.
+- **In-app Fine-tuning**: Added a `/finetune` command to trigger the fine-tuning process from within the application.
+- **Cortex Architecture**: A new central hub for the AI's cognitive architecture that manages a graph of interconnected cognitive nodes (insights, memories, assumptions).
+- **Deep Reflection**: The Cortex can perform deep reflection on the cognitive graph to find patterns, infer relationships, and generate meta-insights.
+- **Proactive Engine**: A new engine that analyzes the cognitive graph to generate proactive suggestions and questions for the user.
+- New Assumption System to generate, store, and verify assumptions about the user.
+- Assumptions are categorized as `verified`, `unverified`, `true`, or `false`.
+- New `/verify` command to initiate the assumption verification process.
+- Re-introduced Meta-Insight Generation with the `/meta` command.
+
+### Changed
+- **Fleshed-out Proactivity**: The `ProactiveEngine` is now more sophisticated, analyzing clusters of insights to generate more meaningful and engaging suggestions.
+- The `InsightManager` and `AssumptionManager` now use the `Cortex` to create and link insights and assumptions.
+- The `CognitiveEngine` now orchestrates the `Cortex` and `ProactiveEngine`.
+- Overhauled the insight system to be more organized and proactive.
+- Insights are now organized by "concerns" or "topics".
+- New insights are grouped with existing concerns to avoid duplication.
+- The reflection system now reorganizes and interlinks insights.
+- Memory insights are now integrated into the new concern-based system.
 
 ## [1.1.1] - 2025-09-28
 
