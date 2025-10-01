@@ -30,7 +30,7 @@ class TerminalUI:
         self.logger.banner(BANNER, ATTRIBUTION)
         self.logger.info("Initialized and Ready.")
         self.logger.info("Type your message, use a command, or type 'exit' to quit.")
-        self.logger.info("Commands: /insight, /reflect, /memory-insight\n")
+        self.logger.info("Commands: /insight, /reflect, /memory-insight, /meta, /verify, /finetune, /develop_insight <node_id>\n")
 
         while True:
             try:
@@ -52,8 +52,18 @@ class TerminalUI:
                         self.engine.reflect_on_insights(self.username)
                     elif command == '/memory-insight':
                         self.engine.develop_insights_from_memory(self.username)
-                    else:
-                        self.logger.system_message(f"Unknown command: {command}")
+                    elif command == '/meta':
+                        self.engine.generate_meta_insight(self.username)
+                    elif command == '/verify':
+                        self.engine.verify_assumptions(self.username)
+                    elif command == '/finetune':
+                        self.engine.finetune()
+                    elif command.startswith('/develop_insight '):
+                        try:
+                            node_id = command.split(' ', 1)[1]
+                            self.engine.cortex.develop_insight(node_id, self.username)
+                        except IndexError:
+                            self.logger.system_message("Usage: /develop_insight <node_id>")
                 else:
                     # Regular conversation
                     response = self.engine.think(user_input, self.username)

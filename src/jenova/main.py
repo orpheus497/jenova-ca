@@ -16,6 +16,12 @@ from jenova.tools.file_tools import FileTools
 from jenova.ui.logger import UILogger
 from jenova.utils.file_logger import FileLogger
 
+from jenova.assumptions.manager import AssumptionManager
+
+from jenova.cortex.cortex import Cortex
+
+from jenova.tools.system_tools import SystemTools
+
 import getpass
 
 def main():
@@ -31,11 +37,12 @@ def main():
         config = load_configuration(ui_logger, file_logger)
         config['user_data_root'] = user_data_root
         insights_root = os.path.join(user_data_root, "insights")
+        cortex_root = os.path.join(user_data_root, "cortex")
         
         ui_logger.info(">> Initializing Intelligence Matrix...")
         llm_interface = LLMInterface(config, ui_logger, file_logger)
         file_tools = FileTools(config, ui_logger, file_logger)
-        insight_manager = InsightManager(config, ui_logger, file_logger, insights_root)
+        system_tools = SystemTools(ui_logger, file_logger)
         
         # User-specific memory paths
         episodic_mem_path = os.path.join(user_data_root, 'memory', 'episodic')
@@ -48,10 +55,14 @@ def main():
         
         semantic_memory.load_rag_document()
 
+        cortex = Cortex(config, ui_logger, file_logger, llm_interface, cortex_root)
+        insight_manager = InsightManager(config, ui_logger, file_logger, insights_root, llm_interface, cortex, None) # Memory search is set later
+        assumption_manager = AssumptionManager(config, ui_logger, file_logger, user_data_root, cortex)
         memory_search = MemorySearch(semantic_memory, episodic_memory, procedural_memory, insight_manager)
+        insight_manager.memory_search = memory_search
         
         ui_logger.info(">> Cognitive Engine: Online.")
-        cognitive_engine = CognitiveEngine(llm_interface, memory_search, file_tools, insight_manager, config, ui_logger, file_logger)
+        cognitive_engine = CognitiveEngine(llm_interface, memory_search, file_tools, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, system_tools)
         
         ui = TerminalUI(cognitive_engine, ui_logger)
         ui.run()
