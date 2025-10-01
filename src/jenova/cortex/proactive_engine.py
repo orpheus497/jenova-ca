@@ -1,3 +1,4 @@
+import random
 
 class ProactiveEngine:
     """
@@ -18,19 +19,22 @@ class ProactiveEngine:
         if len(user_nodes) < 3:
             return None
 
-        # Strategy: Find a cluster of related insights and ask a question that connects them.
-        # This is a more advanced strategy than just looking at the most recent insight.
-        # A real implementation would use graph analysis to find clusters.
-        # For now, we'll simulate this by taking a few recent insights.
-        recent_insights = sorted(user_nodes, key=lambda n: n['timestamp'], reverse=True)[:3]
-        insight_contents = "\n".join([f"- {i['content']}" for i in recent_insights])
+        # Strategy 1: Focus on a highly central node (a well-developed topic)
+        sorted_nodes = sorted(user_nodes, key=lambda n: n['metadata']['centrality'], reverse=True)
+        most_central_node = sorted_nodes[0]
 
-        prompt = f'''Based on the following related insights about the user, formulate a single, concise, and engaging question that connects these ideas or explores a potential underlying theme.
+        # Strategy 2: Focus on a low-centrality node (an underdeveloped topic)
+        least_central_node = sorted_nodes[-1]
 
-Insights:
-{insight_contents}
+        # Randomly choose a strategy
+        if random.random() < 0.7: # 70% chance to focus on a central topic
+            prompt = f'''You have a well-developed insight on the topic of '{most_central_node.get("topic", "a certain topic")}'. Based on the content "{most_central_node["content"]}", ask a follow-up question that encourages the user to explore a new dimension of this topic.
 
-Connecting question:'''
+Follow-up question:'''
+        else: # 30% chance to focus on an underdeveloped topic
+            prompt = f'''You have a brief insight on the topic of '{least_central_node.get("topic", "a certain topic")}'. Based on the content "{least_central_node["content"]}", ask a question that encourages the user to elaborate and provide more details.
+
+Elaboration question:'''
 
         with self.ui_logger.thinking_process("Considering a thought..."):
             suggestion = self.llm.generate(prompt, temperature=0.7)

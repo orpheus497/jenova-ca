@@ -36,7 +36,6 @@ class Cortex:
         """Adds a new node to the cognitive graph."""
         node_id = str(uuid.uuid4())
         
-        # Psychological dimension
         sentiment_prompt = f"""Analyze the sentiment of the following text. Respond with a single word: positive, negative, or neutral.
 
 Text: "{content}"
@@ -51,7 +50,8 @@ Sentiment:"""
             "user": user,
             "timestamp": datetime.now().isoformat(),
             "metadata": {
-                "sentiment": sentiment
+                "sentiment": sentiment,
+                "centrality": 0
             }
         }
         self.graph["nodes"][node_id] = new_node
@@ -91,6 +91,26 @@ Sentiment:"""
                     nodes.append(node)
         return nodes
 
+    def update_node(self, node_id: str, content: str = None, linked_to: list = None):
+        """Updates an existing node in the cognitive graph."""
+        if node_id not in self.graph["nodes"]:
+            return
+
+        if content:
+            self.graph["nodes"][node_id]["content"] = content
+            self.graph["nodes"][node_id]["timestamp"] = datetime.now().isoformat()
+
+        if linked_to:
+            # Remove existing links from this node
+            self.graph["links"] = [link for link in self.graph["links"] if link["source"] != node_id]
+            # Add new links
+            for target_id in linked_to:
+                if target_id in self.graph["nodes"]:
+                    self.add_link(node_id, target_id, "related_to")
+        
+        self._save_graph()
+        self.ui_logger.info(f"Node {node_id} updated.")
+
     def reflect(self, user: str):
         """
         Performs a deep reflection on the cognitive graph. This process analyzes
@@ -104,25 +124,34 @@ Sentiment:"""
             self.ui_logger.system_message("Insufficient data for a meaningful reflection.")
             return
 
-        # 1. Identify unlinked nodes and try to link them
+        self._calculate_centrality()
         self._link_orphans(user_nodes)
-
-        # 2. Search for clusters of related nodes to generate meta-insights
         self._generate_meta_insights(user_nodes)
 
         self._save_graph()
         self.ui_logger.system_message("Reflection complete. The cognitive graph has been refined.")
 
+    def _calculate_centrality(self):
+        """Calculates the degree centrality for each node in the graph."""
+        node_link_counts = {node_id: 0 for node_id in self.graph["nodes"]}
+        for link in self.graph['links']:
+            if link['source'] in node_link_counts:
+                node_link_counts[link['source']] += 1
+            if link['target'] in node_link_counts:
+                node_link_counts[link['target']] += 1
+        
+        for node_id, count in node_link_counts.items():
+            if node_id in self.graph["nodes"]:
+                self.graph["nodes"][node_id]["metadata"]["centrality"] = count
+
     def _link_orphans(self, user_nodes: list):
         """Identifies nodes with few links and attempts to create new connections."""
-        linked_node_ids = {link['source'] for link in self.graph['links']} | {link['target'] for link in self.graph['links']}
-        orphan_nodes = [node for node in user_nodes if node['id'] not in linked_node_ids]
+        orphan_nodes = [node for node in user_nodes if node['metadata']['centrality'] == 0]
 
         if len(orphan_nodes) < 2:
             return
 
         for orphan in orphan_nodes:
-            # Don't try to link the same node to itself
             other_nodes = [node for node in user_nodes if node['id'] != orphan['id']]
             if not other_nodes:
                 continue
@@ -178,31 +207,23 @@ Developed Insight:"""
 
     def _generate_meta_insights(self, user_nodes: list):
         """Analyzes clusters of nodes to generate higher-level meta-insights."""
-        # Simplified clustering: find nodes with more than 2 links
-        node_link_counts = {node['id']: 0 for node in user_nodes}
-        for link in self.graph['links']:
-            if link['source'] in node_link_counts:
-                node_link_counts[link['source']] += 1
-            if link['target'] in node_link_counts:
-                node_link_counts[link['target']] += 1
+        # Use centrality to find potential cluster centers
+        sorted_nodes = sorted(user_nodes, key=lambda n: n['metadata']['centrality'], reverse=True)
         
-        clusters = [node_id for node_id, count in node_link_counts.items() if count > 2]
+        # Consider top 3 most central nodes as potential cluster centers
+        potential_clusters = sorted_nodes[:3]
 
-        if not clusters:
-            return
-
-        for cluster_node_id in clusters:
-            cluster_node = self.get_node(cluster_node_id)
-            if not cluster_node or cluster_node.get('type') == 'meta-insight':
+        for cluster_node in potential_clusters:
+            if cluster_node.get('type') == 'meta-insight':
                 continue
 
             linked_nodes_content = []
             for link in self.graph['links']:
-                if link['source'] == cluster_node_id:
+                if link['source'] == cluster_node['id']:
                     linked_node = self.get_node(link['target'])
                     if linked_node:
                         linked_nodes_content.append(linked_node['content'])
-                elif link['target'] == cluster_node_id:
+                elif link['target'] == cluster_node['id']:
                     linked_node = self.get_node(link['source'])
                     if linked_node:
                         linked_nodes_content.append(linked_node['content'])
@@ -224,5 +245,5 @@ Meta-Insight:"""
             
             if meta_insight_content:
                 meta_insight_id = self.add_node('meta-insight', meta_insight_content, cluster_node['user'])
-                self.add_link(meta_insight_id, cluster_node_id, 'summarizes')
-                self.ui_logger.info(f"Generated meta-insight {meta_insight_id} from cluster around {cluster_node_id}")
+                self.add_link(meta_insight_id, cluster_node['id'], 'summarizes')
+                self.ui_logger.info(f"Generated meta-insight {meta_insight_id} from cluster around {cluster_node['id']}")

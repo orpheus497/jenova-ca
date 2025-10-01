@@ -1,9 +1,11 @@
 import json
 from jenova.cortex.proactive_engine import ProactiveEngine
+from jenova.cognitive_engine.rag_system import RAGSystem
+from jenova.cognitive_engine.document_processor import DocumentProcessor
 
 class CognitiveEngine:
     """The Perfected Cognitive Engine. Manages the refined cognitive cycle."""
-    def __init__(self, llm, memory_search, file_tools, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, system_tools):
+    def __init__(self, llm, memory_search, file_tools, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, system_tools, rag_system, document_processor):
         self.llm = llm
         self.memory_search = memory_search
         self.file_tools = file_tools
@@ -15,15 +17,43 @@ class CognitiveEngine:
         self.cortex = cortex
         self.system_tools = system_tools
         self.proactive_engine = ProactiveEngine(cortex, llm, ui_logger)
+        self.rag_system = rag_system
+        self.document_processor = document_processor
         self.history = []
         self.turn_count = 0
         self.MAX_HISTORY_TURNS = 10 # Keep the last 10 conversation turns
+        self.pending_assumption = None
 
     def think(self, user_input: str, username: str) -> str:
         """Runs the full cognitive cycle: Retrieve, Plan, Execute, and Reflect."""
         with self.ui_logger.cognitive_process("Thinking..."):
             self.file_logger.log_info(f"New query received from {username}: {user_input}")
             self.turn_count += 1
+
+            if self.pending_assumption:
+                self.assumption_manager.resolve_assumption(self.pending_assumption, user_input, username)
+                self.pending_assumption = None
+
+            # Cognitive cycle hooks
+            if self.turn_count % 5 == 0:
+                self.generate_insight_from_history(username)
+            if self.turn_count % 7 == 0:
+                self.generate_assumption_from_history(username)
+            if self.turn_count % 8 == 0:
+                question = self.proactively_verify_assumption(username)
+                if question:
+                    return question
+            if self.turn_count % 10 == 0:
+                self.cortex.reflect(username)
+                self.insight_manager.reorganize_insights(username)
+            if self.turn_count % 15 == 0:
+                self.document_processor.process_documents(username)
+            
+            # Proactive suggestion
+            if self.turn_count % 5 == 0:
+                suggestion = self.proactive_engine.get_suggestion(username)
+                if suggestion:
+                    self.ui_logger.system_message(f"Jenova has a thought: {suggestion}")
 
             context = self.memory_search.search_all(user_input, username)
             plan = self._plan(user_input, context, username)
@@ -33,20 +63,6 @@ class CognitiveEngine:
             self.history.append(f"Jenova: {response}")
             if len(self.history) > self.MAX_HISTORY_TURNS * 2:
                 self.history = self.history[-(self.MAX_HISTORY_TURNS * 2):]
-
-            # Cognitive cycle hooks
-            if self.turn_count % 5 == 0:
-                self.generate_insight_from_history(username)
-            if self.turn_count % 7 == 0:
-                self.generate_assumption_from_history(username)
-            if self.turn_count % 10 == 0:
-                self.cortex.reflect(username)
-            
-            # Proactive suggestion
-            if self.turn_count % 15 == 0:
-                suggestion = self.proactive_engine.get_suggestion(username)
-                if suggestion:
-                    self.ui_logger.system_message(f"Jenova has a thought: {suggestion}")
 
         return response
 
@@ -59,15 +75,8 @@ class CognitiveEngine:
         return plan
 
     def _execute(self, user_input: str, context: list[str], plan: str, username: str) -> str:
-        context_str = "\n".join(f"- {c}" for c in context)
-        history_str = "\n".join(self.history)
-        
-        is_identity_query = "who are you" in user_input.lower() or "tell me about yourself" in user_input.lower()
-        task_prompt = "Execute the plan to respond to the user's query. Your response must be grounded in your persona, the retrieved context, and the conversation history. Provide ONLY Jenova's response." if is_identity_query else "Execute the plan to respond to the user's query. Be direct and conversational. Do not re-introduce yourself unless asked. Provide ONLY Jenova's response."
-
-        prompt = f"""== RETRIEVED CONTEXT ==\n{context_str if context else "No context available."}\n\n== CONVERSATION HISTORY ==\n{history_str if self.history else "No history yet."}\n\n== YOUR INTERNAL PLAN ==\n{plan}\n\n== TASK ==\n{task_prompt}\n\nUser ({username}): \"{user_input}\"\n\nJenova:"""
         with self.ui_logger.thinking_process("Executing plan..."):
-            response = self.llm.generate(prompt)
+            response = self.rag_system.generate_response(user_input, username, self.history, plan)
         self.file_logger.log_info(f"Generated Response: {response}")
         return response
 
@@ -231,34 +240,55 @@ Format the output as a valid JSON object with one of two structures:
         except json.JSONDecodeError:
             self.ui_logger.system_message(f"Failed to decode insight from LLM response: {insight_json_str}")
 
+    def proactively_verify_assumption(self, username: str):
+        """Proactively verifies an unverified assumption with the user."""
+        assumption, question = self.assumption_manager.get_assumption_to_verify(username)
+        if assumption and question:
+            self.pending_assumption = assumption
+            return question
+        return None
+
     def verify_assumptions(self, username: str):
         """Command to verify unverified assumptions with the user."""
-        return self.assumption_manager.get_assumption_to_verify(self.llm, username)
+        question = self.proactively_verify_assumption(username)
+        if question:
+            return question
+        else:
+            return "No unverified assumptions to check."
 
-    def finetune(self):
+    def finetune(self, include_history: bool = False):
         """Command to trigger the fine-tuning process."""
         self.ui_logger.system_message("Initiating fine-tuning process...")
         
+        finetune_config = self.config.get('finetuning', {})
+        insights_dir = self.insight_manager.insights_root
+        training_file = finetune_config.get('training_file', 'finetune_train.jsonl')
+        history_file = self.file_logger.log_file_path if include_history else None
+
         # Step 1: Prepare the data
-        prepare_command = "python finetune/prepare_data.py"
+        prepare_command = f"python finetune/prepare_data.py --insights-dir \"{insights_dir}\" --output-file \"{training_file}\""
+        if history_file:
+            prepare_command += f" --include-history \"{history_file}\""
+        
         self.system_tools.execute_shell_command(prepare_command, "Preparing fine-tuning data...")
 
         # Step 2: Run the fine-tuning
-        finetune_config = self.config.get('finetuning', {})
-        base_model_path = self.config.get('model', {}).get('model_path', 'models/jenova.gguf') # Assuming model_path is in config
-        training_file = finetune_config.get('training_file', 'finetune_train.jsonl')
+        base_model_path = self.config.get('model', {}).get('model_path')
         lora_output = finetune_config.get('lora_output_file', 'models/lora-jenova-adapter.bin')
         threads = self.config.get('hardware', {}).get('threads', 4)
         gpu_layers = self.config.get('hardware', {}).get('gpu_layers', 0)
 
-        # This is a more realistic llama.cpp command
-        # The user might need to adjust paths and parameters based on their setup
+        if not base_model_path:
+            self.ui_logger.system_message("Error: model_path not found in config. Please specify the base model path.")
+            return
+
         finetune_command = f"""./llama.cpp/finetune --model-base {base_model_path} \
 --train-data \"{training_file}\" \
 --lora-out {lora_output} \
 --threads {threads} --gpu-layers {gpu_layers} \
---batch-size 4 --epochs 3 --use-flash-attn"""
+--batch-size {finetune_config.get('batch_size', 4)} --epochs {finetune_config.get('epochs', 3)} \
+--use-flash-attn"""
 
         self.ui_logger.system_message("Executing fine-tuning command. This may take a while...")
         self.system_tools.execute_shell_command(finetune_command, "Running fine-tuning...")
-        self.ui_logger.system_message("Fine-tuning process completed. The new LoRA adapter is available at {lora_output}")
+        self.ui_logger.system_message(f"Fine-tuning process completed. The new LoRA adapter is available at {lora_output}")

@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [2.0.0] - 2025-10-02
+
+### Added
+- **RAG System:** A new Retrieval-Augmented Generation (RAG) system is now a core component of the cognitive architecture.
+- **Document Processor:** A new system that allows the AI to scan and process documents in the `docs` folder to generate new cognitive nodes.
+
+### Changed
+- **Cognitive Engine:** The engine now prioritizes the AI's own insights and memories over its general knowledge.
+- **Insight System:** The system is now more comprehensive, with insights being interlinked with other cognitive nodes in the Cortex.
+- **Reflect System:** The reflection process is now more sophisticated, using graph analysis to find patterns, and is triggered automatically during the cognitive cycle.
+- **Memory System:** The memory system is now more comprehensive and includes an emotional component for more intelligent responses.
+- **Assumption System:** The assumption system is more robust and intelligent, using the LLM to resolve assumptions proactively during conversation.
+- **Proactive Engine:** The proactive engine is more sophisticated, using graph analysis to find underdeveloped areas of the cognitive graph and trigger suggestions more frequently.
+- **RAG.md Dependency:** Removed the hardcoded dependency on the `RAG.md` file, as this is now handled by the core RAG system.
+
+### Fixed
+- **Commands:** The `/develop_insight` and `/finetune` commands are now working properly and are more robust.
+- **Error Handling:** Improved error handling across the application to prevent crashes and provide better feedback to the user.
+
 ## [1.3.0] - 2025-10-02
 
 ### Fixed

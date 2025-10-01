@@ -1,14 +1,17 @@
 import os
+import json
 import chromadb
+from datetime import datetime
 from chromadb.utils import embedding_functions
 from importlib import resources
 
 class SemanticMemory:
-    def __init__(self, config, ui_logger, file_logger, db_path):
+    def __init__(self, config, ui_logger, file_logger, db_path, llm):
         self.config = config
         self.ui_logger = ui_logger
         self.file_logger = file_logger
         self.db_path = db_path
+        self.llm = llm
         os.makedirs(self.db_path, exist_ok=True)
         
         client = chromadb.PersistentClient(path=self.db_path)
@@ -19,42 +22,57 @@ class SemanticMemory:
 
     def _load_initial_facts(self, initial_facts):
         if not initial_facts: return
-        ids = [f.split(':', 1)[0].strip() for f in initial_facts]
-        existing = self.collection.get(ids=ids)
-        existing_ids = existing['ids'] if existing and existing['ids'] else []
-        new_facts_to_add = [f for f in initial_facts if f.split(':', 1)[0].strip() not in existing_ids]
+        for fact in initial_facts:
+            self.add_fact(fact, source="initial_persona", confidence=1.0)
 
-        if new_facts_to_add:
-            self.ui_logger.info(f"Loading {len(new_facts_to_add)} new initial facts into Semantic Memory...")
-            self.file_logger.log_info(f"Loading {len(new_facts_to_add)} new initial facts into Semantic Memory...")
-            new_ids = [f.split(':', 1)[0].strip() for f in new_facts_to_add]
-            documents = [f.split(':', 1)[1].strip() for f in new_facts_to_add]
-            self.collection.add(ids=new_ids, documents=documents)
 
-    def load_rag_document(self):
-        try:
-            self.ui_logger.info("Loading RAG document into Semantic Memory...")
-            self.file_logger.log_info("Loading RAG document into Semantic Memory...")
-            with resources.open_text("jenova.docs", "RAG.md") as f:
-                content = f.read()
-            chunks = [content[i:i+500] for i in range(0, len(content), 450)]
-            chunk_ids = [f"rag_doc_{i}" for i in range(len(chunks))]
-            if not chunk_ids: return
-            existing = self.collection.get(ids=chunk_ids)
-            existing_ids = existing['ids'] if existing and existing['ids'] else []
-            new_chunk_ids = [cid for cid in chunk_ids if cid not in existing_ids]
-            new_chunks = [chunks[i] for i, cid in enumerate(chunk_ids) if cid not in existing_ids]
-            if new_chunks:
-                self.collection.add(ids=new_chunk_ids, documents=new_chunks)
-                self.ui_logger.info(f"Ingested {len(new_chunks)} chunks from RAG.md into Semantic Memory.")
-                self.file_logger.log_info(f"Ingested {len(new_chunks)} chunks from RAG.md into Semantic Memory.")
-        except FileNotFoundError:
-            self.ui_logger.system_message("jenova/docs/RAG.md not found. Skipping RAG doc ingestion.")
-            self.file_logger.log_error("jenova/docs/RAG.md not found. Skipping RAG doc ingestion.")
+    def add_fact(self, fact: str, source: str = None, confidence: float = None, temporal_validity: str = None, doc_id: str = None):
+        if not source or not confidence or not temporal_validity:
+            prompt = f'''Analyze the following fact and extract the source, confidence level (a float between 0 and 1), and temporal validity (e.g., "timeless", "until 2025", "for the next 2 hours"). Respond with a JSON object containing "source", "confidence", and "temporal_validity".
 
-    def search(self, query: str, n_results: int = 3) -> list[tuple[str, float]]:
+Fact: "{fact}"
+
+JSON Response:'''
+            response_str = self.llm.generate(prompt, temperature=0.2)
+            try:
+                response_data = json.loads(response_str)
+                source = response_data.get('source', 'unknown')
+                confidence = response_data.get('confidence', 0.5)
+                temporal_validity = response_data.get('temporal_validity', 'unknown')
+            except (json.JSONDecodeError, KeyError):
+                source = 'unknown'
+                confidence = 0.5
+                temporal_validity = 'unknown'
+
+        metadata = {
+            "source": source,
+            "confidence": confidence,
+            "temporal_validity": temporal_validity,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        if not doc_id:
+            doc_id = f"fact_{self.collection.count()}"
+
+        self.collection.add(ids=[doc_id], documents=[fact], metadatas=[metadata])
+        self.file_logger.log_info(f"Added fact {doc_id} to semantic memory.")
+
+    def search(self, query: str, n_results: int = 3, documents: list[str] = None) -> list[tuple[str, float]]:
         if self.collection.count() == 0: return []
         n_results = min(n_results, self.collection.count())
-        results = self.collection.query(query_texts=[query], n_results=n_results)
+        if documents:
+            results = self.collection.query(query_texts=documents, n_results=n_results)
+        else:
+            results = self.collection.query(query_texts=[query], n_results=n_results)
         if not results['documents']: return []
-        return list(zip(results['documents'][0], results['distances'][0]))
+        
+        if documents:
+            # When querying with multiple documents, the result is a list of lists.
+            # We need to flatten it and return the top n_results.
+            all_results = []
+            for i in range(len(results['documents'])):
+                all_results.extend(list(zip(results['documents'][i], results['distances'][i])))
+            all_results.sort(key=lambda x: x[1])
+            return all_results[:n_results]
+        else:
+            return list(zip(results['documents'][0], results['distances'][0]))
