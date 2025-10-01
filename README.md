@@ -172,12 +172,12 @@ Interaction with Jenova is primarily through natural language. The `TerminalUI` 
 In addition to standard conversation, you can use the following commands to trigger specific cognitive functions:
 
 -   `/insight`: Triggers the AI to analyze the entire history of the current conversation and generate new insights based on it.
--   `/reflect`: Instructs the AI to reorganize and interlink all of its previously generated insights.
+-   `/reflect`: Instructs the AI to perform a deep reflection on its cognitive graph, reorganizing and interlinking all of its previously generated insights and cleaning up the old folder structure.
 -   `/memory-insight`: Prompts the AI to perform a broad search of its long-term memory and generate a new insight or assumption from the retrieved context.
 -   `/meta`: Instructs the AI to review all of its previously generated insights and attempt to synthesize a new, higher-level "meta-insight" from them.
--   `/verify`: Initiates a process to verify one of the AI's unverified assumptions about you.
--   `/finetune`: Triggers the fine-tuning process.
--   `/develop_insight <node_id>`: Develops an existing insight by generating a more detailed version.
+-   `/verify`: Initiates an interactive process to verify one of the AI's unverified assumptions about you. The AI will ask a question and wait for your `yes` or `no` response.
+-   `/finetune`: Triggers the fine-tuning process. This will prepare the training data from your insights and then launch the `llama.cpp` fine-tuning command.
+-   `/develop_insight <node_id>`: Develops an existing insight by generating a more detailed version. The new insight will be linked to the original.
 
 The UI uses the `rich` library to provide formatted, color-coded output, distinguishing between system messages, user input, and AI responses.
 

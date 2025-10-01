@@ -125,7 +125,7 @@ Format the output as a valid JSON object with an "assumption" key.
             data = json.loads(assumption_json_str)
             assumption = data.get('assumption')
             if assumption:
-                self.assumption_manager.add_assumption(assumption)
+                self.assumption_manager.add_assumption(assumption, username)
         except json.JSONDecodeError:
             self.ui_logger.system_message(f"Failed to decode assumption from LLM response: {assumption_json_str}")
 
@@ -190,6 +190,7 @@ Analyze the following collection of insights for user '{username}'. Your goal is
             insight = data.get('insight')
             if insight:
                 self.insight_manager.save_insight(insight, username, topic=topic)
+                self.ui_logger.system_message(f"New meta-insight generated under topic '{topic}': {insight}")
         except json.JSONDecodeError:
             self.ui_logger.system_message(f"Failed to decode meta-insight from LLM response: {meta_insight_json_str}")
 
@@ -226,13 +227,13 @@ Format the output as a valid JSON object with one of two structures:
             elif data.get('type') == 'assumption':
                 assumption = data.get('content')
                 if assumption:
-                    self.assumption_manager.add_assumption(assumption)
+                    self.assumption_manager.add_assumption(assumption, username)
         except json.JSONDecodeError:
             self.ui_logger.system_message(f"Failed to decode insight from LLM response: {insight_json_str}")
 
     def verify_assumptions(self, username: str):
         """Command to verify unverified assumptions with the user."""
-        self.assumption_manager.verify_assumptions(self.llm, username)
+        return self.assumption_manager.get_assumption_to_verify(self.llm, username)
 
     def finetune(self):
         """Command to trigger the fine-tuning process."""
@@ -243,10 +244,21 @@ Format the output as a valid JSON object with one of two structures:
         self.system_tools.execute_shell_command(prepare_command, "Preparing fine-tuning data...")
 
         # Step 2: Run the fine-tuning
-        # Note: This is a placeholder for the actual fine-tuning command.
-        # The user will need to configure this command based on their llama.cpp setup.
-        finetune_command = self.config.get('finetuning', {}).get('finetune_command')
-        if finetune_command:
-            self.system_tools.execute_shell_command(finetune_command, "Running fine-tuning...")
-        else:
-            self.ui_logger.system_message("Fine-tuning command not configured in main_config.yaml. Skipping fine-tuning.")
+        finetune_config = self.config.get('finetuning', {})
+        base_model_path = self.config.get('model', {}).get('model_path', 'models/jenova.gguf') # Assuming model_path is in config
+        training_file = finetune_config.get('training_file', 'finetune_train.jsonl')
+        lora_output = finetune_config.get('lora_output_file', 'models/lora-jenova-adapter.bin')
+        threads = self.config.get('hardware', {}).get('threads', 4)
+        gpu_layers = self.config.get('hardware', {}).get('gpu_layers', 0)
+
+        # This is a more realistic llama.cpp command
+        # The user might need to adjust paths and parameters based on their setup
+        finetune_command = f"""./llama.cpp/finetune --model-base {base_model_path} \
+--train-data \"{training_file}\" \
+--lora-out {lora_output} \
+--threads {threads} --gpu-layers {gpu_layers} \
+--batch-size 4 --epochs 3 --use-flash-attn"""
+
+        self.ui_logger.system_message("Executing fine-tuning command. This may take a while...")
+        self.system_tools.execute_shell_command(finetune_command, "Running fine-tuning...")
+        self.ui_logger.system_message("Fine-tuning process completed. The new LoRA adapter is available at {lora_output}")

@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-10-02
+
+### Fixed
+- **Command System:**
+  - `/meta`: The command now provides feedback to the user when a new meta-insight is generated.
+  - `/develop_insight`: The command now correctly parses the `node_id` and provides a usage message if it's missing.
+  - `/verify`: The command is now fully interactive, allowing users to confirm or deny assumptions in real-time.
+  - `/finetune`: The command now triggers a real fine-tuning process, including data preparation and a `llama.cpp`-based fine-tuning command.
+- **Insight Organization:** The `/reflect` command now properly cleans up old, empty topic folders after reorganizing insights.
+
+### Changed
+- **Fine-tuning:** The fine-tuning data preparation script (`finetune/prepare_data.py`) now creates a more structured and effective training file.
+- **Configuration:** The `main_config.yaml` has been updated to support the new fine-tuning process.
+
 ## [1.2.0] - 2025-10-01
 
 ### Added

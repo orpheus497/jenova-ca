@@ -24,13 +24,14 @@ class AssumptionManager:
         with open(self.assumptions_file, 'w', encoding='utf-8') as f:
             json.dump(self.assumptions, f, indent=4)
 
-    def add_assumption(self, assumption_content: str, status: str = 'unverified', linked_to: list = None):
+    def add_assumption(self, assumption_content: str, username: str, status: str = 'unverified', linked_to: list = None):
         """Adds a new assumption."""
         if status not in self.assumptions:
             status = 'unverified'
         
         new_assumption = {
             "content": assumption_content,
+            "username": username,
             "timestamp": datetime.now().isoformat()
         }
         
@@ -38,7 +39,7 @@ class AssumptionManager:
         self._save_assumptions()
 
         # Add to Cortex
-        node_id = self.cortex.add_node('assumption', assumption_content, self.config.get('username'), linked_to=linked_to)
+        node_id = self.cortex.add_node('assumption', assumption_content, username, linked_to=linked_to)
         new_assumption['cortex_id'] = node_id
 
         self.ui_logger.info(f"New assumption added to '{status}' list.")
@@ -47,15 +48,14 @@ class AssumptionManager:
         """Returns all assumptions."""
         return self.assumptions
 
-    def verify_assumptions(self, llm, username: str):
-        """Initiates a process to verify unverified assumptions with the user."""
+    def get_assumption_to_verify(self, llm, username: str):
+        """Gets an unverified assumption and generates a question to verify it."""
         unverified = self.assumptions.get('unverified', [])
         if not unverified:
             self.ui_logger.system_message("No unverified assumptions to check.")
-            return
+            return None, None
 
-        # For simplicity, we'll verify one assumption at a time.
-        assumption_to_verify = unverified.pop(0)
+        assumption_to_verify = unverified[0]
         
         prompt = f'''You have an unverified assumption about the user '{username}'. Ask them a clear, direct question to confirm or deny this assumption. The user's response will determine if the assumption is true or false.
 
@@ -64,9 +64,21 @@ Assumption: "{assumption_to_verify["content"]}"
 Your question to the user:'''
         
         question = llm.generate(prompt, temperature=0.3)
-        self.ui_logger.system_message(f"Jenova is asking for clarification: {question}")
+        return assumption_to_verify, question
+
+    def resolve_assumption(self, assumption, user_response, username: str):
+        """Moves an assumption to the 'true' or 'false' list based on user response."""
+        # Simple check for now. A more sophisticated approach would use the LLM
+        # to interpret the user's response.
+        if user_response.lower() in ['yes', 'true', 'y', 'correct']:
+            self.assumptions['true'].append(assumption)
+            # Also add to cortex as a true insight
+            self.cortex.add_node('insight', assumption['content'], username, linked_to=[assumption['cortex_id']])
+            self.ui_logger.system_message("Assumption confirmed and converted to insight.")
+        else:
+            self.assumptions['false'].append(assumption)
+            self.ui_logger.system_message("Assumption marked as false.")
         
-        # In a real implementation, we would wait for user input here.
-        # For now, we'll just move the assumption to verified as a placeholder.
-        self.assumptions['verified'].append(assumption_to_verify)
+        # Remove from unverified
+        self.assumptions['unverified'] = [a for a in self.assumptions['unverified'] if a['content'] != assumption['content']]
         self._save_assumptions()

@@ -1,5 +1,6 @@
 import os
 import json
+import shutil
 from datetime import datetime
 from .concerns import ConcernManager
 
@@ -52,16 +53,17 @@ class InsightManager:
 
         reorganized_insights = self.concern_manager.reorganize_insights(all_insights)
 
-        # Clear existing insights
+        # Clear existing insights and folder structure
         user_insights_dir = os.path.join(self.insights_root, username)
-        for topic in os.listdir(user_insights_dir):
-            topic_dir = os.path.join(user_insights_dir, topic)
-            if os.path.isdir(topic_dir):
-                for insight_file in os.listdir(topic_dir):
-                    os.remove(os.path.join(topic_dir, insight_file))
+        if os.path.exists(user_insights_dir):
+            shutil.rmtree(user_insights_dir)
+        os.makedirs(user_insights_dir, exist_ok=True)
 
         # Save reorganized insights
         for insight in reorganized_insights:
+            # We need to re-create the topic directory for each insight
+            topic_dir = os.path.join(user_insights_dir, insight['topic'])
+            os.makedirs(topic_dir, exist_ok=True)
             self.save_insight(insight['content'], username, topic=insight['topic'])
         
         self.ui_logger.system_message("Insights have been reorganized.")

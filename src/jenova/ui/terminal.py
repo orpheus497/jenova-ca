@@ -25,6 +25,7 @@ class TerminalUI:
         history_path = os.path.join(self.engine.config['user_data_root'], ".jenova_history")
         self.session = PromptSession(history=FileHistory(history_path), auto_suggest=AutoSuggestFromHistory())
         self.prompt_style = Style.from_dict({'username': '#44ff44 bold', 'at': '#888888', 'hostname': '#ff00ff bold', 'prompt': '#888888'})
+        self.verifying_assumption = None
 
     def run(self):
         self.logger.banner(BANNER, ATTRIBUTION)
@@ -34,6 +35,13 @@ class TerminalUI:
 
         while True:
             try:
+                if self.verifying_assumption:
+                    prompt_message = [('class:prompt', 'Your answer (yes/no): ')]
+                    user_input = self.session.prompt(prompt_message, style=self.prompt_style).strip()
+                    self.engine.assumption_manager.resolve_assumption(self.verifying_assumption, user_input, self.username)
+                    self.verifying_assumption = None
+                    continue
+
                 prompt_message = [('class:username', self.username), ('class:at', '@'), ('class:hostname', 'Jenova'), ('class:prompt', '> ')]
                 user_input = self.session.prompt(prompt_message, style=self.prompt_style).strip()
 
@@ -55,14 +63,18 @@ class TerminalUI:
                     elif command == '/meta':
                         self.engine.generate_meta_insight(self.username)
                     elif command == '/verify':
-                        self.engine.verify_assumptions(self.username)
+                        assumption, question = self.engine.verify_assumptions(self.username)
+                        if assumption and question:
+                            self.logger.system_message(f"Jenova is asking for clarification: {question}")
+                            self.verifying_assumption = assumption
                     elif command == '/finetune':
                         self.engine.finetune()
-                    elif command.startswith('/develop_insight '):
-                        try:
-                            node_id = command.split(' ', 1)[1]
+                    elif command.startswith('/develop_insight'):
+                        parts = command.split(' ', 1)
+                        if len(parts) > 1 and parts[1]:
+                            node_id = parts[1]
                             self.engine.cortex.develop_insight(node_id, self.username)
-                        except IndexError:
+                        else:
                             self.logger.system_message("Usage: /develop_insight <node_id>")
                 else:
                     # Regular conversation

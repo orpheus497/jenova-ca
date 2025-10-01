@@ -16,4 +16,5 @@ memory:
   reflection_interval: 3 # Reflect every 3 conversation turns
 
 finetuning:
-  finetune_command: "echo 'Fine-tuning command not configured in main_config.yaml. Please configure it based on your llama.cpp setup.'"
+  training_file: "finetune_train.jsonl"
+  lora_output_file: "models/lora-jenova-adapter.bin"
