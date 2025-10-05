@@ -6,7 +6,7 @@ import argparse
 def prepare_insight_data(insights_dir, outfile):
     """
     Scans the user's insights directory and compiles all generated insights
-    into a single JSONL file suitable for fine-tuning.
+    into a more sophisticated conversational format suitable for fine-tuning.
     """
     if not os.path.exists(insights_dir):
         print(f"Error: Insights directory not found at '{insights_dir}'")
@@ -21,14 +21,22 @@ def prepare_insight_data(insights_dir, outfile):
                 data = json.load(f)
                 topic = data.get("topic", "general")
                 insight_content = data.get("content")
+                user = data.get("user", "user")
 
                 if not insight_content:
                     continue
 
-                instruction = f"Given the following insight on the topic '{topic}', provide a detailed elaboration. Expand on the core idea, offer examples, and explain its implications."
+                # Create a more realistic, synthesized user prompt that would lead to the insight
+                instruction = f"Hey Jenova, I've been thinking about our conversations on '{topic}'. Can you synthesize your understanding of this for me? What have you learned about my perspective on it?"
                 
+                # The assistant's response is the insight itself, framed as a thoughtful response
+                assistant_response = f"Of course, {user}. Based on our discussions, I've developed an insight regarding '{topic}'. My understanding is that: {insight_content}"
+
                 formatted_entry = {
-                    "text": f"<s>[INST] {instruction}\n\nInsight: {insight_content} [/INST] Elaborating on the insight regarding '{topic}', one could conclude that... </s>"
+                    "messages": [
+                        {"role": "user", "content": instruction},
+                        {"role": "assistant", "content": assistant_response}
+                    ]
                 }
                 outfile.write(json.dumps(formatted_entry) + "\n")
                 count += 1
@@ -39,7 +47,8 @@ def prepare_insight_data(insights_dir, outfile):
 
 def prepare_history_data(history_file, outfile):
     """
-    Processes a conversation history file and adds it to the fine-tuning data.
+    Processes a conversation history log in JSONL format, preserving multi-turn context.
+    Each line in the file should be a JSON object with 'user_message' and 'ai_message'.
     """
     if not os.path.exists(history_file):
         print(f"Warning: History file not found at '{history_file}'")
@@ -47,20 +56,40 @@ def prepare_history_data(history_file, outfile):
 
     count = 0
     with open(history_file, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-        user_message = None
-        for line in lines:
-            if "New query received from" in line:
-                user_message = line.split(":", 2)[-1].strip()
-            elif "Generated Response:" in line and user_message:
-                ai_message = line.split(":", 1)[-1].strip()
+        for line in f:
+            if not line.strip():
+                continue
+            try:
+                data = json.loads(line)
+                user_message = data.get("user_message")
+                ai_message = data.get("ai_message")
+
+                if not user_message or not ai_message:
+                    continue
+
                 formatted_entry = {
-                    "text": f"<s>[INST] {user_message} [/INST] {ai_message} </s>"
+                    "messages": [
+                        {"role": "user", "content": user_message},
+                        {"role": "assistant", "content": ai_message}
+                    ]
                 }
                 outfile.write(json.dumps(formatted_entry) + "\n")
                 count += 1
-                user_message = None
+            except json.JSONDecodeError:
+                print(f"Warning: Skipping corrupted JSON line in history file: {line}")
+                continue
     return count
+
+def prepare_data(output_file, insights_dir, history_file=None):
+    """Prepares the finetuning data and writes it to the output file."""
+    total_entries = 0
+    with open(output_file, 'w', encoding='utf-8') as outfile:
+        total_entries += prepare_insight_data(insights_dir, outfile)
+        if history_file:
+            total_entries += prepare_history_data(history_file, outfile)
+
+    print(f"Successfully prepared {total_entries} entries into '{output_file}' for fine-tuning.")
+    return total_entries
 
 def main():
     parser = argparse.ArgumentParser(description="Prepare data for fine-tuning.")
@@ -69,13 +98,7 @@ def main():
     parser.add_argument("--include-history", help="Path to a conversation history file to include in the fine-tuning data.")
     args = parser.parse_args()
 
-    total_entries = 0
-    with open(args.output_file, 'w', encoding='utf-8') as outfile:
-        total_entries += prepare_insight_data(args.insights_dir, outfile)
-        if args.include_history:
-            total_entries += prepare_history_data(args.include_history, outfile)
-
-    print(f"Successfully prepared {total_entries} entries into '{args.output_file}' for fine-tuning.")
+    prepare_data(args.output_file, args.insights_dir, args.include_history)
 
 if __name__ == "__main__":
     main()

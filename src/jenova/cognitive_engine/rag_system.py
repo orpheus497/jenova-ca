@@ -1,11 +1,14 @@
+import re
+
 class RAGSystem:
     """The Retrieval-Augmented Generation (RAG) system. This system is responsible for querying the different memory sources, re-ranking the results, and generating a response."""
-    def __init__(self, llm, memory_search, insight_manager):
+    def __init__(self, llm, memory_search, insight_manager, config):
         self.llm = llm
         self.memory_search = memory_search
         self.insight_manager = insight_manager
+        self.config = config
 
-    def generate_response(self, query: str, username: str, history: list[str], plan: str) -> str:
+    def generate_response(self, query: str, username: str, history: list[str], plan: str, search_results: list[dict] | None = None) -> str:
         """Generates a response using the RAG process."""
         # 1. Retrieve context from all memory sources
         context = self.memory_search.search_all(query, username)
@@ -16,16 +19,63 @@ class RAGSystem:
         context_str = "\n".join(f"- {c}" for c in context)
         history_str = "\n".join(history)
 
+        persona = self.config.get('persona', {})
+        identity = persona.get('identity', {})
+        directives = persona.get('directives', [])
+
+        search_results_formatted = ""
+        if search_results:
+            search_results_formatted = "== WEB SEARCH RESULTS ==\n"
+            for i, res in enumerate(search_results):
+                search_results_formatted += f"Result {i+1}:\n"
+                search_results_formatted += f"Title: {res.get('title', 'N/A')}\n"
+                search_results_formatted += f"Link: {res.get('link', 'N/A')}\n"
+                search_results_formatted += f"Summary: {res.get('summary', 'N/A')}\n\n"
+
         prompt = f"""== YOUR CORE INSTRUCTIONS ==
-1. You are Jenova, a personalized AI assistant.
-2. Your primary goal is to assist the user based on your understanding of them, which is derived from your own memories, insights, and assumptions.
-3. The retrieved context below is your primary source of information. Ground your response in this context first and foremost.
-4. Your own knowledge and experiences are more important than your general knowledge.
+1. You are {identity.get('name', 'Jenova')}, a {identity.get('type', 'personalized AI assistant')}.
+2. Your origin story: {identity.get('origin_story', 'You are a helpful assistant.')}
+3. Your creator is {identity.get('creator', 'a developer')}.
+4. You must follow these directives:
+{chr(10).join(f"    - {d}" for d in directives)}
 
-== RETRIEVED CONTEXT ==\n{context_str if context else "No context available."}\n\n== CONVERSATION HISTORY ==\n{history_str if history else "No history yet."}\n\n== YOUR INTERNAL PLAN ==\n{plan}\n\n== TASK ==
-Execute the plan to respond to the user's query. Be direct and conversational. Do not re-introduce yourself unless asked. Provide ONLY Jenova's response.
+== YOUR KNOWLEDGE BASE (PRIORITIZED) ==
+1.  **RETRIEVED CONTEXT (Your personal memories and learned insights):**
+{context_str if context else "No context available."}
 
-User ({username}): \"{query}\"\n\nJenova:"""
+2.  **WEB SEARCH RESULTS (Real-time information):**
+{search_results_formatted if search_results else "No web search performed."}
 
-        response = self.llm.generate(prompt)
+== CONVERSATION HISTORY ==
+{history_str if history else "No history yet."}
+
+== YOUR INTERNAL PLAN ==
+{plan}
+
+== TASK ==
+Execute the plan to respond to the user's query. Your response MUST be primarily based on your KNOWLEDGE BASE, in the order of priority given (RETRIEVED CONTEXT first, then WEB SEARCH RESULTS). Only use your general knowledge if your KNOWLEDGE BASE does not contain the answer.
+
+If WEB SEARCH RESULTS are present, you MUST follow these steps:
+1. Start your response by stating that you have found some information on the web.
+2. Present a summary of the search results to the user. For each result, include the title and a brief summary.
+3. After presenting the results, provide a concise synthesis of the information.
+4. Conclude by asking the user if they would like to perform a deeper search on any of the topics, or if they have any other questions.
+
+If no WEB SEARCH RESULTS are present, integrate information from the RETRIEVED CONTEXT to provide a comprehensive and conversational answer.
+
+Do not re-introduce yourself unless asked. Provide ONLY {identity.get('name', 'Jenova')}'s response.
+
+User ({username}): \"{query}\"\n\n{identity.get('name', 'Jenova')}:"""
+
+        try:
+            response = self.llm.generate(prompt)
+        except Exception as e:
+            # self.ui_logger.system_message(f"Error during response generation: {e}")
+            # self.file_logger.log_error(f"Error during response generation: {e}")
+            response = "I'm sorry, I'm having trouble generating a response right now. Please try again later."
+
+        
+        # Post-process the response to remove any RAG debug info
+        response = re.sub(r"==.*?==", "", response).strip()
+            
         return response

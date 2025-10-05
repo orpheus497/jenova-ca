@@ -19,64 +19,47 @@ class InsightManager:
 
     def save_insight(self, insight_content: str, username: str, topic: str = None, linked_to: list = None, insight_data: dict = None):
         """Saves an insight, finding or creating a concern for it, and adds it to the Cortex."""
-        if not topic:
-            existing_topics = self.concern_manager.get_all_concerns()
-            topic = self.concern_manager.find_or_create_concern(insight_content, existing_topics)
+        self.file_logger.log_info(f"Attempting to save insight for user '{username}'. Content: '{insight_content}'")
+        try:
+            if not topic:
+                existing_topics = self.concern_manager.get_all_concerns()
+                topic = self.concern_manager.find_or_create_concern(insight_content, existing_topics)
+            self.file_logger.log_info(f"Insight topic determined as: '{topic}'")
 
-        user_insights_dir = os.path.join(self.insights_root, username)
-        topic_dir = os.path.join(user_insights_dir, topic)
-        os.makedirs(topic_dir, exist_ok=True)
-        
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"insight_{timestamp}.json"
-        filepath = os.path.join(topic_dir, filename)
-
-        if insight_data is None:
-            insight_data = { "topic": topic, "content": insight_content, "timestamp": datetime.now().isoformat(), "user": username, "related_concerns": [] }
-
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(insight_data, f, indent=4)
-        
-        if 'cortex_id' in insight_data:
-            self.cortex.update_node(insight_data['cortex_id'], content=insight_content, linked_to=linked_to)
-        else:
-            node_id = self.cortex.add_node('insight', insight_content, username, linked_to=linked_to)
-            insight_data['cortex_id'] = node_id
-
-        self.ui_logger.info(f"New insight saved for user '{username}' under topic '{topic}'")
-        self.file_logger.log_info(f"New insight saved: {filepath}")
-
-    def reorganize_insights(self, username: str):
-        """Reorganizes all insights for a user, re-categorizing and interlinking them."""
-        self.ui_logger.system_message(f"Reorganizing insights for user '{username}'...")
-        all_insights = self.get_all_insights(username)
-        if not all_insights:
-            self.ui_logger.system_message("No insights to reorganize.")
-            return
-
-        reorganized_insights = self.concern_manager.reorganize_insights(all_insights)
-
-        user_insights_dir = os.path.join(self.insights_root, username)
-        temp_dir = os.path.join(self.insights_root, f"{username}_temp")
-        if os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir)
-        os.makedirs(temp_dir, exist_ok=True)
-
-        for insight in reorganized_insights:
-            topic_dir = os.path.join(temp_dir, insight['topic'])
+            if insight_data and 'cortex_id' in insight_data:
+                self.cortex.update_node(insight_data['cortex_id'], content=insight_content, linked_to=linked_to)
+                node_id = insight_data['cortex_id']
+                self.file_logger.log_info(f"Updating existing insight node: {node_id}")
+            else:
+                node_id = self.cortex.add_node('insight', insight_content, username, linked_to=linked_to)
+                self.file_logger.log_info(f"Created new insight node: {node_id}")
+            
+            user_insights_dir = os.path.join(self.insights_root, username)
+            topic_dir = os.path.join(user_insights_dir, topic)
             os.makedirs(topic_dir, exist_ok=True)
             
-            timestamp = datetime.fromisoformat(insight['timestamp']).strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"insight_{timestamp}.json"
             filepath = os.path.join(topic_dir, filename)
 
-            with open(filepath, 'w', encoding='utf-8') as f:
-                json.dump(insight, f, indent=4)
+            if insight_data is None:
+                insight_data = { "topic": topic, "content": insight_content, "timestamp": datetime.now().isoformat(), "user": username, "related_concerns": [] }
+            
+            insight_data['cortex_id'] = node_id
 
-        shutil.rmtree(user_insights_dir)
-        os.rename(temp_dir, user_insights_dir)
-        
-        self.ui_logger.system_message("Insights have been reorganized.")
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(insight_data, f, indent=4)
+
+            self.ui_logger.info(f"New insight saved for user '{username}' under topic '{topic}'")
+            self.file_logger.log_info(f"New insight saved: {filepath}")
+        except Exception as e:
+            self.file_logger.log_error(f"Error saving insight: {e}")
+            self.ui_logger.system_message("An error occurred while saving the insight.")
+
+    def reorganize_insights(self, username: str) -> list[str]:
+        """DEPRECATED: This method is no longer used. Reorganization is handled by Cortex.reflect."""
+        self.file_logger.log_warning("InsightManager.reorganize_insights is deprecated and should not be called.")
+        return ["This function is deprecated."]
 
     def get_relevant_insights(self, query: str, username: str, max_insights: int = 3) -> list[str]:
         """Uses semantic search to find the most relevant insights for a given query."""
@@ -84,10 +67,12 @@ class InsightManager:
 
     def get_all_insights(self, username: str) -> list[dict]:
         """Retrieves all insights from the insights directory for a specific user."""
+        self.file_logger.log_info(f"Getting all insights for user '{username}'")
         all_insights = []
         user_insights_dir = os.path.join(self.insights_root, username)
 
         if not os.path.exists(user_insights_dir):
+            self.file_logger.log_info(f"No insights directory found for user '{username}'")
             return []
 
         for topic in os.listdir(user_insights_dir):
@@ -101,6 +86,19 @@ class InsightManager:
                                 data = json.load(f)
                                 data['filepath'] = filepath
                                 all_insights.append(data)
-                        except Exception:
+                        except Exception as e:
+                            self.file_logger.log_error(f"Error reading insight file {filepath}: {e}")
                             continue
+        self.file_logger.log_info(f"Found {len(all_insights)} insights for user '{username}'")
         return all_insights
+
+    def get_latest_insight_id(self, username: str) -> str | None:
+        """Retrieves the cortex_id of the most recently saved insight for a specific user."""
+        all_insights = self.get_all_insights(username)
+        if not all_insights:
+            return None
+
+        # Sort insights by timestamp in descending order
+        latest_insight = max(all_insights, key=lambda x: x.get('timestamp', ''))
+        
+        return latest_insight.get('cortex_id')

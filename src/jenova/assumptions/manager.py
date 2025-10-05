@@ -16,17 +16,37 @@ class AssumptionManager:
     def _load_assumptions(self):
         """Loads assumptions from the assumptions.json file."""
         if os.path.exists(self.assumptions_file):
-            with open(self.assumptions_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+            try:
+                with open(self.assumptions_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, OSError) as e:
+                # self.file_logger.log_error(f"Error loading assumptions file: {e}")
+                return {"verified": [], "unverified": [], "true": [], "false": []}
         return {"verified": [], "unverified": [], "true": [], "false": []}
 
     def _save_assumptions(self):
         """Saves assumptions to the assumptions.json file."""
-        with open(self.assumptions_file, 'w', encoding='utf-8') as f:
-            json.dump(self.assumptions, f, indent=4)
+        try:
+            with open(self.assumptions_file, 'w', encoding='utf-8') as f:
+                json.dump(self.assumptions, f, indent=4)
+        except OSError as e:
+            # self.file_logger.log_error(f"Error saving assumptions file: {e}")
+            pass
 
-    def add_assumption(self, assumption_content: str, username: str, status: str = 'unverified', linked_to: list = None):
-        """Adds a new assumption."""
+    def add_assumption(self, assumption_content: str, username: str, status: str = 'unverified', linked_to: list = None) -> str:
+        """Adds a new assumption, avoiding duplicates."""
+        # Check for duplicates across all statuses
+        for s in ['unverified', 'true', 'false']:
+            if s in self.assumptions:
+                for existing_assumption in self.assumptions[s]:
+                    if existing_assumption.get('content') == assumption_content and existing_assumption.get('username') == username:
+                        if s in ['true', 'false']:
+                            self.ui_logger.system_message(".. >> Assumption already exists and has been resolved.")
+                            return existing_assumption.get('cortex_id')
+                        else: # unverified
+                            self.ui_logger.system_message(".. >> Assumption already exists and is unverified.")
+                            return existing_assumption.get('cortex_id')
+
         if status not in self.assumptions:
             status = 'unverified'
         
@@ -36,14 +56,13 @@ class AssumptionManager:
             "timestamp": datetime.now().isoformat()
         }
         
-        self.assumptions[status].append(new_assumption)
-        self._save_assumptions()
-
-        # Add to Cortex
         node_id = self.cortex.add_node('assumption', assumption_content, username, linked_to=linked_to)
         new_assumption['cortex_id'] = node_id
 
-        self.ui_logger.info(f"New assumption added to '{status}' list.")
+        self.assumptions[status].append(new_assumption)
+        self._save_assumptions()
+
+        return node_id
 
     def get_all_assumptions(self) -> dict:
         """Returns all assumptions."""
@@ -63,8 +82,12 @@ Assumption: "{assumption_to_verify["content"]}"
 
 Your question to the user:'''
         
-        question = self.llm.generate(prompt, temperature=0.3)
-        return assumption_to_verify, question
+        try:
+            question = self.llm.generate(prompt, temperature=0.3)
+            return assumption_to_verify, question
+        except Exception as e:
+            # self.file_logger.log_error(f"Error generating assumption verification question: {e}")
+            return None, None
 
     def resolve_assumption(self, assumption, user_response: str, username: str):
         """Moves an assumption to the 'true' or 'false' list based on user response."""
@@ -75,13 +98,25 @@ User Response: "{user_response}"
 
 Result:'''
         
-        result = self.llm.generate(prompt, temperature=0.1).strip().lower()
+        try:
+            result = self.llm.generate(prompt, temperature=0.1).strip().lower()
+        except Exception as e:
+            # self.file_logger.log_error(f"Error resolving assumption: {e}")
+            return
 
         if result == 'true':
             self.assumptions['true'].append(assumption)
             self.assumptions['verified'].append(assumption)
             # Also add to cortex as a true insight
-            self.cortex.add_node('insight', assumption['content'], username, linked_to=[assumption['cortex_id']])
+            linked_to_cortex_id = []
+            if 'cortex_id' in assumption:
+                linked_to_cortex_id.append(assumption['cortex_id'])
+            else:
+                # If cortex_id is missing, create a new node for the assumption
+                node_id = self.cortex.add_node('assumption', assumption['content'], username)
+                assumption['cortex_id'] = node_id
+                linked_to_cortex_id.append(node_id)
+            self.cortex.add_node('insight', assumption['content'], username, linked_to=linked_to_cortex_id)
             self.ui_logger.system_message("Assumption confirmed and converted to insight.")
         else:
             self.assumptions['false'].append(assumption)
@@ -89,7 +124,10 @@ Result:'''
             self.ui_logger.system_message("Assumption marked as false.")
         
         # Remove from unverified
-        self.assumptions['unverified'] = [a for a in self.assumptions['unverified'] if a['content'] != assumption['content']]
+        for i, a in enumerate(self.assumptions['unverified']):
+            if a['content'] == assumption['content'] and a['username'] == username:
+                self.assumptions['unverified'].pop(i)
+                break
         self._save_assumptions()
 
     def update_assumption(self, old_assumption_content: str, new_assumption_content: str, username: str):
@@ -99,7 +137,11 @@ Result:'''
                 if assumption['content'] == old_assumption_content and assumption['username'] == username:
                     assumption['content'] = new_assumption_content
                     assumption['timestamp'] = datetime.now().isoformat()
-                    self.cortex.update_node(assumption['cortex_id'], content=new_assumption_content)
+                    if 'cortex_id' in assumption:
+                        self.cortex.update_node(assumption['cortex_id'], content=new_assumption_content)
+                    else:
+                        node_id = self.cortex.add_node('assumption', new_assumption_content, username)
+                        assumption['cortex_id'] = node_id
                     self._save_assumptions()
                     self.ui_logger.info(f"Assumption updated: {old_assumption_content} -> {new_assumption_content}")
                     return

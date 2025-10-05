@@ -2,19 +2,54 @@
 # Optimized for AMD Ryzen 7 5700U with Radeon Graphics
 hardware:
   threads: 16
-  gpu_layers: 35 # A good starting point for integrated AMD graphics
-  mlock: true
+  gpu_layers: -1 # Offload all possible layers to the GPU for maximum performance
+  mlock: false # Set to false to allow the OS to swap the model to disk, freeing up RAM.
 model:
+  model_path: "" # IMPORTANT: Replace with the actual path to your GGUF model file
   embedding_model: 'all-MiniLM-L6-v2'
   context_size: 4096 # Will be dynamically overridden by model's max capacity if smaller
+  max_tokens: 1500
   temperature: 0.4
   top_p: 0.9
 memory:
+  preload_memories: true
   episodic_db_path: "memory_db/episodic"
   semantic_db_path: "memory_db/semantic"
   procedural_db_path: "memory_db/procedural"
   reflection_interval: 3 # Reflect every 3 conversation turns
 
+cortex:
+  relationship_weights:
+    last_updated: null
+    elaborates_on: 1.5
+    conflicts_with: 2.0
+    related_to: 1.0
+    develops: 1.5
+    summarizes: 1.2
+  pruning:
+    enabled: true
+    prune_interval: 10 # Prune every 10 reflection cycles
+    max_age_days: 30 # Prune nodes older than 30 days
+    min_centrality: 0.1 # Prune nodes with centrality less than 0.1
+
+scheduler:
+  generate_insight_interval: 5
+  generate_assumption_interval: 7
+  proactively_verify_assumption_interval: 8
+  reflect_interval: 10
+  reorganize_insights_interval: 10
+  process_documents_interval: 15
+
+memory_search:
+  semantic_n_results: 5
+  episodic_n_results: 3
+  procedural_n_results: 3
+  insight_n_results: 5
+
 finetuning:
   training_file: "finetune_train.jsonl"
   lora_output_file: "models/lora-jenova-adapter.bin"
+  finetuned_model_output: "models/jenova-finetuned.gguf"
+
+tools:
+  file_sandbox_path: "~/jenova_files"

@@ -5,3 +5,6 @@ rich
 prompt-toolkit
 PyYAML
 numpy
+ddgs
+selenium
+webdriver-manager

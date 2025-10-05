@@ -7,6 +7,151 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2025-10-06
+
+### Added
+- **Weather Tool:** Added a new `WeatherTool` that can fetch real-time weather information for a given location using the free `wttr.in` service, removing the need for an API key.
+- **File Sandbox:** Implemented a secure file sandbox for the `FileTools`. All file operations are now restricted to a configurable directory (`~/jenova_files` by default).
+- **Memory Pre-loading:** Added a `preload_memories` option to `main_config.yaml` to allow pre-loading all memories into RAM at startup for faster response times.
+- **Dependency:** Added `selenium` and `webdriver-manager` to `requirements.txt` to support the new browser-based web search functionality.
+- **Weather Tool:** Added a new `WeatherTool` that can fetch real-time weather information for a given location using the OpenWeatherMap API. The AI can now be asked about the weather and will use this tool to provide an answer.
+- **Configuration:** Added a new `apis` section to `main_config.yaml` to store API keys for external services, starting with `openweathermap_api_key`.
+- **Dependency:** Added `selenium` and `webdriver-manager` to `requirements.txt` to support the new browser-based web search functionality.
+- **Insight System Logging:** Added detailed logging to the insight management and memory search systems to improve observability and aid in debugging the AI's cognitive functions.
+- **UI:** A `/help` command has been added to the terminal UI to provide users with a clear, on-demand list of all available commands and their functions.
+- **Web Search Capability:** Jenova can now search the web for up-to-date information. This can be triggered manually with the `/search <query>` command, or autonomously by the AI when it determines its own knowledge is insufficient. Search results are stored in the cognitive graph.
+- **Document Reading and Insight Generation:** Implemented a new system for reading documents from the `src/jenova/docs` directory. The system processes new or modified documents, chunks their content, generates summaries and individual insights, and links them within the cognitive graph. This allows the AI to learn from external documents, expanding its knowledge base.
+- **Document Processor:** Added a sample `example.md` file to the `src/jenova/docs` directory.
+- **UI Enhancements:** Implemented a visual spinner in the `TerminalUI` to indicate when long-running cognitive processes are occurring, improving user experience.
+- A new end-to-end finetuning script (`finetune/run_finetune.py`) that automates the entire process, including downloading and building `llama.cpp`, preparing data, and running the finetuning process.
+
+### Changed
+- **Web Search:** Replaced the `duckduckgo-search` library with a more powerful, `selenium`-based implementation. The AI now uses a headless browser to perform web searches, allowing it to access and extract the full content of web pages, leading to much richer and more accurate information gathering.
+- **Enhanced Web Search Comprehension:** The web search result processing has been significantly enhanced. The AI now processes the full content of web pages in chunks, extracting a summary, key takeaways, and potential questions from each chunk, and stores this structured information in the Cortex.
+- **`/search` Command:** The `/search` command now provides the same conversational web search experience as the inline `(search: <query>)` syntax, ensuring a consistent user experience.
+- **Cognitive Engine:** The `_plan` method has been enhanced to make the AI aware of the new `WeatherTool` and the enhanced `FileTools`, allowing it to intelligently decide when to use these tools to fulfill user requests.
+- **`.gitignore`:** Updated the `.gitignore` file to exclude LLM models and the content of the documentation directory.
+- **FileTools:** The `FileTools` class has been completely overhauled to use a secure, configurable sandbox directory (`~/jenova_files` by default). All file operations are now restricted to this directory, and the AI is prevented from accessing hidden files, significantly improving security and user control.
+- **Cognitive Engine:** The `_plan` method has been enhanced to make the AI aware of the new `WeatherTool` and the enhanced `FileTools`, allowing it to intelligently decide when to use these tools to fulfill user requests.
+- **Web Search:** Replaced the `duckduckgo-search` library with a more powerful, `selenium`-based implementation. The AI now uses a headless browser to perform web searches, allowing it to access and extract the full content of web pages, leading to much richer and more accurate information gathering.
+- **`/search` Command:** The `/search` command now provides the same conversational web search experience as the inline `(search: <query>)` syntax, ensuring a consistent user experience.
+- **Conversational Web Search:** The web search functionality is now fully conversational. When a search is performed, the AI presents a summary of the findings and asks for further instructions, allowing for a more collaborative exploration of information.
+- **Enhanced Document Comprehension:** The document processing system has been significantly enhanced. It now performs a much deeper analysis of documents, extracting not just insights, but also key takeaways and a list of questions the document can answer. This information is then stored in the cognitive graph as a rich structure of interconnected nodes, allowing the AI to have a much deeper understanding of the documents it reads.
+- **README Update:** The `README.md` has been significantly updated to accurately reflect the current state of the program, including the new cognitive architecture, conversational web search, and other enhancements.
+- **Conversational Web Search:** The web search functionality has been made more conversational and interactive. The AI now presents a summary of search results and asks for further instructions, such as performing a deeper search.
+- **Spinner Consistency:** Removed conflicting spinners from the `Cortex` to ensure a consistent and smooth user experience during long-running operations like `/reflect`.
+- **UI Help Command:** The `/help` command in the `TerminalUI` has been significantly enhanced to provide detailed, comprehensive descriptions for each command, explaining its purpose, impact on the AI, and usage, with improved visual styling including highlighted commands (bright yellow) and subdued descriptions (bright lavender).
+- **Proactive Engine:** The `ProactiveEngine` has been enhanced to be more "hyper-aware" and proactive. It now considers underdeveloped insights (low centrality nodes) and high-potential insights (high centrality nodes) within the cognitive graph, in addition to unverified assumptions, when generating proactive suggestions for the user.
+- **Interactive Procedure Learning:** The `/learn_procedure` command has been refactored to provide an interactive, guided experience. The AI now prompts the user for the procedure's name, individual steps, and expected outcome, ensuring structured and comprehensive intake of procedural knowledge.
+- **Web Search Tool:** Renamed the `google_web_search` function to `web_search` in `src/jenova/default_api.py` and updated all references in `main.py` and `engine.py` to accurately reflect its use of the `duckduckgo-search` library.
+- **Cognitive Architecture:** The core reflection process has been significantly improved. The old, redundant `reorganize_insights` task has been removed from the cognitive cycle. The `/reflect` command now correctly triggers the powerful, unified `Cortex.reflect` method. This method now uses a more robust graph traversal algorithm to find clusters for meta-insight generation, leading to deeper and more relevant high-level insights.
+- **Document Processing:** The document processor is no longer triggered automatically at startup. Document processing is now an on-demand action initiated via the `/develop_insight` command, improving startup time and giving the user more control.
+- **Hardware Optimization:** The default configuration in `main_config.yaml` has been updated for better performance. `gpu_layers` is now set to -1 to maximize GPU offloading, and `mlock` is enabled by default to keep the model locked in RAM.
+- **Enhanced Intelligence and Learning:** The AI's cognitive processes have been significantly enhanced for deeper understanding and more robust learning.
+  - **Smarter Web Search:** The autonomous web search now uses more advanced heuristics to decide when to search for up-to-date information.
+  - **Deeper Semantic Comprehension:** When processing documents and web search results, the AI now extracts structured data including key entities, topics, and sentiment, leading to a richer understanding of the information.
+  - **Advanced Knowledge Interlinking:** The reflection process is now more sophisticated. It not only links insights to external data but also finds relationships between different external sources (document-to-document, web-result-to-web-result) and identifies and creates insights about contradictions it discovers.
+- **Web Search:** Implemented a more natural web search syntax `(search: <query>)` that can be used directly in the conversation. The AI can also use this syntax autonomously.
+- **Proactive Engine:** The proactive engine is now more context-aware, using conversation history to generate more relevant and diverse suggestions.
+- **Memory System:** The memory system's metadata extraction is now more robust, avoiding default values when the LLM fails to extract information.
+- **Enhanced Reflection:** The reflection process has been improved to create links between insights and external information sources like documents and web search results, creating a more interconnected knowledge graph.
+- **`/develop_insight` Command:** The `/develop_insight` command has been enhanced. When used without a `node_id`, it now triggers the new document reading and insight generation process. The existing functionality of developing a specific insight by providing a `node_id` is preserved.
+- **Document Processor:** The document processor now runs at startup, processing all documents in the `docs` directory.
+- **Document Processing:** Improved the document processing system to provide better feedback and search capabilities.
+  - The system now prints a message to the console when it starts reading a document.
+  - The document's title (filename) is now included with the content when processing, allowing the AI to better understand the context and relevance of the information.
+- **AssumptionManager:** Improved assumption system robustness by modifying `AssumptionManager.add_assumption` to prevent re-adding assumptions that have already been verified (confirmed or false), and to return the ID of an existing unverified assumption if found.
+- **ProactiveEngine:** Enhanced thought generation by modifying `ProactiveEngine.get_suggestion` to prioritize unverified assumptions and avoid repeating recent suggestions, making the process more cognitive.
+- **UI Enhancements:** Improved line spacing in `TerminalUI` for better readability of user input, system messages, and AI output.
+- **Cortex Stability and Intelligence:** Overhauled the Cortex system to be more robust, intelligent, and less prone to degradation (i.e., "brain rot").
+  - **Emotion Analysis:** Replaced simplistic sentiment analysis with a more sophisticated emotion analysis, providing a richer psychological dimension to the cognitive graph.
+  - **Weighted Centrality:** Implemented a weighted centrality calculation for more accurate node importance, leading to better meta-insight generation.
+  - **Graph Pruning:** Introduced an automated graph pruning mechanism to remove old, irrelevant nodes, keeping the cognitive graph healthy and efficient.
+  - **Reliable Linking:** Hardened the node linking process (`_link_orphans`) with more robust JSON parsing and error logging to prevent graph fragmentation.
+  - **High-Quality Meta-Insights:** Improved the meta-insight generation process to prevent duplicates and produce more novel, higher-level insights. The selection of cluster centers for meta-insight generation is now more dynamic, using a centrality threshold instead of a fixed number of nodes.
+- **Configuration:** The Cortex is now more configurable via `main_config.yaml`, allowing for tuning of relationship weights and pruning settings.
+- **Cognitive Cycle:** Replaced the rigid, hardcoded cognitive cycle with a flexible and configurable `CognitiveScheduler`.
+- **Memory Search:** Made the number of results for each memory type configurable.
+- **Command Handling:** Refactored the command handling in the `TerminalUI` to be more concise and extensible.
+- **AI Recognition:** The AI now recognizes the user and can communicate about its insights and assumptions.
+- **Commands:** The `/reflect`, `/meta`, and `/verify` commands are now working correctly.
+- **Logging:** Added more detailed logging to the cognitive functions to give the user a better idea of what's happening behind the scenes.
+- **.gitignore:** Updated the `.gitignore` file to protect user data and the virtual environment.
+- **Data Integrity:**
+  - Prevented the addition of duplicate assumptions.
+  - Made the insight reorganization process safer and more efficient to prevent data loss.
+- **Circular Dependency:** Removed the circular dependency between `InsightManager` and `MemorySearch`.
+- **Code Quality:**
+  - Removed redundant code in `LLMInterface`.
+  - Improved the reliability of JSON parsing across the application.
+  - Made the `FileLogger`'s `log_file_path` a public attribute.
+- The `finetune/prepare_data.py` script has been refactored to be more modular and robust. The `prepare_history_data` function now supports a structured JSONL format.
+- The /finetune command now checks for the existence of the required 'llama.cpp' executables before running.
+- The application now automatically discovers and loads a model from the `models/` directory if the `model_path` in the configuration is not set.
+- Upgraded the fine-tuning process to a perfected, two-stage workflow. The `/finetune` command now first creates a LoRA adapter and then automatically merges it with the base model to produce a new, fully fine-tuned `.gguf` model, ready for use.
+- Enhanced the fine-tuning data preparation script (`finetune/prepare_data.py`) to create more advanced, context-aware training examples in a conversational format, leading to higher quality learning.
+
+### Fixed
+- **Cognitive Degradation:** Overhauled the `Cortex` and `CognitiveEngine` to fix a cascading failure in the AI's intelligence. This includes:
+  - **Robust Persona:** Reinforced the AI's identity ("Jenova", created by "The Architect") in all cognitive prompts to ensure a consistent persona and proper user recognition.
+  - **Stable Memory:** Corrected a critical bug in meta-insight generation that prevented the AI from deepening its understanding of topics over time.
+  - **Reliable Cognition:** Hardened the AI's cognitive functions by replacing fragile JSON parsing with robust `gbnf` grammars, preventing errors and ensuring the reliable creation and linking of cognitive nodes.
+  - **Structured Emotion:** Improved the emotion analysis system to use a fixed list of emotions, providing more consistent and useful data for understanding context.
+- **Memory Management:** Changed the default `mlock` setting to `false` to encourage the operating system to utilize SWAP memory for the model, freeing up RAM for other tasks.
+- **Startup Crash:** Fixed a `TypeError: 'str' object is not callable` error that occurred during the initialization of `SemanticMemory`. This was caused by an issue with how the custom embedding function was being handled by `chromadb`. The fix ensures that the application starts up reliably by using a custom embedding function with a `name` method.
+- **Startup Crash:** Implemented a self-healing mechanism in `SemanticMemory` to handle `chromadb` embedding function conflicts. If a conflict is detected, the old collection is backed up, deleted, and recreated with the new embedding function, and the data is migrated to the new collection, preventing data loss.
+- **AssumptionManager:** Fixed a `NameError` in `add_assumption` caused by undefined variables (`assumption_data`, `content`). The duplicate checking logic has been rewritten to be more robust.
+- **Cortex:** Fixed a `SyntaxError` in `develop_insights_from_docs` caused by improper f-string quoting.
+- **Cognitive Engine:** Fixed an issue in the `_execute` method where the `WeatherTool` was not being called correctly.
+- **Startup Crash:** Fixed a `TypeError: 'str' object is not callable` error that occurred during the initialization of `SemanticMemory`. This was caused by an issue with how the custom embedding function was being handled by `chromadb`. The fix ensures that the application starts up reliably.
+- **AssumptionManager:** Fixed a `NameError` in `add_assumption` caused by undefined variables (`assumption_data`, `content`). The duplicate checking logic has been rewritten to be more robust.
+- **Cortex:** Fixed a `SyntaxError` in `develop_insights_from_docs` caused by improper f-string quoting.
+- **Bug Fix:** Fixed a bug where the application would crash due to incorrect error logging calls (`file_logger.error` instead of `file_logger.log_error`).
+- **SyntaxError:** Resolved a `SyntaxError` in `src/jenova/cortex/cortex.py` caused by incorrect f-string syntax in the `develop_insights_from_docs` method.
+- **`/reflect` Command:** The `/reflect` command now correctly triggers the deep reflection process in the `Cortex`, ensuring that the AI's most powerful cognitive function is accessible on-demand.
+- **Tool Security:** Enhanced the security of the local `FileTools` by adding path traversal checks to the `read_file` and `list_directory` methods. Access is now restricted to the user's home directory and the application's designated output directory.
+- **Startup Crash:** Fixed a `ModuleNotFoundError` that prevented the application from starting.
+- **Document Processor:** The document processor now correctly persists its state, preventing it from reprocessing all documents on every startup.
+- **Memory System:** Improved the robustness of the memory system by enabling error logging and using UUIDs for unique document IDs in semantic memory.
+- **Cognitive Engine:** Fixed a `NameError` in `generate_assumption_from_history` by renaming a variable.
+- **Document Processor:** Fixed the document processor by creating the `src/jenova/docs` directory, which was missing.
+- **Document Processor:** The document processor now provides feedback to the user when processing documents.
+- **ConcernManager:** Resolved a persistent `SyntaxError` in `src/jenova/insights/concerns.py` by rewriting the file and clearing `__pycache__`, ensuring correct parsing.
+- **TerminalUI:** Fixed `TypeError: 'NoneType' object is not iterable` for the `/memory-insight` command by modifying `TerminalUI._handle_command` to robustly handle the return type of `develop_insights_from_memory`.
+- **CognitiveScheduler:** Fixed `TypeError: Cortex.reflect() got an unexpected keyword argument 'username'` by correcting `CognitiveScheduler` to pass the `user` argument instead of `username` to `Cortex.reflect`.
+- **TerminalUI:** Improved `/verify` command feedback by modifying `TerminalUI._verify_assumption` to always provide feedback to the user, even when no unverified assumptions are found.
+- **CognitiveEngine:** Corrected calls to `InsightManager.get_latest_insight_id()` by passing the `username` argument, resolving a `TypeError`.
+- **ConcernManager:** Removed the `rich` spinner context manager from `reorganize_insights` to ensure the intended "three yellow dot" loading indicator is displayed for the `/reflect` command.
+- **InsightManager:** Resolved `AttributeError: 'InsightManager' object has no attribute 'get_latest_insight_id'` by implementing the missing method to retrieve the latest insight's ID.
+- **InsightManager:** Fixed `NoneType` object has no attribute 'append' error in `reorganize_insights` by ensuring the method always returns a list and correcting a typo.
+- **CognitiveEngine:** Addressed `NoneType` object is not iterable error in `develop_insights_from_memory` by adding a defensive check for `context` being `None`.
+- **CognitiveEngine:** Ensured the `/meta` command provides user feedback even when no new meta-insight is generated.
+- **ConcernManager:** Resolved `AttributeError: 'ConcernManager' object has no attribute 'get_all_concerns'` by implementing the missing method to retrieve all existing concern topics.
+- **UI Bug:** Fixed an issue in `TerminalUI` where empty `jenova_response` calls were creating unintended empty boxes, improving the visual presentation of AI output.
+- **UI Bug:** Resolved the repetitive cluttering of the custom spinner by ensuring messages are returned from cognitive engine methods and printed only after the spinner has stopped, providing a clean and consistent processing indicator across commands.
+- **Bug Fix:** Corrected `develop_insights_from_memory` to properly retrieve and display assumption IDs, resolving the `AttributeError: 'AssumptionManager' object has no attribute 'get_latest_assumption_id'`.
+- **UI Bug:** Fixed the `TerminalUI` processing spinner to display yellow spinning dots only during long-running commands, ensuring it clears correctly and does not interfere with the prompt or AI output.
+- **SyntaxError:** Fixed a `SyntaxError` in `jenova/ui/terminal.py` and `jenova-ai/src/jenova/ui/terminal.py` caused by incorrect syntax in the `_handle_command` method.
+- **KeyError:** Fixed a `KeyError` in `jenova/assumptions/manager.py` and `jenova-ai/src/jenova/assumptions/manager.py` by ensuring `cortex_id` is present when loading and accessing assumption objects.
+- **Error Handling:** Added robust error handling to all file I/O operations, LLM calls, and other critical parts of the codebase to prevent crashes.
+- **NameError:** Fixed a `NameError` in `jenova/insights/concerns.py` caused by a missing `import os` statement.
+- **NameError:** Fixed a `NameError` in `jenova/cognitive_engine/engine.py` caused by a missing `from jenova.cortex.proactive_engine import ProactiveEngine` statement.
+- **TypeError:** Fixed a `TypeError` in `jenova/main.py` caused by a missing `config` argument in the `RAGSystem` constructor.
+- **KeyError:** Fixed a `KeyError` in `jenova/assumptions/manager.py` caused by a missing `cortex_id` in the assumption object.
+- **Security:**
+  - Fixed a path traversal vulnerability in `FileTools`.
+  - Fixed a shell injection vulnerability in `SystemTools`.
+- The finetuning process is no longer a manual, multi-step process but a single, executable script.
+- A bug in the /finetune command that caused a crash due to a missing 'os' import.
+- A bug in the `finetune/prepare_data.py` script that caused incorrect parsing of conversation history.
+- The application no longer crashes if the model path is not configured. It now provides clear instructions to the user.
+- A bug in the `/finetune` command that caused a crash due to incorrect handling of shell command results.
+- Resolved a bug where the fine-tuning process would fail due to a missing `model_path` in the configuration. The application will now correctly prompt the user to set the path.
+- Hardened the JSON parsing logic across the application when processing responses from the LLM. This prevents crashes caused by malformed JSON, such as the one occurring during insight reorganization (`/reflect`).
+- Cleaned up the UI to no longer display raw RAG debug information in the chat output, providing a cleaner user experience.
+- Fixed a bug in the `/verify` command that caused a crash due to a mismatch in the expected return value from the cognitive engine.
+- Fixed a bug where the model path was not being read from the configuration, causing the wrong model to be loaded if multiple models were present.
+
 ## [2.0.0] - 2025-10-02
 
 ### Added

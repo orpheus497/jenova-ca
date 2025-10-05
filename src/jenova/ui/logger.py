@@ -14,6 +14,10 @@ class UILogger:
             self.term_width = 80
 
     def banner(self, banner_text, attribution_text):
+        try:
+            self.term_width = os.get_terminal_size().columns
+        except OSError:
+            self.term_width = 80
         self.console.clear()
         panel = Panel(
             Text(banner_text, style="bold cyan", justify="center"),

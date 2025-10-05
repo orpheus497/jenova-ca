@@ -5,7 +5,7 @@ apply_telemetry_patch()
 
 from jenova.cognitive_engine.engine import CognitiveEngine
 from jenova.cognitive_engine.rag_system import RAGSystem
-from jenova.cognitive_engine.document_processor import DocumentProcessor
+
 from jenova.ui.terminal import TerminalUI
 from jenova.llm_interface import LLMInterface
 from jenova.cognitive_engine.memory_search import MemorySearch
@@ -17,12 +17,15 @@ from jenova.config import load_configuration
 from jenova.tools.file_tools import FileTools
 from jenova.ui.logger import UILogger
 from jenova.utils.file_logger import FileLogger
+from jenova.utils.model_loader import load_embedding_model
 
 from jenova.assumptions.manager import AssumptionManager
 
 from jenova.cortex.cortex import Cortex
 
 from jenova.tools.system_tools import SystemTools
+from jenova.tools.weather import WeatherTool
+from .default_api import web_search
 
 import getpass
 
@@ -46,27 +49,33 @@ def main():
         llm_interface = LLMInterface(config, ui_logger, file_logger)
         file_tools = FileTools(config, ui_logger, file_logger)
         system_tools = SystemTools(ui_logger, file_logger)
+        weather_tool = WeatherTool(config, ui_logger, file_logger)
         
+        # Load the embedding model
+        embedding_model = load_embedding_model(config['model']['embedding_model'])
+        if not embedding_model:
+            ui_logger.system_message("Fatal: Could not load the embedding model. Please check the logs for details.")
+            return
+
         # User-specific memory paths
         episodic_mem_path = os.path.join(user_data_root, 'memory', 'episodic')
         procedural_mem_path = os.path.join(user_data_root, 'memory', 'procedural')
         semantic_mem_path = os.path.join(user_data_root, 'memory', 'semantic')
 
-        semantic_memory = SemanticMemory(config, ui_logger, file_logger, semantic_mem_path, llm_interface)
+        semantic_memory = SemanticMemory(config, ui_logger, file_logger, semantic_mem_path, llm_interface, embedding_model)
         episodic_memory = EpisodicMemory(config, ui_logger, file_logger, episodic_mem_path, llm_interface)
         procedural_memory = ProceduralMemory(config, ui_logger, file_logger, procedural_mem_path, llm_interface)
 
         cortex = Cortex(config, ui_logger, file_logger, llm_interface, cortex_root)
-        insight_manager = InsightManager(config, ui_logger, file_logger, insights_root, llm_interface, cortex, None) # Memory search is set later
+        memory_search = MemorySearch(semantic_memory, episodic_memory, procedural_memory, config, file_logger)
+        insight_manager = InsightManager(config, ui_logger, file_logger, insights_root, llm_interface, cortex, memory_search)
+        memory_search.insight_manager = insight_manager # Set insight_manager after initialization
         assumption_manager = AssumptionManager(config, ui_logger, file_logger, user_data_root, cortex, llm_interface)
-        memory_search = MemorySearch(semantic_memory, episodic_memory, procedural_memory, insight_manager)
-        insight_manager.memory_search = memory_search
         
-        rag_system = RAGSystem(llm_interface, memory_search, insight_manager)
-        document_processor = DocumentProcessor(docs_path, semantic_memory, insight_manager, assumption_manager, llm_interface)
+        rag_system = RAGSystem(llm_interface, memory_search, insight_manager, config)
 
         ui_logger.info(">> Cognitive Engine: Online.")
-        cognitive_engine = CognitiveEngine(llm_interface, memory_search, file_tools, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, system_tools, rag_system, document_processor)
+        cognitive_engine = CognitiveEngine(llm_interface, memory_search, file_tools, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, system_tools, rag_system, web_search, weather_tool)
         
         ui = TerminalUI(cognitive_engine, ui_logger)
         ui.run()

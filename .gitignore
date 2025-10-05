@@ -7,56 +7,86 @@ __pycache__/
 *.so
 
 # Distribution / packaging
+.Python
 build/
 dist/
-*.egg-info/
-.eggs/
+downloads/
 eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Virtual Environments
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+.hypothesis/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+docs/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environments
 .env
 .venv
+venv/
+ENV/
 env/
-venv/
 
-# Project-specific user data & logs
+# IDEs
+.idea/
+.vscode/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# User data
 .jenova-ai/
-*.log
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-venv/
-*.egg-info/
+# LLM models
+/models/*
+!/models/.gitkeep
 
-# Jenova Specific
-~/.jenova-ai/
-models/
-finetune/train.jsonl
-
-# Python virtual environment
-venv/
-
-# Python cache files
-__pycache__/
-*.pyc
-
-# Large model files - Users should download these themselves
-models/
-
-# Jenova user-specific data and memory!
-# This is the most important part for privacy.
-# It prevents your personal chat logs, insights, and memory DBs from being uploaded.
-.jenova-ai/
-*.db
-/db_data/
-
-# Generated fine-tuning data
-finetune/train.jsonl
-
-# Build artifacts
-*.egg-info/
-/dist/
-/build/
+# Documentation content
+/src/jenova/docs/*
+!/src/jenova/docs/.gitkeep
