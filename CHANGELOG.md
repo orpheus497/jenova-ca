@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Proactive Engine:** 2025-10-06 Fixed a `NameError` in `get_suggestion` caused by a missing `datetime` import.
+
 ## [2.1.0] - 2025-10-06
 
 ### Added

@@ -32,7 +32,7 @@ fi
 
 echo ""
 echo "=========================================================="
-echo "Jenova AI v1.0 installation complete!"
+echo "Jenova AI v2.1.0 installation complete!"
 echo "To run the application, ensure your virtual environment"
 echo "is active and use the 'jenova' command:"
 echo ""
