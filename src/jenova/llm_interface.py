@@ -1,5 +1,6 @@
 import os
 import glob
+import importlib.resources
 from llama_cpp import Llama
 
 class LLMInterface:
@@ -39,7 +40,14 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
             self.ui_logger.info("Model path not configured or invalid. Searching for a model in the 'models/' directory...")
             self.file_logger.log_info("Model path not configured. Searching for models.")
             
-            models_dir = 'models'
+            # Find the models directory within the package
+            try:
+                models_dir_traversable = importlib.resources.files('jenova') / 'models'
+                models_dir = str(models_dir_traversable)
+            except (ModuleNotFoundError, FileNotFoundError):
+                # Fallback for development environments or if the package structure is unexpected
+                models_dir = 'models'
+
             available_models = []
             if os.path.exists(models_dir):
                 available_models = sorted(glob.glob(f"{models_dir}/**/*.gguf", recursive=True))

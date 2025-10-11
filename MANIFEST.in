@@ -1,2 +1,3 @@
 graft src/jenova/config
 graft src/jenova/docs
+recursive-include models *
