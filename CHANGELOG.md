@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- (Add new features for the next version here)
+
+## [3.0.1] - 2025-10-11
+
+### Fixed
+- **Startup Crash (Model Load):** Fixed a critical `TypeError` that occurred during startup when reading model metadata by correctly instantiating the `Llama` object without a `with` statement.
+- **Startup Crash (No Models Found):** Fixed an `AttributeError` that occurred if no GGUF models were found by using the correct logger method.
+- **Shutdown Crash:** Fixed an `AttributeError` that occurred on exit by removing an incorrect call to `self.model.close()`.
+- **Database Incompatibility:** Resolved a `sqlite3.OperationalError` by removing outdated ChromaDB database files after a schema change in the library.
+- **Installation Conflict:** The `install.sh` script now uses `pip install --ignore-installed` to prevent conflicts with system-managed packages.
+- **Module Not Found Error:** Fixed a `ModuleNotFoundError` for the `jenova.assumptions` package by adding a missing `__init__.py` file.
+
 ## [3.0.0] - 2025-10-11
 
 ### Security

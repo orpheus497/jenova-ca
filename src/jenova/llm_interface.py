@@ -14,7 +14,8 @@ class LLMInterface:
     def close(self):
         """Cleans up the LLM resources."""
         if self.model:
-            self.model.close()
+            # The Llama object from llama-cpp-python does not have an explicit close() method.
+            # Resources are released when the object is garbage collected.
             self.file_logger.log_info("LLM model resources released.")
 
     def _build_system_prompt(self) -> str:
@@ -50,7 +51,7 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
                 # Update the config in memory for this session
                 self.config['model']['model_path'] = self.model_path
             else:
-                self.ui_logger.error(f"No GGUF models found in the '{models_dir}/' directory.")
+                self.ui_logger.system_message(f"No GGUF models found in the '{models_dir}/' directory.")
                 self.file_logger.log_error("No GGUF models found.")
                 self.ui_logger.system_message("Please download a GGUF-compatible model and place it in the 'models/' directory.")
                 raise FileNotFoundError("No GGUF model found in the 'models/' directory.")
@@ -61,10 +62,11 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
 
         # --- Dynamic Context Optimization ---
         try:
-            # Use a context manager to ensure the temporary model is cleaned up
-            with Llama(model_path=self.model_path, verbose=False, n_gpu_layers=0) as temp_model_info:
-                model_metadata = temp_model_info.metadata
-                model_n_ctx_train = int(model_metadata.get('llama.context_length', self.config['model']['context_size']))
+            # Create a temporary Llama instance to fetch metadata without using a context manager
+            temp_model_info = Llama(model_path=self.model_path, verbose=False, n_gpu_layers=0)
+            model_metadata = temp_model_info.metadata
+            model_n_ctx_train = int(model_metadata.get('llama.context_length', self.config['model']['context_size']))
+            # Since we are not using a with statement, we don't need to worry about cleanup
         except Exception as e:
             # This will catch errors during Llama object creation for valid paths
             self.ui_logger.system_message(f"A critical failure occurred while reading model metadata: {e}")

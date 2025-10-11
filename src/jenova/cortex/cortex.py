@@ -30,7 +30,7 @@ class Cortex:
                 grammar_text = f.read()
             from llama_cpp.llama_grammar import LlamaGrammar
             return LlamaGrammar.from_string(grammar_text)
-        self.ui_logger.error("JSON grammar file not found at " + grammar_path)
+        self.ui_logger.system_message("JSON grammar file not found at " + grammar_path)
         return None
 
     def _load_graph(self):

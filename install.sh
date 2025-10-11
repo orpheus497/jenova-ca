@@ -29,7 +29,7 @@ pip install --upgrade pip > /dev/null
 # This installs the package into the system's site-packages directory.
 # The 'jenova' command will be placed in a system-wide bin location (e.g., /usr/local/bin).
 echo "--> Installing Jenova AI package globally..."
-if ! pip install .; then
+if ! pip install --ignore-installed .; then
     echo "[ERROR] Installation failed. Please check setup.py and ensure all dependencies can be installed."
     exit 1
 fi
