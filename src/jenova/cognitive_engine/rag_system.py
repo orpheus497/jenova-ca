@@ -13,10 +13,13 @@ class RAGSystem:
         # 1. Retrieve context from all memory sources
         context = self.memory_search.search_all(query, username)
 
+        # Safeguard: Ensure all context items are strings before joining
+        safe_context = [str(c) for c in context]
+
         # 2. Re-rank the context (already done in search_all)
 
         # 3. Generate a response using the context, history, and plan
-        context_str = "\n".join(f"- {c}" for c in context)
+        context_str = "\n".join(f"- {c}" for c in safe_context)
         history_str = "\n".join(history)
 
         persona = self.config.get('persona', {})
@@ -70,8 +73,8 @@ User ({username}): \"{query}\"\n\n{identity.get('name', 'Jenova')}:"""
         try:
             response = self.llm.generate(prompt)
         except Exception as e:
-            # self.ui_logger.system_message(f"Error during response generation: {e}")
-            # self.file_logger.log_error(f"Error during response generation: {e}")
+            self.ui_logger.system_message(f"Error during response generation: {e}")
+            self.file_logger.log_error(f"Error during response generation: {e}")
             response = "I'm sorry, I'm having trouble generating a response right now. Please try again later."
 
         

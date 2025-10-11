@@ -20,7 +20,7 @@ class AssumptionManager:
                 with open(self.assumptions_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
             except (json.JSONDecodeError, OSError) as e:
-                # self.file_logger.log_error(f"Error loading assumptions file: {e}")
+                self.file_logger.log_error(f"Error loading assumptions file: {e}")
                 return {"verified": [], "unverified": [], "true": [], "false": []}
         return {"verified": [], "unverified": [], "true": [], "false": []}
 
@@ -30,7 +30,7 @@ class AssumptionManager:
             with open(self.assumptions_file, 'w', encoding='utf-8') as f:
                 json.dump(self.assumptions, f, indent=4)
         except OSError as e:
-            # self.file_logger.log_error(f"Error saving assumptions file: {e}")
+            self.file_logger.log_error(f"Error saving assumptions file: {e}")
             pass
 
     def add_assumption(self, assumption_content: str, username: str, status: str = 'unverified', linked_to: list = None) -> str:
@@ -86,7 +86,7 @@ Your question to the user:'''
             question = self.llm.generate(prompt, temperature=0.3)
             return assumption_to_verify, question
         except Exception as e:
-            # self.file_logger.log_error(f"Error generating assumption verification question: {e}")
+            self.file_logger.log_error(f"Error generating assumption verification question: {e}")
             return None, None
 
     def resolve_assumption(self, assumption, user_response: str, username: str):
@@ -101,7 +101,7 @@ Result:'''
         try:
             result = self.llm.generate(prompt, temperature=0.1).strip().lower()
         except Exception as e:
-            # self.file_logger.log_error(f"Error resolving assumption: {e}")
+            self.file_logger.log_error(f"Error resolving assumption: {e}")
             return
 
         if result == 'true':

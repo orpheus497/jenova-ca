@@ -7,8 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2025-10-11
+
+### Security
+- **Remote Code Execution:** Patched a critical RCE vulnerability in the tool handler by replacing the unsafe `eval()` with `ast.literal_eval()` for parsing tool arguments.
+- **Shell Injection:** Hardened the `SystemTools` and fine-tuning commands against shell injection vulnerabilities.
+- **Path Traversal:** Corrected a path traversal vulnerability in `FileTools` by fixing the sandbox validation logic.
+
+### Changed
+- **System-Wide Installation:** Overhauled the installation process for multi-user, system-wide deployment. The `install.sh` script now installs the package globally, making the `jenova` command available to all system users.
+- **Project Cleanup:** Performed a major cleanup of the repository, removing the large `llama.cpp/` source directory and other development artifacts in favor of the `llama-cpp-python` dependency.
+- **Fine-tuning Process:** Redesigned the fine-tuning workflow into a single, modular `finetune/train.py` script that generates a training dataset from user insights.
+- **Tool System:** Removed dysfunctional tools (`web_search`, `weather_search`) and refactored the tool handling system to be more modular and extensible under a central `ToolHandler`.
+- **Web Search:** Replaced the previous web search library with a more powerful, `selenium`-based implementation. The AI can now access and process the full content of web pages for richer information gathering.
+- **Documentation:** The `README.md` has been completely rewritten to reflect the new system-wide installation model and current features.
+- **Performance:** Optimized the memory pre-loading process by using threads to load collections in parallel.
+- **UI:** The terminal UI has been updated to reflect the new command system. The `/finetune` and `/search` commands have been removed, and a new `/train` command has been added. The `/help` command is updated to reflect the current tools and commands.
+- **`.gitignore`:** The `.gitignore` file has been updated to be more comprehensive.
+
 ### Fixed
-- **Proactive Engine:** 2025-10-06 Fixed a `NameError` in `get_suggestion` caused by a missing `datetime` import.
+- **Critical Shutdown Error:** Fixed a `TypeError: 'NoneType' object is not callable` on exit by ensuring all `llama-cpp-python` model resources are explicitly closed.
+- **UI/Engine Stability:** Implemented multi-layered defenses against the persistent `TypeError: string indices must be integers, not 'str'`, hardening the UI, cognitive engine, and memory systems.
+- **Startup Crash:** Fixed a `TypeError` during `SemanticMemory` initialization related to `chromadb` embedding functions and implemented a self-healing mechanism to handle collection conflicts and prevent data loss.
+- **Cognitive Degradation:** Overhauled the `Cortex` and `CognitiveEngine` to fix a cascading failure in the AI's intelligence, reinforcing the AI's persona, stabilizing memory generation, and making cognition more reliable with `gbnf` grammars.
+- **Stability & Correctness:** Fixed numerous critical bugs across the application, including `NameError` in `ProactiveEngine` and `AssumptionManager`, `UnboundLocalError` in the `think` method, `AttributeError` in the web search tool, and other `TypeError` issues to improve overall stability.
+- **Tool Handling:** Fixed a critical bug in the `CognitiveEngine` where it was attempting to call a non-existent `tool_handler` object.
+
 
 ## [2.1.0] - 2025-10-06
 

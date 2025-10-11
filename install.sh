@@ -1,41 +1,57 @@
 #!/bin/bash
-# Jenova AI Definitive Installation Script (Scorched Earth)
-# Designed and Developed by orpheus497
+# Jenova AI System-Wide Installation Script
+# This script installs Jenova AI for all users on the system.
+# It must be run with root privileges (e.g., using 'sudo').
 
-echo "--- Installing Jenova AI (Perfected Architecture v1.0) ---"
+set -e
 
-VENV_DIR="venv"
+echo "--- Installing Jenova AI for All Users ---"
 
-# Create and Activate Python Virtual Environment
-if [ ! -d "$VENV_DIR" ]; then
-    echo "--> Creating Python virtual environment..."
-    python3 -m venv "$VENV_DIR"
-fi
-echo "--> Activating virtual environment..."
-source "$VENV_DIR/bin/activate"
-
-# Upgrade pip
-pip install --upgrade pip
-
-# --- SCORCHED EARTH REBUILD ---
-echo "--> Uninstalling any existing 'jenova-ai' package to ensure a clean state..."
-pip uninstall jenova-ai -y
-echo "--> Purging all Python cache files (__pycache__)..."
-find . -type d -name "__pycache__" -exec rm -r {} +
-
-# --- INSTALLATION ---
-echo "--> Installing Jenova AI and all dependencies..."
-if ! pip install -e .; then
-    echo "!!!!!! ERROR: Installation failed. Please check setup.py and requirements.txt."
+# 1. Check for Root Privileges
+if [ "$(id -u)" -ne 0 ]; then
+    echo "[ERROR] This script must be run with root privileges."
+    echo "Please run it again using: sudo ./install.sh"
     exit 1
 fi
 
-echo ""
-echo "=========================================================="
-echo "Jenova AI v2.1.0 installation complete!"
-echo "To run the application, ensure your virtual environment"
-echo "is active and use the 'jenova' command:"
-echo ""
-echo "  source venv/bin/activate"
+# 2. Verify Dependencies
+echo "--> Checking for dependencies (python3, pip, git)..."
+if ! command -v python3 &> /dev/null || ! command -v pip &> /dev/null || ! command -v git &> /dev/null; then
+    echo "[ERROR] Missing essential dependencies. Please ensure python3, python3-pip, and git are installed."
+    exit 1
+fi
+
+# 3. Upgrade Pip
+echo "--> Upgrading system's pip..."
+pip install --upgrade pip > /dev/null
+
+# 4. Install the Package
+# This installs the package into the system's site-packages directory.
+# The 'jenova' command will be placed in a system-wide bin location (e.g., /usr/local/bin).
+echo "--> Installing Jenova AI package globally..."
+if ! pip install .; then
+    echo "[ERROR] Installation failed. Please check setup.py and ensure all dependencies can be installed."
+    exit 1
+fi
+
+echo
+
+echo "======================================================================"
+
+echo "✅ Jenova AI has been successfully installed for all users."
+
+echo
+
+echo "Any user can now run the application by simply typing the command:"
+
 echo "  jenova"
-echo "=========================================================="
+
+echo
+
+echo "User-specific data, memories, and insights will be automatically"
+
+echo "stored separately for each user in their home directory at:"
+
+echo "  ~/.jenova-ai/users/<username>/"
+
+echo "======================================================================"

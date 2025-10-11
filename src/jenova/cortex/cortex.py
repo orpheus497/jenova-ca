@@ -2,7 +2,6 @@ import os
 import json
 from datetime import datetime
 import uuid
-from llama_cpp.llama_grammar import LlamaGrammar
 
 class Cortex:
     """
@@ -195,17 +194,14 @@ Emotion JSON:"""
 
             node_contents = "\n".join([f"- Node {i+1} (ID: {node['id']}): {node['content']}" for i, node in enumerate(other_nodes)])
 
-            prompt = f"""Analyze the following 'orphan' node and the list of other nodes. Identify all relevant nodes from the list that the orphan node could be linked to.
+            prompt = f"""Analyze the following 'orphan' node and the list of other nodes. Your task is to identify which nodes from the list are strongly related to the orphan node. 
 
 Orphan Node: "{orphan['content']}"
 
 List of other nodes:
 {node_contents}
 
-Respond with a JSON object containing a list of relevant node IDs and the relationship type (e.g., 'elaborates_on', 'conflicts_with', 'related_to').
-Example: {{"relevant_node_ids": ["<node_id_1>", "<node_id_2>"], "relationship": "related_to"}}
-
-Ensure your response is a single, valid JSON object and nothing else.
+Respond with a valid JSON object containing a list of related node IDs and the relationship type (e.g., 'elaborates_on', 'conflicts_with', 'related_to'). The JSON object must have the following structure: {{"relevant_node_ids": ["<node_id_1>", "<node_id_2>"], "relationship": "<relationship_type>"}}. Do not include any other text or explanations in your response.
 
 JSON Response:"""
 
@@ -333,32 +329,34 @@ Relationship JSON:"""
         for filename in os.listdir(self.docs_path):
             filepath = os.path.join(self.docs_path, filename)
             if os.path.isfile(filepath):
-                last_modified = os.path.getmtime(filepath)
-                if filename in self.processed_docs and self.processed_docs[filename]['last_modified'] >= last_modified:
-                    continue
+                try:
+                    last_modified = os.path.getmtime(filepath)
+                    if filename in self.processed_docs and self.processed_docs[filename]['last_modified'] >= last_modified:
+                        continue
 
-                messages.append(f"Processing new document: {filename}")
-                with open(filepath, 'r', encoding='utf-8') as f:
-                    content = f.read()
+                    messages.append(f"Processing new document: {filename}")
+                    self.file_logger.log_info(f"Processing new document: {filename}")
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        content = f.read()
 
-                # Generate summary
-                summary_prompt = f"""Summarize the following document in 2-3 sentences, capturing its main purpose and key topics.
+                    # Generate summary
+                    summary_prompt = f"""Summarize the following document in 2-3 sentences, capturing its main purpose and key topics.
 
 Document: \"""{content}\"""
 
 Summary:"""
-                summary = self.llm.generate(summary_prompt, temperature=0.3)
+                    summary = self.llm.generate(summary_prompt, temperature=0.3)
 
-                # Create a document node with summary in metadata
-                doc_metadata = {"summary": summary} if summary else {}
-                doc_node_id = self.add_node('document', f"Content from document: {filename}", user, metadata=doc_metadata)
+                    # Create a document node with summary in metadata
+                    doc_metadata = {"summary": summary} if summary else {}
+                    doc_node_id = self.add_node('document', f"Content from document: {filename}", user, metadata=doc_metadata)
 
-                # Chunk content and generate insights
-                chunks = self._chunk_text(content)
-                insight_ids = []
-                for i, chunk in enumerate(chunks):
-                    self.ui_logger.system_message(f"Analyzing chunk {i+1}/{len(chunks)} of {filename}...")
-                    prompt = f"""Analyze the following text from a document. Your task is to perform a comprehensive analysis and extract the following information:
+                    # Chunk content and generate insights
+                    chunks = self._chunk_text(content)
+                    insight_ids = []
+                    for i, chunk in enumerate(chunks):
+                        self.ui_logger.system_message(f"Analyzing chunk {i+1}/{len(chunks)} of {filename}...")
+                        prompt = f"""Analyze the following text from a document. Your task is to perform a comprehensive analysis and extract the following information:
 1.  A concise summary of the text.
 2.  A list of key takeaways or main points (as a list of strings).
 3.  A list of any questions that this text can answer (as a list of strings).
@@ -370,49 +368,51 @@ Respond with a single, valid JSON object containing the keys: 'summary', 'takeaw
 Text: '''{chunk}'''
 
 JSON Response:"""
-                    
-                    analysis_data = None
-                    analysis_json_str = self.llm.generate(prompt, temperature=0.2, grammar=self.json_grammar)
-                    try:
-                        analysis_data = json.loads(analysis_json_str)
-                    except (json.JSONDecodeError, KeyError, ValueError) as e:
-                        self.file_logger.log_error(f"Failed to process analysis from document chunk. Invalid JSON response: {analysis_json_str}. Error: {e}")
-                        continue
-                    
-                    if analysis_data:
-                        chunk_summary = analysis_data.get('summary')
-                        if chunk_summary:
-                            insight_metadata = {
-                                'entities': analysis_data.get('entities'),
-                                'topics': analysis_data.get('topics'),
-                                'sentiment': analysis_data.get('sentiment'),
-                                'source_chunk': i
-                            }
-                            summary_insight_id = self.add_node('insight', chunk_summary, user, metadata=insight_metadata)
-                            self.add_link(summary_insight_id, doc_node_id, 'derived_from')
-                            insight_ids.append(summary_insight_id)
+                        
+                        analysis_data = None
+                        analysis_json_str = self.llm.generate(prompt, temperature=0.2, grammar=self.json_grammar)
+                        try:
+                            analysis_data = json.loads(analysis_json_str)
+                        except (json.JSONDecodeError, KeyError, ValueError) as e:
+                            self.file_logger.log_error(f"Failed to process analysis from document chunk. Invalid JSON response: {analysis_json_str}. Error: {e}")
+                            continue
+                        
+                        if analysis_data:
+                            chunk_summary = analysis_data.get('summary')
+                            if chunk_summary:
+                                insight_metadata = {
+                                    'entities': analysis_data.get('entities'),
+                                    'sentiment': analysis_data.get('sentiment'),
+                                    'source_chunk': i
+                                }
+                                summary_insight_id = self.add_node('insight', chunk_summary, user, metadata=insight_metadata)
+                                self.add_link(summary_insight_id, doc_node_id, 'derived_from')
+                                insight_ids.append(summary_insight_id)
 
-                            # Add takeaways as separate insight nodes
-                            for takeaway in analysis_data.get('takeaways', []):
-                                takeaway_id = self.add_node('insight', takeaway, user, metadata={'source_chunk': i})
-                                self.add_link(takeaway_id, summary_insight_id, 'elaborates_on')
-                                self.add_link(takeaway_id, doc_node_id, 'derived_from')
+                                # Add takeaways as separate insight nodes
+                                for takeaway in analysis_data.get('takeaways', []):
+                                    takeaway_id = self.add_node('insight', takeaway, user, metadata={'source_chunk': i})
+                                    self.add_link(takeaway_id, summary_insight_id, 'elaborates_on')
+                                    self.add_link(takeaway_id, doc_node_id, 'derived_from')
 
-                            # Add questions as separate question nodes
-                            for question in analysis_data.get('questions', []):
-                                question_id = self.add_node('question', question, user, metadata={'source_chunk': i})
-                                self.add_link(question_id, summary_insight_id, 'answered_by')
-                                self.add_link(question_id, doc_node_id, 'related_to_document')
+                                # Add questions as separate question nodes
+                                for question in analysis_data.get('questions', []):
+                                    question_id = self.add_node('question', question, user, metadata={'source_chunk': i})
+                                    self.add_link(question_id, summary_insight_id, 'answered_by')
+                                    self.add_link(question_id, doc_node_id, 'related_to_document')
 
 
-                # Update processed docs tracker
-                self.processed_docs[filename] = {
-                    'last_modified': last_modified,
-                    'summary': summary,
-                    'insight_ids': insight_ids
-                }
-                self._save_processed_docs()
-                messages.append(f"Generated {len(insight_ids)} insights and a summary for {filename}.")
+                    # Update processed docs tracker
+                    self.processed_docs[filename] = {
+                        'last_modified': last_modified,
+                        'summary': summary,
+                        'insight_ids': insight_ids
+                    }
+                    self._save_processed_docs()
+                    messages.append(f"Generated {len(insight_ids)} insights and a summary for {filename}.")
+                except Exception as e:
+                    self.file_logger.log_error(f"Error processing document {filename}: {e}")
+                    messages.append(f"Error processing document {filename}: {e}")
 
         if not messages:
             messages.append("No new documents to process.")
@@ -482,7 +482,7 @@ JSON Response:"""
             linked_nodes_content = [self.get_node(node_id)['content'] for node_id in cluster]
             content_str = "\n".join([f"- {content}" for content in linked_nodes_content])
 
-            prompt = f"""Analyze the following collection of related insights. Synthesize them into a single, novel, and higher-level 'meta-insight'. A meta-insight is a new conclusion, pattern, or theme that emerges from the combination of the existing insights, but is not explicitly stated in any of them. Avoid simply summarizing the related insights.
+            prompt = f"""Analyze the following collection of related insights. Your task is to synthesize them into a single, novel, and higher-level 'meta-insight'. A meta-insight is a new conclusion, pattern, or theme that emerges from the combination of the existing insights, but is not explicitly stated in any of them. Do not simply summarize the related insights. The meta-insight should be a new piece of knowledge.
 
 Related Insights:
 {content_str}

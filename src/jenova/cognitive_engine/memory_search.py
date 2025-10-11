@@ -1,7 +1,6 @@
 from jenova.memory.semantic import SemanticMemory
 from jenova.memory.episodic import EpisodicMemory
 from jenova.memory.procedural import ProceduralMemory
-from jenova.insights.manager import InsightManager
 
 class MemorySearch:
     def __init__(self, semantic_memory: SemanticMemory, episodic_memory: EpisodicMemory, procedural_memory: ProceduralMemory, config, file_logger):
@@ -18,9 +17,15 @@ class MemorySearch:
     def _preload_memories(self):
         self.file_logger.log_info("Pre-loading memories into RAM...")
         try:
-            self.semantic_memory.collection.get()
-            self.episodic_memory.collection.get()
-            self.procedural_memory.collection.get()
+            import threading
+            threads = []
+            collections = [self.semantic_memory.collection, self.episodic_memory.collection, self.procedural_memory.collection]
+            for collection in collections:
+                thread = threading.Thread(target=collection.get)
+                threads.append(thread)
+                thread.start()
+            for thread in threads:
+                thread.join()
             self.file_logger.log_info("Memories pre-loaded successfully.")
         except Exception as e:
             self.file_logger.log_error(f"Error pre-loading memories: {e}")
@@ -42,7 +47,7 @@ class MemorySearch:
             semantic_results = []
 
         try:
-            episodic_results = self.episodic_memory.recall_relevant_episodes(query, n_results=episodic_n_results)
+            episodic_results = self.episodic_memory.recall_relevant_episodes(query, username, n_results=episodic_n_results)
             self.file_logger.log_info(f"Found {len(episodic_results)} episodic results.")
         except Exception as e:
             self.file_logger.log_error(f"Error during episodic memory search: {e}")

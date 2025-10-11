@@ -1,33 +1,29 @@
 import json
 import os
-import re
+import shlex
+import inspect
 from jenova.cortex.proactive_engine import ProactiveEngine
 from jenova.cognitive_engine.scheduler import CognitiveScheduler
+from jenova import tools
 
 class CognitiveEngine:
     """The Perfected Cognitive Engine. Manages the refined cognitive cycle."""
-    def __init__(self, llm, memory_search, file_tools, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, system_tools, rag_system, web_search, weather_tool):
+    def __init__(self, llm, memory_search, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, rag_system):
         self.llm = llm
         self.memory_search = memory_search
-        self.file_tools = file_tools
         self.insight_manager = insight_manager
         self.assumption_manager = assumption_manager
         self.config = config
         self.ui_logger = ui_logger
         self.file_logger = file_logger
         self.cortex = cortex
-        self.system_tools = system_tools
         self.proactive_engine = ProactiveEngine(cortex, llm, ui_logger)
         self.rag_system = rag_system
-        self.web_search = web_search
-        self.weather_tool = weather_tool
         self.scheduler = CognitiveScheduler(config, cortex, insight_manager)
         self.history = []
         self.turn_count = 0
         self.MAX_HISTORY_TURNS = 10 # Keep the last 10 conversation turns
         self.pending_assumption = None
-        self.pending_search_results = None
-        self.original_user_input = None
 
     def think(self, user_input: str, username: str) -> str:
         """Runs the full cognitive cycle: Retrieve, Plan, Execute, and Reflect."""
@@ -35,111 +31,19 @@ class CognitiveEngine:
             self.file_logger.log_info(f"New query received from {username}: {user_input}")
             self.turn_count += 1
 
-            # Check for search follow-up
-            if self.pending_search_results:
-                # The user is responding to the search results
-                plan = f"User has reviewed the search results for '{self.original_user_input}' and has provided further instructions: '{user_input}'. I will now use the search results and the new instructions to formulate a final response."
-                context = self.memory_search.search_all(self.original_user_input, username)
-                if context is None:
-                    context = []
-                
-                response = self._execute(self.original_user_input, context, plan, username, search_results=self.pending_search_results)
-
-                # Reset pending search state
-                self.pending_search_results = None
-                self.original_user_input = None
-
-                self.history.append(f"{username}: {user_input}")
-                self.history.append(f"Jenova: {response}")
-                if len(self.history) > self.MAX_HISTORY_TURNS * 2:
-                    self.history = self.history[-(self.MAX_HISTORY_TURNS * 2):]
-                self.memory_search.episodic_memory.add_episode(f"{username}: {user_input}\nJenova: {response}", username)
-                
-                return response
-
-            # Direct Web Search from user input
-            search_match = re.search(r'\(search:\s*(.*?)\)', user_input)
-            if search_match:
-                query = search_match.group(1)
-                search_results = self.search_web(query, username)
-                
-                if search_results:
-                    self.pending_search_results = search_results
-                    self.original_user_input = user_input
-                    response = "I found the following information:\n\n"
-                    for result in search_results:
-                        response += f"- **{result['title']}**: {result['summary']}\n"
-                    response += "\nWhat would you like to do next? For example, you can ask me to summarize the findings, answer a specific question based on them, or perform a deeper search."
-                else:
-                    response = "I couldn't find any information on that topic."
-
-                self.history.append(f"{username}: {user_input}")
-                self.history.append(f"Jenova: {response}")
-                if len(self.history) > self.MAX_HISTORY_TURNS * 2:
-                    self.history = self.history[-(self.MAX_HISTORY_TURNS * 2):]
-                self.memory_search.episodic_memory.add_episode(f"{username}: {user_input}\nJenova: {response}", username)
-                
-                return response
-
-            if self.pending_assumption:
-                self.assumption_manager.resolve_assumption(self.pending_assumption, user_input, username)
-                self.pending_assumption = None
-
-            # Get and execute cognitive tasks from the scheduler
-            cognitive_tasks = self.scheduler.get_cognitive_tasks(self.turn_count, user_input, username)
-            for task_name, task_args in cognitive_tasks:
-                try:
-                    if hasattr(self, task_name):
-                        getattr(self, task_name)(**task_args)
-                    elif hasattr(self.cortex, task_name):
-                        getattr(self.cortex, task_name)(**task_args)
-                    elif hasattr(self.insight_manager, task_name):
-                        getattr(self.insight_manager, task_name)(**task_args)
-                except Exception as e:
-                    self.ui_logger.system_message(f"Error during cognitive task '{task_name}': {e}")
-                    self.file_logger.log_error(f"Error during cognitive task '{task_name}': {e}")
-
-            # Proactive suggestion
-            if self.turn_count % 5 == 0:
-                suggestion = self.proactive_engine.get_suggestion(username, self.history)
-                if suggestion:
-                    self.ui_logger.system_message(f"Jenova has a thought: {suggestion}")
-
-            # If the user_input is a command, it should not be processed as conversational input.
-            if user_input.startswith('/'):
-                return ""
-
+            # Retrieve, Plan, Execute
             context = self.memory_search.search_all(user_input, username)
-            if context is None:
-                context = []
-            plan = self._plan(user_input, context, username)
-
-            # Autonomous Web Search
-            if "[SEARCH:" in plan:
-                query = plan.split("[SEARCH:")[-1].split("]")[0]
-                search_results = self.search_web(query, username)
-                
-                if search_results:
-                    self.pending_search_results = search_results
-                    self.original_user_input = user_input
-                    response = "My research has led me to the following information:\n\n"
-                    for result in search_results:
-                        response += f"- **{result['title']}**: {result['summary']}\n"
-                    response += "\nI will now use this to answer your question. If you'd like me to do something else with this information, please let me know."
-                    
-                    self.history.append(f"{username}: {user_input}")
-                    self.history.append(f"Jenova: {response}")
-                    if len(self.history) > self.MAX_HISTORY_TURNS * 2:
-                        self.history = self.history[-(self.MAX_HISTORY_TURNS * 2):]
-                    self.memory_search.episodic_memory.add_episode(f"{username}: {user_input}\nJenova: {response}", username)
-
-                    return response
-                else:
-                    # No search results, continue with normal execution
-                    response = self._execute(user_input, context, plan, username)
-
+            # Proactive safeguard: Ensure all context items are strings.
+            if context:
+                context = [str(item) for item in context]
             else:
-                response = self._execute(user_input, context, plan, username)
+                context = []
+            
+            plan = self._plan(user_input, context, username)
+            if not plan:
+                plan = f"I will formulate a response to the user's query: {user_input}"
+
+            response = self._execute(user_input, context, plan, username)
 
             # Only add to history if it's not a command
             if not user_input.startswith('/'):
@@ -153,8 +57,11 @@ class CognitiveEngine:
 
         return response
 
+
     def _plan(self, user_input: str, context: list[str], username: str) -> str:
-        context_str = "\n".join(f"- {c}" for c in context)
+        # Ensure all context items are strings before joining
+        safe_context = [str(c) for c in context]
+        context_str = "\n".join(f"- {c}" for c in safe_context)
         
         # Load persona from config
         persona_config = self.config.get('persona', {})
@@ -170,154 +77,26 @@ class CognitiveEngine:
         if username == creator_name:
             user_title = creator_alias
 
-        prompt = f'''You are {ai_name}, a self-aware AI. Your creator is {creator_name}, whom you know as {creator_alias}.
+        prompt = f"""You are {ai_name}, a self-aware AI. Your creator is {creator_name}, whom you know as {creator_alias}.
 Your core directives are: {directives}
 
 == CONTEXT ==
 {context_str if context else "No context available."}
 
 == TASK ==
-Based on your identity, directives, the user's query, and the provided context, create a short, step-by-step plan to formulate a response. The plan can include generating a new insight if a novel conclusion is reached.
-
-**Available Tools:**
-- **Web Search:** Use the syntax `[SEARCH: <query>]` to search the web for up-to-date information.
-- **Get Date and Time:** Use the syntax `<TOOL:GET_CURRENT_DATETIME()>`
-- **Get Weather:** Use the syntax `<TOOL:GET_WEATHER(location="<location>")>`
-- **File System:** Read, write, and list files in a sandboxed environment:
-    - `<TOOL:READ_FILE(path="<file_path>")>`
-    - `<TOOL:WRITE_FILE(path="<file_path>", content="<file_content>")>`
-    - `<TOOL:LIST_DIRECTORY(path="<directory_path>")>`
+Based on your identity, directives, the user's query, and the provided context, create a step-by-step plan to formulate a response. The plan should be a short paragraph describing the steps you will take.
 
 {user_title} ({username}): "{user_input}"
 
-Plan:'''
+Plan:"""
         with self.ui_logger.thinking_process("Formulating plan..."):
-            plan = self.llm.generate(prompt, temperature=0.1, stop=["\n\n"])
+            plan = self.llm.generate(prompt, temperature=0.1)
         self.file_logger.log_info(f"Generated Plan: {plan}")
         return plan
 
-    def _execute(self, user_input: str, context: list[str], plan: str, username: str, search_results: str = None) -> str:
+    def _execute(self, user_input: str, context: list[str], plan: str, username: str) -> str:
         with self.ui_logger.thinking_process("Executing plan..."):
-            response = self.rag_system.generate_response(user_input, username, self.history, plan, search_results=search_results)
-        self.file_logger.log_info(f"Generated Response: {response}")
-        response = self.file_tools.handle_tool_request(response)
-        response = self.system_tools.handle_tool_request(response)
-        response = self.weather_tool.handle_tool_request(response)
-        return response
-
-    def search_web(self, query: str, username: str) -> list[dict]:
-        """
-        Searches the web using the web_search tool, processes the full content of the pages,
-        and stores a detailed analysis in the Cortex.
-        """
-        self.ui_logger.system_message(f"Searching the web for: {query}...")
-        
-        try:
-            search_results_raw = self.web_search(query=query, max_results=3)
-            
-            if not search_results_raw or not search_results_raw.get('results'):
-                self.ui_logger.system_message("No search results found.")
-                return []
-
-            search_node_id = self.cortex.add_node('web_search', f"Web search for '{query}'", username)
-            processed_results = []
-
-            for result in search_results_raw.get('results', []):
-                title = result.get('title')
-                link = result.get('link')
-                content = result.get('content')
-                
-                if not all([title, link, content]):
-                    continue
-
-                self.ui_logger.system_message(f"Analyzing content from: {link}")
-
-                # 1. Generate an overall summary for the page
-                summary_prompt = f'''Summarize the following web page content in 3-4 sentences.
-
-Title: {title}
-Content: {content[:8000]}
-
-Summary:'''
-                overall_summary = self.llm.generate(summary_prompt, temperature=0.3)
-
-                # 2. Create a main web_search_result node
-                main_result_node_id = self.cortex.add_node(
-                    'web_search_result', 
-                    f"Summary of '{title}'", 
-                    username, 
-                    metadata={'source_link': link, 'summary': overall_summary}
-                )
-                self.cortex.add_link(main_result_node_id, search_node_id, 'search_result_for')
-                
-                processed_results.append({'title': title, 'link': link, 'summary': overall_summary})
-
-                # 3. Process content in chunks for detailed analysis
-                chunks = self.cortex._chunk_text(content)
-                for i, chunk in enumerate(chunks):
-                    self.ui_logger.system_message(f"Analyzing chunk {i+1}/{len(chunks)} of {title}...")
-                    
-                    prompt = f'''Analyze the following text from a web page. Your task is to perform a comprehensive analysis and extract the following information:
-1.  A concise summary of the text chunk.
-2.  A list of key takeaways or main points (as a list of strings).
-3.  A list of any questions that this text can answer (as a list of strings).
-4.  A list of key entities (people, places, organizations).
-5.  The overall sentiment of the text.
-
-Respond with a single, valid JSON object containing the keys: 'summary', 'takeaways', 'questions', 'entities', and 'sentiment'.
-
-Text: """{chunk}"""
-
-JSON Response:'''
-                    
-                    analysis_data = None
-                    for attempt in range(2):
-                        analysis_json_str = self.llm.generate(prompt, temperature=0.2)
-                        try:
-                            analysis_data = extract_json(analysis_json_str)
-                            break
-                        except (json.JSONDecodeError, KeyError, ValueError) as e:
-                            self.file_logger.log_error(f"Attempt {attempt + 1}: Failed to process analysis from web page chunk. Invalid JSON: {analysis_json_str}. Error: {e}")
-                            prompt = f'''The previous attempt to generate JSON failed. Please try again.
-
-Text: """{chunk}"""
-
-JSON Response (must be a valid JSON object):'''
-
-                    if not analysis_data:
-                        continue
-
-                    chunk_summary = analysis_data.get('summary')
-                    if not chunk_summary:
-                        continue
-
-                    # Create insight node for the chunk's summary
-                    chunk_metadata = {
-                        'entities': analysis_data.get('entities'),
-                        'sentiment': analysis_data.get('sentiment'),
-                        'source_chunk': i,
-                        'source_link': link
-                    }
-                    chunk_summary_id = self.cortex.add_node('insight', chunk_summary, username, metadata=chunk_metadata)
-                    self.cortex.add_link(chunk_summary_id, main_result_node_id, 'part_of_web_result')
-
-                    # Create insight nodes for takeaways
-                    for takeaway in analysis_data.get('takeaways', []):
-                        takeaway_id = self.cortex.add_node('insight', takeaway, username, metadata={'source_chunk': i, 'source_link': link})
-                        self.cortex.add_link(takeaway_id, chunk_summary_id, 'elaborates_on')
-
-                    # Create question nodes
-                    for question in analysis_data.get('questions', []):
-                        question_id = self.cortex.add_node('question', question, username, metadata={'source_chunk': i, 'source_link': link})
-                        self.cortex.add_link(question_id, chunk_summary_id, 'answered_by')
-
-            self.ui_logger.system_message("Web search and analysis complete. Insights stored in Cortex.")
-            return processed_results
-
-        except Exception as e:
-            self.file_logger.log_error(f"An error occurred during web search: {e}")
-            self.ui_logger.system_message(f"An error occurred during the web search: {e}")
-            return []
+            return self.rag_system.generate_response(user_input, username, self.history, plan)
 
     def generate_insight_from_history(self, username: str):
         """Analyzes recent conversation history to generate and save a new, high-quality insight."""
@@ -487,7 +266,9 @@ You are {ai_name}. You are analyzing a collection of insights for {user_title} (
         context = self.memory_search.search_all("general knowledge and past experiences", username)
         if context is None:
             context = []
-        context_str = "\n".join(f"- {c}" for c in context)
+        # Ensure all context items are strings before joining to prevent TypeErrors
+        safe_context = [str(c) for c in context]
+        context_str = "\n".join(f"- {c}" for c in safe_context)
 
         persona_config = self.config.get('persona', {})
         identity = persona_config.get('identity', {})
@@ -545,80 +326,6 @@ Format the output as a valid JSON object with one of two structures:
             return self.pending_assumption, question
         else:
             return None, "No unverified assumptions to check."
-
-    def finetune(self, include_history: bool = False) -> list[str]:
-        messages = []
-        """Command to trigger the perfected, two-stage fine-tuning process."""
-        messages.append("Initiating perfected fine-tuning process...")
-        
-        # Check for llama.cpp executables
-        finetune_exec = "./llama.cpp/finetune"
-        export_lora_exec = "./llama.cpp/export-lora"
-        if not os.path.exists(finetune_exec) or not os.path.exists(export_lora_exec):
-            messages.append(f"Error: Fine-tuning executables not found. Please ensure 'llama.cpp' is cloned and built in the project root directory.")
-            messages.append(f"Missing: {' '.join([p for p in [finetune_exec, export_lora_exec] if not os.path.exists(p)])}")
-            return messages
-
-        finetune_config = self.config.get('finetuning', {})
-        insights_dir = self.insight_manager.insights_root
-        training_file = finetune_config.get('training_file', 'finetune_train.jsonl')
-        history_file = self.file_logger.log_file_path if include_history else None
-
-        # Step 1: Prepare the data with the advanced script
-        messages.append("Step 1: Preparing advanced training data...")
-        prepare_command = f"python finetune/prepare_data.py --insights-dir \"{insights_dir}\" --output-file \"{training_file}\""
-        if history_file:
-            prepare_command += f" --include-history \"{history_file}\""
-        
-        result = self.system_tools.execute_shell_command(prepare_command, "Preparing fine-tuning data...")
-        if result.get('error'):
-            messages.append(f"Error during data preparation: {result.get('stderr')}")
-            return messages
-
-        # Step 2: Run the fine-tuning to create a LoRA adapter
-        messages.append("Step 2: Creating LoRA adapter...")
-        base_model_path = self.config.get('model', {}).get('model_path')
-        lora_output = finetune_config.get('lora_output_file', 'models/lora-jenova-adapter.bin')
-        threads = self.config.get('hardware', {}).get('threads', 4)
-        gpu_layers = self.config.get('hardware', {}).get('gpu_layers', 0)
-
-        if not base_model_path or not os.path.exists(base_model_path):
-            messages.append(f"Error: model_path '{base_model_path}' not found in config or does not exist. Please specify the base model path.")
-            return messages
-
-        finetune_command = f"""
-{finetune_exec} --model-base {base_model_path} \
---train-data \"{training_file}\" \
---lora-out {lora_output} \
---threads {threads} --gpu-layers {gpu_layers} \
---batch-size {finetune_config.get('batch_size', 4)} --epochs {finetune_config.get('epochs', 3)} \
---use-flash-attn"""
-
-        messages.append("Executing fine-tuning command. This may take a while...")
-        result = self.system_tools.execute_shell_command(finetune_command, "Running fine-tuning...")
-        if result.get('error'):
-            messages.append(f"Error during LoRA creation: {result.get('stderr')}")
-            return messages
-        messages.append(f"LoRA adapter created successfully at {lora_output}")
-
-        # Step 3: Merge the LoRA adapter to create a new GGUF model
-        messages.append("Step 3: Merging LoRA adapter into a new GGUF model...")
-        finetuned_model_path = finetune_config.get('finetuned_model_output', 'models/jenova-finetuned.gguf')
-
-        export_command = f"""
-{export_lora_exec} --model-base {base_model_path} \
---lora-in {lora_output} \
---lora-out {finetuned_model_path}"""
-
-        messages.append("Executing model merge command...")
-        result = self.system_tools.execute_shell_command(export_command, "Merging model...")
-        if result.get('error'):
-            messages.append(f"Error during model merge: {result.get('stderr')}")
-            return messages
-
-        messages.append(f"Perfected fine-tuning process completed. The new, updated model is available at {finetuned_model_path}")
-        messages.append("Please update your main_config.yaml to point to this new model to use it.")
-        return messages
 
     def learn_procedure(self, procedure_data: dict, username: str) -> list[str]:
         """Command to learn a new procedure interactively."""

@@ -11,6 +11,12 @@ class LLMInterface:
         self.system_prompt = self._build_system_prompt()
         self.model = self._load_model()
 
+    def close(self):
+        """Cleans up the LLM resources."""
+        if self.model:
+            self.model.close()
+            self.file_logger.log_info("LLM model resources released.")
+
     def _build_system_prompt(self) -> str:
         """Builds a robust, persistent system prompt to ground the AI."""
         persona = self.config['persona']
@@ -55,14 +61,13 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
 
         # --- Dynamic Context Optimization ---
         try:
-            # This block will now only run if the model path is valid
-            temp_model_info = Llama(model_path=self.model_path, verbose=False, n_gpu_layers=0)
-            model_metadata = temp_model_info.metadata
-            model_n_ctx_train = int(model_metadata.get('llama.context_length', self.config['model']['context_size']))
-            del temp_model_info
+            # Use a context manager to ensure the temporary model is cleaned up
+            with Llama(model_path=self.model_path, verbose=False, n_gpu_layers=0) as temp_model_info:
+                model_metadata = temp_model_info.metadata
+                model_n_ctx_train = int(model_metadata.get('llama.context_length', self.config['model']['context_size']))
         except Exception as e:
             # This will catch errors during Llama object creation for valid paths
-            self.ui_logger.system_message(f"A critical failure occurred: {e}")
+            self.ui_logger.system_message(f"A critical failure occurred while reading model metadata: {e}")
             self.file_logger.log_error(f"Error reading model metadata: {e}")
             raise
         
@@ -107,5 +112,5 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
             )
             return response['choices'][0]['text'].strip()
         except Exception as e:
-            # self.file_logger.log_error(f"Error during LLM generation: {e}")
+            self.file_logger.log_error(f"Error during LLM generation: {e}")
             return "I'm sorry, I'm having trouble generating a response right now. Please try again later."

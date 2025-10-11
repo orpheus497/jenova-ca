@@ -33,7 +33,10 @@ class UILogger:
         self.console.print(f"[bold green]>> {message}[/bold green]")
 
     def system_message(self, message):
-        self.console.print(f"[bold red]>> {message}[/bold red]")
+        self.console.print(Text.from_markup(f"[bold red]>> {message}[/bold red]"))
+
+    def help_message(self, message):
+        self.console.print(message)
 
     def reflection(self, message):
         self.console.print(f"\n[italic yellow]({message})[/italic yellow]")
@@ -53,5 +56,12 @@ class UILogger:
         self.console.print(panel)
 
     def jenova_response(self, text):
-        panel = Panel(Markdown(text, style="cyan"), title="Jenova", border_style="magenta")
+        if not isinstance(text, str):
+            text = str(text)
+        try:
+            # Try to render as Markdown
+            panel = Panel(Markdown(text, style="cyan"), title="Jenova", border_style="magenta")
+        except TypeError:
+            # If Markdown parsing fails, render as plain text
+            panel = Panel(Text(text, style="cyan"), title="Jenova", border_style="magenta")
         self.console.print(panel)

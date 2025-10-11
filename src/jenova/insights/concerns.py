@@ -1,6 +1,5 @@
 import os
 import json
-from jenova.utils.json_parser import extract_json
 
 class ConcernManager:
     """Manages the lifecycle of concerns, including their creation, updating, and interlinking."""

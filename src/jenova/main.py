@@ -14,18 +14,14 @@ from jenova.memory.semantic import SemanticMemory
 from jenova.memory.procedural import ProceduralMemory
 from jenova.insights.manager import InsightManager
 from jenova.config import load_configuration
-from jenova.tools.file_tools import FileTools
 from jenova.ui.logger import UILogger
 from jenova.utils.file_logger import FileLogger
 from jenova.utils.model_loader import load_embedding_model
+from jenova import tools
 
 from jenova.assumptions.manager import AssumptionManager
 
 from jenova.cortex.cortex import Cortex
-
-from jenova.tools.system_tools import SystemTools
-from jenova.tools.weather import WeatherTool
-from .default_api import web_search
 
 import getpass
 
@@ -43,13 +39,9 @@ def main():
         config['user_data_root'] = user_data_root
         insights_root = os.path.join(user_data_root, "insights")
         cortex_root = os.path.join(user_data_root, "cortex")
-        docs_path = os.path.join(os.getcwd(), "src", "jenova", "docs")
         
         ui_logger.info(">> Initializing Intelligence Matrix...")
         llm_interface = LLMInterface(config, ui_logger, file_logger)
-        file_tools = FileTools(config, ui_logger, file_logger)
-        system_tools = SystemTools(ui_logger, file_logger)
-        weather_tool = WeatherTool(config, ui_logger, file_logger)
         
         # Load the embedding model
         embedding_model = load_embedding_model(config['model']['embedding_model'])
@@ -75,9 +67,11 @@ def main():
         rag_system = RAGSystem(llm_interface, memory_search, insight_manager, config)
 
         ui_logger.info(">> Cognitive Engine: Online.")
-        cognitive_engine = CognitiveEngine(llm_interface, memory_search, file_tools, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, system_tools, rag_system, web_search, weather_tool)
+        cognitive_engine = CognitiveEngine(llm_interface, memory_search, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, rag_system)
         
         ui = TerminalUI(cognitive_engine, ui_logger)
+        # Pass the llm_interface to the tools that need it.
+        tools.llm_interface = llm_interface
         ui.run()
         
     except Exception as e:
@@ -86,6 +80,10 @@ def main():
         file_logger.log_error(error_message)
         file_logger.log_error(traceback.format_exc())
     finally:
+        # Ensure LLM resources are released
+        if 'llm_interface' in locals() and llm_interface.model:
+            llm_interface.close()
+
         shutdown_message = "Jenova AI shutting down."
         ui_logger.info(shutdown_message)
         file_logger.log_info(shutdown_message)
