@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2025-10-12
+
+### Changed
+- **Aggressive Dynamic Resource Engine (ADRE):** Complete ground-up redesign of the optimization engine to maximize hardware utilization for peak AI performance.
+  - **Minimal System Reserve:** Sets aside only 1.5 GB for the operating system, dedicating the vast majority of resources to AI operations.
+  - **Total System Memory (TSM) Calculation:** Calculates TSM as RAM + Swap, then subtracts the minimal system reserve to determine the AI Budget.
+  - **Aggressive VRAM Budgeting:** 
+    - ARM SoCs (Apple Silicon, Snapdragon, Tensor): 70% of AI Budget allocated to VRAM
+    - Dedicated GPUs (NVIDIA/AMD): 95% of VRAM utilized
+    - APUs/iGPUs: 50% of RAM allocated for shared VRAM
+  - **Maximal Thread Allocation:** Sets `n_threads` to `Physical Cores - 1`, leaving only a single core for all non-AI system tasks.
+  - **Proactive-Reactive Loop:** Dynamically calculates the optimal `n_gpu_layers` by iteratively reducing layers until the total memory footprint (VRAM + RAM for remaining layers) fits perfectly within the AI Budget, ensuring maximum GPU offload without instability.
+  - **ADRE Warning:** Added a one-time startup warning informing users that the new Aggressive Dynamic Resource Engine is active and will dedicate the majority of system resources to AI performance, with potential reduction in system responsiveness during AI operations.
+- **Enhanced ARM Swap Detection:** Fortified swap detection logic in `install.sh` to use multiple fallback methods (`swapon`, `/proc/swaps`, and `free` command) for more reliable detection across different Linux distributions.
+
+### Added
+- **Version 3.4.0:** Updated `setup.py` to reflect this major optimization engine overhaul.
+
 ## [3.3.0] - 2025-10-12
 
 ### Fixed

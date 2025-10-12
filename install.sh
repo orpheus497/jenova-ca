@@ -47,9 +47,35 @@ fi
 ARCH=$(uname -m)
 if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
     echo "--> Checking for swap configuration on ARM system..."
-    SWAP_TOTAL=$(swapon --show=SIZE --noheadings --bytes 2>/dev/null | awk '{sum+=$1} END {print sum}')
     
-    if [ -z "$SWAP_TOTAL" ] || [ "$SWAP_TOTAL" -eq 0 ]; then
+    # Try multiple methods to detect swap
+    SWAP_DETECTED=0
+    
+    # Method 1: Use swapon command
+    if command -v swapon &> /dev/null; then
+        SWAP_TOTAL=$(swapon --show=SIZE --noheadings --bytes 2>/dev/null | awk '{sum+=$1} END {print sum}')
+        if [ ! -z "$SWAP_TOTAL" ] && [ "$SWAP_TOTAL" -gt 0 ]; then
+            SWAP_DETECTED=1
+        fi
+    fi
+    
+    # Method 2: Check /proc/swaps
+    if [ $SWAP_DETECTED -eq 0 ] && [ -f /proc/swaps ]; then
+        SWAP_LINES=$(grep -v "^Filename" /proc/swaps | wc -l)
+        if [ "$SWAP_LINES" -gt 0 ]; then
+            SWAP_DETECTED=1
+        fi
+    fi
+    
+    # Method 3: Use free command
+    if [ $SWAP_DETECTED -eq 0 ] && command -v free &> /dev/null; then
+        SWAP_KB=$(free -k | grep "^Swap:" | awk '{print $2}')
+        if [ ! -z "$SWAP_KB" ] && [ "$SWAP_KB" -gt 0 ]; then
+            SWAP_DETECTED=1
+        fi
+    fi
+    
+    if [ $SWAP_DETECTED -eq 0 ]; then
         echo ""
         echo "[INFO] No swap file detected on this ARM system."
         echo "       A swap file can significantly improve performance and stability."

@@ -111,6 +111,33 @@ class TerminalUI:
         except Exception:
             pass  # If we can't write the file, we'll show warning again next time
 
+    def _show_adre_warning(self):
+        """Display one-time warning about the Aggressive Dynamic Resource Engine."""
+        # Check if we've already shown the warning
+        warning_file = os.path.join(self.engine.config['user_data_root'], '.adre_warning_shown')
+        if os.path.exists(warning_file):
+            return  # Warning already shown
+        
+        # Display ADRE warning message
+        self.logger.system_message("\n" + "="*70)
+        self.logger.system_message("⚡ AGGRESSIVE DYNAMIC RESOURCE ENGINE (ADRE) ACTIVE")
+        self.logger.system_message("="*70)
+        self.logger.system_message("")
+        self.logger.system_message("The new Aggressive Dynamic Resource Engine is active.")
+        self.logger.system_message("")
+        self.logger.system_message("While Jenova AI is running, a majority of your system's resources")
+        self.logger.system_message("will be dedicated to maximizing AI performance.")
+        self.logger.system_message("")
+        self.logger.system_message("System responsiveness may be reduced during AI operations.")
+        self.logger.system_message("")
+        self.logger.system_message("="*70 + "\n")
+        
+        # Mark warning as shown
+        try:
+            with open(warning_file, 'w') as f:
+                f.write("1")
+        except Exception:
+            pass  # If we can't write the file, we'll show warning again next time
 
 
     def run(self):
@@ -118,6 +145,9 @@ class TerminalUI:
         self.logger.info("Initialized and Ready.")
         self.logger.info("Type your message, use a command, or type 'exit' to quit.")
         self.logger.info("Type /help to see a list of available commands.\n")
+        
+        # Show ADRE warning on first run
+        self._show_adre_warning()
         
         # Check for swap on ARM systems and warn if needed
         self._check_and_warn_swap_on_arm()
