@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.1] - 2025-10-12
+
+### Fixed
+- **UI Race Condition:** Fixed a critical race condition on high-performance, multi-core systems where background cognitive tasks (e.g., `/reflect`) and the main UI loop attempted to control the console's live display simultaneously, causing crashes with "Only one live display may be active at once" errors. Implemented a thread-safe console locking mechanism using `threading.Lock` to ensure exclusive access to the terminal, permanently resolving the race condition.
+
 ## [3.2.0] - 2025-10-12
 
 ### Changed

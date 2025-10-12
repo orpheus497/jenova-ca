@@ -33,6 +33,7 @@ class TerminalUI:
         self.verifying_assumption = None
         self._spinner_running = False
         self._spinner_thread = None
+        self.console_lock = threading.Lock()
 
     def _spinner(self):
         spinner_chars = itertools.cycle(['   ', '.  ', '.. ', '...'])

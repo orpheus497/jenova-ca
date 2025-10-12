@@ -12,6 +12,7 @@ class UILogger:
             self.term_width = os.get_terminal_size().columns
         except OSError:
             self.term_width = 80
+        self.console_lock = None  # Will be set by CognitiveEngine
 
     def banner(self, banner_text, attribution_text):
         try:
@@ -43,13 +44,23 @@ class UILogger:
 
     @contextmanager
     def cognitive_process(self, message: str):
-        with self.console.status(f"[bold green]{message}[/bold green]", spinner="earth") as status:
-            yield status
+        if self.console_lock:
+            with self.console_lock:
+                with self.console.status(f"[bold green]{message}[/bold green]", spinner="earth") as status:
+                    yield status
+        else:
+            with self.console.status(f"[bold green]{message}[/bold green]", spinner="earth") as status:
+                yield status
 
     @contextmanager
     def thinking_process(self, message: str):
-        with self.console.status(f"[bold yellow]{message}[/bold yellow]", spinner="dots") as status:
-            yield status
+        if self.console_lock:
+            with self.console_lock:
+                with self.console.status(f"[bold yellow]{message}[/bold yellow]", spinner="dots") as status:
+                    yield status
+        else:
+            with self.console.status(f"[bold yellow]{message}[/bold yellow]", spinner="dots") as status:
+                yield status
 
     def user_query(self, text, username: str):
         panel = Panel(Text(text, style="white"), title=f"{username}@Jenova", border_style="dark_green")
