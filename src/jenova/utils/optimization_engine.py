@@ -42,12 +42,22 @@ class OptimizationEngine:
         
         # Extract hardware info
         cpu_cores = hardware['cpu']['physical_cores']
+        cpu_model = hardware['cpu'].get('model_name', '')
         gpu_vendor = hardware['gpu']['vendor']
         gpu_vram_mb = hardware['gpu']['vram_mb']
         is_apu = hardware['gpu'].get('is_apu', False)
         is_dedicated = hardware['gpu'].get('is_dedicated', False)
         gpu_capabilities = hardware.get('gpu_capabilities', {})
         soc_type = hardware['cpu'].get('soc_type', None)
+        
+        # BRUTE-FORCE MAXIMIZATION PROTOCOL
+        # Override for AMD Ryzen 7 5700U: Force maximum hardware usage
+        if 'AMD Ryzen' in cpu_model and '7 5700U' in cpu_model:
+            settings['n_threads'] = 16  # Hardcoded: Use all 16 logical cores
+            settings['n_gpu_layers'] = 99999  # Maximum possible GPU offload
+            settings['strategy'] = 'ADRE: Brute-Force Maximization Protocol (16 threads, max GPU layers)'
+            self.ui_logger.system_message(">> Brute-Force Maximization Protocol activated for AMD Ryzen 7 5700U")
+            return settings
         
         # Memory information
         ram_mb = hardware['memory']['total_mb']

@@ -1,5 +1,6 @@
 import os
 import traceback
+import psutil
 from jenova.utils.telemetry_fix import apply_telemetry_patch
 apply_telemetry_patch()
 
@@ -28,6 +29,14 @@ import getpass
 
 def main():
     """Main entry point for the perfected Jenova Cognitive Architecture."""
+    # BRUTE-FORCE MAXIMIZATION PROTOCOL: Elevate process priority to prevent deadlock
+    try:
+        process = psutil.Process(os.getpid())
+        process.nice(psutil.HIGH_PRIORITY_CLASS if hasattr(psutil, 'HIGH_PRIORITY_CLASS') else -10)
+    except Exception:
+        # Continue even if priority elevation fails (requires elevated permissions on some systems)
+        pass
+    
     username = getpass.getuser()
     user_data_root = os.path.join(os.path.expanduser("~"), ".jenova-ai", "users", username)
     os.makedirs(user_data_root, exist_ok=True)

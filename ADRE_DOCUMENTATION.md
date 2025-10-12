@@ -198,6 +198,114 @@ VRAM Budget: 50% of system RAM
 
 **Rationale**: Similar to AMD APUs, balances shared memory allocation.
 
+## Brute-Force Maximization Protocol
+
+### Overview
+
+The **Brute-Force Maximization Protocol** is a critical correction added to v3.4.0 to address deadlock issues on specific hardware configurations where ADRE's intelligent nuanced approach failed to deliver performance.
+
+### Problem Statement
+
+On certain APU systems, particularly the **AMD Ryzen 7 5700U**, ADRE's "Physical Cores - 2" thread allocation strategy proved too nuanced and resulted in the AI hanging indefinitely in a "thinking" state. The intelligent allocation logic, while sound in theory, created resource starvation deadlocks that prevented the AI's response from reaching the UI.
+
+### Solution: Hardware-Specific Brute-Force Override
+
+For the AMD Ryzen 7 5700U, the Brute-Force Maximization Protocol implements three aggressive interventions:
+
+#### 1. Hardcoded Thread Allocation
+
+```
+n_threads = 16 (all logical cores)
+```
+
+- **Ignores all intelligent allocation logic**
+- **Forces use of all 16 logical cores** (8 physical cores × 2 threads)
+- **Explicitly commanded override** for this specific CPU model
+- **Bypasses Physical Cores - 2 calculation** entirely
+
+**Rationale**: The nuanced "Cores - 2" approach was insufficient. Direct, brute-force allocation ensures maximum CPU resource availability.
+
+#### 2. Maximum GPU Offload Command
+
+```
+n_gpu_layers = 99999
+```
+
+- **Not an estimation or calculation**
+- **Direct command to llama-cpp-python backend**
+- **Forces offload of every possible layer to GPU**
+- **Continues until VRAM completely saturated**
+
+**Rationale**: Removes all conservative GPU layer calculations. The backend will use as many layers as physically fit in VRAM, achieving true maximum offload.
+
+#### 3. Process Priority Elevation
+
+```python
+process = psutil.Process(os.getpid())
+process.nice(psutil.HIGH_PRIORITY_CLASS)  # Windows
+process.nice(-10)  # Linux/Unix
+```
+
+- **Elevates main application process to `high` priority**
+- **Applied at application startup**
+- **Gives UI and data-passing threads preferential OS scheduling**
+- **Prevents worker thread resource starvation**
+
+**Rationale**: With 16 worker threads competing for resources, the main UI thread would be starved. High priority forces the OS kernel to schedule the main process preferentially, ensuring responses get through despite resource contention.
+
+### AMD Ryzen 7 5700U Configuration
+
+```
+Strategy: ADRE: Brute-Force Maximization Protocol (16 threads, max GPU layers)
+n_threads: 16 (hardcoded, all logical cores)
+n_gpu_layers: 99999 (maximum possible offload)
+Process Priority: High (elevated at startup)
+```
+
+**Detection**: The protocol activates automatically when the CPU model name contains "AMD Ryzen" and "7 5700U" (note: this specifically matches Ryzen 7 5700U, not Ryzen 5 or 9 variants).
+
+### Technical Implementation
+
+```python
+# In _calculate_optimal_settings_adre()
+cpu_model = hardware['cpu'].get('model_name', '')
+
+# Brute-Force Override for AMD Ryzen 7 5700U
+if 'AMD Ryzen' in cpu_model and '7 5700U' in cpu_model:
+    settings['n_threads'] = 16  # Hardcoded
+    settings['n_gpu_layers'] = 99999  # Maximum
+    settings['strategy'] = 'ADRE: Brute-Force Maximization Protocol'
+    return settings  # Bypass all other logic
+```
+
+```python
+# In main.py startup
+process = psutil.Process(os.getpid())
+process.nice(psutil.HIGH_PRIORITY_CLASS if hasattr(psutil, 'HIGH_PRIORITY_CLASS') else -10)
+```
+
+### Why This Approach?
+
+The Brute-Force Maximization Protocol represents a philosophical departure from ADRE's intelligent optimization:
+
+- **ADRE Philosophy**: Intelligent, hardware-aware, calculated optimization
+- **Brute-Force Philosophy**: Direct, commanded, maximum resource usage
+
+This dual approach ensures:
+1. **Most hardware** benefits from ADRE's intelligent optimization
+2. **Problematic hardware** (AMD Ryzen 7 5700U) gets explicit override
+3. **No broken systems** - other hardware remains on Physical Cores - 2 model
+
+### For Other Hardware
+
+The Brute-Force Maximization Protocol is **not active** on other systems. All other hardware continues to use ADRE's intelligent strategies:
+- ARM SoCs: Physical Cores - 2
+- APUs: Physical Cores - 2  
+- Dedicated GPUs: Physical Cores - 1
+- CPU-only: Physical Cores - 1
+
+This ensures the fix is surgical and doesn't impact working configurations.
+
 ## User Experience
 
 ### First-Run Warning

@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Maximal Thread Allocation:** Sets `n_threads` to `Physical Cores - 1`, leaving only a single core for all non-AI system tasks.
   - **Proactive-Reactive Loop:** Dynamically calculates the optimal `n_gpu_layers` by iteratively reducing layers until the total memory footprint (VRAM + RAM for remaining layers) fits perfectly within the AI Budget, ensuring maximum GPU offload without instability.
   - **ADRE Warning:** Added a one-time startup warning informing users that the new Aggressive Dynamic Resource Engine is active and will dedicate the majority of system resources to AI performance, with potential reduction in system responsiveness during AI operations.
+  - **Brute-Force Maximization Protocol (Critical Correction):** Implemented hardware-specific override for AMD Ryzen 7 5700U systems to address deadlock issues caused by ADRE's nuanced approach.
+    - **Hardcoded Thread Allocation:** Forces `n_threads = 16` (all logical cores) on AMD Ryzen 7 5700U, bypassing all intelligent allocation logic.
+    - **Maximum GPU Offload:** Sets `n_gpu_layers = 99999` to command the llama-cpp-python backend to offload every possible layer until VRAM saturation.
+    - **Process Priority Elevation:** Elevates main application process to `high` priority at startup to prevent resource starvation deadlock by giving UI and data-passing threads preferential treatment over AI worker threads.
 - **Enhanced ARM Swap Detection:** Fortified swap detection logic in `install.sh` to use multiple fallback methods (`swapon`, `/proc/swaps`, and `free` command) for more reliable detection across different Linux distributions.
 
 ### Added
