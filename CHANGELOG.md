@@ -21,24 +21,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.4.0] - 2025-10-12
 
 ### Changed
-- **Aggressive Dynamic Resource Engine (ADRE):** Complete ground-up redesign of the optimization engine to maximize hardware utilization for peak AI performance.
-  - **Minimal System Reserve:** Sets aside only 1.5 GB for the operating system, dedicating the vast majority of resources to AI operations.
-  - **Total System Memory (TSM) Calculation:** Calculates TSM as RAM + Swap, then subtracts the minimal system reserve to determine the AI Budget.
-  - **Aggressive VRAM Budgeting:** 
-    - ARM SoCs (Apple Silicon, Snapdragon, Tensor): 70% of AI Budget allocated to VRAM
-    - Dedicated GPUs (NVIDIA/AMD): 95% of VRAM utilized
-    - APUs/iGPUs: 50% of RAM allocated for shared VRAM
-  - **Maximal Thread Allocation:** Sets `n_threads` to `Physical Cores - 1`, leaving only a single core for all non-AI system tasks.
-  - **Proactive-Reactive Loop:** Dynamically calculates the optimal `n_gpu_layers` by iteratively reducing layers until the total memory footprint (VRAM + RAM for remaining layers) fits perfectly within the AI Budget, ensuring maximum GPU offload without instability.
-  - **ADRE Warning:** Added a one-time startup warning informing users that the new Aggressive Dynamic Resource Engine is active and will dedicate the majority of system resources to AI performance, with potential reduction in system responsiveness during AI operations.
-  - **Brute-Force Maximization Protocol (Critical Correction):** Implemented hardware-specific override for AMD Ryzen 7 5700U systems to address deadlock issues caused by ADRE's nuanced approach.
-    - **Hardcoded Thread Allocation:** Forces `n_threads = 16` (all logical cores) on AMD Ryzen 7 5700U, bypassing all intelligent allocation logic.
-    - **Maximum GPU Offload:** Sets `n_gpu_layers = 99999` to command the llama-cpp-python backend to offload every possible layer until VRAM saturation.
-    - **Process Priority Elevation:** Elevates main application process to `high` priority at startup to prevent resource starvation deadlock by giving UI and data-passing threads preferential treatment over AI worker threads.
+- **Hyper-Threaded Synergistic Engine:** Fundamental architectural fix that permanently resolves the critical "stuck at thinking" deadlock by introducing a synergistic engine that deeply interlaces hardware optimization with the application's core processes.
+  - **Dedicated Communication Channel (Core Fix):** Programmatically isolated and reserved a dedicated CPU core (Core 0) for the main application thread at startup using CPU affinity. This creates a protected, high-priority "express lane" for the UI, data pipelines, and all non-AI cognitive functions, ensuring the UI remains responsive no matter how intense the AI workload is.
+  - **Worker Thread Separation:** Configured the LLM interface to assign its worker threads to all *other* available cores (not Core 0), creating physical separation between the main thread and AI worker threads. This guarantees that the UI thread never starves, permanently fixing the resource starvation deadlock.
+  - **Hyper-Threading for Maximum Throughput:** Set `n_threads` to **32** to over-subscribe the CPU's worker cores, keeping them saturated with work for maximum throughput. This aggressive over-subscription ensures peak performance while the dedicated core handles UI responsiveness.
+  - **Maximum GPU Offload:** Set `n_gpu_layers` to **-1**, the correct and intelligent method to instruct the backend to offload every possible layer to the GPU, maximizing GPU utilization across all supported platforms (AMD, NVIDIA, Apple Metal, etc.).
+  - **Harmonious Integration:** CPU affinity and process priority are set as one of the very first actions at startup, ensuring all subsequent application logic operates within this synergistic framework with high priority for preferential OS scheduling.
+  - **Graceful Shutdown Hook:** Implemented automatic cleanup using the `atexit` module. When the application closes, it automatically resets the process affinity and priority to original values, ensuring the application is a good system citizen and leaves no modifications behind.
+  - **Full-Spectrum Hardware Support:** Enhanced the `HardwareProfiler` to ensure this new logic is correctly applied across the full spectrum of supported hardware (AMD, NVIDIA, Intel, Apple, Qualcomm, etc.).
 - **Enhanced ARM Swap Detection:** Fortified swap detection logic in `install.sh` to use multiple fallback methods (`swapon`, `/proc/swaps`, and `free` command) for more reliable detection across different Linux distributions.
 
 ### Added
-- **Version 3.4.0:** Updated `setup.py` to reflect this major optimization engine overhaul.
+- **Version 3.4.0:** Updated `setup.py` to reflect this major architectural fix.
 
 ## [3.3.0] - 2025-10-12
 

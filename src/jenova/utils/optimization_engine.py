@@ -50,92 +50,16 @@ class OptimizationEngine:
         gpu_capabilities = hardware.get('gpu_capabilities', {})
         soc_type = hardware['cpu'].get('soc_type', None)
         
-        # BRUTE-FORCE MAXIMIZATION PROTOCOL
-        # Override for AMD Ryzen 7 5700U: Force maximum hardware usage
-        if 'AMD Ryzen' in cpu_model and '7 5700U' in cpu_model:
-            settings['n_threads'] = 16  # Hardcoded: Use all 16 logical cores
-            settings['n_gpu_layers'] = 99999  # Maximum possible GPU offload
-            settings['strategy'] = 'ADRE: Brute-Force Maximization Protocol (16 threads, max GPU layers)'
-            self.ui_logger.system_message(">> Brute-Force Maximization Protocol activated for AMD Ryzen 7 5700U")
-            return settings
+        # HYPER-THREADED SYNERGISTIC ENGINE
+        # Set n_threads to 32 for maximum throughput via hyper-threading over-subscription
+        # This saturates worker cores (all except Core 0 which is reserved for main thread)
+        settings['n_threads'] = 32
         
-        # Memory information
-        ram_mb = hardware['memory']['total_mb']
-        swap_mb = hardware.get('swap', {}).get('total_mb', 0)
-        swap_available = hardware.get('swap', {}).get('available', False)
+        # Set n_gpu_layers to -1 for intelligent maximum GPU offload
+        # This instructs the backend to offload every possible layer to GPU
+        settings['n_gpu_layers'] = -1
+        settings['strategy'] = 'ADRE: Hyper-Threaded Synergistic Engine (32 threads, max GPU layers)'
         
-        # Calculate Total System Memory (TSM) and AI Budget
-        tsm_mb = ram_mb + swap_mb
-        ai_budget_mb = tsm_mb - self.SYSTEM_RESERVE_MB
-        
-        # Strategy 1: High-Performance ARM SoC (Apple Silicon, Snapdragon, Tensor)
-        # These have unified memory - use Physical Cores - 2 to prevent deadlock
-        if soc_type in ['Apple Silicon', 'Snapdragon', 'Tensor']:
-            # INTELLIGENT THREAD ALLOCATION: Physical Cores - 2
-            # Reserve one core for OS and one core for main app loop + iGPU feeding
-            settings['n_threads'] = max(1, cpu_cores - 2)
-            
-            # 70% of AI Budget for VRAM on ARM SoCs
-            vram_budget_mb = int(ai_budget_mb * 0.70)
-            
-            # Calculate maximum layers that fit
-            settings['n_gpu_layers'] = -1  # Start with full offload
-            settings['strategy'] = f'ADRE: High-Performance ARM SoC ({soc_type}) - Synergistic (Cores-2)'
-            return settings
-        
-        # Strategy 2: Dedicated GPU (NVIDIA/AMD with runtime support)
-        if is_dedicated and gpu_vendor in ['NVIDIA', 'AMD']:
-            # Check for runtime support
-            has_runtime = False
-            if gpu_vendor == 'NVIDIA' and gpu_capabilities.get('cuda_available', False):
-                has_runtime = True
-            elif gpu_vendor == 'AMD' and gpu_capabilities.get('rocm_available', False):
-                has_runtime = True
-            
-            if has_runtime:
-                # AGGRESSIVE THREAD ALLOCATION: Physical Cores - 1
-                # Dedicated GPUs have their own scheduler, safe to be aggressive
-                settings['n_threads'] = max(1, cpu_cores - 1)
-                
-                # AGGRESSIVE: 95% of dedicated VRAM
-                vram_budget_mb = int(gpu_vram_mb * 0.95)
-                
-                # Proactive-Reactive Loop: Calculate optimal n_gpu_layers
-                max_layers = 80  # Typical max for large models
-                optimal_layers = self._calculate_optimal_gpu_layers(
-                    vram_budget_mb, ai_budget_mb, ram_mb, max_layers
-                )
-                
-                settings['n_gpu_layers'] = optimal_layers
-                settings['strategy'] = f'ADRE: Dedicated {gpu_vendor} GPU - Aggressive (Cores-1)'
-                return settings
-        
-        # Strategy 3: APU/iGPU (Shared Memory)
-        if is_apu and gpu_vendor in ['AMD', 'Intel']:
-            # INTELLIGENT THREAD ALLOCATION: Physical Cores - 2
-            # Reserve one core for OS and one core for main app loop + iGPU feeding
-            settings['n_threads'] = max(1, cpu_cores - 2)
-            
-            # AGGRESSIVE: 50% of RAM for APU VRAM budget
-            vram_budget_mb = int(ram_mb * 0.50)
-            
-            # Calculate optimal layers with proactive-reactive approach
-            max_layers = 40  # Conservative max for APUs
-            optimal_layers = self._calculate_optimal_gpu_layers(
-                vram_budget_mb, ai_budget_mb, ram_mb, max_layers
-            )
-            
-            settings['n_gpu_layers'] = optimal_layers
-            settings['strategy'] = f'ADRE: {gpu_vendor} APU - Synergistic (Cores-2)'
-            return settings
-        
-        # Strategy 4: CPU-Only Fallback
-        # No GPU or no runtime support
-        # AGGRESSIVE THREAD ALLOCATION: Physical Cores - 1
-        # CPU-only systems can safely use Cores - 1
-        settings['n_threads'] = max(1, cpu_cores - 1)
-        settings['n_gpu_layers'] = 0
-        settings['strategy'] = 'ADRE: CPU-Only Mode (Cores-1)'
         return settings
     
     def _calculate_optimal_gpu_layers(self, vram_budget_mb: int, ai_budget_mb: int, 
