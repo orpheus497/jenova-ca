@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- (Add new features for the next version here)
+### Changed
+- **Intelligent Optimization Engine Overhaul:** Comprehensive overhaul of the Automated Hardware Optimization Engine with intelligent hardware detection and speed-focused tuning strategies.
+  - **Enhanced APU/iGPU Detection:** The profiler now specifically identifies APUs by checking if the GPU is on the same die as the CPU, and determines allocated GPU memory (UMA/GART size) by parsing system files instead of looking for dedicated VRAM.
+  - **Robust ROCm/CUDA Capability Check:** The system now verifies the presence of actual `libcudart.so` (CUDA) or `libamdhip64.so` (ROCm) shared libraries to ensure GPU acceleration runtimes are installed, providing more reliable detection than SMI tools.
+  - **Specific ARM SoC Detection:** The profiler parses `/proc/cpuinfo` on `aarch64` systems to explicitly identify CPU models by name, detecting "Snapdragon", "Apple Silicon", or "Tensor" processors for tailored optimizations.
+  - **CPU Model Name Detection:** Enhanced CPU detection to extract and display full CPU model names for better hardware identification.
+  - **Multi-Strategy Optimization:** Implemented distinct optimization strategies based on hardware profile:
+    - **APU-Balanced Strategy:** For AMD/Intel APUs, conservatively calculates `n_gpu_layers` to avoid memory swapping and reserves 1-2 physical cores for system/GPU data feeding.
+    - **Dedicated GPU-Aggressive Strategy:** For systems with discrete NVIDIA/AMD GPUs and proper runtime support, maximizes `n_gpu_layers` to fill dedicated VRAM.
+    - **High-Performance ARM SoC Strategy:** For Apple Silicon, Snapdragon, and Tensor SoCs with unified memory, offloads all layers to GPU (`n_gpu_layers = -1`) and utilizes all performance cores.
+    - **CPU-Only Fallback:** When no capable GPU is detected, sets `n_gpu_layers = 0` and optimizes thread count for CPU cores.
+  - **Enhanced User Feedback:** Startup messages now explicitly state the detected hardware profile (e.g., "Detected AMD APU with shared memory") and the optimization strategy being applied (e.g., "Applying APU-Balanced strategy for speed").
+  - **Hardware Profile Classification:** Added intelligent hardware profile classification to guide strategy selection and improve user understanding.
 
 ## [3.1.0] - 2025-10-12
 
