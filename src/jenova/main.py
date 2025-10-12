@@ -17,6 +17,7 @@ from jenova.config import load_configuration
 from jenova.ui.logger import UILogger
 from jenova.utils.file_logger import FileLogger
 from jenova.utils.model_loader import load_embedding_model
+from jenova.utils.optimization_engine import OptimizationEngine
 from jenova import tools
 
 from jenova.assumptions.manager import AssumptionManager
@@ -39,6 +40,26 @@ def main():
         config['user_data_root'] = user_data_root
         insights_root = os.path.join(user_data_root, "insights")
         cortex_root = os.path.join(user_data_root, "cortex")
+        
+        # Run optimization engine if enabled
+        optimization_enabled = config.get('optimization', {}).get('enabled', True)
+        if optimization_enabled:
+            ui_logger.info(">> Running Performance Optimization Engine...")
+            optimizer = OptimizationEngine(user_data_root, ui_logger)
+            optimizer.run()
+            config = optimizer.apply_settings(config)
+            
+            # Display optimization report
+            hardware = optimizer.settings.get('hardware', {})
+            optimal = optimizer.settings.get('optimal_settings', {})
+            
+            cpu_vendor = hardware.get('cpu', {}).get('vendor', 'Unknown')
+            cpu_cores = hardware.get('cpu', {}).get('physical_cores', 'Unknown')
+            gpu_vendor = hardware.get('gpu', {}).get('vendor', 'None')
+            gpu_vram = hardware.get('gpu', {}).get('vram_mb', 0)
+            
+            ui_logger.system_message(f"Hardware Detected: {cpu_vendor} CPU ({cpu_cores} cores), {gpu_vendor} GPU ({gpu_vram} MB VRAM)")
+            ui_logger.system_message(f"Optimal Settings Applied: {optimal.get('n_threads', 'N/A')} threads, {optimal.get('n_gpu_layers', 'N/A')} GPU layers")
         
         ui_logger.info(">> Initializing Intelligence Matrix...")
         llm_interface = LLMInterface(config, ui_logger, file_logger)

@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Automated Performance Optimization System:** Introduced a sophisticated Optimization Engine that automatically configures Jenova for optimal performance based on detected hardware.
+  - **Hardware Profiler:** New `HardwareProfiler` class detects detailed system specifications including CPU (architecture, vendor, physical cores), GPU (vendor, VRAM via nvidia-smi, rocm-smi, and /sys/class/drm fallback), and total system RAM.
+  - **Intelligent Configuration:** `OptimizationEngine` calculates optimal `n_gpu_layers` and `n_threads` settings for the llama-cpp-python backend and saves them to a user-specific `optimization.json` file.
+  - **Automatic Application:** The main application now runs the `OptimizationEngine` on every startup, applying calculated settings before loading the language model and displaying detected hardware information.
+  - **Enhanced `/optimize` Command:** New command displays a detailed report of detected hardware and currently active performance settings.
+  - **Configuration:** Added `optimization` section to `main_config.yaml` allowing users to enable/disable the auto-tuning feature.
+  - **Dependency:** Added `psutil` library to `requirements.txt` for hardware detection support.
 - (Add new features for the next version here)
 
 ## [3.0.1] - 2025-10-11
