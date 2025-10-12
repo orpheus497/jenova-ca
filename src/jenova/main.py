@@ -49,7 +49,7 @@ def main():
             optimizer.run()
             config = optimizer.apply_settings(config)
             
-            # Display optimization report
+            # Display optimization report with enhanced feedback
             hardware = optimizer.settings.get('hardware', {})
             optimal = optimizer.settings.get('optimal_settings', {})
             
@@ -57,9 +57,13 @@ def main():
             cpu_cores = hardware.get('cpu', {}).get('physical_cores', 'Unknown')
             gpu_vendor = hardware.get('gpu', {}).get('vendor', 'None')
             gpu_vram = hardware.get('gpu', {}).get('vram_mb', 0)
+            hardware_profile = hardware.get('hardware_profile', 'Unknown')
+            strategy = optimal.get('strategy', 'Unknown')
             
-            ui_logger.system_message(f"Hardware Detected: {cpu_vendor} CPU ({cpu_cores} cores), {gpu_vendor} GPU ({gpu_vram} MB VRAM)")
-            ui_logger.system_message(f"Optimal Settings Applied: {optimal.get('n_threads', 'N/A')} threads, {optimal.get('n_gpu_layers', 'N/A')} GPU layers")
+            ui_logger.system_message(f"Detected Hardware Profile: {hardware_profile}")
+            ui_logger.system_message(f"Hardware: {cpu_vendor} CPU ({cpu_cores} cores), {gpu_vendor} GPU ({gpu_vram} MB VRAM)")
+            ui_logger.system_message(f"Applying {strategy} strategy for speed.")
+            ui_logger.system_message(f"Optimal Settings: {optimal.get('n_threads', 'N/A')} threads, {optimal.get('n_gpu_layers', 'N/A')} GPU layers")
         
         ui_logger.info(">> Initializing Intelligence Matrix...")
         llm_interface = LLMInterface(config, ui_logger, file_logger)

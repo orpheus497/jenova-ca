@@ -131,11 +131,24 @@ Jenova is designed for continuous improvement. The insights generated during its
 
 Jenova includes an intelligent Optimization Engine that automatically configures the system for optimal performance based on your hardware specifications. This eliminates the need for manual tuning and ensures that Jenova runs efficiently on any system.
 
-*   **Hardware Profiler:** The `HardwareProfiler` class automatically detects detailed system specifications including CPU (architecture, vendor, physical cores), GPU (vendor, VRAM via nvidia-smi, rocm-smi, and /sys/class/drm fallback), and total system RAM.
-*   **Intelligent Configuration:** The `OptimizationEngine` analyzes your hardware and calculates optimal `n_gpu_layers` and `n_threads` settings for the llama-cpp-python backend. These settings are saved to a user-specific `optimization.json` file.
-*   **Automatic Application:** The optimization engine runs automatically on every startup, applying the calculated settings before loading the language model and displaying detected hardware information.
-*   **Manual Inspection:** The `/optimize` command displays a detailed report of detected hardware and currently active performance settings.
-*   **Configuration:** The `optimization` section in `main_config.yaml` allows users to enable/disable the auto-tuning feature as needed.
+*   **Intelligent Hardware Profiler:** The `HardwareProfiler` class automatically detects detailed system specifications:
+    *   **CPU Detection:** Architecture, vendor, physical cores, and full model name
+    *   **APU/iGPU Detection:** Specifically identifies integrated graphics (APUs) by checking if the GPU shares the same die as the CPU
+    *   **GPU Detection:** Vendor, VRAM (via nvidia-smi, rocm-smi, and /sys/class/drm fallback), and classification as dedicated or integrated
+    *   **UMA/GART Memory Detection:** For APUs/iGPUs, determines allocated shared memory size instead of looking for non-existent dedicated VRAM
+    *   **GPU Runtime Support:** Verifies the presence of actual CUDA (`libcudart.so`) or ROCm (`libamdhip64.so`) runtime libraries
+    *   **ARM SoC Detection:** Parses `/proc/cpuinfo` on aarch64 systems to identify specific SoC types (Snapdragon, Apple Silicon, Tensor)
+    *   **System RAM:** Total available system memory
+*   **Multi-Strategy Configuration:** The `OptimizationEngine` analyzes your hardware and applies the most appropriate optimization strategy:
+    *   **High-Performance ARM SoC Strategy:** For Apple Silicon, Snapdragon, and Tensor SoCs with unified memory, offloads all layers to GPU and uses all available performance cores to leverage high-bandwidth memory architecture
+    *   **APU-Balanced Strategy:** For AMD/Intel APUs with shared memory, conservatively calculates `n_gpu_layers` to avoid memory swapping and reserves 1-2 physical cores for system/GPU data feeding, preventing stuttering and maximizing throughput
+    *   **Dedicated GPU-Aggressive Strategy:** For discrete NVIDIA/AMD GPUs with proper runtime support, maximizes `n_gpu_layers` to fill dedicated VRAM for maximum GPU utilization
+    *   **CPU-Only Fallback:** When no capable GPU is detected or runtime support is missing, optimizes for CPU-only operation with appropriate thread count
+*   **Settings Persistence:** Calculated settings are saved to a user-specific `optimization.json` file
+*   **Automatic Application:** The optimization engine runs automatically on every startup, applying calculated settings before loading the language model
+*   **Enhanced Feedback:** Displays detected hardware profile (e.g., "AMD APU with shared memory") and the optimization strategy being applied (e.g., "Applying APU-Balanced strategy for speed")
+*   **Manual Inspection:** The `/optimize` command displays a detailed report of detected hardware, active strategy, and current performance settings
+*   **Configuration:** The `optimization` section in `main_config.yaml` allows users to enable/disable the auto-tuning feature as needed
 
 ## 4. System-Wide Installation
 
