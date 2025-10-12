@@ -1,6 +1,7 @@
 import os
 import traceback
 import psutil
+import atexit
 from jenova.utils.telemetry_fix import apply_telemetry_patch
 apply_telemetry_patch()
 
@@ -27,14 +28,55 @@ from jenova.cortex.cortex import Cortex
 
 import getpass
 
-def main():
-    """Main entry point for the perfected Jenova Cognitive Architecture."""
-    # BRUTE-FORCE MAXIMIZATION PROTOCOL: Elevate process priority to prevent deadlock
+# Global variables to store original process settings for graceful shutdown
+_original_affinity = None
+_original_priority = None
+
+def _restore_process_settings():
+    """Graceful shutdown: Reset CPU affinity and process priority to original values."""
+    global _original_affinity, _original_priority
     try:
         process = psutil.Process(os.getpid())
-        process.nice(psutil.HIGH_PRIORITY_CLASS if hasattr(psutil, 'HIGH_PRIORITY_CLASS') else -10)
+        if _original_affinity is not None:
+            process.cpu_affinity(_original_affinity)
+        if _original_priority is not None:
+            process.nice(_original_priority)
     except Exception:
-        # Continue even if priority elevation fails (requires elevated permissions on some systems)
+        pass  # Silent failure on shutdown
+
+
+def main():
+    """Main entry point for the perfected Jenova Cognitive Architecture."""
+    global _original_affinity, _original_priority
+    
+    # HYPER-THREADED SYNERGISTIC ENGINE: Set CPU affinity and process priority
+    try:
+        process = psutil.Process(os.getpid())
+        
+        # Store original settings for graceful shutdown
+        try:
+            _original_affinity = process.cpu_affinity()
+        except Exception:
+            _original_affinity = None
+        
+        try:
+            _original_priority = process.nice()
+        except Exception:
+            _original_priority = None
+        
+        # Reserve Core 0 for main application thread (dedicated communication channel)
+        # This creates a protected "express lane" for UI, data pipelines, and non-AI functions
+        cpu_count = psutil.cpu_count(logical=True)
+        if cpu_count and cpu_count > 1:
+            process.cpu_affinity([0])  # Reserve Core 0 for main thread initially
+        
+        # Elevate process priority to prevent deadlock
+        process.nice(psutil.HIGH_PRIORITY_CLASS if hasattr(psutil, 'HIGH_PRIORITY_CLASS') else -10)
+        
+        # Register graceful shutdown handler
+        atexit.register(_restore_process_settings)
+    except Exception:
+        # Continue even if affinity/priority settings fail (requires elevated permissions on some systems)
         pass
     
     username = getpass.getuser()
@@ -73,6 +115,18 @@ def main():
             ui_logger.system_message(f"Hardware: {cpu_vendor} CPU ({cpu_cores} cores), {gpu_vendor} GPU ({gpu_vram} MB VRAM)")
             ui_logger.system_message(f"Applying {strategy} strategy for speed.")
             ui_logger.system_message(f"Optimal Settings: {optimal.get('n_threads', 'N/A')} threads, {optimal.get('n_gpu_layers', 'N/A')} GPU layers")
+        
+        # HYPER-THREADED SYNERGISTIC ENGINE: Reset CPU affinity before loading LLM
+        # This allows LLM worker threads to use all available cores (not just Core 0)
+        # while maintaining high process priority for the main thread
+        try:
+            process = psutil.Process(os.getpid())
+            cpu_count = psutil.cpu_count(logical=True)
+            if cpu_count and cpu_count > 1:
+                # Reset affinity to all cores for LLM worker threads
+                process.cpu_affinity(list(range(cpu_count)))
+        except Exception:
+            pass  # Continue even if affinity reset fails
         
         ui_logger.info(">> Initializing Intelligence Matrix...")
         llm_interface = LLMInterface(config, ui_logger, file_logger)
