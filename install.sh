@@ -43,6 +43,20 @@ if ! pip install --ignore-installed .; then
     exit 1
 fi
 
+# 5. Check for Swap on ARM Systems
+ARCH=$(uname -m)
+if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+    echo "--> Checking for swap configuration on ARM system..."
+    SWAP_TOTAL=$(swapon --show=SIZE --noheadings --bytes 2>/dev/null | awk '{sum+=$1} END {print sum}')
+    
+    if [ -z "$SWAP_TOTAL" ] || [ "$SWAP_TOTAL" -eq 0 ]; then
+        echo ""
+        echo "[INFO] No swap file detected on this ARM system."
+        echo "       A swap file can significantly improve performance and stability."
+        echo "       Jenova will display a one-time setup guide on first run."
+    fi
+fi
+
 echo
 
 echo "======================================================================"

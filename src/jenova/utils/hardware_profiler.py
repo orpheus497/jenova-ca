@@ -11,6 +11,7 @@ class HardwareProfiler:
         self.cpu_info = self._detect_cpu()
         self.gpu_info = self._detect_gpu()
         self.memory_info = self._detect_memory()
+        self.swap_info = self._detect_swap()
         self._detect_gpu_capabilities()
         self._classify_hardware_profile()
     
@@ -224,12 +225,29 @@ class HardwareProfiler:
         
         return memory_info
     
+    def _detect_swap(self) -> dict:
+        """Detects swap space configuration."""
+        swap_info = {
+            'total_mb': 0,
+            'available': False
+        }
+        
+        try:
+            swap = psutil.swap_memory()
+            swap_info['total_mb'] = swap.total // (1024 * 1024)
+            swap_info['available'] = swap.total > 0
+        except Exception:
+            pass
+        
+        return swap_info
+    
     def get_summary(self) -> dict:
         """Returns a summary of all detected hardware."""
         return {
             'cpu': self.cpu_info,
             'gpu': self.gpu_info,
             'memory': self.memory_info,
+            'swap': self.swap_info,
             'gpu_capabilities': getattr(self, 'gpu_capabilities', {}),
             'hardware_profile': getattr(self, 'hardware_profile', 'Unknown')
         }

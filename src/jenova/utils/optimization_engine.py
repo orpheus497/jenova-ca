@@ -46,6 +46,10 @@ class OptimizationEngine:
         cpu_arch = hardware['cpu'].get('architecture', '')
         soc_type = hardware['cpu'].get('soc_type', None)
         
+        # Swap-aware detection
+        swap_available = hardware.get('swap', {}).get('available', False)
+        swap_total_mb = hardware.get('swap', {}).get('total_mb', 0)
+        
         # Strategy 1: High-Performance ARM SoC (Apple Silicon, Snapdragon, Tensor)
         if soc_type in ['Apple Silicon', 'Snapdragon', 'Tensor']:
             settings['n_gpu_layers'] = -1  # Offload all layers to GPU
@@ -64,15 +68,34 @@ class OptimizationEngine:
             else:
                 settings['n_threads'] = max(2, cpu_cores)
             
-            # Calculate GPU layers conservatively for shared memory
-            if gpu_vram_mb >= 2048:
-                settings['n_gpu_layers'] = 20  # Conservative for 2GB+ shared
-            elif gpu_vram_mb >= 1024:
-                settings['n_gpu_layers'] = 12  # Conservative for 1GB+ shared
-            elif gpu_vram_mb >= 512:
-                settings['n_gpu_layers'] = 8   # Conservative for 512MB+ shared
+            # Swap-aware GPU layer calculation
+            if swap_available:
+                # Swap is available - proceed with existing aggressive strategies
+                if gpu_vram_mb >= 2048:
+                    settings['n_gpu_layers'] = 20  # Conservative for 2GB+ shared
+                elif gpu_vram_mb >= 1024:
+                    settings['n_gpu_layers'] = 12  # Conservative for 1GB+ shared
+                elif gpu_vram_mb >= 512:
+                    settings['n_gpu_layers'] = 8   # Conservative for 512MB+ shared
+                else:
+                    settings['n_gpu_layers'] = 0   # Too little shared memory
             else:
-                settings['n_gpu_layers'] = 0   # Too little shared memory
+                # No swap - activate Ultra-Conservative mode
+                if gpu_vram_mb >= 2048:
+                    settings['n_gpu_layers'] = 15  # More conservative without swap
+                elif gpu_vram_mb >= 1024:
+                    settings['n_gpu_layers'] = 8   # More conservative without swap
+                elif gpu_vram_mb >= 512:
+                    settings['n_gpu_layers'] = 4   # More conservative without swap
+                else:
+                    settings['n_gpu_layers'] = 0   # Too little shared memory
+                
+                # Reserve an additional CPU core for stability
+                if settings['n_threads'] > 2:
+                    settings['n_threads'] -= 1
+                
+                settings['strategy'] = f'APU-Ultra-Conservative (AMD APU, No Swap)' if gpu_vendor == 'AMD' else f'APU-Ultra-Conservative (Intel iGPU, No Swap)'
+                return settings
             
             settings['strategy'] = f'APU-Balanced (AMD APU)' if gpu_vendor == 'AMD' else f'APU-Balanced (Intel iGPU)'
             return settings
@@ -119,12 +142,27 @@ class OptimizationEngine:
         # Strategy 4: CPU-Only Fallback
         # No capable GPU detected or no runtime support
         settings['n_gpu_layers'] = 0
-        if cpu_cores > 4:
-            settings['n_threads'] = cpu_cores - 2
-        elif cpu_cores > 2:
-            settings['n_threads'] = cpu_cores - 1
+        
+        # Swap-aware CPU thread calculation
+        if swap_available:
+            # Swap is available - use existing strategy
+            if cpu_cores > 4:
+                settings['n_threads'] = cpu_cores - 2
+            elif cpu_cores > 2:
+                settings['n_threads'] = cpu_cores - 1
+            else:
+                settings['n_threads'] = cpu_cores
         else:
-            settings['n_threads'] = cpu_cores
+            # No swap - activate Ultra-Conservative mode
+            if cpu_cores > 4:
+                settings['n_threads'] = cpu_cores - 3  # Reserve additional core
+            elif cpu_cores > 2:
+                settings['n_threads'] = cpu_cores - 2  # Reserve additional core
+            else:
+                settings['n_threads'] = max(1, cpu_cores - 1)  # Reserve at least 1 core
+            
+            settings['strategy'] = 'CPU-only fallback (Ultra-Conservative, No Swap)'
+            return settings
         
         settings['strategy'] = 'CPU-only fallback'
         return settings
@@ -203,6 +241,15 @@ class OptimizationEngine:
         total_mb = memory.get('total_mb', 0)
         total_gb = total_mb / 1024
         report.append(f"  Total RAM:       {total_gb:.2f} GB ({total_mb} MB)")
+        
+        # Swap Information
+        swap = hardware.get('swap', {})
+        swap_mb = swap.get('total_mb', 0)
+        swap_gb = swap_mb / 1024
+        if swap.get('available', False):
+            report.append(f"  Swap Space:      {swap_gb:.2f} GB ({swap_mb} MB)")
+        else:
+            report.append(f"  Swap Space:      Not configured")
         report.append("")
         
         # Optimal Settings
