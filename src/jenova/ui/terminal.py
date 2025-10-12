@@ -144,6 +144,8 @@ class TerminalUI:
             self._verify_assumption()
         elif command == '/train':
             self.logger.system_message("To create a training file for fine-tuning, run the following command in your terminal: python3 finetune/train.py")
+        elif command == '/optimize':
+            self._show_optimization_report()
         elif command == '/develop_insight':
             self._develop_insight(args)
         elif command == '/learn_procedure':
@@ -171,6 +173,8 @@ class TerminalUI:
         self.logger.help_message("[bright_yellow]  /verify[/bright_yellow]                          - [#BDB2FF]Starts the assumption verification process. Jenova will present an unverified assumption it has made about you and ask for clarification, allowing you to confirm or deny it. This refines Jenova's understanding of your preferences and knowledge.[/]")
         self.logger.help_message("")
         self.logger.help_message("[bright_yellow]  /train[/bright_yellow]                           - [#BDB2FF]Provides instructions on how to create a training file for fine-tuning the model with your own data.[/]")
+        self.logger.help_message("")
+        self.logger.help_message("[bright_yellow]  /optimize[/bright_yellow]                        - [#BDB2FF]Displays a detailed report of the detected hardware specifications and the currently applied performance optimization settings.[/]")
         self.logger.help_message("")
         self.logger.help_message("[bright_yellow]  /develop_insight [node_id][/bright_yellow]       - [#BDB2FF]This command has dual functionality:[/]")
         self.logger.help_message("[#BDB2FF]                                       - If a `node_id` is provided: Jenova will take an existing insight and generate a more detailed and developed version of it, adding more context or connections.[/]")
@@ -247,3 +251,11 @@ class TerminalUI:
         returned_messages = self.engine.learn_procedure(procedure_data, self.username)
         self.stop_spinner()
         self._process_and_log_messages(returned_messages)
+
+    def _show_optimization_report(self):
+        """Displays the hardware and optimization settings report."""
+        from jenova.utils.optimization_engine import OptimizationEngine
+        user_data_root = self.engine.config.get('user_data_root')
+        optimizer = OptimizationEngine(user_data_root, self.logger)
+        report = optimizer.get_report()
+        self.logger.system_message(report)
