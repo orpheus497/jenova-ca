@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2025-10-12
+
+### Fixed
+- **CPU Thread Utilization:** Fixed a critical bug in `LLMInterface` where the `n_threads` value calculated by the `OptimizationEngine` was not being consistently passed to temporary `Llama` instances during model metadata reading. This resulted in under-utilization of available CPU cores. The fix ensures that the optimized `n_threads` value is **always** used across all `Llama` instantiations, guaranteeing maximum CPU core utilization (minus reserved cores for system stability) on all hardware configurations (APU, dGPU, CPU-only).
+
+### Added
+- **Swap-Aware Optimization:** The Automated Hardware Optimization Engine now detects and considers the system's swap configuration when calculating optimal performance settings, prioritizing stability without compromising performance.
+  - **Swap Detection in HardwareProfiler:** The `HardwareProfiler` now uses `psutil` to detect the presence and total size of system swap space, adding this information to the hardware profile report.
+  - **Swap-Aware OptimizationEngine Logic:** The `OptimizationEngine` refines its strategies based on swap availability:
+    - **With Swap:** Proceeds with existing aggressive strategies (e.g., APU-Balanced), confident that the OS has a safety net to prevent out-of-memory crashes.
+    - **Without Swap:** Activates new **"Ultra-Conservative"** mode, further reducing `n_gpu_layers` and reserving an additional CPU core to prioritize system stability above all else.
+  - **Enhanced Hardware Reports:** The optimization report now includes swap space information, displaying total swap size or "Not configured" if no swap is detected.
+- **ARM-Specific Swap Warning:** Added intelligent swap guidance for ARM systems to safely improve performance without making dangerous system modifications.
+  - **install.sh Enhancement:** The installation script now checks for the absence of a swap file on `aarch64`/`arm64` systems and informs users that a setup guide will be displayed on first run.
+  - **TerminalUI Swap Warning:** If no swap is found on an ARM system, the UI displays a **clear, one-time warning message** on the user's first run. This message explains the performance benefits of a swap file and provides exact, safe `sudo` commands for the user to create one themselves, respecting user autonomy and system integrity.
+
 ## [3.2.1] - 2025-10-12
 
 ### Fixed

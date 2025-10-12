@@ -58,6 +58,59 @@ class TerminalUI:
             self._spinner_thread.join()
         self._spinner_thread = None
 
+    def _check_and_warn_swap_on_arm(self):
+        """Check for swap on ARM systems and display one-time warning if needed."""
+        import platform
+        import psutil
+        
+        # Only check on ARM systems
+        arch = platform.machine()
+        if arch not in ['aarch64', 'arm64']:
+            return
+        
+        # Check if swap is available
+        try:
+            swap = psutil.swap_memory()
+            if swap.total > 0:
+                return  # Swap is configured, no warning needed
+        except Exception:
+            return  # If we can't check, don't show warning
+        
+        # Check if we've already shown the warning
+        warning_file = os.path.join(self.engine.config['user_data_root'], '.swap_warning_shown')
+        if os.path.exists(warning_file):
+            return  # Warning already shown
+        
+        # Display warning message
+        self.logger.system_message("\n" + "="*70)
+        self.logger.system_message("⚠️  ARM SYSTEM PERFORMANCE NOTICE")
+        self.logger.system_message("="*70)
+        self.logger.system_message("")
+        self.logger.system_message("No swap file detected on this ARM system.")
+        self.logger.system_message("")
+        self.logger.system_message("A swap file can significantly improve performance and system stability")
+        self.logger.system_message("when running large language models.")
+        self.logger.system_message("")
+        self.logger.system_message("To create a swap file (recommended 4-8 GB), run these commands:")
+        self.logger.system_message("")
+        self.logger.system_message("  sudo fallocate -l 4G /swapfile")
+        self.logger.system_message("  sudo chmod 600 /swapfile")
+        self.logger.system_message("  sudo mkswap /swapfile")
+        self.logger.system_message("  sudo swapon /swapfile")
+        self.logger.system_message("")
+        self.logger.system_message("To make it permanent, add this line to /etc/fstab:")
+        self.logger.system_message("")
+        self.logger.system_message("  /swapfile none swap sw 0 0")
+        self.logger.system_message("")
+        self.logger.system_message("="*70 + "\n")
+        
+        # Mark warning as shown
+        try:
+            with open(warning_file, 'w') as f:
+                f.write("1")
+        except Exception:
+            pass  # If we can't write the file, we'll show warning again next time
+
 
 
     def run(self):
@@ -65,6 +118,9 @@ class TerminalUI:
         self.logger.info("Initialized and Ready.")
         self.logger.info("Type your message, use a command, or type 'exit' to quit.")
         self.logger.info("Type /help to see a list of available commands.\n")
+        
+        # Check for swap on ARM systems and warn if needed
+        self._check_and_warn_swap_on_arm()
 
         while True:
             try:
