@@ -21,6 +21,15 @@ if ! command -v python3 &> /dev/null || ! command -v pip &> /dev/null || ! comma
     exit 1
 fi
 
+# Check for python3-psutil
+echo "--> Checking for python3-psutil system package..."
+if ! python3 -c "import psutil" &> /dev/null; then
+    echo "[WARNING] python3-psutil system package not found."
+    echo "          This package is required for hardware detection."
+    echo "          On Debian/Ubuntu, install it with: sudo apt-get install python3-psutil"
+    echo "          On other systems, it will be installed via pip."
+fi
+
 # 3. Upgrade Pip
 echo "--> Upgrading system's pip..."
 pip install --upgrade pip > /dev/null

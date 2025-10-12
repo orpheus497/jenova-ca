@@ -127,6 +127,16 @@ Jenova is designed for continuous improvement. The insights generated during its
 
 *   **Data Preparation (`finetune/train.py`):** This script gathers all the `.json` insight files from `~/.jenova-ai/users/<username>/insights/` and transforms them into a `finetune_train.jsonl` file. The script is configurable and can be used to generate a dataset for fine-tuning a model in a separate program.
 
+### 3.10. Automated Hardware Optimization
+
+Jenova includes an intelligent Optimization Engine that automatically configures the system for optimal performance based on your hardware specifications. This eliminates the need for manual tuning and ensures that Jenova runs efficiently on any system.
+
+*   **Hardware Profiler:** The `HardwareProfiler` class automatically detects detailed system specifications including CPU (architecture, vendor, physical cores), GPU (vendor, VRAM via nvidia-smi, rocm-smi, and /sys/class/drm fallback), and total system RAM.
+*   **Intelligent Configuration:** The `OptimizationEngine` analyzes your hardware and calculates optimal `n_gpu_layers` and `n_threads` settings for the llama-cpp-python backend. These settings are saved to a user-specific `optimization.json` file.
+*   **Automatic Application:** The optimization engine runs automatically on every startup, applying the calculated settings before loading the language model and displaying detected hardware information.
+*   **Manual Inspection:** The `/optimize` command displays a detailed report of detected hardware and currently active performance settings.
+*   **Configuration:** The `optimization` section in `main_config.yaml` allows users to enable/disable the auto-tuning feature as needed.
+
 ## 4. System-Wide Installation
 
 Jenova AI is designed to be installed once on a system by an administrator and then be available to all users, while keeping each user's data completely separate and private.
@@ -227,8 +237,8 @@ Jenova's behavior is controlled by two YAML files in `src/jenova/config/`.
 This file controls the technical parameters of the AI.
 
 -   **`hardware`**:
-    -   `threads`: Number of CPU threads to use.
-    -   `gpu_layers`: Number of model layers to offload to the GPU. Set to -1 to offload all possible layers for maximum performance. Requires a compatible GPU and `llama-cpp-python` built with GPU support.
+    -   `threads`: Number of CPU threads to use. (Note: This value may be automatically overridden by the Optimization Engine if auto-tuning is enabled.)
+    -   `gpu_layers`: Number of model layers to offload to the GPU. Set to -1 to offload all possible layers for maximum performance. Requires a compatible GPU and `llama-cpp-python` built with GPU support. (Note: This value may be automatically overridden by the Optimization Engine if auto-tuning is enabled.)
     -   `mlock`: Whether to lock the model in memory (RAM). Set to `true` for a significant performance increase by preventing the model from being swapped to disk.
 -   **`model`**:
     -   `embedding_model`: The sentence-transformer model to use for creating vector embeddings for memory search.
