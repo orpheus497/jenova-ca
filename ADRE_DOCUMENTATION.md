@@ -262,7 +262,7 @@ n_gpu_layers: 99999 (maximum possible offload)
 Process Priority: High (elevated at startup)
 ```
 
-**Detection**: The protocol activates automatically when the CPU model name contains "AMD Ryzen" and "5700U".
+**Detection**: The protocol activates automatically when the CPU model name contains "AMD Ryzen" and "7 5700U" (note: this specifically matches Ryzen 7 5700U, not Ryzen 5 or 9 variants).
 
 ### Technical Implementation
 
@@ -271,7 +271,7 @@ Process Priority: High (elevated at startup)
 cpu_model = hardware['cpu'].get('model_name', '')
 
 # Brute-Force Override for AMD Ryzen 7 5700U
-if 'AMD Ryzen' in cpu_model and '5700U' in cpu_model:
+if 'AMD Ryzen' in cpu_model and '7 5700U' in cpu_model:
     settings['n_threads'] = 16  # Hardcoded
     settings['n_gpu_layers'] = 99999  # Maximum
     settings['strategy'] = 'ADRE: Brute-Force Maximization Protocol'

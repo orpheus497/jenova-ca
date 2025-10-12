@@ -52,7 +52,7 @@ class OptimizationEngine:
         
         # BRUTE-FORCE MAXIMIZATION PROTOCOL
         # Override for AMD Ryzen 7 5700U: Force maximum hardware usage
-        if 'AMD Ryzen' in cpu_model and '5700U' in cpu_model:
+        if 'AMD Ryzen' in cpu_model and '7 5700U' in cpu_model:
             settings['n_threads'] = 16  # Hardcoded: Use all 16 logical cores
             settings['n_gpu_layers'] = 99999  # Maximum possible GPU offload
             settings['strategy'] = 'ADRE: Brute-Force Maximization Protocol (16 threads, max GPU layers)'
