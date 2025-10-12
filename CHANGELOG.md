@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Hardware Optimization Rollback:** Reverted to v3.0.1 stable hardware optimization logic. Removed aggressive hardware-centric optimization engines (CPU affinity, process priority management, hardcoded thread counts) that caused system instability and "stuck at thinking" deadlocks. The system now uses simple, proven hardware detection with conservative defaults (CPU cores - 1 threads, 0 GPU layers by default).
+
+### Added
+- **Cognitive Process Accelerator (CPA):** Introduced a new intelligent software-focused optimization layer designed for speed and responsiveness. The CPA provides:
+  - **Proactive Caching:** On application startup, the CPA launches in a low-priority background thread and pre-loads the selected GGUF model metadata and initial layers into RAM cache, ensuring instantaneous response to the first prompt.
+  - **Just-In-Time (JIT) Compilation:** Identifies and compiles performance-critical functions using numba JIT compiler, reducing Python interpreter overhead during active use.
+- **Dependency Update:** Added `numba` library to requirements.txt for JIT compilation support in the CPA.
+
+### Removed
+- **Failed Hardware Engines:** Completely removed CPU affinity and process priority manipulation code from main.py. Removed complex hardware profiling logic from hardware_profiler.py. Removed ADRE (Aggressive Dynamic Resource Engine) and Hyper-Threaded Synergistic Engine implementations from optimization_engine.py.
+
 ## [3.4.1] - 2025-10-12
 
 ### Fixed
