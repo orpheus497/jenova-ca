@@ -4,7 +4,7 @@ from jenova.utils.hardware_profiler import HardwareProfiler
 
 
 class OptimizationEngine:
-    """Calculates optimal performance settings based on hardware capabilities."""
+    """Aggressive Dynamic Resource Engine (ADRE) - Maximizes hardware utilization for AI performance."""
     
     def __init__(self, user_data_root: str, ui_logger):
         self.user_data_root = user_data_root
@@ -12,15 +12,19 @@ class OptimizationEngine:
         self.optimization_file = os.path.join(user_data_root, 'optimization.json')
         self.profiler = HardwareProfiler()
         self.settings = {}
+        
+        # ADRE Configuration
+        self.SYSTEM_RESERVE_MB = 1536  # 1.5GB minimal reserve for OS
+        self.MODEL_LAYER_SIZE_MB = 120  # Estimated size per layer (conservative estimate)
     
     def run(self) -> dict:
-        """Profiles hardware and calculates optimal settings."""
+        """Profiles hardware and calculates optimal settings using ADRE."""
         hardware = self.profiler.get_summary()
         
-        # Calculate optimal settings
+        # Calculate optimal settings with ADRE
         self.settings = {
             'hardware': hardware,
-            'optimal_settings': self._calculate_optimal_settings(hardware)
+            'optimal_settings': self._calculate_optimal_settings_adre(hardware)
         }
         
         # Save settings to file
@@ -28,79 +32,48 @@ class OptimizationEngine:
         
         return self.settings
     
-    def _calculate_optimal_settings(self, hardware: dict) -> dict:
-        """Calculates optimal n_gpu_layers and n_threads based on hardware using multi-strategy approach."""
+    def _calculate_optimal_settings_adre(self, hardware: dict) -> dict:
+        """Calculates optimal settings using Aggressive Dynamic Resource Engine (ADRE)."""
         settings = {
             'n_gpu_layers': 0,
             'n_threads': 4,  # Safe default
-            'strategy': 'CPU-only fallback'
+            'strategy': 'ADRE'
         }
         
+        # Extract hardware info
         cpu_cores = hardware['cpu']['physical_cores']
         gpu_vendor = hardware['gpu']['vendor']
         gpu_vram_mb = hardware['gpu']['vram_mb']
         is_apu = hardware['gpu'].get('is_apu', False)
         is_dedicated = hardware['gpu'].get('is_dedicated', False)
-        hardware_profile = hardware.get('hardware_profile', 'Unknown')
         gpu_capabilities = hardware.get('gpu_capabilities', {})
-        cpu_arch = hardware['cpu'].get('architecture', '')
         soc_type = hardware['cpu'].get('soc_type', None)
         
-        # Swap-aware detection
+        # Memory information
+        ram_mb = hardware['memory']['total_mb']
+        swap_mb = hardware.get('swap', {}).get('total_mb', 0)
         swap_available = hardware.get('swap', {}).get('available', False)
-        swap_total_mb = hardware.get('swap', {}).get('total_mb', 0)
+        
+        # Calculate Total System Memory (TSM) and AI Budget
+        tsm_mb = ram_mb + swap_mb
+        ai_budget_mb = tsm_mb - self.SYSTEM_RESERVE_MB
+        
+        # AGGRESSIVE THREAD ALLOCATION: Physical Cores - 1
+        # Leave only ONE core for all non-AI system tasks
+        settings['n_threads'] = max(1, cpu_cores - 1)
         
         # Strategy 1: High-Performance ARM SoC (Apple Silicon, Snapdragon, Tensor)
+        # These have unified memory - extremely aggressive
         if soc_type in ['Apple Silicon', 'Snapdragon', 'Tensor']:
-            settings['n_gpu_layers'] = -1  # Offload all layers to GPU
-            settings['n_threads'] = cpu_cores  # Use all performance cores
-            settings['strategy'] = f'High-Performance ARM SoC ({soc_type})'
+            # 70% of AI Budget for VRAM on ARM SoCs
+            vram_budget_mb = int(ai_budget_mb * 0.70)
+            
+            # Calculate maximum layers that fit
+            settings['n_gpu_layers'] = -1  # Start with full offload
+            settings['strategy'] = f'ADRE: High-Performance ARM SoC ({soc_type}) - Aggressive 70% AI Budget'
             return settings
         
-        # Strategy 2: APU-Specific Tuning (Balanced approach)
-        if is_apu and gpu_vendor in ['AMD', 'Intel']:
-            # Conservative calculation to avoid memory swapping
-            # Reserve 1-2 physical cores for system/GPU data feeding
-            if cpu_cores >= 8:
-                settings['n_threads'] = cpu_cores - 2
-            elif cpu_cores >= 4:
-                settings['n_threads'] = cpu_cores - 1
-            else:
-                settings['n_threads'] = max(2, cpu_cores)
-            
-            # Swap-aware GPU layer calculation
-            if swap_available:
-                # Swap is available - proceed with existing aggressive strategies
-                if gpu_vram_mb >= 2048:
-                    settings['n_gpu_layers'] = 20  # Conservative for 2GB+ shared
-                elif gpu_vram_mb >= 1024:
-                    settings['n_gpu_layers'] = 12  # Conservative for 1GB+ shared
-                elif gpu_vram_mb >= 512:
-                    settings['n_gpu_layers'] = 8   # Conservative for 512MB+ shared
-                else:
-                    settings['n_gpu_layers'] = 0   # Too little shared memory
-            else:
-                # No swap - activate Ultra-Conservative mode
-                if gpu_vram_mb >= 2048:
-                    settings['n_gpu_layers'] = 15  # More conservative without swap
-                elif gpu_vram_mb >= 1024:
-                    settings['n_gpu_layers'] = 8   # More conservative without swap
-                elif gpu_vram_mb >= 512:
-                    settings['n_gpu_layers'] = 4   # More conservative without swap
-                else:
-                    settings['n_gpu_layers'] = 0   # Too little shared memory
-                
-                # Reserve an additional CPU core for stability
-                if settings['n_threads'] > 2:
-                    settings['n_threads'] -= 1
-                
-                settings['strategy'] = f'APU-Ultra-Conservative (AMD APU, No Swap)' if gpu_vendor == 'AMD' else f'APU-Ultra-Conservative (Intel iGPU, No Swap)'
-                return settings
-            
-            settings['strategy'] = f'APU-Balanced (AMD APU)' if gpu_vendor == 'AMD' else f'APU-Balanced (Intel iGPU)'
-            return settings
-        
-        # Strategy 3: Dedicated GPU Tuning (Aggressive approach)
+        # Strategy 2: Dedicated GPU (NVIDIA/AMD with runtime support)
         if is_dedicated and gpu_vendor in ['NVIDIA', 'AMD']:
             # Check for runtime support
             has_runtime = False
@@ -110,62 +83,81 @@ class OptimizationEngine:
                 has_runtime = True
             
             if has_runtime:
-                # Aggressive strategy - maximize GPU layers to fill dedicated VRAM
-                if gpu_vram_mb >= 24000:  # 24GB+ VRAM
-                    settings['n_gpu_layers'] = -1  # Offload all layers
-                elif gpu_vram_mb >= 16000:  # 16-24GB VRAM
-                    settings['n_gpu_layers'] = -1  # Offload all layers
-                elif gpu_vram_mb >= 12000:  # 12-16GB VRAM
-                    settings['n_gpu_layers'] = -1  # Offload all layers
-                elif gpu_vram_mb >= 8000:  # 8-12GB VRAM
-                    settings['n_gpu_layers'] = -1  # Offload all layers
-                elif gpu_vram_mb >= 6000:  # 6-8GB VRAM
-                    settings['n_gpu_layers'] = 40
-                elif gpu_vram_mb >= 4000:  # 4-6GB VRAM
-                    settings['n_gpu_layers'] = 30
-                elif gpu_vram_mb >= 2000:  # 2-4GB VRAM
-                    settings['n_gpu_layers'] = 20
-                else:
-                    settings['n_gpu_layers'] = 10
+                # AGGRESSIVE: 95% of dedicated VRAM
+                vram_budget_mb = int(gpu_vram_mb * 0.95)
                 
-                # Reserve 1-2 cores for feeding the GPU
-                if cpu_cores >= 8:
-                    settings['n_threads'] = cpu_cores - 2
-                elif cpu_cores > 2:
-                    settings['n_threads'] = cpu_cores - 1
-                else:
-                    settings['n_threads'] = cpu_cores
+                # Proactive-Reactive Loop: Calculate optimal n_gpu_layers
+                max_layers = 80  # Typical max for large models
+                optimal_layers = self._calculate_optimal_gpu_layers(
+                    vram_budget_mb, ai_budget_mb, ram_mb, max_layers
+                )
                 
-                settings['strategy'] = f'Dedicated GPU-Aggressive ({gpu_vendor})'
+                settings['n_gpu_layers'] = optimal_layers
+                settings['strategy'] = f'ADRE: Dedicated {gpu_vendor} GPU - Aggressive 95% VRAM Utilization'
                 return settings
         
-        # Strategy 4: CPU-Only Fallback
-        # No capable GPU detected or no runtime support
-        settings['n_gpu_layers'] = 0
-        
-        # Swap-aware CPU thread calculation
-        if swap_available:
-            # Swap is available - use existing strategy
-            if cpu_cores > 4:
-                settings['n_threads'] = cpu_cores - 2
-            elif cpu_cores > 2:
-                settings['n_threads'] = cpu_cores - 1
-            else:
-                settings['n_threads'] = cpu_cores
-        else:
-            # No swap - activate Ultra-Conservative mode
-            if cpu_cores > 4:
-                settings['n_threads'] = cpu_cores - 3  # Reserve additional core
-            elif cpu_cores > 2:
-                settings['n_threads'] = cpu_cores - 2  # Reserve additional core
-            else:
-                settings['n_threads'] = max(1, cpu_cores - 1)  # Reserve at least 1 core
+        # Strategy 3: APU/iGPU (Shared Memory)
+        if is_apu and gpu_vendor in ['AMD', 'Intel']:
+            # AGGRESSIVE: 50% of RAM for APU VRAM budget
+            vram_budget_mb = int(ram_mb * 0.50)
             
-            settings['strategy'] = 'CPU-only fallback (Ultra-Conservative, No Swap)'
+            # Calculate optimal layers with proactive-reactive approach
+            max_layers = 40  # Conservative max for APUs
+            optimal_layers = self._calculate_optimal_gpu_layers(
+                vram_budget_mb, ai_budget_mb, ram_mb, max_layers
+            )
+            
+            settings['n_gpu_layers'] = optimal_layers
+            settings['strategy'] = f'ADRE: {gpu_vendor} APU - Aggressive 50% RAM for VRAM'
             return settings
         
-        settings['strategy'] = 'CPU-only fallback'
+        # Strategy 4: CPU-Only Fallback
+        # No GPU or no runtime support
+        settings['n_gpu_layers'] = 0
+        settings['strategy'] = 'ADRE: CPU-Only Mode'
         return settings
+    
+    def _calculate_optimal_gpu_layers(self, vram_budget_mb: int, ai_budget_mb: int, 
+                                       ram_mb: int, max_layers: int) -> int:
+        """
+        Proactive-Reactive Loop: Iteratively calculate the maximum n_gpu_layers
+        that fits within the AI Budget without exceeding system resources.
+        
+        Args:
+            vram_budget_mb: Target VRAM allocation
+            ai_budget_mb: Total AI Budget (TSM - System Reserve)
+            ram_mb: Total system RAM
+            max_layers: Maximum layers to consider
+        
+        Returns:
+            Optimal number of GPU layers
+        """
+        # Start with maximum possible layers
+        n_layers = max_layers
+        
+        while n_layers > 0:
+            # Calculate memory footprint
+            vram_used_mb = n_layers * self.MODEL_LAYER_SIZE_MB
+            
+            # Estimate RAM needed for remaining layers (if any)
+            # Assuming remaining layers stay in RAM
+            remaining_layers = max(0, max_layers - n_layers)
+            ram_for_layers_mb = remaining_layers * self.MODEL_LAYER_SIZE_MB
+            
+            # Total memory footprint
+            total_footprint_mb = vram_used_mb + ram_for_layers_mb
+            
+            # Check if it fits within AI Budget
+            if total_footprint_mb <= ai_budget_mb:
+                # Additional check: ensure VRAM usage doesn't exceed budget
+                if vram_used_mb <= vram_budget_mb:
+                    return n_layers
+            
+            # Reduce layers and try again
+            n_layers -= 1
+        
+        # If no layers fit, return 0 (CPU-only)
+        return 0
     
     def _save_settings(self):
         """Saves optimization settings to file."""
