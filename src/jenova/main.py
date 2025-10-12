@@ -95,6 +95,9 @@ def main():
         cognitive_engine = CognitiveEngine(llm_interface, memory_search, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, rag_system)
         
         ui = TerminalUI(cognitive_engine, ui_logger)
+        # Pass the console lock to the cognitive engine and ui_logger
+        cognitive_engine.console_lock = ui.console_lock
+        ui_logger.console_lock = ui.console_lock
         # Pass the llm_interface to the tools that need it.
         tools.llm_interface = llm_interface
         ui.run()
