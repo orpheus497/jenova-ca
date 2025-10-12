@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.1] - 2025-10-12
+
+### Fixed
+- **Resource Starvation Deadlock:** Fixed a critical deadlock issue introduced in v3.4.0 where the AI would hang indefinitely in a "thinking" state on unified memory systems (APUs/ARM SoCs). The `Physical Cores - 1` thread allocation was too aggressive, leaving insufficient CPU resources for the main application loop to receive and display the AI's response.
+  - **Intelligent Thread Allocation:** Implemented hardware-aware thread allocation that is now synergistic with the application's core processes:
+    - **APUs (AMD/Intel with integrated graphics):** `n_threads = Physical Cores - 2` - Reserves one core for OS and a second core for the main application loop and iGPU feeding, preventing deadlock.
+    - **ARM SoCs (Apple Silicon, Snapdragon, Tensor):** `n_threads = Physical Cores - 2` - Reserves one core for OS and a second core for the main application loop, preventing deadlock.
+    - **Dedicated GPUs (NVIDIA/AMD):** `n_threads = Physical Cores - 1` - Retains safe aggression on systems with dedicated GPU schedulers.
+    - **CPU-Only Systems:** `n_threads = Physical Cores - 1` - Safe to be aggressive without unified memory concerns.
+  - Updated strategy names to reflect the new synergistic approach: "Synergistic (Cores-2)" for APUs/ARM and "Aggressive (Cores-1)" for dedicated GPUs and CPU-only systems.
+
 ## [3.4.0] - 2025-10-12
 
 ### Changed
