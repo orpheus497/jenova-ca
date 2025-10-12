@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2025-10-12
+
 ### Changed
 - **Intelligent Optimization Engine Overhaul:** Comprehensive overhaul of the Automated Hardware Optimization Engine with intelligent hardware detection and speed-focused tuning strategies.
   - **Enhanced APU/iGPU Detection:** The profiler now specifically identifies APUs by checking if the GPU is on the same die as the CPU, and determines allocated GPU memory (UMA/GART size) by parsing system files instead of looking for dedicated VRAM.
