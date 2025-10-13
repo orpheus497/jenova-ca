@@ -11,7 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cognitive Process Accelerator (CPA):** A new intelligent software optimization engine that dramatically improves performance and responsiveness through:
   - **Proactive Caching:** Background thread that pre-warms model metadata and initial layers into RAM cache on startup for instantaneous first response
   - **JIT Compilation:** Utilizes numba JIT compiler to compile performance-critical Python functions into optimized machine code
-  - **Hardware-Specific Optimizations:** Automatically detects and applies optimizations for AMD (ROCm/HIP), NVIDIA (CUDA), ARM, and CPU architectures
 - **Numba Dependency:** Added `numba` to `requirements.txt` for JIT compilation support
 
 ### Fixed

@@ -2,12 +2,10 @@
 Cognitive Process Accelerator (CPA)
 
 An intelligent software optimization engine that dramatically improves performance
-and responsiveness through proactive caching, JIT compilation, and hardware-specific
-optimizations.
+and responsiveness through proactive caching and JIT compilation.
 """
 import os
 import threading
-import platform
 from typing import Optional, Dict, Any
 import time
 
@@ -19,7 +17,6 @@ class CognitiveProcessAccelerator:
     Features:
     - Proactive caching of model metadata and initial layers
     - JIT compilation of hot functions using numba
-    - Hardware-specific optimizations for AMD/NVIDIA/ARM/CPU
     """
     
     def __init__(self, config: Dict[str, Any], ui_logger, file_logger):
@@ -35,56 +32,10 @@ class CognitiveProcessAccelerator:
         self.ui_logger = ui_logger
         self.file_logger = file_logger
         self.cache_thread: Optional[threading.Thread] = None
-        self.hardware_info: Dict[str, Any] = {}
-        self._detect_hardware()
-        
-    def _detect_hardware(self):
-        """Detect the underlying hardware capabilities."""
-        self.hardware_info = {
-            'cpu': platform.processor() or platform.machine(),
-            'system': platform.system(),
-            'architecture': platform.machine(),
-            'has_cuda': False,
-            'has_rocm': False,
-            'has_arm': False,
-        }
-        
-        # Detect ARM
-        arch = platform.machine().lower()
-        if 'arm' in arch or 'aarch64' in arch:
-            self.hardware_info['has_arm'] = True
-            self.file_logger.log_info("CPA: ARM architecture detected")
-        
-        # Try to detect CUDA
-        try:
-            import torch
-            if torch.cuda.is_available():
-                self.hardware_info['has_cuda'] = True
-                self.file_logger.log_info(f"CPA: CUDA detected - {torch.cuda.get_device_name(0)}")
-        except ImportError:
-            pass
-        except Exception as e:
-            self.file_logger.log_info(f"CPA: CUDA detection failed: {e}")
-        
-        # Try to detect ROCm
-        try:
-            import torch
-            if hasattr(torch, 'hip') and torch.hip.is_available():
-                self.hardware_info['has_rocm'] = True
-                self.file_logger.log_info("CPA: ROCm/HIP detected")
-        except (ImportError, AttributeError):
-            pass
-        except Exception as e:
-            self.file_logger.log_info(f"CPA: ROCm detection failed: {e}")
-        
-        self.file_logger.log_info(f"CPA: Hardware detection complete - {self.hardware_info}")
         
     def initialize(self):
         """Initialize CPA optimizations."""
         self.file_logger.log_info("CPA: Initializing Cognitive Process Accelerator...")
-        
-        # Apply hardware-specific optimizations
-        self._apply_hardware_optimizations()
         
         # Start proactive caching in background
         self._start_proactive_caching()
@@ -93,59 +44,6 @@ class CognitiveProcessAccelerator:
         self._apply_jit_compilation()
         
         self.file_logger.log_info("CPA: Initialization complete")
-        
-    def _apply_hardware_optimizations(self):
-        """Apply hardware-specific optimizations."""
-        if self.hardware_info['has_cuda']:
-            self._apply_cuda_optimizations()
-        elif self.hardware_info['has_rocm']:
-            self._apply_rocm_optimizations()
-        elif self.hardware_info['has_arm']:
-            self._apply_arm_optimizations()
-        else:
-            self._apply_cpu_optimizations()
-    
-    def _apply_cuda_optimizations(self):
-        """Apply NVIDIA CUDA optimizations."""
-        self.file_logger.log_info("CPA: Applying CUDA optimizations")
-        try:
-            import torch
-            # Enable cuDNN benchmarking for optimal performance
-            torch.backends.cudnn.benchmark = True
-            self.file_logger.log_info("CPA: CUDA optimizations applied successfully")
-        except Exception as e:
-            self.file_logger.log_error(f"CPA: Failed to apply CUDA optimizations: {e}")
-    
-    def _apply_rocm_optimizations(self):
-        """Apply AMD ROCm/HIP optimizations."""
-        self.file_logger.log_info("CPA: Applying ROCm/HIP optimizations")
-        try:
-            import torch
-            # ROCm-specific optimizations would go here
-            self.file_logger.log_info("CPA: ROCm optimizations applied successfully")
-        except Exception as e:
-            self.file_logger.log_error(f"CPA: Failed to apply ROCm optimizations: {e}")
-    
-    def _apply_arm_optimizations(self):
-        """Apply ARM-specific optimizations."""
-        self.file_logger.log_info("CPA: Applying ARM optimizations")
-        try:
-            # ARM-specific optimizations would go here
-            # For now, we'll apply CPU optimizations
-            self._apply_cpu_optimizations()
-            self.file_logger.log_info("CPA: ARM optimizations applied successfully")
-        except Exception as e:
-            self.file_logger.log_error(f"CPA: Failed to apply ARM optimizations: {e}")
-    
-    def _apply_cpu_optimizations(self):
-        """Apply CPU-specific optimizations."""
-        self.file_logger.log_info("CPA: Applying CPU optimizations")
-        try:
-            # CPU-specific optimizations
-            # These are applied through numba's fastmath option
-            self.file_logger.log_info("CPA: CPU optimizations configured successfully")
-        except Exception as e:
-            self.file_logger.log_error(f"CPA: Failed to apply CPU optimizations: {e}")
     
     def _start_proactive_caching(self):
         """Start proactive caching in a low-priority background thread."""
@@ -227,17 +125,12 @@ class CognitiveProcessAccelerator:
             self.file_logger.log_error(f"CPA: Error during JIT compilation: {e}")
     
     def _get_jit_options(self) -> Dict[str, Any]:
-        """Get JIT compilation options based on hardware."""
+        """Get JIT compilation options."""
         options = {
             'nopython': False,  # Use object mode for compatibility
             'cache': True,      # Cache compiled functions
             'nogil': True,      # Release GIL when possible
         }
-        
-        # Enable fastmath for CPU-only systems
-        if not (self.hardware_info['has_cuda'] or self.hardware_info['has_rocm']):
-            options['fastmath'] = True
-            self.file_logger.log_info("CPA: Enabling fastmath for CPU")
         
         return options
     

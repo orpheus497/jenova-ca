@@ -29,12 +29,7 @@ Jenova AI includes an intelligent software optimization engine called the **Cogn
 
 *   **Proactive Caching:** On startup, the CPA launches a low-priority background thread that pre-warms the model cache by loading metadata and initial layers into RAM. This ensures the AI is ready for instantaneous responses to your first interaction.
 *   **JIT Compilation:** Using the numba JIT compiler, the CPA identifies and compiles performance-critical "hot" functions into highly optimized machine code, significantly improving runtime performance.
-*   **Hardware-Specific Optimizations:** The CPA automatically detects your hardware (CPU, AMD/NVIDIA/ARM GPUs) and applies tailored optimizations:
-    - **NVIDIA GPUs:** CUDA optimizations with cuDNN benchmarking
-    - **AMD GPUs:** ROCm/HIP optimizations
-    - **ARM Systems:** ARM-specific optimizations
-    - **CPU-only:** Fastmath optimizations for maximum CPU performance
-*   **Graceful Degradation:** If numba or GPU libraries are not available, the CPA gracefully falls back to CPU optimizations, ensuring the system works on all hardware configurations.
+*   **Graceful Degradation:** If numba or other optional dependencies are not available, the CPA gracefully handles the absence, ensuring the system works on all configurations.
 
 ### 2.4. The Power of the Cognitive Cycle
 
