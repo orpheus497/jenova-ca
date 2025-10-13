@@ -10,10 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - (Add new features for the next version here)
 
-## [3.0.2] - 2025-10-11
-
-Rollback to 3.0.1 Stable from 3.4.1 and Branched
-
 ## [3.0.1] - 2025-10-11
 
 ### Fixed
