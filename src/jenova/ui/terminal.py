@@ -33,7 +33,6 @@ class TerminalUI:
         self.verifying_assumption = None
         self._spinner_running = False
         self._spinner_thread = None
-        self.console_lock = threading.Lock()
 
     def _spinner(self):
         spinner_chars = itertools.cycle(['   ', '.  ', '.. ', '...'])
@@ -58,86 +57,6 @@ class TerminalUI:
             self._spinner_thread.join()
         self._spinner_thread = None
 
-    def _check_and_warn_swap_on_arm(self):
-        """Check for swap on ARM systems and display one-time warning if needed."""
-        import platform
-        import psutil
-        
-        # Only check on ARM systems
-        arch = platform.machine()
-        if arch not in ['aarch64', 'arm64']:
-            return
-        
-        # Check if swap is available
-        try:
-            swap = psutil.swap_memory()
-            if swap.total > 0:
-                return  # Swap is configured, no warning needed
-        except Exception:
-            return  # If we can't check, don't show warning
-        
-        # Check if we've already shown the warning
-        warning_file = os.path.join(self.engine.config['user_data_root'], '.swap_warning_shown')
-        if os.path.exists(warning_file):
-            return  # Warning already shown
-        
-        # Display warning message
-        self.logger.system_message("\n" + "="*70)
-        self.logger.system_message("⚠️  ARM SYSTEM PERFORMANCE NOTICE")
-        self.logger.system_message("="*70)
-        self.logger.system_message("")
-        self.logger.system_message("No swap file detected on this ARM system.")
-        self.logger.system_message("")
-        self.logger.system_message("A swap file can significantly improve performance and system stability")
-        self.logger.system_message("when running large language models.")
-        self.logger.system_message("")
-        self.logger.system_message("To create a swap file (recommended 4-8 GB), run these commands:")
-        self.logger.system_message("")
-        self.logger.system_message("  sudo fallocate -l 4G /swapfile")
-        self.logger.system_message("  sudo chmod 600 /swapfile")
-        self.logger.system_message("  sudo mkswap /swapfile")
-        self.logger.system_message("  sudo swapon /swapfile")
-        self.logger.system_message("")
-        self.logger.system_message("To make it permanent, add this line to /etc/fstab:")
-        self.logger.system_message("")
-        self.logger.system_message("  /swapfile none swap sw 0 0")
-        self.logger.system_message("")
-        self.logger.system_message("="*70 + "\n")
-        
-        # Mark warning as shown
-        try:
-            with open(warning_file, 'w') as f:
-                f.write("1")
-        except Exception:
-            pass  # If we can't write the file, we'll show warning again next time
-
-    def _show_adre_warning(self):
-        """Display one-time warning about the Aggressive Dynamic Resource Engine."""
-        # Check if we've already shown the warning
-        warning_file = os.path.join(self.engine.config['user_data_root'], '.adre_warning_shown')
-        if os.path.exists(warning_file):
-            return  # Warning already shown
-        
-        # Display ADRE warning message
-        self.logger.system_message("\n" + "="*70)
-        self.logger.system_message("⚡ AGGRESSIVE DYNAMIC RESOURCE ENGINE (ADRE) ACTIVE")
-        self.logger.system_message("="*70)
-        self.logger.system_message("")
-        self.logger.system_message("The new Aggressive Dynamic Resource Engine is active.")
-        self.logger.system_message("")
-        self.logger.system_message("While Jenova AI is running, a majority of your system's resources")
-        self.logger.system_message("will be dedicated to maximizing AI performance.")
-        self.logger.system_message("")
-        self.logger.system_message("System responsiveness may be reduced during AI operations.")
-        self.logger.system_message("")
-        self.logger.system_message("="*70 + "\n")
-        
-        # Mark warning as shown
-        try:
-            with open(warning_file, 'w') as f:
-                f.write("1")
-        except Exception:
-            pass  # If we can't write the file, we'll show warning again next time
 
 
     def run(self):
@@ -145,12 +64,6 @@ class TerminalUI:
         self.logger.info("Initialized and Ready.")
         self.logger.info("Type your message, use a command, or type 'exit' to quit.")
         self.logger.info("Type /help to see a list of available commands.\n")
-        
-        # Show ADRE warning on first run
-        self._show_adre_warning()
-        
-        # Check for swap on ARM systems and warn if needed
-        self._check_and_warn_swap_on_arm()
 
         while True:
             try:
@@ -231,8 +144,6 @@ class TerminalUI:
             self._verify_assumption()
         elif command == '/train':
             self.logger.system_message("To create a training file for fine-tuning, run the following command in your terminal: python3 finetune/train.py")
-        elif command == '/optimize':
-            self._show_optimization_report()
         elif command == '/develop_insight':
             self._develop_insight(args)
         elif command == '/learn_procedure':
@@ -260,8 +171,6 @@ class TerminalUI:
         self.logger.help_message("[bright_yellow]  /verify[/bright_yellow]                          - [#BDB2FF]Starts the assumption verification process. Jenova will present an unverified assumption it has made about you and ask for clarification, allowing you to confirm or deny it. This refines Jenova's understanding of your preferences and knowledge.[/]")
         self.logger.help_message("")
         self.logger.help_message("[bright_yellow]  /train[/bright_yellow]                           - [#BDB2FF]Provides instructions on how to create a training file for fine-tuning the model with your own data.[/]")
-        self.logger.help_message("")
-        self.logger.help_message("[bright_yellow]  /optimize[/bright_yellow]                        - [#BDB2FF]Displays a detailed report of the detected hardware specifications and the currently applied performance optimization settings.[/]")
         self.logger.help_message("")
         self.logger.help_message("[bright_yellow]  /develop_insight [node_id][/bright_yellow]       - [#BDB2FF]This command has dual functionality:[/]")
         self.logger.help_message("[#BDB2FF]                                       - If a `node_id` is provided: Jenova will take an existing insight and generate a more detailed and developed version of it, adding more context or connections.[/]")
@@ -338,11 +247,3 @@ class TerminalUI:
         returned_messages = self.engine.learn_procedure(procedure_data, self.username)
         self.stop_spinner()
         self._process_and_log_messages(returned_messages)
-
-    def _show_optimization_report(self):
-        """Displays the hardware and optimization settings report."""
-        from jenova.utils.optimization_engine import OptimizationEngine
-        user_data_root = self.engine.config.get('user_data_root')
-        optimizer = OptimizationEngine(user_data_root, self.logger)
-        report = optimizer.get_report()
-        self.logger.system_message(report)

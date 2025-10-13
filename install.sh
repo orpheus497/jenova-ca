@@ -21,15 +21,6 @@ if ! command -v python3 &> /dev/null || ! command -v pip &> /dev/null || ! comma
     exit 1
 fi
 
-# Check for python3-psutil
-echo "--> Checking for python3-psutil system package..."
-if ! python3 -c "import psutil" &> /dev/null; then
-    echo "[WARNING] python3-psutil system package not found."
-    echo "          This package is required for hardware detection."
-    echo "          On Debian/Ubuntu, install it with: sudo apt-get install python3-psutil"
-    echo "          On other systems, it will be installed via pip."
-fi
-
 # 3. Upgrade Pip
 echo "--> Upgrading system's pip..."
 pip install --upgrade pip > /dev/null
@@ -41,46 +32,6 @@ echo "--> Installing Jenova AI package globally..."
 if ! pip install --ignore-installed .; then
     echo "[ERROR] Installation failed. Please check setup.py and ensure all dependencies can be installed."
     exit 1
-fi
-
-# 5. Check for Swap on ARM Systems
-ARCH=$(uname -m)
-if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
-    echo "--> Checking for swap configuration on ARM system..."
-    
-    # Try multiple methods to detect swap
-    SWAP_DETECTED=0
-    
-    # Method 1: Use swapon command
-    if command -v swapon &> /dev/null; then
-        SWAP_TOTAL=$(swapon --show=SIZE --noheadings --bytes 2>/dev/null | awk '{sum+=$1} END {print sum}')
-        if [ ! -z "$SWAP_TOTAL" ] && [ "$SWAP_TOTAL" -gt 0 ]; then
-            SWAP_DETECTED=1
-        fi
-    fi
-    
-    # Method 2: Check /proc/swaps
-    if [ $SWAP_DETECTED -eq 0 ] && [ -f /proc/swaps ]; then
-        SWAP_LINES=$(grep -v "^Filename" /proc/swaps | wc -l)
-        if [ "$SWAP_LINES" -gt 0 ]; then
-            SWAP_DETECTED=1
-        fi
-    fi
-    
-    # Method 3: Use free command
-    if [ $SWAP_DETECTED -eq 0 ] && command -v free &> /dev/null; then
-        SWAP_KB=$(free -k | grep "^Swap:" | awk '{print $2}')
-        if [ ! -z "$SWAP_KB" ] && [ "$SWAP_KB" -gt 0 ]; then
-            SWAP_DETECTED=1
-        fi
-    fi
-    
-    if [ $SWAP_DETECTED -eq 0 ]; then
-        echo ""
-        echo "[INFO] No swap file detected on this ARM system."
-        echo "       A swap file can significantly improve performance and stability."
-        echo "       Jenova will display a one-time setup guide on first run."
-    fi
 fi
 
 echo

@@ -71,8 +71,7 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
         # --- Dynamic Context Optimization ---
         try:
             # Create a temporary Llama instance to fetch metadata without using a context manager
-            # Use optimized n_threads for consistent CPU utilization
-            temp_model_info = Llama(model_path=self.model_path, verbose=False, n_gpu_layers=0, n_threads=hw_config['threads'])
+            temp_model_info = Llama(model_path=self.model_path, verbose=False, n_gpu_layers=0)
             model_metadata = temp_model_info.metadata
             model_n_ctx_train = int(model_metadata.get('llama.context_length', self.config['model']['context_size']))
             # Since we are not using a with statement, we don't need to worry about cleanup

@@ -127,29 +127,6 @@ Jenova is designed for continuous improvement. The insights generated during its
 
 *   **Data Preparation (`finetune/train.py`):** This script gathers all the `.json` insight files from `~/.jenova-ai/users/<username>/insights/` and transforms them into a `finetune_train.jsonl` file. The script is configurable and can be used to generate a dataset for fine-tuning a model in a separate program.
 
-### 3.10. Automated Hardware Optimization
-
-Jenova includes an intelligent Optimization Engine that automatically configures the system for optimal performance based on your hardware specifications. This eliminates the need for manual tuning and ensures that Jenova runs efficiently on any system.
-
-*   **Intelligent Hardware Profiler:** The `HardwareProfiler` class automatically detects detailed system specifications:
-    *   **CPU Detection:** Architecture, vendor, physical cores, and full model name
-    *   **APU/iGPU Detection:** Specifically identifies integrated graphics (APUs) by checking if the GPU shares the same die as the CPU
-    *   **GPU Detection:** Vendor, VRAM (via nvidia-smi, rocm-smi, and /sys/class/drm fallback), and classification as dedicated or integrated
-    *   **UMA/GART Memory Detection:** For APUs/iGPUs, determines allocated shared memory size instead of looking for non-existent dedicated VRAM
-    *   **GPU Runtime Support:** Verifies the presence of actual CUDA (`libcudart.so`) or ROCm (`libamdhip64.so`) runtime libraries
-    *   **ARM SoC Detection:** Parses `/proc/cpuinfo` on aarch64 systems to identify specific SoC types (Snapdragon, Apple Silicon, Tensor)
-    *   **System RAM:** Total available system memory
-*   **Multi-Strategy Configuration:** The `OptimizationEngine` analyzes your hardware and applies the most appropriate optimization strategy:
-    *   **High-Performance ARM SoC Strategy:** For Apple Silicon, Snapdragon, and Tensor SoCs with unified memory, offloads all layers to GPU and uses all available performance cores to leverage high-bandwidth memory architecture
-    *   **APU-Balanced Strategy:** For AMD/Intel APUs with shared memory, conservatively calculates `n_gpu_layers` to avoid memory swapping and reserves 1-2 physical cores for system/GPU data feeding, preventing stuttering and maximizing throughput
-    *   **Dedicated GPU-Aggressive Strategy:** For discrete NVIDIA/AMD GPUs with proper runtime support, maximizes `n_gpu_layers` to fill dedicated VRAM for maximum GPU utilization
-    *   **CPU-Only Fallback:** When no capable GPU is detected or runtime support is missing, optimizes for CPU-only operation with appropriate thread count
-*   **Settings Persistence:** Calculated settings are saved to a user-specific `optimization.json` file
-*   **Automatic Application:** The optimization engine runs automatically on every startup, applying calculated settings before loading the language model
-*   **Enhanced Feedback:** Displays detected hardware profile (e.g., "AMD APU with shared memory") and the optimization strategy being applied (e.g., "Applying APU-Balanced strategy for speed")
-*   **Manual Inspection:** The `/optimize` command displays a detailed report of detected hardware, active strategy, and current performance settings
-*   **Configuration:** The `optimization` section in `main_config.yaml` allows users to enable/disable the auto-tuning feature as needed
-
 ## 4. System-Wide Installation
 
 Jenova AI is designed to be installed once on a system by an administrator and then be available to all users, while keeping each user's data completely separate and private.
@@ -250,8 +227,8 @@ Jenova's behavior is controlled by two YAML files in `src/jenova/config/`.
 This file controls the technical parameters of the AI.
 
 -   **`hardware`**:
-    -   `threads`: Number of CPU threads to use. (Note: This value may be automatically overridden by the Optimization Engine if auto-tuning is enabled.)
-    -   `gpu_layers`: Number of model layers to offload to the GPU. Set to -1 to offload all possible layers for maximum performance. Requires a compatible GPU and `llama-cpp-python` built with GPU support. (Note: This value may be automatically overridden by the Optimization Engine if auto-tuning is enabled.)
+    -   `threads`: Number of CPU threads to use.
+    -   `gpu_layers`: Number of model layers to offload to the GPU. Set to -1 to offload all possible layers for maximum performance. Requires a compatible GPU and `llama-cpp-python` built with GPU support.
     -   `mlock`: Whether to lock the model in memory (RAM). Set to `true` for a significant performance increase by preventing the model from being swapped to disk.
 -   **`model`**:
     -   `embedding_model`: The sentence-transformer model to use for creating vector embeddings for memory search.

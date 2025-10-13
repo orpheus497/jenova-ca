@@ -24,7 +24,6 @@ class CognitiveEngine:
         self.turn_count = 0
         self.MAX_HISTORY_TURNS = 10 # Keep the last 10 conversation turns
         self.pending_assumption = None
-        self.console_lock = None  # Will be set by main.py after TerminalUI initialization
 
     def think(self, user_input: str, username: str) -> str:
         """Runs the full cognitive cycle: Retrieve, Plan, Execute, and Reflect."""
