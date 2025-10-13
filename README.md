@@ -29,6 +29,12 @@ Jenova AI includes an intelligent software optimization engine called the **Cogn
 
 *   **Proactive Caching:** On startup, the CPA launches a low-priority background thread that pre-warms the model cache by loading metadata and initial layers into RAM. This ensures the AI is ready for instantaneous responses to your first interaction.
 *   **JIT Compilation:** Using the numba JIT compiler, the CPA identifies and compiles performance-critical "hot" functions into highly optimized machine code, significantly improving runtime performance.
+*   **Idle-Time Optimization:** The CPA keeps the AI continuously active during idle periods (when waiting for user input), performing:
+    - **Pre-analysis:** Analyzing recent conversations for patterns and potential insights
+    - **Memory Optimization:** Pre-loading and optimizing memory indexes for faster retrieval
+    - **Model Warming:** Periodically running light inference to keep the model in memory and prevent OS paging
+    - **Predictive Preparation:** Preparing context based on conversation history for faster responses
+*   **No True Idling:** Once Jenova is running, it's truly "alive" - continuously preparing itself to provide the best possible performance and intelligence.
 *   **Graceful Degradation:** If numba or other optional dependencies are not available, the CPA gracefully handles the absence, ensuring the system works on all configurations.
 
 ### 2.4. The Power of the Cognitive Cycle

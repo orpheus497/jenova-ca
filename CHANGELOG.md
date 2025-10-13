@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cognitive Process Accelerator (CPA):** A new intelligent software optimization engine that dramatically improves performance and responsiveness through:
   - **Proactive Caching:** Background thread that pre-warms model metadata and initial layers into RAM cache on startup for instantaneous first response
   - **JIT Compilation:** Utilizes numba JIT compiler to compile performance-critical Python functions into optimized machine code
+  - **Idle-Time Optimization:** Continuously active background worker that keeps the AI "alive" during idle periods by:
+    - Pre-analyzing recent conversations for patterns and insights
+    - Optimizing and pre-loading memory indexes for faster retrieval
+    - Keeping the model warm with periodic light inference to prevent paging
+    - Preparing predictive context based on conversation history
 - **Numba Dependency:** Added `numba` to `requirements.txt` for JIT compilation support
 
 ### Fixed
@@ -22,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **`.gitignore`:** Added Numba cache directories (`__numba_cache__/`, `.numba_cache/`) to prevent compilation artifacts from being committed
+- **CPA Architecture:** Enhanced CPA to continuously work in background during idle time, ensuring no true idling - the AI is always preparing and optimizing
 
 ## [3.0.1] - 2025-10-11
 

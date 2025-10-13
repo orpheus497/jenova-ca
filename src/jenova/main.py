@@ -44,7 +44,9 @@ def main():
         
         # Initialize CPA for performance optimization
         cpa = CognitiveProcessAccelerator(config, ui_logger, file_logger)
-        cpa.initialize()
+        # Initial startup cache (model warming happens after components are ready)
+        cpa._start_proactive_caching()
+        cpa._apply_jit_compilation()
         
         ui_logger.info(">> Initializing Intelligence Matrix...")
         llm_interface = LLMInterface(config, ui_logger, file_logger)
@@ -74,6 +76,9 @@ def main():
 
         ui_logger.info(">> Cognitive Engine: Online.")
         cognitive_engine = CognitiveEngine(llm_interface, memory_search, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, rag_system)
+        
+        # Connect CPA to cognitive engine for idle-time optimization
+        cpa.initialize(cognitive_engine, memory_search, llm_interface)
         
         ui = TerminalUI(cognitive_engine, ui_logger)
         # Pass the llm_interface to the tools that need it.
