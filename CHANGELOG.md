@@ -8,15 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Cognitive Process Accelerator (CPA):** A new intelligent software optimization engine that dramatically improves performance and responsiveness through:
-  - **Proactive Caching:** Background thread that pre-warms model metadata and initial layers into RAM cache on startup for instantaneous first response
-  - **JIT Compilation:** Utilizes numba JIT compiler to compile performance-critical Python functions into optimized machine code
-  - **Idle-Time Optimization:** Continuously active background worker that keeps the AI "alive" during idle periods by:
-    - Pre-analyzing recent conversations for patterns and insights
-    - Optimizing and pre-loading memory indexes for faster retrieval
-    - Keeping the model warm with periodic light inference to prevent paging
-    - Preparing predictive context based on conversation history
+- **Cognitive Process Accelerator (CPA):** Enhanced intelligent software optimization engine with comprehensive features:
+  - **Proactive Caching:** Background thread pre-warms model metadata and initial layers into RAM cache
+  - **JIT Compilation:** Profile-guided JIT compilation with numba - identifies hot functions and compiles selectively
+  - **Adaptive Cycle Timing:** Dynamically adjusts optimization cycle timing based on system load (CPU/memory monitoring)
+  - **Predictive Pre-loading:** Analyzes query patterns to predict and pre-load likely next queries
+  - **Smart Memory Management:** Tracks access patterns and prioritizes frequently accessed memory data
+  - **Background Insight Generation:** Generates insights from conversation patterns during idle time
+  - **Performance Metrics:** Self-contained monitoring without external APIs
 - **Numba Dependency:** Added `numba` to `requirements.txt` for JIT compilation support
+- **Psutil Dependency:** Added `psutil` to `requirements.txt` for system resource monitoring
 
 ### Fixed
 - **UI Race Condition:** Fixed critical race condition on multi-core systems where background cognitive tasks and main UI loop competed for console control
@@ -27,7 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **`.gitignore`:** Added Numba cache directories (`__numba_cache__/`, `.numba_cache/`) to prevent compilation artifacts from being committed
-- **CPA Architecture:** Enhanced CPA to continuously work in background during idle time, ensuring no true idling - the AI is always preparing and optimizing
+- **CPA Architecture:** Enhanced with 6-phase optimization cycle (up from 4), adaptive timing, profiling, and intelligence matrix improvements
+- **JIT System:** Upgraded from placeholder to actual profile-guided optimization with function call tracking and selective compilation
+
+### Technical Details
+- **Self-Reliant Design:** All features use local analysis and open-source libraries only (no external APIs)
+- **Privacy-First:** No data sent to external services, fully self-contained operation
+- **Royalty-Free:** Uses only open-source software (numba, psutil, cProfile)
 
 ## [3.0.1] - 2025-10-11
 

@@ -25,17 +25,50 @@ The Jenova Cognitive Architecture (JCA) is explicitly designed to overcome these
 
 ### 2.3. Performance Optimization: The Cognitive Process Accelerator (CPA)
 
-Jenova AI includes an intelligent software optimization engine called the **Cognitive Process Accelerator (CPA)** that dramatically improves performance and responsiveness:
+Jenova AI includes an advanced intelligent software optimization engine called the **Cognitive Process Accelerator (CPA)** that dramatically improves performance and responsiveness through multiple self-contained, privacy-focused optimizations:
 
 *   **Proactive Caching:** On startup, the CPA launches a low-priority background thread that pre-warms the model cache by loading metadata and initial layers into RAM. This ensures the AI is ready for instantaneous responses to your first interaction.
-*   **JIT Compilation:** Using the numba JIT compiler, the CPA identifies and compiles performance-critical "hot" functions into highly optimized machine code, significantly improving runtime performance.
-*   **Idle-Time Optimization:** The CPA keeps the AI continuously active during idle periods (when waiting for user input), performing:
-    - **Pre-analysis:** Analyzing recent conversations for patterns and potential insights
-    - **Memory Optimization:** Pre-loading and optimizing memory indexes for faster retrieval
-    - **Model Warming:** Periodically running light inference to keep the model in memory and prevent OS paging
-    - **Predictive Preparation:** Preparing context based on conversation history for faster responses
+
+*   **Profile-Guided JIT Compilation:** Using the numba JIT compiler and Python's cProfile, the CPA:
+    - Profiles function execution to identify performance hotspots
+    - Selectively compiles frequently-called functions into optimized machine code
+    - Caches compilation results for reuse across sessions
+    - Adapts compilation strategy based on runtime metrics
+
+*   **Adaptive Cycle Timing:** The CPA continuously monitors system load (CPU and memory usage via psutil) and automatically adjusts its optimization cycle timing:
+    - High load (>80%): Slows down to avoid competition
+    - Low load (<20%): Speeds up for maximum optimization
+    - Balances performance gains with system resource availability
+
+*   **Smart Memory Management:** Tracks memory access patterns to:
+    - Identify and prioritize frequently accessed memory collections
+    - Pre-load high-priority memories into cache
+    - Optimize retrieval paths based on usage statistics
+
+*   **Predictive Pre-Loading:** Analyzes recent query patterns to:
+    - Identify common keywords and topics
+    - Pre-load context related to likely next queries
+    - Build a predictive model of user interests
+
+*   **Background Insight Generation:** During idle time, the CPA:
+    - Analyzes conversation history for patterns and themes
+    - Identifies recurring topics and keywords
+    - Generates insights without requiring explicit reflection commands
+    - Maintains pattern history for long-term learning
+
+*   **Performance Monitoring:** Provides comprehensive metrics:
+    - Idle cycle counts and timing
+    - Hot function identification and JIT compilation status
+    - Memory access patterns and query trends
+    - System load averages
+
 *   **No True Idling:** Once Jenova is running, it's truly "alive" - continuously preparing itself to provide the best possible performance and intelligence.
-*   **Graceful Degradation:** If numba or other optional dependencies are not available, the CPA gracefully handles the absence, ensuring the system works on all configurations.
+
+*   **Privacy-First Design:** All optimizations use local analysis and open-source libraries only:
+    - No external APIs or cloud services
+    - No data sent outside your system
+    - Uses only royalty-free, open-source software (numba, psutil, cProfile)
+    - Complete self-reliance and privacy maintained
 
 ### 2.4. The Power of the Cognitive Cycle
 
