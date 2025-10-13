@@ -23,21 +23,34 @@ Most consumer-facing AI systems operate on a **stateless, request-response** mod
 
 The Jenova Cognitive Architecture (JCA) is explicitly designed to overcome these limitations. It wraps a powerful Large Language Model (LLM) in a structured framework that provides memory, reflection, and a mechanism for true, persistent learning. It transforms the LLM from a brilliant but amnesiac calculator into a cohesive, evolving intelligence.
 
-### 2.3. The Power of the Cognitive Cycle
+### 2.3. Performance Optimization: The Cognitive Process Accelerator (CPA)
+
+Jenova AI includes an intelligent software optimization engine called the **Cognitive Process Accelerator (CPA)** that dramatically improves performance and responsiveness:
+
+*   **Proactive Caching:** On startup, the CPA launches a low-priority background thread that pre-warms the model cache by loading metadata and initial layers into RAM. This ensures the AI is ready for instantaneous responses to your first interaction.
+*   **JIT Compilation:** Using the numba JIT compiler, the CPA identifies and compiles performance-critical "hot" functions into highly optimized machine code, significantly improving runtime performance.
+*   **Hardware-Specific Optimizations:** The CPA automatically detects your hardware (CPU, AMD/NVIDIA/ARM GPUs) and applies tailored optimizations:
+    - **NVIDIA GPUs:** CUDA optimizations with cuDNN benchmarking
+    - **AMD GPUs:** ROCm/HIP optimizations
+    - **ARM Systems:** ARM-specific optimizations
+    - **CPU-only:** Fastmath optimizations for maximum CPU performance
+*   **Graceful Degradation:** If numba or GPU libraries are not available, the CPA gracefully falls back to CPU optimizations, ensuring the system works on all hardware configurations.
+
+### 2.4. The Power of the Cognitive Cycle
 
 The "Retrieve, Plan, Execute, Reflect" cycle is the engine of the JCA and the primary driver of its superiority.
 
 *   **Grounded Responses:** By forcing the AI to **Retrieve** from its memory *before* acting, the JCA ensures that responses are not just plausible-sounding text. They are grounded in established facts, past conversations, and learned insights. This dramatically reduces confabulation (hallucination) and increases the relevance and accuracy of its output.
 *   **Deliberate Action:** The **Plan** step introduces a moment of metacognition. The AI must first reason about *how* to answer the query. This internal monologue, while hidden from the user, results in a more structured and logical final response. It prevents the AI from taking conversational shortcuts and encourages a more methodical approach to problem-solving.
 
-### 2.4. Memory as the Foundation for Identity and Growth
+### 2.5. Memory as the Foundation for Identity and Growth
 
 Jenova's multi-layered memory system is the bedrock of its identity. It is the difference between playing a character and *having* a character.
 
 *   **Continuity of Self:** The `EpisodicMemory` gives Jenova a personal history with the user. It can refer to past conversations, understand recurring themes, and build a genuine rapport. The AI is no longer a stranger every time you open the terminal.
 *   **A Worldview:** The `SemanticMemory` and `ProceduralMemory`, combined with the dynamically growing `InsightMemory`, form the AI's worldview. This knowledge base is prioritized over the LLM's base training data, allowing for the development of a unique, personalized knowledge set that reflects its experiences.
 
-### 2.5. The Self-Correction and Evolution Loop: True Learning
+### 2.6. The Self-Correction and Evolution Loop: True Learning
 
 This is the most powerful and defining feature of the JCA. The cycle of **Reflection -> Insight Generation -> Fine-Tuning** constitutes a true learning loop that is absent in general systems.
 

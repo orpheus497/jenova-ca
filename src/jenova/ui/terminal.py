@@ -39,11 +39,13 @@ class TerminalUI:
         color_code = '\033[93m' # Yellow color
         reset_code = '\033[0m'
         while self._spinner_running:
-            sys.stdout.write(f'{color_code}\r{next(spinner_chars)}{reset_code}')
-            sys.stdout.flush()
+            with self.logger._console_lock:
+                sys.stdout.write(f'{color_code}\r{next(spinner_chars)}{reset_code}')
+                sys.stdout.flush()
             time.sleep(0.2)
-        sys.stdout.write('\r' + ' ' * 5 + '\r') # Clear spinner line completely
-        sys.stdout.flush()
+        with self.logger._console_lock:
+            sys.stdout.write('\r' + ' ' * 5 + '\r') # Clear spinner line completely
+            sys.stdout.flush()
 
     def start_spinner(self):
         self._spinner_running = True

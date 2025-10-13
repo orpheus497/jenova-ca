@@ -23,6 +23,8 @@ from jenova.assumptions.manager import AssumptionManager
 
 from jenova.cortex.cortex import Cortex
 
+from jenova.core.engine.cpa import CognitiveProcessAccelerator
+
 import getpass
 
 def main():
@@ -39,6 +41,10 @@ def main():
         config['user_data_root'] = user_data_root
         insights_root = os.path.join(user_data_root, "insights")
         cortex_root = os.path.join(user_data_root, "cortex")
+        
+        # Initialize CPA for performance optimization
+        cpa = CognitiveProcessAccelerator(config, ui_logger, file_logger)
+        cpa.initialize()
         
         ui_logger.info(">> Initializing Intelligence Matrix...")
         llm_interface = LLMInterface(config, ui_logger, file_logger)
@@ -80,6 +86,10 @@ def main():
         file_logger.log_error(error_message)
         file_logger.log_error(traceback.format_exc())
     finally:
+        # Shutdown CPA
+        if 'cpa' in locals():
+            cpa.shutdown()
+        
         # Ensure LLM resources are released
         if 'llm_interface' in locals() and llm_interface.model:
             llm_interface.close()

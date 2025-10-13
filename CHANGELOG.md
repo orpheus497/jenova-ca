@@ -8,7 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- (Add new features for the next version here)
+- **Cognitive Process Accelerator (CPA):** A new intelligent software optimization engine that dramatically improves performance and responsiveness through:
+  - **Proactive Caching:** Background thread that pre-warms model metadata and initial layers into RAM cache on startup for instantaneous first response
+  - **JIT Compilation:** Utilizes numba JIT compiler to compile performance-critical Python functions into optimized machine code
+  - **Hardware-Specific Optimizations:** Automatically detects and applies optimizations for AMD (ROCm/HIP), NVIDIA (CUDA), ARM, and CPU architectures
+- **Numba Dependency:** Added `numba` to `requirements.txt` for JIT compilation support
+
+### Fixed
+- **UI Race Condition:** Fixed critical race condition on multi-core systems where background cognitive tasks and main UI loop competed for console control
+  - Implemented thread-safe console locking using `threading.Lock`
+  - Refactored all console access points in `UILogger` to use exclusive locking
+  - Updated `TerminalUI` spinner to respect console lock
+  - Permanently resolves "Only one live display may be active at once" error
+
+### Changed
+- **`.gitignore`:** Added Numba cache directories (`__numba_cache__/`, `.numba_cache/`) to prevent compilation artifacts from being committed
 
 ## [3.0.1] - 2025-10-11
 
