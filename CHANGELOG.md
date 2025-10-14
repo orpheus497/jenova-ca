@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **LLM Generation Isolation (Project Bedrock):** Refactored LLM interaction to use multiprocessing for stability
+  - LLM generation now runs in a separate process using Python's `multiprocessing` library to prevent the main application thread from freezing if the `llama-cpp-python` backend hangs
+  - The main process spawns a worker process for each generation request, which loads the model and executes the generation
+  - This architectural change isolates LLM operations from the main application, ensuring the UI and other components remain responsive
+  - Added configurable timeout mechanism (default: 300 seconds) for LLM generation. If a generation request exceeds this timeout, the worker process is terminated and a clear error message is returned
+  - Enhanced logging throughout the LLM generation lifecycle: logs the exact prompt being sent (with preview), generation start/end times, elapsed time, response length, and specific timeout/error events
+  - The timeout value can be configured via the `generation_timeout` parameter in `main_config.yaml` under the `model` section
 - **Ground-up rebuild of Cognitive Process Accelerator (CPA):** Complete refactor to fix core performance instability
   - **Removed unstable hardware optimization profiles:** Eliminated all hardware detection and dynamic profile switching logic that was the source of previous failures
   - **Large, persistent RAM/VRAM cache:** CPA now proactively loads model layers into a substantial cache (default 5GB, configurable) as part of the AI's primary memory, not a temporary store
@@ -15,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Hard-coded hardware defaults:** Model loading now enforces 16 threads (`n_threads=16`) and all GPU layers (`n_gpu_layers=-1`) as the functional proclivity, not changeable by automated systems
   - **Strengthened thread safety:** Re-verified `threading.Lock` mechanism for console access to prevent UI race conditions
 - **Performance improvements:** Faster cache loading with reduced delays for more responsive startup
+
+### Fixed
+- **LLM Generation Hangs/Freezes (Project Bedrock):** Resolved "stuck at thinking" issues where the application would freeze indefinitely during LLM generation
+  - The timeout mechanism ensures that if `llama-cpp-python` hangs or takes too long, the process is terminated after the configured timeout period
+  - Users now receive clear feedback when a timeout occurs, with both UI messages and detailed log entries
+  - The main application thread is no longer blocked by LLM operations, preventing UI freezes and maintaining application responsiveness
 
 ## [3.1.0] - 2025-10-14
 
