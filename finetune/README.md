@@ -10,7 +10,7 @@ This directory contains the tools to prepare your AI's learned insights for fine
 
 ## Fine-Tuning Workflow
 
-1.  **Interact with Jenova:** Use the AI normally. The more you interact and the more topics you cover, the more insight files will be generated.
+1.  **Interact with JENOVA:** Use the AI normally. The more you interact and the more topics you cover, the more insight files will be generated.
 
 2.  **Prepare the Data:** Once you have a sufficient number of insights (e.g., 50+), run the preparation script from the project root:
 

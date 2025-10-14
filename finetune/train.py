@@ -51,7 +51,7 @@ def create_training_data(insights_dir, output_file):
     print(f"Successfully created '{output_file}' with {count} training entries.")
 
 def main():
-    parser = argparse.ArgumentParser(description="Create a fine-tuning dataset from Jenova's insights.")
+    parser = argparse.ArgumentParser(description="Create a fine-tuning dataset from JENOVA's insights.")
     
     # Get the username of the current user
     username = os.getlogin()
