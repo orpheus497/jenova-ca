@@ -8,9 +8,9 @@ with open('requirements.txt') as f:
 
 setup(
     name="jenova-ai",
-    version="3.1.0",
+    version="3.0.1",
     author="orpheus497",
-    description="Jenova Cognitive Architecture with Cognitive Process Accelerator (CPA) - A truly 'alive' AI with persistent state management, proactive cognitive engagement, and enterprise-grade performance optimization.",
+    description="The perfected Jenova Cognitive Architecture with a dynamic Insight Engine and self-optimizing context.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/orpheus497/jenova-ai",

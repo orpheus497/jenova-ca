@@ -39,13 +39,11 @@ class TerminalUI:
         color_code = '\033[93m' # Yellow color
         reset_code = '\033[0m'
         while self._spinner_running:
-            with self.logger._console_lock:
-                sys.stdout.write(f'{color_code}\r{next(spinner_chars)}{reset_code}')
-                sys.stdout.flush()
-            time.sleep(0.2)
-        with self.logger._console_lock:
-            sys.stdout.write('\r' + ' ' * 5 + '\r') # Clear spinner line completely
+            sys.stdout.write(f'{color_code}\r{next(spinner_chars)}{reset_code}')
             sys.stdout.flush()
+            time.sleep(0.2)
+        sys.stdout.write('\r' + ' ' * 5 + '\r') # Clear spinner line completely
+        sys.stdout.flush()
 
     def start_spinner(self):
         self._spinner_running = True
@@ -159,16 +157,9 @@ class TerminalUI:
 
     def _show_help(self):
         """Displays a detailed list of available commands and their functions."""
-        self.logger.help_message("\n[bright_yellow]╔══════════════════════════════════════════════════════════════════╗[/bright_yellow]")
-        self.logger.help_message("[bright_yellow]║[/bright_yellow]           [bold bright_cyan]JENOVA AI v3.1.0 - COMMAND REFERENCE[/bold bright_cyan]              [bright_yellow]║[/bright_yellow]")
-        self.logger.help_message("[bright_yellow]║[/bright_yellow]      [italic]Cognitive Process Accelerator (CPA) Active[/italic]           [bright_yellow]║[/bright_yellow]")
-        self.logger.help_message("[bright_yellow]╚══════════════════════════════════════════════════════════════════╝[/bright_yellow]\n")
-        
-        self.logger.help_message("[bright_yellow]═══ CORE COMMANDS ═══[/bright_yellow]")
+        self.logger.help_message("\n[bright_yellow]--- Jenova AI Commands ---[/bright_yellow]")
         self.logger.help_message("[bright_yellow]  /help[/bright_yellow]                            - [#BDB2FF]Displays this comprehensive help message, detailing each command's purpose and impact.[/]")
         self.logger.help_message("")
-        
-        self.logger.help_message("[bright_yellow]═══ INSIGHT & REFLECTION COMMANDS ═══[/bright_yellow]")
         self.logger.help_message("[bright_yellow]  /insight[/bright_yellow]                         - [#BDB2FF]Triggers the AI to analyze the current conversation history and generate new, high-quality insights. These insights are stored in Jenova's long-term memory and contribute to its evolving understanding.[/]")
         self.logger.help_message("")
         self.logger.help_message("[bright_yellow]  /reflect[/bright_yellow]                         - [#BDB2FF]Initiates a deep reflection process within Jenova's Cortex. This command reorganizes and interlinks all existing cognitive nodes (insights, memories, assumptions), identifies patterns, and generates higher-level meta-insights, significantly enhancing Jenova's overall intelligence and coherence.[/]")
@@ -177,9 +168,9 @@ class TerminalUI:
         self.logger.help_message("")
         self.logger.help_message("[bright_yellow]  /meta[/bright_yellow]                            - [#BDB2FF]Generates a new, higher-level meta-insight by analyzing clusters of existing insights within the Cortex. This helps Jenova to form more abstract conclusions and identify overarching themes.[/]")
         self.logger.help_message("")
-        
-        self.logger.help_message("[bright_yellow]═══ LEARNING & VERIFICATION COMMANDS ═══[/bright_yellow]")
         self.logger.help_message("[bright_yellow]  /verify[/bright_yellow]                          - [#BDB2FF]Starts the assumption verification process. Jenova will present an unverified assumption it has made about you and ask for clarification, allowing you to confirm or deny it. This refines Jenova's understanding of your preferences and knowledge.[/]")
+        self.logger.help_message("")
+        self.logger.help_message("[bright_yellow]  /train[/bright_yellow]                           - [#BDB2FF]Provides instructions on how to create a training file for fine-tuning the model with your own data.[/]")
         self.logger.help_message("")
         self.logger.help_message("[bright_yellow]  /develop_insight [node_id][/bright_yellow]       - [#BDB2FF]This command has dual functionality:[/]")
         self.logger.help_message("[#BDB2FF]                                       - If a `node_id` is provided: Jenova will take an existing insight and generate a more detailed and developed version of it, adding more context or connections.[/]")
@@ -187,43 +178,11 @@ class TerminalUI:
         self.logger.help_message("")
         self.logger.help_message("[bright_yellow]  /learn_procedure[/bright_yellow]                 - [#BDB2FF]Initiates an interactive, guided process to teach Jenova a new procedure. Jenova will prompt you for the procedure's name, individual steps, and expected outcome, ensuring structured and comprehensive intake of procedural knowledge. This information is stored in Jenova's procedural memory, allowing it to recall and apply the procedure in relevant contexts.[/]")
         self.logger.help_message("")
-        
-        self.logger.help_message("[bright_yellow]═══ ADVANCED FEATURES ═══[/bright_yellow]")
-        self.logger.help_message("[bright_yellow]  /train[/bright_yellow]                           - [#BDB2FF]Provides instructions on how to create a training file for fine-tuning the model with your own data.[/]")
+        self.logger.help_message("[bright_yellow]  /exit[/bright_yellow]                            - [#BDB2FF]Exits the Jenova AI application. All current session data will be saved.[/]")
         self.logger.help_message("")
-        self.logger.help_message("[bright_yellow]  /exit[/bright_yellow] or [bright_yellow]/quit[/bright_yellow]                  - [#BDB2FF]Exits the Jenova AI application. All current session data, including CPA state (learned patterns, query history, hot functions, compilation history), will be automatically saved for continuity in future sessions.[/]")
-        self.logger.help_message("")
-        
-        self.logger.help_message("[bright_yellow]═══ COGNITIVE PROCESS ACCELERATOR (CPA) ═══[/bright_yellow]")
-        self.logger.help_message("[#BDB2FF]The CPA is ALWAYS ACTIVE, continuously optimizing performance:[/]")
-        self.logger.help_message("[#BDB2FF]  • Persistent State: Automatically saves learned patterns every 5 minutes[/]")
-        self.logger.help_message("[#BDB2FF]  • Proactive Caching: Pre-warms model for instant responses[/]")
-        self.logger.help_message("[#BDB2FF]  • Profile-Guided JIT: Compiles hot functions with numba for speed[/]")
-        self.logger.help_message("[#BDB2FF]  • Adaptive Timing: Adjusts optimization cycles (0.5s-8s) based on load[/]")
-        self.logger.help_message("[#BDB2FF]  • Predictive Pre-Loading: Analyzes 50 recent queries for patterns[/]")
-        self.logger.help_message("[#BDB2FF]  • Smart Memory: Prioritizes frequently accessed data[/]")
-        self.logger.help_message("[#BDB2FF]  • Background Insights: Generates insights from conversation patterns[/]")
-        self.logger.help_message("[#BDB2FF]  • Proactive Testing: Tests assumptions during idle time[/]")
-        self.logger.help_message("[#BDB2FF]  • Deep Reflection: Analyzes thought patterns for themes[/]")
-        self.logger.help_message("[#BDB2FF]  • Enhanced Prediction: Builds predictive models from query sequences[/]")
-        self.logger.help_message("[#BDB2FF]  • 2.5x Faster: Base cycle reduced from 5s to 2s[/]")
-        self.logger.help_message("[#BDB2FF]  • Memory Across Sessions: True continuity - AI remembers between runs[/]")
-        self.logger.help_message("")
-        
-        self.logger.help_message("[bright_yellow]═══ JENOVA'S INNATE ABILITIES ═══[/bright_yellow]")
-        self.logger.help_message("[#BDB2FF]Jenova can intelligently use its tools to answer your questions without[/]")
-        self.logger.help_message("[#BDB2FF]needing specific commands. The AI is TRULY ALIVE - continuously thinking,[/]")
-        self.logger.help_message("[#BDB2FF]learning, testing assumptions, and optimizing during idle time.[/]")
-        self.logger.help_message("")
-        self.logger.help_message("[#BDB2FF]Examples of innate capabilities:[/]")
-        self.logger.help_message("[#BDB2FF]  • Ask for the current time, date, or system information[/]")
-        self.logger.help_message("[#BDB2FF]  • Request file operations in the sandbox directory (~/.jenova-ai/)[/]")
-        self.logger.help_message("[#BDB2FF]  • Search and retrieve information from the web (when available)[/]")
-        self.logger.help_message("[#BDB2FF]  • Perform calculations and logical reasoning[/]")
-        self.logger.help_message("[#BDB2FF]  • Analyze documents and extract insights[/]")
-        self.logger.help_message("")
-        self.logger.help_message("[bright_yellow]═══════════════════════════════════════════════════════════════════[/bright_yellow]\n")
-        self.logger.help_message("[italic dim]CPA Status: Active | State: Persistent | Performance: Optimized[/italic dim]\n")
+        self.logger.help_message("[bright_yellow]--- Jenova's Innate Abilities ---[/bright_yellow]")
+        self.logger.help_message("[#BDB2FF]Jenova can intelligently use its tools to answer your questions without needing specific commands. For example, you can ask for the current time, or to read and write files in its sandbox directory (`~/jenova_files` by default).[/]")
+        self.logger.help_message("[bright_yellow]-----------------------------------[/bright_yellow]\n")
 
     def _verify_assumption(self):
         """Handles the /verify command."""

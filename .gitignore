@@ -4,10 +4,6 @@ __pycache__/
 *$py.class
 *.so
 
-# Numba cache
-.numba_cache/
-__numba_cache__/
-
 # Environments
 .env
 .venv
