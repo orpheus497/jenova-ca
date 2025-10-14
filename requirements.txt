@@ -8,3 +8,5 @@ numpy
 selenium
 webdriver-manager
 requests
+numba
+psutil

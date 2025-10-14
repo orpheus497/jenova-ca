@@ -23,21 +23,98 @@ Most consumer-facing AI systems operate on a **stateless, request-response** mod
 
 The Jenova Cognitive Architecture (JCA) is explicitly designed to overcome these limitations. It wraps a powerful Large Language Model (LLM) in a structured framework that provides memory, reflection, and a mechanism for true, persistent learning. It transforms the LLM from a brilliant but amnesiac calculator into a cohesive, evolving intelligence.
 
-### 2.3. The Power of the Cognitive Cycle
+### 2.3. Performance Optimization: The Cognitive Process Accelerator (CPA)
+
+Jenova AI includes an **ENHANCED** advanced intelligent software optimization engine called the **Cognitive Process Accelerator (CPA)** that makes the AI truly "alive" - continuously thinking, learning, and optimizing with persistent memory across sessions.
+
+#### Core Features
+
+*   **Persistent State Management (NEW):** The AI now maintains continuity across sessions
+    - Automatically saves learned patterns every 5 minutes
+    - Preserves query patterns, hot functions, compilation history
+    - Restores previous knowledge on startup
+    - Maintains cognitive continuity for truly "living" AI
+
+*   **Enhanced Activity Level (NEW):** The AI is NOW MORE ALIVE
+    - Base cycle time reduced from 5s to 2s for higher responsiveness
+    - 9-phase optimization cycle (expanded from 6) for deeper engagement
+    - More aggressive adaptive timing (0.5s minimum for maximum activity)
+    - More frequent model warming (every 4 cycles) keeps AI "thinking"
+
+*   **Proactive Cognitive Engagement (NEW):** The AI is MORE THOUGHTFUL
+    - **Proactive Assumption Testing:** Tests and refines assumptions during idle time
+    - **Deep Cognitive Reflection:** Analyzes thought patterns and recurring themes
+    - **Enhanced Predictive Modeling:** Builds prediction from query sequences
+    - **Thought Stream:** Maintains internal "consciousness" of 100 recent thoughts
+    - **Cognitive Depth Tracking:** Measures engagement and awareness level
+
+*   **Proactive Caching:** On startup, launches a low-priority background thread that pre-warms the model cache by loading metadata and initial layers into RAM for instantaneous responses.
+
+*   **Profile-Guided JIT Compilation:** Using numba JIT compiler and Python's cProfile:
+    - Profiles function execution to identify performance hotspots
+    - Selectively compiles frequently-called functions into optimized machine code
+    - Caches compilation results for reuse across sessions
+    - Adapts compilation strategy based on runtime metrics
+
+*   **Adaptive Cycle Timing:** MORE AGGRESSIVE resource adaptation:
+    - Monitors CPU and memory usage continuously via psutil
+    - Adjusts cycle timing from 0.5s (maximum activity) to 8s (high load)
+    - Very low load (<15%): Maximum speed optimization
+    - Low load (<30%): 0.6x base speed
+    - Normal load: 2s base cycle
+    - High load (>70%): 2.5x slower
+    - Very high load (>85%): 4x slower
+
+*   **Smart Memory Management:** Enhanced tracking:
+    - Identifies and prioritizes frequently accessed memory collections
+    - Pre-loads high-priority memories into cache
+    - Optimizes retrieval paths based on usage statistics
+
+*   **Predictive Pre-Loading:** ENHANCED capacity:
+    - Analyzes last 50 queries (up from 20)
+    - Identifies common keywords and topics
+    - Pre-loads context related to likely next queries
+    - Builds predictive model from query sequences
+    - Anticipates user needs proactively
+
+*   **Background Insight Generation:** During idle time:
+    - Analyzes conversation history for patterns and themes
+    - Identifies recurring topics and keywords
+    - Generates insights without requiring explicit commands
+    - Maintains pattern history for long-term learning
+
+*   **Performance Monitoring:** Comprehensive metrics:
+    - Idle cycle counts and adaptive timing
+    - Hot function identification and JIT compilation status
+    - Memory access patterns and query trends
+    - System load averages
+    - **NEW:** Cognitive depth and thought stream size
+    - **NEW:** Proactive thought tracking
+
+*   **No True Idling:** Once Jenova is running, it's truly "alive" - continuously preparing itself to provide the best possible performance and intelligence. The AI maintains an internal thought stream and constantly reflects on its knowledge.
+
+*   **Privacy-First Design:** All optimizations use local analysis and open-source libraries only:
+    - No external APIs or cloud services
+    - No data sent outside your system
+    - Uses only royalty-free, open-source software (numba, psutil, cProfile, pickle)
+    - Complete self-reliance and privacy maintained
+    - State persisted locally for continuity
+
+### 2.4. The Power of the Cognitive Cycle
 
 The "Retrieve, Plan, Execute, Reflect" cycle is the engine of the JCA and the primary driver of its superiority.
 
 *   **Grounded Responses:** By forcing the AI to **Retrieve** from its memory *before* acting, the JCA ensures that responses are not just plausible-sounding text. They are grounded in established facts, past conversations, and learned insights. This dramatically reduces confabulation (hallucination) and increases the relevance and accuracy of its output.
 *   **Deliberate Action:** The **Plan** step introduces a moment of metacognition. The AI must first reason about *how* to answer the query. This internal monologue, while hidden from the user, results in a more structured and logical final response. It prevents the AI from taking conversational shortcuts and encourages a more methodical approach to problem-solving.
 
-### 2.4. Memory as the Foundation for Identity and Growth
+### 2.5. Memory as the Foundation for Identity and Growth
 
 Jenova's multi-layered memory system is the bedrock of its identity. It is the difference between playing a character and *having* a character.
 
 *   **Continuity of Self:** The `EpisodicMemory` gives Jenova a personal history with the user. It can refer to past conversations, understand recurring themes, and build a genuine rapport. The AI is no longer a stranger every time you open the terminal.
 *   **A Worldview:** The `SemanticMemory` and `ProceduralMemory`, combined with the dynamically growing `InsightMemory`, form the AI's worldview. This knowledge base is prioritized over the LLM's base training data, allowing for the development of a unique, personalized knowledge set that reflects its experiences.
 
-### 2.5. The Self-Correction and Evolution Loop: True Learning
+### 2.6. The Self-Correction and Evolution Loop: True Learning
 
 This is the most powerful and defining feature of the JCA. The cycle of **Reflection -> Insight Generation -> Fine-Tuning** constitutes a true learning loop that is absent in general systems.
 

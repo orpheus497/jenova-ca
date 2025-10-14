@@ -5,10 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.1.0] - 2025-10-14
 
 ### Added
-- (Add new features for the next version here)
+- **Cognitive Process Accelerator (CPA):** ENHANCED - Now MORE ALIVE, ACTIVE, and PERSISTENT
+  - **Persistent State Management:** CPA now saves/loads state for continuity across sessions
+    - Preserves learned query patterns, hot functions, compilation history
+    - Maintains memory access patterns and conversation insights
+    - State persisted every 5 minutes automatically
+  - **Enhanced Activity Level:** Base cycle reduced from 5s to 2s for MORE responsive optimization
+    - 9-phase optimization cycle (up from 6) for deeper engagement
+    - More aggressive adaptive timing (0.5s to 8s based on load)
+    - More frequent model warming (every 4 cycles vs 16)
+  - **Proactive Cognitive Engagement:** AI is now MORE THOUGHTFUL
+    - NEW: Proactive assumption testing during idle time
+    - NEW: Deep cognitive reflection analyzing thought patterns
+    - NEW: Enhanced predictive model building from query sequences
+    - Internal "thought stream" maintains cognitive continuity (100 thoughts)
+    - Cognitive depth tracking shows engagement level
+  - **Proactive Caching:** Background thread pre-warms model metadata and initial layers into RAM cache
+  - **Profile-Guided JIT Compilation:** Identifies hot functions and compiles selectively with numba
+  - **Adaptive Cycle Timing:** Dynamically adjusts optimization timing (0.5-8s based on CPU/memory)
+  - **Predictive Pre-Loading:** Analyzes 50 recent queries (up from 20), extracts keywords, pre-loads contexts
+  - **Smart Memory Management:** Tracks access patterns and prioritizes frequently accessed memory data
+  - **Background Insight Generation:** Generates insights from conversation patterns during idle time
+  - **Performance Metrics:** Comprehensive self-contained monitoring
+- **Numba Dependency:** Added `numba` to `requirements.txt` for JIT compilation support
+- **Psutil Dependency:** Added `psutil` to `requirements.txt` for system resource monitoring
+
+### Fixed
+- **UI Race Condition:** Fixed critical race condition on multi-core systems where background cognitive tasks and main UI loop competed for console control
+  - Implemented thread-safe console locking using `threading.Lock`
+  - Refactored all console access points in `UILogger` to use exclusive locking
+  - Updated `TerminalUI` spinner to respect console lock
+  - Permanently resolves "Only one live display may be active at once" error
+
+### Changed
+- **`.gitignore`:** Added Numba cache directories (`__numba_cache__/`, `.numba_cache/`) to prevent compilation artifacts from being committed
+- **CPA Architecture:** NOW MORE ALIVE - 9-phase cycle, 2s base timing, persistent state, deeper cognitive engagement
+- **JIT System:** Profile-guided optimization with actual function decoration and selective compilation
+- **Activity Level:** Reduced base cycle time from 5s to 2s, minimum of 0.5s for maximum responsiveness
+- **Version:** Bumped to 3.1.0 to reflect major CPA enhancements
+- **Installation Script:** Updated `install.sh` with Python version check, CPA feature highlights, and improved user guidance
+- **Setup.py:** Updated description to reflect CPA features and persistent state management
+- **Help Command:** Completely redesigned `/help` with organized sections, CPA status, and comprehensive feature list
+
+### Technical Details
+- **Self-Reliant Design:** All features use local analysis and open-source libraries only (no external APIs)
+- **Privacy-First:** No data sent to external services, fully self-contained operation
+- **Royalty-Free:** Uses only open-source software (numba, psutil, cProfile, pickle)
+- **Persistent Learning:** State saved locally, AI maintains continuity across sessions
 
 ## [3.0.1] - 2025-10-11
 
