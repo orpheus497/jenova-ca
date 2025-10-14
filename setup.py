@@ -10,7 +10,7 @@ setup(
     name="jenova-ai",
     version="3.1.0",
     author="orpheus497",
-    description="Jenova Cognitive Architecture with Cognitive Process Accelerator (CPA) - A truly 'alive' AI with persistent state management, proactive cognitive engagement, and enterprise-grade performance optimization.",
+    description="Jenova Cognitive Architecture with Ground-Up Rebuilt CPA - Stable, high-performance AI with large persistent cache (5GB default), safe JIT compilation, and hard-coded optimal defaults (16 threads, all GPU layers).",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/orpheus497/jenova-ai",

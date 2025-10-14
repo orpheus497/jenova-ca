@@ -1,13 +1,15 @@
 #!/bin/bash
 # Jenova AI System-Wide Installation Script
-# This script installs Jenova AI with Cognitive Process Accelerator (CPA) for all users on the system.
+# This script installs Jenova AI with Ground-Up Rebuilt CPA for all users on the system.
 # It must be run with root privileges (e.g., using 'sudo').
 
 set -e
 
-echo "--- Installing Jenova AI (v3.1.0) with CPA for All Users ---"
-echo "    Features: Persistent State Management, Proactive Cognitive Engagement"
-echo "    Performance Optimization with Profile-Guided JIT Compilation"
+echo "--- Installing Jenova AI (v3.1.0) with Ground-Up Rebuilt CPA ---"
+echo "    Ground-Up Rebuild: Stable, performant, no complex hardware profiles"
+echo "    Large Persistent Cache: 5GB default RAM/VRAM cache for model layers"
+echo "    Safe JIT Compilation: Surgical optimization with robust error handling"
+echo "    Hard-Coded Defaults: 16 threads, all GPU layers for reliable performance"
 echo ""
 
 # 1. Check for Root Privileges
@@ -50,15 +52,16 @@ fi
 
 echo
 echo "======================================================================"
-echo "✅ Jenova AI v3.1.0 with Cognitive Process Accelerator (CPA)"
+echo "✅ Jenova AI v3.1.0 with Ground-Up Rebuilt CPA"
 echo "   has been successfully installed for all users."
 echo ""
-echo "🚀 NEW FEATURES:"
-echo "   • Persistent State Management - AI remembers across sessions"
-echo "   • Proactive Cognitive Engagement - Always thinking and learning"
-echo "   • Profile-Guided JIT Compilation - Enterprise-grade performance"
-echo "   • 2.5x Faster Response Time - Enhanced activity level"
-echo "   • Thread-Safe UI - Resolved race condition on multi-core systems"
+echo "🚀 KEY IMPROVEMENTS:"
+echo "   • Ground-Up CPA Rebuild - Eliminates 'stuck on thinking' bugs"
+echo "   • Large Persistent Cache - 5GB default for instant model access"
+echo "   • Safe JIT Compilation - Maximum performance with stability"
+echo "   • Hard-Coded Defaults - 16 threads, all GPU layers"
+echo "   • Thread-Safe UI - No race conditions on multi-core systems"
+echo "   • No Complex Profiles - Simple, stable, performant by default"
 echo ""
 echo "Any user can now run the application by simply typing the command:"
 echo "  jenova"
