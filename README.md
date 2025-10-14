@@ -61,11 +61,12 @@ Jenova AI includes an advanced intelligent software optimization engine called t
     - Restores previous knowledge on startup
     - Maintains cognitive continuity for truly "living" AI
 
-*   **Continuous Activity:** The AI is continuously active
-    - Base cycle time of 2s for high responsiveness
+*   **Persistent AI Operation:** The AI is always "alive" and ready
+    - Model persistently loaded in memory - no engage/disengage cycles
+    - Background optimizations run continuously without interfering with responses
     - 6-phase optimization cycle for balanced performance
     - Adaptive timing (0.5s to 8s based on load)
-    - Infrequent model warming to minimize overhead
+    - Immediate response to user input without initialization delays
 
 *   **Proactive Cognitive Engagement:** The AI is thoughtful and anticipatory
     - **Proactive Assumption Testing:** Tests and refines assumptions during idle time
@@ -110,6 +111,7 @@ Jenova AI includes an advanced intelligent software optimization engine called t
     - No dynamic profile switching that could cause instability
     - Simple, stable, and performant by default
     - Prevents "stuck on thinking" bugs through robust error handling
+    - Model always persistent - no initialization on each query
     - State persisted locally for continuity
 
 ### 2.4. The Power of the Cognitive Cycle

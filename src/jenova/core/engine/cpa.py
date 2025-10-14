@@ -4,13 +4,16 @@ Cognitive Process Accelerator (CPA)
 An advanced intelligent software optimization engine that provides stable, high-performance 
 operation through deep integration with the AI's cognitive and memory systems.
 
+The AI is always "alive" - the model is persistently loaded in memory and continuously ready.
+The CPA runs background optimizations without interfering with active AI processing.
+
 Key Features:
 - Large, persistent RAM/VRAM cache (default 5GB) as part of AI's primary memory
 - Safe JIT compilation with robust error handling and fallback mechanisms
 - Hard-coded optimal defaults (16 threads, all GPU layers) for reliable performance
 - Thread-safe console access to prevent UI race conditions
 - Persistent state management for continuity across sessions
-- Proactive cognitive engagement with continuous thinking and learning
+- Continuous background optimization without engage/disengage cycles
 - Privacy-first design using only local, open-source libraries
 """
 import os
@@ -31,13 +34,16 @@ class CognitiveProcessAccelerator:
     """
     Cognitive Process Accelerator for performance optimization.
     
+    The AI is always "alive" - model is persistently loaded and ready.
+    Background optimizations run continuously without interfering with AI processing.
+    
     Core Features:
     - Large, persistent RAM/VRAM cache for model metadata and layers (5GB default)
     - Safe JIT compilation using numba with nopython=True and fallback mechanisms
     - Hard-coded optimal hardware defaults (16 threads, all GPU layers)
     - Thread-safe console access with threading.Lock
     - Persistent state management across sessions
-    - Proactive cognitive engagement with continuous optimization
+    - Continuous background optimization without engage/disengage cycles
     - Privacy-first design using only local, open-source libraries
     
     Stability Focus:
@@ -107,12 +113,13 @@ class CognitiveProcessAccelerator:
         
     def initialize(self, cognitive_engine=None, memory_search=None, llm_interface=None):
         """
-        Initialize CPA optimizations with persistence and enhanced engagement.
+        Initialize CPA optimizations with persistence.
+        The AI is always "alive" - the model is persistently loaded and ready.
         
         Args:
             cognitive_engine: Optional CognitiveEngine instance for idle-time analysis
             memory_search: Optional MemorySearch instance for memory optimization
-            llm_interface: Optional LLMInterface instance for model warming
+            llm_interface: Optional LLMInterface instance (already loaded and persistent)
         """
         self.file_logger.log_info("CPA: Initializing Cognitive Process Accelerator...")
         
@@ -127,10 +134,10 @@ class CognitiveProcessAccelerator:
         # Load previous state if exists
         self._load_state()
         
-        # Start proactive caching in background
+        # Start proactive caching in background (only once, here)
         self._start_proactive_caching()
         
-        # Apply JIT compilation to hot functions
+        # Apply JIT compilation to hot functions (only once, here)
         self._apply_jit_compilation()
         
         # Start idle-time worker thread
@@ -140,9 +147,9 @@ class CognitiveProcessAccelerator:
         self._enable_profiling()
         
         # Log active engagement
-        self._add_thought("CPA initialized - AI is now fully alive and continuously thinking")
+        self._add_thought("CPA initialized - AI is now persistently alive and continuously thinking")
         
-        self.file_logger.log_info("CPA: Initialization complete - AI is now persistently active")
+        self.file_logger.log_info("CPA: Initialization complete - AI is persistently active")
     
     def _setup_persistence(self):
         """Setup persistent state management."""
@@ -503,10 +510,11 @@ class CognitiveProcessAccelerator:
     
     def _idle_worker_loop(self):
         """
-        Main loop for idle-time processing with activity and persistence.
-        Continuously thinks, learns, and optimizes during idle periods.
+        Background optimization loop that runs continuously without interfering with AI processing.
+        The AI is always "alive" - model is persistent in memory, no engage/disengage.
+        This loop performs lightweight optimization tasks during idle time.
         """
-        self.file_logger.log_info("CPA: Idle worker loop started - continuously active")
+        self.file_logger.log_info("CPA: Background optimization loop started - AI is persistently alive")
         
         while self.is_running:
             try:
@@ -532,7 +540,7 @@ class CognitiveProcessAccelerator:
                     self._save_state()
                 
                 # Perform idle-time optimization tasks - simplified to 6 phases
-                # This reduces per-cycle overhead while maintaining core functionality
+                # These are lightweight operations that don't interfere with AI responses
                 self._idle_cycle_count += 1
                 cycle = self._idle_cycle_count % 6
                 
@@ -545,9 +553,9 @@ class CognitiveProcessAccelerator:
                     self._optimize_memory_indexes()
                     self._add_thought("Optimized memory access")
                 elif cycle == 2:
-                    # Cycle 3: Predictive pre-loading (combines model warming)
+                    # Cycle 3: Predictive pre-loading
+                    # Model is already persistent in memory - no warming needed
                     self._predictive_preload()
-                    self._keep_model_warm()  # Only warms every 64 cycles internally
                     self._add_thought("Pre-loaded contexts")
                 elif cycle == 3:
                     # Cycle 4: Background insight generation
