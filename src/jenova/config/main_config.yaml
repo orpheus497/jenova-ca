@@ -15,7 +15,6 @@ model:
   max_tokens: 1500
   temperature: 0.4
   top_p: 0.9
-  generation_timeout: 300 # Timeout in seconds for LLM generation (default: 300s / 5 minutes)
 memory:
   preload_memories: true
   episodic_db_path: "memory_db/episodic"

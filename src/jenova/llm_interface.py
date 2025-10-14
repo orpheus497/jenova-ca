@@ -1,53 +1,7 @@
 import os
 import glob
 import importlib.resources
-import multiprocessing
-import time
 from llama_cpp import Llama
-
-def _llm_generation_worker(model_path, prompt, max_tokens, temperature, top_p, stop, grammar, n_ctx, n_threads, n_gpu_layers, use_mlock, result_queue):
-    """Worker function to run LLM generation in a separate process.
-    
-    Args:
-        model_path: Path to the GGUF model file
-        prompt: Full prompt string to send to the LLM
-        max_tokens: Maximum number of tokens to generate
-        temperature: Temperature for generation
-        top_p: Top-p sampling parameter
-        stop: List of stop sequences
-        grammar: Optional grammar string
-        n_ctx: Context size
-        n_threads: Number of CPU threads
-        n_gpu_layers: Number of GPU layers
-        use_mlock: Whether to lock model in memory
-        result_queue: Multiprocessing queue to return the result
-    """
-    try:
-        # Load the model in the worker process
-        model = Llama(
-            model_path=model_path,
-            n_ctx=n_ctx,
-            n_threads=n_threads,
-            n_gpu_layers=n_gpu_layers,
-            use_mlock=use_mlock,
-            verbose=False
-        )
-        
-        # Generate response
-        response = model(
-            prompt=prompt,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            top_p=top_p,
-            stop=stop,
-            grammar=grammar
-        )
-        
-        # Put the result in the queue
-        result_queue.put(('success', response['choices'][0]['text'].strip()))
-    except Exception as e:
-        # Put the error in the queue
-        result_queue.put(('error', str(e)))
 
 class LLMInterface:
     def __init__(self, config, ui_logger, file_logger):
@@ -56,8 +10,6 @@ class LLMInterface:
         self.file_logger = file_logger
         self.model_path = config['model']['model_path']
         self.system_prompt = self._build_system_prompt()
-        # Note: Model is loaded here for initialization and metadata extraction.
-        # For actual generation, the model is reloaded in a separate process to prevent hangs.
         self.model = self._load_model()
 
     def close(self):
@@ -163,7 +115,7 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
         )
 
     def generate(self, prompt: str, stop: list = None, temperature: float = None, grammar: str = None) -> str:
-        """Generates a response from the LLM using a separate process with timeout protection."""
+        """Generates a response from the LLM."""
         full_prompt = self.system_prompt + "\n\n" + prompt
         
         if stop is None:
@@ -171,90 +123,17 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
         
         temp = temperature if temperature is not None else self.config['model']['temperature']
         max_tokens = self.config['model'].get('max_tokens', 1500)
-        timeout = self.config['model'].get('generation_timeout', 300)  # Default 300 seconds
-        
-        # Log the prompt being sent
-        self.file_logger.log_info(f"LLM generation starting. Prompt length: {len(full_prompt)} chars, Max tokens: {max_tokens}, Temperature: {temp}, Timeout: {timeout}s")
-        self.file_logger.log_info(f"Prompt preview (first 200 chars): {full_prompt[:200]}...")
-        
-        start_time = time.time()
         
         try:
-            # Create a queue to receive results from the worker process
-            result_queue = multiprocessing.Queue()
-            
-            # Get model parameters
-            hw_config = self.config['hardware']
-            n_threads = 16  # Hard-coded as per requirement
-            n_gpu_layers = -1  # Hard-coded as per requirement
-            use_mlock = hw_config.get('mlock', True)
-            
-            # Get context size from config
-            config_n_ctx = self.config['model']['context_size']
-            
-            # Start the generation process
-            process = multiprocessing.Process(
-                target=_llm_generation_worker,
-                args=(
-                    self.model_path,
-                    full_prompt,
-                    max_tokens,
-                    temp,
-                    self.config['model']['top_p'],
-                    stop,
-                    grammar,
-                    config_n_ctx,
-                    n_threads,
-                    n_gpu_layers,
-                    use_mlock,
-                    result_queue
-                )
+            response = self.model(
+                prompt=full_prompt,
+                max_tokens=max_tokens,
+                temperature=temp,
+                top_p=self.config['model']['top_p'],
+                stop=stop,
+                grammar=grammar
             )
-            
-            self.file_logger.log_info(f"LLM generation process started (PID will be assigned)")
-            process.start()
-            
-            # Wait for the process to complete with timeout
-            process.join(timeout=timeout)
-            
-            if process.is_alive():
-                # Process timed out
-                self.file_logger.log_error(f"LLM generation TIMEOUT after {timeout} seconds. Terminating process.")
-                self.ui_logger.system_message(f"LLM generation timed out after {timeout} seconds. The process has been terminated.")
-                process.terminate()
-                process.join(timeout=5)  # Give it 5 seconds to terminate gracefully
-                
-                if process.is_alive():
-                    # Force kill if still alive
-                    self.file_logger.log_error("LLM generation process did not terminate gracefully. Force killing.")
-                    process.kill()
-                    process.join()
-                
-                elapsed_time = time.time() - start_time
-                self.file_logger.log_error(f"LLM generation failed after {elapsed_time:.2f} seconds due to timeout.")
-                return "I'm sorry, the response generation took too long and was terminated to prevent the system from freezing. Please try again with a simpler query."
-            
-            # Process completed, get the result
-            if not result_queue.empty():
-                status, result = result_queue.get()
-                elapsed_time = time.time() - start_time
-                
-                if status == 'success':
-                    self.file_logger.log_info(f"LLM generation completed successfully in {elapsed_time:.2f} seconds. Response length: {len(result)} chars")
-                    return result
-                else:
-                    # Error occurred in worker
-                    self.file_logger.log_error(f"Error during LLM generation in worker process: {result}")
-                    self.file_logger.log_error(f"LLM generation failed after {elapsed_time:.2f} seconds.")
-                    return "I'm sorry, I'm having trouble generating a response right now. Please try again later."
-            else:
-                # No result in queue (shouldn't happen)
-                elapsed_time = time.time() - start_time
-                self.file_logger.log_error(f"LLM generation process completed but no result was returned after {elapsed_time:.2f} seconds.")
-                return "I'm sorry, I'm having trouble generating a response right now. Please try again later."
-                
+            return response['choices'][0]['text'].strip()
         except Exception as e:
-            elapsed_time = time.time() - start_time
-            self.file_logger.log_error(f"Unexpected error during LLM generation: {e}")
-            self.file_logger.log_error(f"LLM generation failed after {elapsed_time:.2f} seconds.")
+            self.file_logger.log_error(f"Error during LLM generation: {e}")
             return "I'm sorry, I'm having trouble generating a response right now. Please try again later."
