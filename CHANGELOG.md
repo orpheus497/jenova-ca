@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.1.0] - 2025-10-14
 
 ### Added
 - **Cognitive Process Accelerator (CPA):** ENHANCED - Now MORE ALIVE, ACTIVE, and PERSISTENT
@@ -45,6 +45,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CPA Architecture:** NOW MORE ALIVE - 9-phase cycle, 2s base timing, persistent state, deeper cognitive engagement
 - **JIT System:** Profile-guided optimization with actual function decoration and selective compilation
 - **Activity Level:** Reduced base cycle time from 5s to 2s, minimum of 0.5s for maximum responsiveness
+- **Version:** Bumped to 3.1.0 to reflect major CPA enhancements
+- **Installation Script:** Updated `install.sh` with Python version check, CPA feature highlights, and improved user guidance
+- **Setup.py:** Updated description to reflect CPA features and persistent state management
+- **Help Command:** Completely redesigned `/help` with organized sections, CPA status, and comprehensive feature list
 
 ### Technical Details
 - **Self-Reliant Design:** All features use local analysis and open-source libraries only (no external APIs)
