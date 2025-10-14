@@ -4,10 +4,6 @@ hardware:
   threads: 16
   gpu_layers: -1 # Offload all possible layers to the GPU for maximum performance
   mlock: false # Set to false to allow the OS to swap the model to disk, freeing up RAM.
-
-cpa:
-  cache_size_gb: 5 # Size of persistent RAM/VRAM cache for model layers (in GB)
-
 model:
   model_path: "" # IMPORTANT: Replace with the actual path to your GGUF model file
   embedding_model: 'all-MiniLM-L6-v2'

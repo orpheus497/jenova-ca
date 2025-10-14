@@ -65,19 +65,6 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
                 raise FileNotFoundError("No GGUF model found in the 'models/' directory.")
 
         hw_config = self.config['hardware']
-        
-        # Set hard defaults for threads and GPU layers (functional proclivity)
-        # These are the intended hardware settings and should not be changed by automated systems
-        n_threads = hw_config.get('threads', 16)
-        if n_threads != 16:
-            self.file_logger.log_info(f"Hardware config threads ({n_threads}) overridden to default: 16")
-            n_threads = 16
-        
-        n_gpu_layers = hw_config.get('gpu_layers', -1)
-        if n_gpu_layers != -1:
-            self.file_logger.log_info(f"Hardware config gpu_layers ({n_gpu_layers}) overridden to default: -1 (all layers)")
-            n_gpu_layers = -1
-        
         self.ui_logger.info(f"Found model: {self.model_path}")
         self.file_logger.log_info(f"Found model: {self.model_path}")
 
@@ -102,14 +89,14 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
             self.file_logger.log_info(f"Using model context size: {model_n_ctx_train}")
         # --- End Optimization ---
 
-        self.ui_logger.info(f"Loading model with {n_threads} threads and {n_gpu_layers} GPU layers. Context: {final_n_ctx}")
-        self.file_logger.log_info(f"Loading model. Threads: {n_threads}, GPU Layers: {n_gpu_layers}, Context: {final_n_ctx}")
+        self.ui_logger.info(f"Loading model with {hw_config['threads']} threads and {hw_config['gpu_layers']} GPU layers. Context: {final_n_ctx}")
+        self.file_logger.log_info(f"Loading model. Threads: {hw_config['threads']}, GPU Layers: {hw_config['gpu_layers']}, Context: {final_n_ctx}")
         
         return Llama(
             model_path=self.model_path,
             n_ctx=final_n_ctx,
-            n_threads=n_threads,
-            n_gpu_layers=n_gpu_layers,
+            n_threads=hw_config['threads'],
+            n_gpu_layers=hw_config['gpu_layers'],
             use_mlock=hw_config.get('mlock', True),
             verbose=False
         )
