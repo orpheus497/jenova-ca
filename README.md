@@ -10,18 +10,18 @@ JENOVA operates as a system with interconnected components that mimic aspects of
 
 ## 2. The JENOVA Advantage: A Superior Cognitive Architecture
 
-### 2.1. The Challenge with Stateless AI Systems
+### 2.1. Beyond Statelessness: The Problem with General Systems
 
-Many consumer-facing AI systems operate on a **stateless, request-response** model. While incredibly powerful at in-context learning and reasoning, each interaction remains largely independent of the last. This creates several fundamental limitations:
+Most consumer-facing AI systems operate on a **stateless, request-response** model. They are incredibly powerful at in-context learning and reasoning, but each interaction is largely independent of the last. This leads to several fundamental limitations:
 
-*   **Amnesia:** No persistent memory of past conversations. Cannot remember preferences, previous questions, or work context. Every chat starts from a blank slate.
-*   **Limited Learning:** Corrections and information provided remain only for the current session. The underlying model does not truly learn or improve from user interaction.
-*   **Inconsistent Persona:** Personality can drift or be easily manipulated due to lack of a stable, memory-grounded identity.
-*   **Reactive Nature:** Can only answer direct questions. Cannot reflect on past dialogues to draw novel conclusions or develop deeper understanding over time.
+*   **Amnesia:** The AI has no persistent memory of past conversations. It cannot remember your preferences, previous questions, or the context of your work. Every chat starts from a blank slate.
+*   **Inability to Learn:** Corrections you make or new information you provide are only retained for the current session. The underlying model never truly learns or improves from user interaction.
+*   **Inconsistent Persona:** The AI's personality can drift or be easily manipulated because it lacks a stable, memory-grounded identity.
+*   **Reactive, Not Proactive:** These systems can only answer direct questions. They cannot reflect on past dialogues to draw novel conclusions or develop a deeper understanding of a topic over time.
 
 ### 2.2. The JCA Solution: A Unified, Learning Architecture
 
-The JENOVA Cognitive Architecture (JCA) is designed to overcome these limitations. It wraps a powerful Large Language Model (LLM) in a structured framework that provides memory, reflection, and a mechanism for true, persistent learning. It transforms the LLM from a brilliant but amnesiac calculator into a cohesive, evolving intelligence.
+The JENOVA Cognitive Architecture (JCA) is explicitly designed to overcome these limitations. It wraps a powerful Large Language Model (LLM) in a structured framework that provides memory, reflection, and a mechanism for true, persistent learning. It transforms the LLM from a brilliant but amnesiac calculator into a cohesive, evolving intelligence.
 
 ### 2.3. The Power of the Cognitive Cycle
 

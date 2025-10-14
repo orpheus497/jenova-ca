@@ -20,7 +20,7 @@ BANNER = """
 ╚█████╔╝███████╗██║ ╚████║╚██████╔╝ ╚████╔╝ ██║  ██║
  ╚════╝ ╚══════╝╚═╝  ╚═══╝ ╚═════╝   ╚═══╝  ╚═╝  ╚═╝
 """
-ATTRIBUTION = "JENOVA: https://github.com/orpheus497/jenova-ca | Created by orpheus497: https://github.com/orpheus497"
+ATTRIBUTION = "Designed and Developed by orpheus497 - https://github.com/orpheus497"
 
 class TerminalUI:
     def __init__(self, cognitive_engine: CognitiveEngine, logger: UILogger):
