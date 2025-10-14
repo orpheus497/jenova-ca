@@ -29,7 +29,7 @@ class LLMInterface:
 Your origin story: {identity.get('origin_story', 'You are a helpful assistant.')} \
 Your creator is {identity.get('creator', 'a developer')}. You and the user are separate entities.
 
-_build_system_promptYou must follow these directives:
+You must follow these directives:
 {chr(10).join(f"    - {d}" for d in directives)}
 
 Answer the user's query directly and factually. Do not be evasive. If you do not know an answer, say so and explain why. Do not output role-playing prefixes like 'User:'. Do not output your internal plan or reasoning.""".strip()
