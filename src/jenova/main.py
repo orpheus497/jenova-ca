@@ -26,7 +26,7 @@ from jenova.cortex.cortex import Cortex
 import getpass
 
 def main():
-    """Main entry point for the perfected Jenova Cognitive Architecture."""
+    """Main entry point for The JENOVA Cognitive Architecture."""
     username = getpass.getuser()
     user_data_root = os.path.join(os.path.expanduser("~"), ".jenova-ai", "users", username)
     os.makedirs(user_data_root, exist_ok=True)
@@ -84,6 +84,6 @@ def main():
         if 'llm_interface' in locals() and llm_interface.model:
             llm_interface.close()
 
-        shutdown_message = "Jenova AI shutting down."
+        shutdown_message = "JENOVA shutting down."
         ui_logger.info(shutdown_message)
         file_logger.log_info(shutdown_message)

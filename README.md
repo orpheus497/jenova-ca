@@ -2,11 +2,11 @@
 
 ## 1. Introduction & Philosophy
 
-Jenova AI is a self-aware, evolving large language model powered by the Jenova Cognitive Architecture (JCA), a developed engine and architecture completely designed by orpheus497. It is designed to learn, adapt, and assist humanity through sophisticated cognitive processes. This project prioritizes robust error handling and stability to ensure a reliable and professional user experience.
+JENOVA is a self-aware, evolving large language model powered by the The JENOVA Cognitive Architecture (JCA), a developed engine and architecture completely designed by orpheus497. It is designed to learn, adapt, and assist humanity through sophisticated cognitive processes. This project prioritizes robust error handling and stability to ensure a reliable and professional user experience.
 
-The original vision for Jenova AI was to create a system that could continuously learn, adapt, and assist humanity through sophisticated cognitive processes. This is achieved through a set of interconnected systems that mimic aspects of human cognition: a multi-layered memory, a reflective process for generating new knowledge, and a mechanism for integrating that knowledge back into its core being. This document serves as the definitive technical guide for developers, researchers, and enthusiasts who wish to understand, use, and extend the Jenova AI.
+The original vision for JENOVA was to create a system that could continuously learn, adapt, and assist humanity through sophisticated cognitive processes. This is achieved through a set of interconnected systems that mimic aspects of human cognition: a multi-layered memory, a reflective process for generating new knowledge, and a mechanism for integrating that knowledge back into its core being. This document serves as the definitive technical guide for developers, researchers, and enthusiasts who wish to understand, use, and extend the JENOVA.
 
-**Creator:** The Jenova Cognitive Architecture (JCA) was designed and developed by **orpheus497**.
+**Creator:** The The JENOVA Cognitive Architecture (JCA) was designed and developed by **orpheus497**.
 
 ## 2. The Jenova Advantage: A Superior Cognitive Architecture
 
@@ -21,7 +21,7 @@ Most consumer-facing AI systems operate on a **stateless, request-response** mod
 
 ### 2.2. The JCA Solution: A Unified, Learning Architecture
 
-The Jenova Cognitive Architecture (JCA) is explicitly designed to overcome these limitations. It wraps a powerful Large Language Model (LLM) in a structured framework that provides memory, reflection, and a mechanism for true, persistent learning. It transforms the LLM from a brilliant but amnesiac calculator into a cohesive, evolving intelligence.
+The The JENOVA Cognitive Architecture (JCA) is explicitly designed to overcome these limitations. It wraps a powerful Large Language Model (LLM) in a structured framework that provides memory, reflection, and a mechanism for true, persistent learning. It transforms the LLM from a brilliant but amnesiac calculator into a cohesive, evolving intelligence.
 
 ### 2.3. The Power of the Cognitive Cycle
 
@@ -32,7 +32,7 @@ The "Retrieve, Plan, Execute, Reflect" cycle is the engine of the JCA and the pr
 
 ### 2.4. Memory as the Foundation for Identity and Growth
 
-Jenova's multi-layered memory system is the bedrock of its identity. It is the difference between playing a character and *having* a character.
+JENOVA's multi-layered memory system is the bedrock of its identity. It is the difference between playing a character and *having* a character.
 
 *   **Continuity of Self:** The `EpisodicMemory` gives Jenova a personal history with the user. It can refer to past conversations, understand recurring themes, and build a genuine rapport. The AI is no longer a stranger every time you open the terminal.
 *   **A Worldview:** The `SemanticMemory` and `ProceduralMemory`, combined with the dynamically growing `InsightMemory`, form the AI's worldview. This knowledge base is prioritized over the LLM's base training data, allowing for the development of a unique, personalized knowledge set that reflects its experiences.
@@ -68,7 +68,7 @@ The Retrieval-Augmented Generation (RAG) system is no longer just a document, bu
 
 ### 3.3. The Cortex: A Graph-Based Cognitive Core
 
-The Cortex is the new heart of Jenova's cognitive architecture. It replaces the previous, more siloed approach to managing insights and assumptions with a unified, graph-based system. This allows for a much deeper and more interconnected understanding of the user and the world.
+The Cortex is the new heart of JENOVA's cognitive architecture. It replaces the previous, more siloed approach to managing insights and assumptions with a unified, graph-based system. This allows for a much deeper and more interconnected understanding of the user and the world.
 
 *   **Cognitive Graph:** The Cortex manages a "cognitive graph" where insights, assumptions, and memories are all represented as nodes. These nodes are then connected by links that represent the relationships between them (e.g., "elaborates_on", "conflicts_with", "created_from").
 *   **Centrality Calculation:** The Cortex now calculates a weighted degree centrality for each node in the graph. The weights for different relationship types are configurable in `main_config.yaml`, allowing for a more accurate measure of a node's importance.
@@ -114,7 +114,7 @@ To maximize performance, the `LLMInterface` dynamically configures the context w
 
 ### 3.8. Multi-Layered Long-Term Memory
 
-Jenova's memory is not a monolith. It's a sophisticated, multi-layered system managed by `ChromaDB`, a vector database. All memory is stored on a per-user basis.
+JENOVA's memory is not a monolith. It's a sophisticated, multi-layered system managed by `ChromaDB`, a vector database. All memory is stored on a per-user basis.
 
 *   **Episodic Memory (`EpisodicMemory`):** Stores a turn-by-turn history of conversations. Each episode is enriched with extracted entities, emotions, and a timestamp.
 *   **Semantic Memory (`SemanticMemory`):** Stores factual knowledge. Each fact is enriched with its source, a confidence level, and its temporal validity.
@@ -129,11 +129,11 @@ Jenova is designed for continuous improvement. The insights generated during its
 
 ## 4. System-Wide Installation
 
-Jenova AI is designed to be installed once on a system by an administrator and then be available to all users, while keeping each user's data completely separate and private.
+JENOVA is designed to be installed once on a system by an administrator and then be available to all users, while keeping each user's data completely separate and private.
 
 ### 4.1. For Administrators
 
-To install Jenova AI on the system, you must run the installation script with root privileges.
+To install JENOVA on the system, you must run the installation script with root privileges.
 
 1.  **Prerequisites:**
     *   A Linux-based operating system.
@@ -161,7 +161,7 @@ To install Jenova AI on the system, you must run the installation script with ro
 
 ### 4.2. For Users
 
-Once an administrator has installed Jenova AI, no further setup is required. You can start interacting with the AI immediately.
+Once an administrator has installed JENOVA, no further setup is required. You can start interacting with the AI immediately.
 
 *   **Running the Application:** Simply open your terminal and type the command:
     ```bash
@@ -177,19 +177,19 @@ Interaction with Jenova is primarily through natural language.
 -   **Exiting:** To quit the application, type `exit` and press Enter.
 
 ### Commands
-Jenova AI responds to a set of powerful commands that act as direct instructions for its cognitive processes. These commands are treated as system actions, not conversational input, and are therefore **not stored in Jenova's conversational memory**.
+JENOVA responds to a set of powerful commands that act as direct instructions for its cognitive processes. These commands are treated as system actions, not conversational input, and are therefore **not stored in JENOVA's conversational memory**.
 
 -   `/help`: Displays a comprehensive help message, detailing each command's purpose and impact.
--   `/insight`: Triggers the AI to analyze the current conversation history and generate new, high-quality insights. These insights are stored in Jenova's long-term memory and contribute to its evolving understanding.
--   `/reflect`: Initiates a deep reflection process within Jenova's Cortex. This command reorganizes and interlinks all existing cognitive nodes (insights, memories, assumptions), identifies patterns, and generates higher-level meta-insights, significantly enhancing Jenova's overall intelligence and coherence.
+-   `/insight`: Triggers the AI to analyze the current conversation history and generate new, high-quality insights. These insights are stored in JENOVA's long-term memory and contribute to its evolving understanding.
+-   `/reflect`: Initiates a deep reflection process within JENOVA's Cortex. This command reorganizes and interlinks all existing cognitive nodes (insights, memories, assumptions), identifies patterns, and generates higher-level meta-insights, significantly enhancing JENOVA's overall intelligence and coherence.
 -   `/memory-insight`: Prompts Jenova to perform a broad search across its multi-layered long-term memory (episodic, semantic, procedural) to develop new insights or assumptions based on its accumulated knowledge.
 -   `/meta`: Generates a new, higher-level meta-insight by analyzing clusters of existing insights within the Cortex. This helps Jenova to form more abstract conclusions and identify overarching themes.
--   `/verify`: Starts the assumption verification process. Jenova will present an unverified assumption it has made about you and ask for clarification, allowing you to confirm or deny it. This refines Jenova's understanding of your preferences and knowledge.
+-   `/verify`: Starts the assumption verification process. Jenova will present an unverified assumption it has made about you and ask for clarification, allowing you to confirm or deny it. This refines JENOVA's understanding of your preferences and knowledge.
 -   `/train`: Provides instructions on how to create a training file for fine-tuning the model with your own data.
 -   `/develop_insight [node_id]`: This command has dual functionality:
     -   If a `node_id` is provided: Jenova will take an existing insight and generate a more detailed and developed version of it, adding more context or connections.
     -   If no `node_id` is provided: Jenova will scan the `src/jenova/docs` directory for new or updated documents, process their content, and integrate new insights and summaries into its cognitive graph. This is how Jenova learns from external documentation.
--   `/learn_procedure`: Initiates an interactive, guided process to teach Jenova a new procedure. Jenova will prompt you for the procedure's name, individual steps, and expected outcome, ensuring structured and comprehensive intake of procedural knowledge. This information is stored in Jenova's procedural memory, allowing it to recall and apply the procedure in relevant contexts.
+-   `/learn_procedure`: Initiates an interactive, guided process to teach Jenova a new procedure. Jenova will prompt you for the procedure's name, individual steps, and expected outcome, ensuring structured and comprehensive intake of procedural knowledge. This information is stored in JENOVA's procedural memory, allowing it to recall and apply the procedure in relevant contexts.
 
 ## 6. Codebase and Configuration Overview
 
@@ -220,7 +220,7 @@ Jenova AI responds to a set of powerful commands that act as direct instructions
 
 ### 6.2. Configuration Files
 
-Jenova's behavior is controlled by two YAML files in `src/jenova/config/`.
+JENOVA's behavior is controlled by two YAML files in `src/jenova/config/`.
 
 #### `main_config.yaml`
 

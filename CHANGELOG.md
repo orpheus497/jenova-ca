@@ -10,6 +10,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - (Add new features for the next version here)
 
+## [3.0.2] - 2025-10-14
+
+### Fixed
+- **Critical Race Condition:** Fixed a critical race condition on multi-core systems where background cognitive tasks and the main UI loop competed for console control, causing the "Only one live display may be active at once" error. Implemented thread-safe console locking using `threading.Lock` in the `UILogger` class to ensure exclusive access to console operations.
+- **UI Thread Safety:** Refactored all console access points in `UILogger` to use exclusive locking, including `banner()`, `info()`, `system_message()`, `help_message()`, `reflection()`, `cognitive_process()`, `thinking_process()`, `user_query()`, and `jenova_response()`.
+- **Spinner Thread Safety:** Updated the `TerminalUI` spinner to respect the console lock, preventing conflicts with Rich's live display system during concurrent operations.
+
+### Changed
+- **Branding Update:** Updated all references throughout the codebase and documentation to refer to the AI as "JENOVA" (instead of "Jenova AI") and the engine as "The JENOVA Cognitive Architecture" for consistent branding and identity.
+  - Updated `persona.yaml` identity configuration
+  - Updated `setup.py` description and version
+  - Updated `README.md` throughout
+  - Updated `terminal.py` prompts and messages
+  - Updated `logger.py` panel titles and display names
+  - Updated `main.py` docstrings and messages
+  - Updated `finetune/README.md`
+- **Enhanced /help Command:** Completely redesigned the `/help` command display to be more visually appealing and user-friendly with:
+  - Structured sections with decorative borders (Cognitive Commands, Learning Commands, System Commands, Innate Capabilities)
+  - Clear command syntax highlighting in bright yellow
+  - Detailed descriptions in lavender with usage examples
+  - Italic dim text for additional context and explanations
+  - Visual separators between sections
+  - Helpful tips section at the bottom
+
 ## [3.0.1] - 2025-10-11
 
 ### Fixed
