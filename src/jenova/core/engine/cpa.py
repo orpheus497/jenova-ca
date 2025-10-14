@@ -1,11 +1,8 @@
 """
-Cognitive Process Accelerator (CPA) - Ground-Up Rebuild
+Cognitive Process Accelerator (CPA)
 
-An advanced intelligent software optimization engine rebuilt from the ground up to resolve
-critical "stuck on thinking" bugs and provide stable, high-performance operation.
-
-This rebuild focuses on deep, stable integration with the AI's cognitive and memory systems,
-avoiding the previous failed attempts at complex, multi-platform hardware optimization profiles.
+An advanced intelligent software optimization engine that provides stable, high-performance 
+operation through deep integration with the AI's cognitive and memory systems.
 
 Key Features:
 - Large, persistent RAM/VRAM cache (default 5GB) as part of AI's primary memory
@@ -32,9 +29,9 @@ from pathlib import Path
 
 class CognitiveProcessAccelerator:
     """
-    Cognitive Process Accelerator for performance optimization (Ground-Up Rebuild).
+    Cognitive Process Accelerator for performance optimization.
     
-    Core Features (Rebuilt):
+    Core Features:
     - Large, persistent RAM/VRAM cache for model metadata and layers (5GB default)
     - Safe JIT compilation using numba with nopython=True and fallback mechanisms
     - Hard-coded optimal hardware defaults (16 threads, all GPU layers)
@@ -71,9 +68,9 @@ class CognitiveProcessAccelerator:
         self.llm_interface = None
         self._idle_cycle_count = 0
         
-        # Adaptive timing and system load monitoring - MORE AGGRESSIVE
+        # Adaptive timing and system load monitoring
         self._system_load_samples = deque(maxlen=10)
-        self._base_cycle_time = 2.0  # Reduced from 5.0s - more active cycling
+        self._base_cycle_time = 2.0  # Base cycle time for active cycling
         self._current_cycle_time = self._base_cycle_time
         self._min_cycle_time = 0.5  # Minimum cycle time for high activity
         
@@ -81,29 +78,29 @@ class CognitiveProcessAccelerator:
         self._memory_access_count = defaultdict(int)
         self._memory_access_times = defaultdict(list)
         
-        # Predictive pre-loading - track query patterns (ENHANCED)
-        self._recent_queries = deque(maxlen=50)  # Increased from 20
+        # Predictive pre-loading - track query patterns
+        self._recent_queries = deque(maxlen=50)
         self._query_patterns = defaultdict(int)
         self._query_embeddings = []  # For semantic similarity
         
-        # Background insight generation (ENHANCED)
+        # Background insight generation
         self._conversation_patterns = []
         self._pending_insights = []
         self._thought_stream = deque(maxlen=100)  # Internal "thinking" log
         
-        # JIT profiling and optimization tracking (ENHANCED)
+        # JIT profiling and optimization tracking
         self._profiler = cProfile.Profile()
         self._hot_functions: Set[str] = set()
         self._jit_compiled_functions: Set[str] = set()
         self._function_call_counts = defaultdict(int)
         self._compilation_history = []  # Track what's been compiled when
         
-        # Persistence (NEW)
+        # Persistence
         self._state_file = None
         self._last_save_time = time.time()
         self._save_interval = 300  # Save state every 5 minutes
         
-        # Active cognitive engagement (NEW)
+        # Active cognitive engagement
         self._proactive_thoughts = deque(maxlen=50)
         self._assumption_tests = []
         self._cognitive_depth = 0  # How deeply engaged the AI is
@@ -249,13 +246,13 @@ class CognitiveProcessAccelerator:
             return 50.0
     
     def _adapt_cycle_timing(self):
-        """Adapt cycle timing based on system load - MORE AGGRESSIVE for higher activity."""
+        """Adapt cycle timing based on system load for responsive resource usage."""
         if len(self._system_load_samples) < 3:
             return
         
         avg_load = sum(self._system_load_samples) / len(self._system_load_samples)
         
-        # MORE AGGRESSIVE timing adjustments for higher activity
+        # Adjust timing based on system load
         if avg_load > 85:
             # Very high load - slow down significantly
             self._current_cycle_time = self._base_cycle_time * 4
@@ -266,7 +263,7 @@ class CognitiveProcessAccelerator:
             # Moderate load - slightly slower
             self._current_cycle_time = self._base_cycle_time * 1.5
         elif avg_load < 15:
-            # Very low load - MAXIMUM SPEED for aggressive optimization
+            # Very low load - maximum speed for optimization
             self._current_cycle_time = self._min_cycle_time
         elif avg_load < 30:
             # Low load - speed up significantly
@@ -506,10 +503,10 @@ class CognitiveProcessAccelerator:
     
     def _idle_worker_loop(self):
         """
-        Main loop for idle-time processing with enhanced activity and persistence.
-        The AI is now MORE ALIVE - continuously thinking, learning, and optimizing.
+        Main loop for idle-time processing with activity and persistence.
+        Continuously thinks, learns, and optimizes during idle periods.
         """
-        self.file_logger.log_info("CPA: Idle worker loop started - AI is NOW FULLY ALIVE and continuously active")
+        self.file_logger.log_info("CPA: Idle worker loop started - continuously active")
         
         while self.is_running:
             try:
@@ -522,59 +519,60 @@ class CognitiveProcessAccelerator:
                 except queue.Empty:
                     pass
                 
-                # Get system load and adapt cycle timing (more aggressively)
-                system_load = self._get_system_load()
+                # Get system load less frequently to reduce overhead (every 3 cycles)
+                if self._idle_cycle_count % 3 == 0:
+                    system_load = self._get_system_load()
                 
-                # Adapt timing every 5 cycles (more frequent than before)
-                if self._idle_cycle_count % 5 == 0:
+                # Adapt timing every 10 cycles to reduce overhead
+                if self._idle_cycle_count % 10 == 0:
                     self._adapt_cycle_timing()
                 
                 # Save state periodically
                 if time.time() - self._last_save_time > self._save_interval:
                     self._save_state()
                 
-                # Perform idle-time optimization tasks - EXPANDED to 9 phases for more activity
+                # Perform idle-time optimization tasks - simplified to 6 phases
+                # This reduces per-cycle overhead while maintaining core functionality
                 self._idle_cycle_count += 1
-                cycle = self._idle_cycle_count % 9
+                cycle = self._idle_cycle_count % 6
                 
                 if cycle == 0:
-                    # Cycle 1: Pre-analyze recent conversations with deeper pattern recognition
+                    # Cycle 1: Pre-analyze recent conversations
                     self._preanalyze_recent_conversations()
-                    self._add_thought("Analyzed conversation patterns for deeper understanding")
+                    self._add_thought("Analyzed conversation patterns")
                 elif cycle == 1:
-                    # Cycle 2: Smart memory management - optimize frequently accessed data
+                    # Cycle 2: Smart memory management
                     self._optimize_memory_indexes()
-                    self._add_thought("Optimized memory access patterns")
+                    self._add_thought("Optimized memory access")
                 elif cycle == 2:
-                    # Cycle 3: Keep model warm (more frequently)
-                    self._keep_model_warm()
-                    self._add_thought("Maintained model warmth and readiness")
-                elif cycle == 3:
-                    # Cycle 4: Predictive pre-loading based on query patterns
+                    # Cycle 3: Predictive pre-loading (combines model warming)
                     self._predictive_preload()
-                    self._add_thought("Pre-loaded likely contexts")
-                elif cycle == 4:
-                    # Cycle 5: Background insight generation
+                    self._keep_model_warm()  # Only warms every 64 cycles internally
+                    self._add_thought("Pre-loaded contexts")
+                elif cycle == 3:
+                    # Cycle 4: Background insight generation
                     self._generate_background_insights()
-                    self._add_thought("Generated insights from patterns")
+                    self._add_thought("Generated insights")
+                elif cycle == 4:
+                    # Cycle 5: Profile-guided JIT optimization (less frequent)
+                    if self._idle_cycle_count % 20 == 0:
+                        self._profile_guided_optimization()
+                        self._add_thought("Optimized performance")
                 elif cycle == 5:
-                    # Cycle 6: Profile-guided JIT optimization
-                    self._profile_guided_optimization()
-                    self._add_thought("Optimized performance hotspots")
-                elif cycle == 6:
-                    # Cycle 7: NEW - Proactive assumption testing
-                    self._test_assumptions_proactively()
-                    self._add_thought("Tested and refined assumptions")
-                elif cycle == 7:
-                    # Cycle 8: NEW - Deep cognitive reflection
-                    self._deep_cognitive_reflection()
-                    self._add_thought("Performed deep reflection on knowledge")
-                elif cycle == 8:
-                    # Cycle 9: NEW - Enhance predictive model
-                    self._enhance_predictive_model()
-                    self._add_thought("Enhanced prediction capabilities")
+                    # Cycle 6: Cognitive tasks (proactive assumptions, reflection, prediction)
+                    # Rotate through these every 3rd occurrence
+                    sub_cycle = (self._idle_cycle_count // 6) % 3
+                    if sub_cycle == 0:
+                        self._test_assumptions_proactively()
+                        self._add_thought("Tested assumptions")
+                    elif sub_cycle == 1:
+                        self._deep_cognitive_reflection()
+                        self._add_thought("Performed reflection")
+                    else:
+                        self._enhance_predictive_model()
+                        self._add_thought("Enhanced predictions")
                 
-                # Use adaptive cycle time (more responsive)
+                # Use adaptive cycle time
                 time.sleep(self._current_cycle_time)
                 
             except Exception as e:
@@ -771,10 +769,11 @@ class CognitiveProcessAccelerator:
         """
         Profile-guided JIT optimization - identify and compile hot functions.
         Uses profiling data to selectively apply JIT compilation.
+        Runs infrequently to minimize overhead.
         """
         try:
-            # Every 20 cycles, analyze profiling data
-            if self._idle_cycle_count % 20 == 0:
+            # Only analyze profiling data every 50 cycles to reduce overhead
+            if self._idle_cycle_count % 50 == 0:
                 self.file_logger.log_info("CPA: Running profile-guided optimization...")
                 
                 # Identify hot functions from profiling data
@@ -794,8 +793,9 @@ class CognitiveProcessAccelerator:
             return
         
         try:
-            # Only warm the model occasionally (every 4th idle cycle)
-            if self._idle_cycle_count % 16 == 0:
+            # Only warm the model very occasionally (every 64 cycles = ~2 minutes with 2s base)
+            # This prevents excessive LLM calls which are expensive
+            if self._idle_cycle_count % 64 == 0:
                 self.file_logger.log_info("CPA: Keeping model warm...")
                 
                 # Generate a minimal prompt to keep model in memory
@@ -893,7 +893,7 @@ class CognitiveProcessAccelerator:
         }
     
     def _test_assumptions_proactively(self):
-        """NEW: Test assumptions proactively during idle time - makes AI more thoughtful."""
+        """Test assumptions proactively during idle time for thoughtful reasoning."""
         if not self.cognitive_engine:
             return
         
@@ -922,7 +922,7 @@ class CognitiveProcessAccelerator:
             self.file_logger.log_error(f"CPA: Error testing assumptions: {e}")
     
     def _deep_cognitive_reflection(self):
-        """NEW: Perform deep reflection on knowledge and patterns - makes AI more conscious."""
+        """Perform deep reflection on knowledge and patterns for conscious reasoning."""
         if not self.cognitive_engine:
             return
         
@@ -960,7 +960,7 @@ class CognitiveProcessAccelerator:
             self.file_logger.log_error(f"CPA: Error in deep reflection: {e}")
     
     def _enhance_predictive_model(self):
-        """NEW: Enhance predictive capabilities - makes AI more anticipatory."""
+        """Enhance predictive capabilities for anticipatory behavior."""
         if not self._recent_queries:
             return
         

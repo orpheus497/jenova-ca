@@ -25,9 +25,9 @@ The Jenova Cognitive Architecture (JCA) is explicitly designed to overcome these
 
 ### 2.3. Performance Optimization: The Cognitive Process Accelerator (CPA)
 
-Jenova AI includes an advanced intelligent software optimization engine called the **Cognitive Process Accelerator (CPA)** that has been rebuilt from the ground up to provide stable, high-performance operation on the target hardware (16-thread CPU, AMD GPU).
+Jenova AI includes an advanced intelligent software optimization engine called the **Cognitive Process Accelerator (CPA)** that provides stable, high-performance operation on the target hardware (16-thread CPU, AMD GPU).
 
-#### Core Features (Ground-Up Rebuild)
+#### Core Features
 
 *   **Large, Persistent RAM/VRAM Cache:** Core component of AI's primary memory
     - Proactively loads model metadata and layers on startup (default 5GB, configurable)
@@ -61,20 +61,20 @@ Jenova AI includes an advanced intelligent software optimization engine called t
     - Restores previous knowledge on startup
     - Maintains cognitive continuity for truly "living" AI
 
-*   **Enhanced Activity Level:** The AI is continuously active
+*   **Continuous Activity:** The AI is continuously active
     - Base cycle time of 2s for high responsiveness
-    - 9-phase optimization cycle for deeper engagement
-    - Aggressive adaptive timing (0.5s to 8s based on load)
-    - Frequent model warming keeps AI "thinking"
+    - 6-phase optimization cycle for balanced performance
+    - Adaptive timing (0.5s to 8s based on load)
+    - Infrequent model warming to minimize overhead
 
 *   **Proactive Cognitive Engagement:** The AI is thoughtful and anticipatory
     - **Proactive Assumption Testing:** Tests and refines assumptions during idle time
     - **Deep Cognitive Reflection:** Analyzes thought patterns and recurring themes
-    - **Enhanced Predictive Modeling:** Builds predictions from query sequences
+    - **Predictive Modeling:** Builds predictions from query sequences
     - **Thought Stream:** Maintains internal "consciousness" of 100 recent thoughts
     - **Cognitive Depth Tracking:** Measures engagement and awareness level
 
-*   **Smart Memory Management:** Enhanced tracking and optimization
+*   **Smart Memory Management:** Tracking and optimization
     - Identifies and prioritizes frequently accessed memory collections
     - Pre-loads high-priority memories into cache
     - Optimizes retrieval paths based on usage statistics
@@ -109,7 +109,7 @@ Jenova AI includes an advanced intelligent software optimization engine called t
     - No complex hardware-specific optimization profiles
     - No dynamic profile switching that could cause instability
     - Simple, stable, and performant by default
-    - Avoids previous "stuck on thinking" bugs
+    - Prevents "stuck on thinking" bugs through robust error handling
     - State persisted locally for continuity
 
 ### 2.4. The Power of the Cognitive Cycle
