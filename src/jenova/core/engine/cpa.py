@@ -1,10 +1,20 @@
 """
-Cognitive Process Accelerator (CPA)
+Cognitive Process Accelerator (CPA) - Ground-Up Rebuild
 
-An advanced intelligent software optimization engine that dramatically improves performance
-and responsiveness through proactive caching, profile-guided JIT compilation, adaptive cycle timing,
-predictive pre-loading, smart memory management, persistent state management, and continuous
-idle-time optimization. Makes the AI truly "alive" - continuously thinking, learning, and optimizing.
+An advanced intelligent software optimization engine rebuilt from the ground up to resolve
+critical "stuck on thinking" bugs and provide stable, high-performance operation.
+
+This rebuild focuses on deep, stable integration with the AI's cognitive and memory systems,
+avoiding the previous failed attempts at complex, multi-platform hardware optimization profiles.
+
+Key Features:
+- Large, persistent RAM/VRAM cache (default 5GB) as part of AI's primary memory
+- Safe JIT compilation with robust error handling and fallback mechanisms
+- Hard-coded optimal defaults (16 threads, all GPU layers) for reliable performance
+- Thread-safe console access to prevent UI race conditions
+- Persistent state management for continuity across sessions
+- Proactive cognitive engagement with continuous thinking and learning
+- Privacy-first design using only local, open-source libraries
 """
 import os
 import threading
@@ -22,15 +32,22 @@ from pathlib import Path
 
 class CognitiveProcessAccelerator:
     """
-    Cognitive Process Accelerator for performance optimization.
+    Cognitive Process Accelerator for performance optimization (Ground-Up Rebuild).
     
-    Features:
-    - Proactive caching of model metadata and initial layers
-    - JIT compilation of hot functions using numba with profiling
-    - Continuous idle-time optimization with adaptive timing
-    - Predictive pre-loading of likely next queries
-    - Smart memory management prioritizing frequently accessed data
-    - Background insight generation from conversation patterns
+    Core Features (Rebuilt):
+    - Large, persistent RAM/VRAM cache for model metadata and layers (5GB default)
+    - Safe JIT compilation using numba with nopython=True and fallback mechanisms
+    - Hard-coded optimal hardware defaults (16 threads, all GPU layers)
+    - Thread-safe console access with threading.Lock
+    - Persistent state management across sessions
+    - Proactive cognitive engagement with continuous optimization
+    - Privacy-first design using only local, open-source libraries
+    
+    Stability Focus:
+    - No complex hardware-specific optimization profiles
+    - No dynamic profile switching
+    - Robust error handling prevents application hangs
+    - Simple, stable, and performant by default
     """
     
     def __init__(self, config: Dict[str, Any], ui_logger, file_logger):
@@ -280,6 +297,12 @@ class CognitiveProcessAccelerator:
         Cache model metadata and initial layers into a large, persistent RAM cache.
         This is now part of the AI's primary memory, not a temporary store.
         Runs in a background thread with low priority.
+        
+        Integration with LLMInterface:
+        By reading the model file into memory, this leverages the OS page cache.
+        When LLMInterface subsequently loads the model via llama-cpp-python, it will
+        automatically benefit from this pre-warmed cache, resulting in faster model
+        loading and reduced initial response latency.
         """
         try:
             # Small delay to not interfere with startup

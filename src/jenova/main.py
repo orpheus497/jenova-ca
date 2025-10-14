@@ -44,11 +44,13 @@ def main():
         
         # Initialize CPA for performance optimization
         cpa = CognitiveProcessAccelerator(config, ui_logger, file_logger)
-        # Initial startup cache (model warming happens after components are ready)
+        # Start proactive caching - loads model data into RAM/VRAM cache
+        # This cache will be automatically leveraged by LLMInterface through OS page cache
         cpa._start_proactive_caching()
         cpa._apply_jit_compilation()
         
         ui_logger.info(">> Initializing Intelligence Matrix...")
+        # LLMInterface will benefit from the pre-warmed cache started by CPA
         llm_interface = LLMInterface(config, ui_logger, file_logger)
         
         # Load the embedding model
