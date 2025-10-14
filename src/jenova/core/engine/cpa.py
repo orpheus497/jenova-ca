@@ -1,10 +1,20 @@
 """
 Cognitive Process Accelerator (CPA)
 
-An advanced intelligent software optimization engine that dramatically improves performance
-and responsiveness through proactive caching, profile-guided JIT compilation, adaptive cycle timing,
-predictive pre-loading, smart memory management, persistent state management, and continuous
-idle-time optimization. Makes the AI truly "alive" - continuously thinking, learning, and optimizing.
+An advanced intelligent software optimization engine that provides stable, high-performance 
+operation through deep integration with the AI's cognitive and memory systems.
+
+The AI is always "alive" - the model is persistently loaded in memory and continuously ready.
+The CPA runs background optimizations without interfering with active AI processing.
+
+Key Features:
+- Large, persistent RAM/VRAM cache (default 5GB) as part of AI's primary memory
+- Safe JIT compilation with robust error handling and fallback mechanisms
+- Hard-coded optimal defaults (16 threads, all GPU layers) for reliable performance
+- Thread-safe console access to prevent UI race conditions
+- Persistent state management for continuity across sessions
+- Continuous background optimization without engage/disengage cycles
+- Privacy-first design using only local, open-source libraries
 """
 import os
 import threading
@@ -24,13 +34,23 @@ class CognitiveProcessAccelerator:
     """
     Cognitive Process Accelerator for performance optimization.
     
-    Features:
-    - Proactive caching of model metadata and initial layers
-    - JIT compilation of hot functions using numba with profiling
-    - Continuous idle-time optimization with adaptive timing
-    - Predictive pre-loading of likely next queries
-    - Smart memory management prioritizing frequently accessed data
-    - Background insight generation from conversation patterns
+    The AI is always "alive" - model is persistently loaded and ready.
+    Background optimizations run continuously without interfering with AI processing.
+    
+    Core Features:
+    - Large, persistent RAM/VRAM cache for model metadata and layers (5GB default)
+    - Safe JIT compilation using numba with nopython=True and fallback mechanisms
+    - Hard-coded optimal hardware defaults (16 threads, all GPU layers)
+    - Thread-safe console access with threading.Lock
+    - Persistent state management across sessions
+    - Continuous background optimization without engage/disengage cycles
+    - Privacy-first design using only local, open-source libraries
+    
+    Stability Focus:
+    - No complex hardware-specific optimization profiles
+    - No dynamic profile switching
+    - Robust error handling prevents application hangs
+    - Simple, stable, and performant by default
     """
     
     def __init__(self, config: Dict[str, Any], ui_logger, file_logger):
@@ -54,9 +74,9 @@ class CognitiveProcessAccelerator:
         self.llm_interface = None
         self._idle_cycle_count = 0
         
-        # Adaptive timing and system load monitoring - MORE AGGRESSIVE
+        # Adaptive timing and system load monitoring
         self._system_load_samples = deque(maxlen=10)
-        self._base_cycle_time = 2.0  # Reduced from 5.0s - more active cycling
+        self._base_cycle_time = 2.0  # Base cycle time for active cycling
         self._current_cycle_time = self._base_cycle_time
         self._min_cycle_time = 0.5  # Minimum cycle time for high activity
         
@@ -64,41 +84,42 @@ class CognitiveProcessAccelerator:
         self._memory_access_count = defaultdict(int)
         self._memory_access_times = defaultdict(list)
         
-        # Predictive pre-loading - track query patterns (ENHANCED)
-        self._recent_queries = deque(maxlen=50)  # Increased from 20
+        # Predictive pre-loading - track query patterns
+        self._recent_queries = deque(maxlen=50)
         self._query_patterns = defaultdict(int)
         self._query_embeddings = []  # For semantic similarity
         
-        # Background insight generation (ENHANCED)
+        # Background insight generation
         self._conversation_patterns = []
         self._pending_insights = []
         self._thought_stream = deque(maxlen=100)  # Internal "thinking" log
         
-        # JIT profiling and optimization tracking (ENHANCED)
+        # JIT profiling and optimization tracking
         self._profiler = cProfile.Profile()
         self._hot_functions: Set[str] = set()
         self._jit_compiled_functions: Set[str] = set()
         self._function_call_counts = defaultdict(int)
         self._compilation_history = []  # Track what's been compiled when
         
-        # Persistence (NEW)
+        # Persistence
         self._state_file = None
         self._last_save_time = time.time()
         self._save_interval = 300  # Save state every 5 minutes
         
-        # Active cognitive engagement (NEW)
+        # Active cognitive engagement
         self._proactive_thoughts = deque(maxlen=50)
         self._assumption_tests = []
         self._cognitive_depth = 0  # How deeply engaged the AI is
         
     def initialize(self, cognitive_engine=None, memory_search=None, llm_interface=None):
         """
-        Initialize CPA optimizations with persistence and enhanced engagement.
+        Initialize CPA optimizations with persistence.
+        The AI is always "alive" - the model is persistently loaded and ready.
         
         Args:
             cognitive_engine: Optional CognitiveEngine instance for idle-time analysis
             memory_search: Optional MemorySearch instance for memory optimization
-            llm_interface: Optional LLMInterface instance for model warming
+            llm_interface: Optional LLMInterface instance (already loaded and persistent)
         """
         self.file_logger.log_info("CPA: Initializing Cognitive Process Accelerator...")
         
@@ -113,10 +134,10 @@ class CognitiveProcessAccelerator:
         # Load previous state if exists
         self._load_state()
         
-        # Start proactive caching in background
+        # Start proactive caching in background (only once, here)
         self._start_proactive_caching()
         
-        # Apply JIT compilation to hot functions
+        # Apply JIT compilation to hot functions (only once, here)
         self._apply_jit_compilation()
         
         # Start idle-time worker thread
@@ -126,9 +147,9 @@ class CognitiveProcessAccelerator:
         self._enable_profiling()
         
         # Log active engagement
-        self._add_thought("CPA initialized - AI is now fully alive and continuously thinking")
+        self._add_thought("CPA initialized - AI is now persistently alive and continuously thinking")
         
-        self.file_logger.log_info("CPA: Initialization complete - AI is now persistently active")
+        self.file_logger.log_info("CPA: Initialization complete - AI is persistently active")
     
     def _setup_persistence(self):
         """Setup persistent state management."""
@@ -232,13 +253,13 @@ class CognitiveProcessAccelerator:
             return 50.0
     
     def _adapt_cycle_timing(self):
-        """Adapt cycle timing based on system load - MORE AGGRESSIVE for higher activity."""
+        """Adapt cycle timing based on system load for responsive resource usage."""
         if len(self._system_load_samples) < 3:
             return
         
         avg_load = sum(self._system_load_samples) / len(self._system_load_samples)
         
-        # MORE AGGRESSIVE timing adjustments for higher activity
+        # Adjust timing based on system load
         if avg_load > 85:
             # Very high load - slow down significantly
             self._current_cycle_time = self._base_cycle_time * 4
@@ -249,7 +270,7 @@ class CognitiveProcessAccelerator:
             # Moderate load - slightly slower
             self._current_cycle_time = self._base_cycle_time * 1.5
         elif avg_load < 15:
-            # Very low load - MAXIMUM SPEED for aggressive optimization
+            # Very low load - maximum speed for optimization
             self._current_cycle_time = self._min_cycle_time
         elif avg_load < 30:
             # Low load - speed up significantly
@@ -277,8 +298,15 @@ class CognitiveProcessAccelerator:
     
     def _cache_model_data(self):
         """
-        Cache model metadata and initial layers.
+        Cache model metadata and initial layers into a large, persistent RAM cache.
+        This is now part of the AI's primary memory, not a temporary store.
         Runs in a background thread with low priority.
+        
+        Integration with LLMInterface:
+        By reading the model file into memory, this leverages the OS page cache.
+        When LLMInterface subsequently loads the model via llama-cpp-python, it will
+        automatically benefit from this pre-warmed cache, resulting in faster model
+        loading and reduced initial response latency.
         """
         try:
             # Small delay to not interfere with startup
@@ -291,54 +319,89 @@ class CognitiveProcessAccelerator:
             
             self.file_logger.log_info(f"CPA: Pre-warming model cache for {model_path}")
             
+            # Determine cache size (default 5GB, configurable)
+            cache_size_gb = self.config.get('cpa', {}).get('cache_size_gb', 5)
+            max_cache = cache_size_gb * 1024 * 1024 * 1024  # Convert GB to bytes
+            
             # Read model file in chunks to cache it in RAM
-            # This leverages OS page cache
+            # This leverages OS page cache and creates a persistent memory cache
             chunk_size = 1024 * 1024  # 1MB chunks
             cached_bytes = 0
             
             with open(model_path, 'rb') as f:
-                # Cache first 100MB (approximate first few layers + metadata)
-                max_cache = 100 * 1024 * 1024
-                while cached_bytes < max_cache:
+                # Get file size to determine how much we can cache
+                file_size = os.path.getsize(model_path)
+                target_cache = min(max_cache, file_size)
+                
+                self.file_logger.log_info(
+                    f"CPA: Caching up to {target_cache / (1024*1024*1024):.2f}GB "
+                    f"of model data (file size: {file_size / (1024*1024*1024):.2f}GB)"
+                )
+                
+                while cached_bytes < target_cache:
                     chunk = f.read(chunk_size)
                     if not chunk:
                         break
                     cached_bytes += len(chunk)
                     # Small delay to keep this low priority
-                    time.sleep(0.01)
+                    time.sleep(0.001)  # Reduced delay for faster caching
             
             self.file_logger.log_info(
-                f"CPA: Pre-warmed {cached_bytes / (1024*1024):.1f}MB of model data into cache"
+                f"CPA: Pre-warmed {cached_bytes / (1024*1024):.1f}MB of model data into persistent cache"
             )
             
         except Exception as e:
             self.file_logger.log_error(f"CPA: Error during proactive caching: {e}")
     
     def _apply_jit_compilation(self):
-        """Apply JIT compilation to hot functions using numba with profiling."""
+        """
+        Apply safe JIT compilation to hot functions using numba with robust error handling.
+        Uses nopython=True where possible for maximum performance, with fallbacks for stability.
+        """
         try:
             from numba import jit
-            self.file_logger.log_info("CPA: Applying JIT compilation to hot functions")
+            from numba.core.errors import NumbaError
+            self.file_logger.log_info("CPA: Applying safe JIT compilation to hot functions")
             
             # Get optimization flags
             jit_options = self._get_jit_options()
             
-            # Define wrapper for JIT compilation with error handling
+            # Define wrapper for JIT compilation with error handling and fallback
             def create_jit_wrapper(func_name, func, options):
-                """Create a JIT-compiled wrapper for a function."""
+                """
+                Create a JIT-compiled wrapper for a function with fallback.
+                Attempts nopython=True first, falls back to object mode, then pure Python.
+                """
                 try:
-                    compiled_func = jit(**options)(func)
+                    # First attempt: nopython=True for maximum performance
+                    nopython_options = options.copy()
+                    nopython_options['nopython'] = True
+                    compiled_func = jit(**nopython_options)(func)
                     self._jit_compiled_functions.add(func_name)
-                    self.file_logger.log_info(f"CPA: JIT compiled {func_name}")
+                    self.file_logger.log_info(f"CPA: JIT compiled {func_name} (nopython mode)")
                     return compiled_func
-                except Exception as e:
-                    self.file_logger.log_error(f"CPA: Failed to JIT compile {func_name}: {e}")
-                    return func
+                except (NumbaError, Exception) as e_nopython:
+                    # Fallback: Try object mode
+                    try:
+                        self.file_logger.log_info(f"CPA: Retrying {func_name} in object mode")
+                        object_options = options.copy()
+                        object_options['nopython'] = False
+                        compiled_func = jit(**object_options)(func)
+                        self._jit_compiled_functions.add(func_name)
+                        self.file_logger.log_info(f"CPA: JIT compiled {func_name} (object mode)")
+                        return compiled_func
+                    except Exception as e_object:
+                        # Final fallback: Use pure Python
+                        self.file_logger.log_error(
+                            f"CPA: Failed to JIT compile {func_name} - using pure Python. "
+                            f"Errors: nopython={str(e_nopython)[:50]}, object={str(e_object)[:50]}"
+                        )
+                        return func
             
             # Store JIT wrapper factory for later use
             self._jit_wrapper_factory = create_jit_wrapper
             
-            self.file_logger.log_info("CPA: JIT compilation system initialized")
+            self.file_logger.log_info("CPA: Safe JIT compilation system initialized with fallback support")
             
         except ImportError:
             self.file_logger.log_error(
@@ -409,11 +472,12 @@ class CognitiveProcessAccelerator:
             self.file_logger.log_error(f"CPA: Error applying selective JIT: {e}")
     
     def _get_jit_options(self) -> Dict[str, Any]:
-        """Get JIT compilation options."""
+        """Get JIT compilation options with safe defaults."""
         options = {
-            'nopython': False,  # Use object mode for compatibility
-            'cache': True,      # Cache compiled functions
-            'nogil': True,      # Release GIL when possible
+            'nopython': True,   # Prefer nopython mode for maximum performance
+            'cache': True,      # Cache compiled functions across runs
+            'nogil': True,      # Release GIL when possible for better concurrency
+            'fastmath': True,   # Enable fast math optimizations
         }
         
         return options
@@ -446,10 +510,11 @@ class CognitiveProcessAccelerator:
     
     def _idle_worker_loop(self):
         """
-        Main loop for idle-time processing with enhanced activity and persistence.
-        The AI is now MORE ALIVE - continuously thinking, learning, and optimizing.
+        Background optimization loop that runs continuously without interfering with AI processing.
+        The AI is always "alive" - model is persistent in memory, no engage/disengage.
+        This loop performs lightweight optimization tasks during idle time.
         """
-        self.file_logger.log_info("CPA: Idle worker loop started - AI is NOW FULLY ALIVE and continuously active")
+        self.file_logger.log_info("CPA: Background optimization loop started - AI is persistently alive")
         
         while self.is_running:
             try:
@@ -462,59 +527,60 @@ class CognitiveProcessAccelerator:
                 except queue.Empty:
                     pass
                 
-                # Get system load and adapt cycle timing (more aggressively)
-                system_load = self._get_system_load()
+                # Get system load less frequently to reduce overhead (every 3 cycles)
+                if self._idle_cycle_count % 3 == 0:
+                    system_load = self._get_system_load()
                 
-                # Adapt timing every 5 cycles (more frequent than before)
-                if self._idle_cycle_count % 5 == 0:
+                # Adapt timing every 10 cycles to reduce overhead
+                if self._idle_cycle_count % 10 == 0:
                     self._adapt_cycle_timing()
                 
                 # Save state periodically
                 if time.time() - self._last_save_time > self._save_interval:
                     self._save_state()
                 
-                # Perform idle-time optimization tasks - EXPANDED to 9 phases for more activity
+                # Perform idle-time optimization tasks - simplified to 6 phases
+                # These are lightweight operations that don't interfere with AI responses
                 self._idle_cycle_count += 1
-                cycle = self._idle_cycle_count % 9
+                cycle = self._idle_cycle_count % 6
                 
                 if cycle == 0:
-                    # Cycle 1: Pre-analyze recent conversations with deeper pattern recognition
+                    # Cycle 1: Pre-analyze recent conversations
                     self._preanalyze_recent_conversations()
-                    self._add_thought("Analyzed conversation patterns for deeper understanding")
+                    self._add_thought("Analyzed conversation patterns")
                 elif cycle == 1:
-                    # Cycle 2: Smart memory management - optimize frequently accessed data
+                    # Cycle 2: Smart memory management
                     self._optimize_memory_indexes()
-                    self._add_thought("Optimized memory access patterns")
+                    self._add_thought("Optimized memory access")
                 elif cycle == 2:
-                    # Cycle 3: Keep model warm (more frequently)
-                    self._keep_model_warm()
-                    self._add_thought("Maintained model warmth and readiness")
-                elif cycle == 3:
-                    # Cycle 4: Predictive pre-loading based on query patterns
+                    # Cycle 3: Predictive pre-loading
+                    # Model is already persistent in memory - no warming needed
                     self._predictive_preload()
-                    self._add_thought("Pre-loaded likely contexts")
-                elif cycle == 4:
-                    # Cycle 5: Background insight generation
+                    self._add_thought("Pre-loaded contexts")
+                elif cycle == 3:
+                    # Cycle 4: Background insight generation
                     self._generate_background_insights()
-                    self._add_thought("Generated insights from patterns")
+                    self._add_thought("Generated insights")
+                elif cycle == 4:
+                    # Cycle 5: Profile-guided JIT optimization (less frequent)
+                    if self._idle_cycle_count % 20 == 0:
+                        self._profile_guided_optimization()
+                        self._add_thought("Optimized performance")
                 elif cycle == 5:
-                    # Cycle 6: Profile-guided JIT optimization
-                    self._profile_guided_optimization()
-                    self._add_thought("Optimized performance hotspots")
-                elif cycle == 6:
-                    # Cycle 7: NEW - Proactive assumption testing
-                    self._test_assumptions_proactively()
-                    self._add_thought("Tested and refined assumptions")
-                elif cycle == 7:
-                    # Cycle 8: NEW - Deep cognitive reflection
-                    self._deep_cognitive_reflection()
-                    self._add_thought("Performed deep reflection on knowledge")
-                elif cycle == 8:
-                    # Cycle 9: NEW - Enhance predictive model
-                    self._enhance_predictive_model()
-                    self._add_thought("Enhanced prediction capabilities")
+                    # Cycle 6: Cognitive tasks (proactive assumptions, reflection, prediction)
+                    # Rotate through these every 3rd occurrence
+                    sub_cycle = (self._idle_cycle_count // 6) % 3
+                    if sub_cycle == 0:
+                        self._test_assumptions_proactively()
+                        self._add_thought("Tested assumptions")
+                    elif sub_cycle == 1:
+                        self._deep_cognitive_reflection()
+                        self._add_thought("Performed reflection")
+                    else:
+                        self._enhance_predictive_model()
+                        self._add_thought("Enhanced predictions")
                 
-                # Use adaptive cycle time (more responsive)
+                # Use adaptive cycle time
                 time.sleep(self._current_cycle_time)
                 
             except Exception as e:
@@ -711,10 +777,11 @@ class CognitiveProcessAccelerator:
         """
         Profile-guided JIT optimization - identify and compile hot functions.
         Uses profiling data to selectively apply JIT compilation.
+        Runs infrequently to minimize overhead.
         """
         try:
-            # Every 20 cycles, analyze profiling data
-            if self._idle_cycle_count % 20 == 0:
+            # Only analyze profiling data every 50 cycles to reduce overhead
+            if self._idle_cycle_count % 50 == 0:
                 self.file_logger.log_info("CPA: Running profile-guided optimization...")
                 
                 # Identify hot functions from profiling data
@@ -734,8 +801,9 @@ class CognitiveProcessAccelerator:
             return
         
         try:
-            # Only warm the model occasionally (every 4th idle cycle)
-            if self._idle_cycle_count % 16 == 0:
+            # Only warm the model very occasionally (every 64 cycles = ~2 minutes with 2s base)
+            # This prevents excessive LLM calls which are expensive
+            if self._idle_cycle_count % 64 == 0:
                 self.file_logger.log_info("CPA: Keeping model warm...")
                 
                 # Generate a minimal prompt to keep model in memory
@@ -833,7 +901,7 @@ class CognitiveProcessAccelerator:
         }
     
     def _test_assumptions_proactively(self):
-        """NEW: Test assumptions proactively during idle time - makes AI more thoughtful."""
+        """Test assumptions proactively during idle time for thoughtful reasoning."""
         if not self.cognitive_engine:
             return
         
@@ -862,7 +930,7 @@ class CognitiveProcessAccelerator:
             self.file_logger.log_error(f"CPA: Error testing assumptions: {e}")
     
     def _deep_cognitive_reflection(self):
-        """NEW: Perform deep reflection on knowledge and patterns - makes AI more conscious."""
+        """Perform deep reflection on knowledge and patterns for conscious reasoning."""
         if not self.cognitive_engine:
             return
         
@@ -900,7 +968,7 @@ class CognitiveProcessAccelerator:
             self.file_logger.log_error(f"CPA: Error in deep reflection: {e}")
     
     def _enhance_predictive_model(self):
-        """NEW: Enhance predictive capabilities - makes AI more anticipatory."""
+        """Enhance predictive capabilities for anticipatory behavior."""
         if not self._recent_queries:
             return
         

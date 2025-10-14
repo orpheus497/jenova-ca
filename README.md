@@ -25,79 +25,93 @@ The Jenova Cognitive Architecture (JCA) is explicitly designed to overcome these
 
 ### 2.3. Performance Optimization: The Cognitive Process Accelerator (CPA)
 
-Jenova AI includes an **ENHANCED** advanced intelligent software optimization engine called the **Cognitive Process Accelerator (CPA)** that makes the AI truly "alive" - continuously thinking, learning, and optimizing with persistent memory across sessions.
+Jenova AI includes an advanced intelligent software optimization engine called the **Cognitive Process Accelerator (CPA)** that provides stable, high-performance operation on the target hardware (16-thread CPU, AMD GPU).
 
 #### Core Features
 
-*   **Persistent State Management (NEW):** The AI now maintains continuity across sessions
+*   **Large, Persistent RAM/VRAM Cache:** Core component of AI's primary memory
+    - Proactively loads model metadata and layers on startup (default 5GB, configurable)
+    - Part of the AI's cognitive matrix, not a temporary cache
+    - Leverages OS page cache for persistent model warmth
+    - Configurable cache size via `cpa.cache_size_gb` in configuration
+    - Faster cache loading for more responsive startup
+
+*   **Safe JIT Compilation:** Surgical application with robust error handling
+    - Uses `numba.jit` with `nopython=True` for maximum performance
+    - Multi-level fallback: nopython → object mode → pure Python
+    - Prevents application hangs with try/except error handling
+    - Applied only to pure computational functions
+    - Does not interfere with startup or initial response time
+    - Caches compiled functions across runs for reuse
+
+*   **Stable Hardware Configuration:** Reliable out-of-the-box performance
+    - Hard-coded default: 16 threads (`n_threads=16`)
+    - Hard-coded default: All GPU layers (`n_gpu_layers=-1`)
+    - These defaults are the functional proclivity and not changed by automated systems
+    - Optimized for AMD Ryzen 7 5700U with Radeon Graphics
+
+*   **Thread-Safe Console Access:** Prevents UI race conditions
+    - All console operations protected by `threading.Lock`
+    - Eliminates race conditions on multi-core systems
+    - Ensures clean display during background optimization
+
+*   **Persistent State Management:** Maintains continuity across sessions
     - Automatically saves learned patterns every 5 minutes
     - Preserves query patterns, hot functions, compilation history
     - Restores previous knowledge on startup
     - Maintains cognitive continuity for truly "living" AI
 
-*   **Enhanced Activity Level (NEW):** The AI is NOW MORE ALIVE
-    - Base cycle time reduced from 5s to 2s for higher responsiveness
-    - 9-phase optimization cycle (expanded from 6) for deeper engagement
-    - More aggressive adaptive timing (0.5s minimum for maximum activity)
-    - More frequent model warming (every 4 cycles) keeps AI "thinking"
+*   **Persistent AI Operation:** The AI is always "alive" and ready
+    - Model persistently loaded in memory - no engage/disengage cycles
+    - Background optimizations run continuously without interfering with responses
+    - 6-phase optimization cycle for balanced performance
+    - Adaptive timing (0.5s to 8s based on load)
+    - Immediate response to user input without initialization delays
 
-*   **Proactive Cognitive Engagement (NEW):** The AI is MORE THOUGHTFUL
+*   **Proactive Cognitive Engagement:** The AI is thoughtful and anticipatory
     - **Proactive Assumption Testing:** Tests and refines assumptions during idle time
     - **Deep Cognitive Reflection:** Analyzes thought patterns and recurring themes
-    - **Enhanced Predictive Modeling:** Builds prediction from query sequences
+    - **Predictive Modeling:** Builds predictions from query sequences
     - **Thought Stream:** Maintains internal "consciousness" of 100 recent thoughts
     - **Cognitive Depth Tracking:** Measures engagement and awareness level
 
-*   **Proactive Caching:** On startup, launches a low-priority background thread that pre-warms the model cache by loading metadata and initial layers into RAM for instantaneous responses.
-
-*   **Profile-Guided JIT Compilation:** Using numba JIT compiler and Python's cProfile:
-    - Profiles function execution to identify performance hotspots
-    - Selectively compiles frequently-called functions into optimized machine code
-    - Caches compilation results for reuse across sessions
-    - Adapts compilation strategy based on runtime metrics
-
-*   **Adaptive Cycle Timing:** MORE AGGRESSIVE resource adaptation:
-    - Monitors CPU and memory usage continuously via psutil
-    - Adjusts cycle timing from 0.5s (maximum activity) to 8s (high load)
-    - Very low load (<15%): Maximum speed optimization
-    - Low load (<30%): 0.6x base speed
-    - Normal load: 2s base cycle
-    - High load (>70%): 2.5x slower
-    - Very high load (>85%): 4x slower
-
-*   **Smart Memory Management:** Enhanced tracking:
+*   **Smart Memory Management:** Tracking and optimization
     - Identifies and prioritizes frequently accessed memory collections
     - Pre-loads high-priority memories into cache
     - Optimizes retrieval paths based on usage statistics
 
-*   **Predictive Pre-Loading:** ENHANCED capacity:
-    - Analyzes last 50 queries (up from 20)
+*   **Predictive Pre-Loading:** Anticipates user needs
+    - Analyzes last 50 queries for patterns
     - Identifies common keywords and topics
     - Pre-loads context related to likely next queries
     - Builds predictive model from query sequences
-    - Anticipates user needs proactively
 
-*   **Background Insight Generation:** During idle time:
+*   **Background Insight Generation:** Continuous learning during idle time
     - Analyzes conversation history for patterns and themes
     - Identifies recurring topics and keywords
     - Generates insights without requiring explicit commands
     - Maintains pattern history for long-term learning
 
-*   **Performance Monitoring:** Comprehensive metrics:
+*   **Performance Monitoring:** Comprehensive self-contained metrics
     - Idle cycle counts and adaptive timing
     - Hot function identification and JIT compilation status
     - Memory access patterns and query trends
     - System load averages
-    - **NEW:** Cognitive depth and thought stream size
-    - **NEW:** Proactive thought tracking
+    - Cognitive depth and thought stream size
+    - Proactive thought tracking
 
-*   **No True Idling:** Once Jenova is running, it's truly "alive" - continuously preparing itself to provide the best possible performance and intelligence. The AI maintains an internal thought stream and constantly reflects on its knowledge.
-
-*   **Privacy-First Design:** All optimizations use local analysis and open-source libraries only:
+*   **Privacy-First Design:** All optimizations use local analysis only
     - No external APIs or cloud services
     - No data sent outside your system
     - Uses only royalty-free, open-source software (numba, psutil, cProfile, pickle)
     - Complete self-reliance and privacy maintained
+
+*   **Stability Focus:** Designed for reliable operation
+    - No complex hardware-specific optimization profiles
+    - No dynamic profile switching that could cause instability
+    - Simple, stable, and performant by default
+    - Prevents "stuck on thinking" bugs through robust error handling
+    - Model always persistent - no initialization on each query
     - State persisted locally for continuity
 
 ### 2.4. The Power of the Cognitive Cycle
@@ -304,9 +318,11 @@ Jenova's behavior is controlled by two YAML files in `src/jenova/config/`.
 This file controls the technical parameters of the AI.
 
 -   **`hardware`**:
-    -   `threads`: Number of CPU threads to use.
-    -   `gpu_layers`: Number of model layers to offload to the GPU. Set to -1 to offload all possible layers for maximum performance. Requires a compatible GPU and `llama-cpp-python` built with GPU support.
+    -   `threads`: Number of CPU threads to use. Hard-coded default is 16 for optimal performance.
+    -   `gpu_layers`: Number of model layers to offload to the GPU. Hard-coded default is -1 to offload all possible layers for maximum performance. Requires a compatible GPU and `llama-cpp-python` built with GPU support.
     -   `mlock`: Whether to lock the model in memory (RAM). Set to `true` for a significant performance increase by preventing the model from being swapped to disk.
+-   **`cpa`**:
+    -   `cache_size_gb`: Size of the persistent RAM/VRAM cache for model layers (in GB). Default is 5GB. This is part of the AI's primary memory.
 -   **`model`**:
     -   `embedding_model`: The sentence-transformer model to use for creating vector embeddings for memory search.
     -   `context_size`: The default context window size (will be overridden by the model's metadata if possible).
