@@ -53,6 +53,3 @@ finetuning:
 
 tools:
   file_sandbox_path: "~/jenova_files"
-
-optimization:
-  enabled: true # Enable or disable automatic performance optimization

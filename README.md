@@ -23,21 +23,112 @@ Most consumer-facing AI systems operate on a **stateless, request-response** mod
 
 The Jenova Cognitive Architecture (JCA) is explicitly designed to overcome these limitations. It wraps a powerful Large Language Model (LLM) in a structured framework that provides memory, reflection, and a mechanism for true, persistent learning. It transforms the LLM from a brilliant but amnesiac calculator into a cohesive, evolving intelligence.
 
-### 2.3. The Power of the Cognitive Cycle
+### 2.3. Performance Optimization: The Cognitive Process Accelerator (CPA)
+
+Jenova AI includes an advanced intelligent software optimization engine called the **Cognitive Process Accelerator (CPA)** that provides stable, high-performance operation on the target hardware (16-thread CPU, AMD GPU).
+
+#### Core Features
+
+*   **Large, Persistent RAM/VRAM Cache:** Core component of AI's primary memory
+    - Proactively loads model metadata and layers on startup (default 5GB, configurable)
+    - Part of the AI's cognitive matrix, not a temporary cache
+    - Leverages OS page cache for persistent model warmth
+    - Configurable cache size via `cpa.cache_size_gb` in configuration
+    - Faster cache loading for more responsive startup
+
+*   **Safe JIT Compilation:** Surgical application with robust error handling
+    - Uses `numba.jit` with `nopython=True` for maximum performance
+    - Multi-level fallback: nopython → object mode → pure Python
+    - Prevents application hangs with try/except error handling
+    - Applied only to pure computational functions
+    - Does not interfere with startup or initial response time
+    - Caches compiled functions across runs for reuse
+
+*   **Stable Hardware Configuration:** Reliable out-of-the-box performance
+    - Hard-coded default: 16 threads (`n_threads=16`)
+    - Hard-coded default: All GPU layers (`n_gpu_layers=-1`)
+    - These defaults are the functional proclivity and not changed by automated systems
+    - Optimized for AMD Ryzen 7 5700U with Radeon Graphics
+
+*   **Thread-Safe Console Access:** Prevents UI race conditions
+    - All console operations protected by `threading.Lock`
+    - Eliminates race conditions on multi-core systems
+    - Ensures clean display during background optimization
+
+*   **Persistent State Management:** Maintains continuity across sessions
+    - Automatically saves learned patterns every 5 minutes
+    - Preserves query patterns, hot functions, compilation history
+    - Restores previous knowledge on startup
+    - Maintains cognitive continuity for truly "living" AI
+
+*   **Persistent AI Operation:** The AI is always "alive" and ready
+    - Model persistently loaded in memory - no engage/disengage cycles
+    - Background optimizations run continuously without interfering with responses
+    - 6-phase optimization cycle for balanced performance
+    - Adaptive timing (0.5s to 8s based on load)
+    - Immediate response to user input without initialization delays
+
+*   **Proactive Cognitive Engagement:** The AI is thoughtful and anticipatory
+    - **Proactive Assumption Testing:** Tests and refines assumptions during idle time
+    - **Deep Cognitive Reflection:** Analyzes thought patterns and recurring themes
+    - **Predictive Modeling:** Builds predictions from query sequences
+    - **Thought Stream:** Maintains internal "consciousness" of 100 recent thoughts
+    - **Cognitive Depth Tracking:** Measures engagement and awareness level
+
+*   **Smart Memory Management:** Tracking and optimization
+    - Identifies and prioritizes frequently accessed memory collections
+    - Pre-loads high-priority memories into cache
+    - Optimizes retrieval paths based on usage statistics
+
+*   **Predictive Pre-Loading:** Anticipates user needs
+    - Analyzes last 50 queries for patterns
+    - Identifies common keywords and topics
+    - Pre-loads context related to likely next queries
+    - Builds predictive model from query sequences
+
+*   **Background Insight Generation:** Continuous learning during idle time
+    - Analyzes conversation history for patterns and themes
+    - Identifies recurring topics and keywords
+    - Generates insights without requiring explicit commands
+    - Maintains pattern history for long-term learning
+
+*   **Performance Monitoring:** Comprehensive self-contained metrics
+    - Idle cycle counts and adaptive timing
+    - Hot function identification and JIT compilation status
+    - Memory access patterns and query trends
+    - System load averages
+    - Cognitive depth and thought stream size
+    - Proactive thought tracking
+
+*   **Privacy-First Design:** All optimizations use local analysis only
+    - No external APIs or cloud services
+    - No data sent outside your system
+    - Uses only royalty-free, open-source software (numba, psutil, cProfile, pickle)
+    - Complete self-reliance and privacy maintained
+
+*   **Stability Focus:** Designed for reliable operation
+    - No complex hardware-specific optimization profiles
+    - No dynamic profile switching that could cause instability
+    - Simple, stable, and performant by default
+    - Prevents "stuck on thinking" bugs through robust error handling
+    - Model always persistent - no initialization on each query
+    - State persisted locally for continuity
+
+### 2.4. The Power of the Cognitive Cycle
 
 The "Retrieve, Plan, Execute, Reflect" cycle is the engine of the JCA and the primary driver of its superiority.
 
 *   **Grounded Responses:** By forcing the AI to **Retrieve** from its memory *before* acting, the JCA ensures that responses are not just plausible-sounding text. They are grounded in established facts, past conversations, and learned insights. This dramatically reduces confabulation (hallucination) and increases the relevance and accuracy of its output.
 *   **Deliberate Action:** The **Plan** step introduces a moment of metacognition. The AI must first reason about *how* to answer the query. This internal monologue, while hidden from the user, results in a more structured and logical final response. It prevents the AI from taking conversational shortcuts and encourages a more methodical approach to problem-solving.
 
-### 2.4. Memory as the Foundation for Identity and Growth
+### 2.5. Memory as the Foundation for Identity and Growth
 
 Jenova's multi-layered memory system is the bedrock of its identity. It is the difference between playing a character and *having* a character.
 
 *   **Continuity of Self:** The `EpisodicMemory` gives Jenova a personal history with the user. It can refer to past conversations, understand recurring themes, and build a genuine rapport. The AI is no longer a stranger every time you open the terminal.
 *   **A Worldview:** The `SemanticMemory` and `ProceduralMemory`, combined with the dynamically growing `InsightMemory`, form the AI's worldview. This knowledge base is prioritized over the LLM's base training data, allowing for the development of a unique, personalized knowledge set that reflects its experiences.
 
-### 2.5. The Self-Correction and Evolution Loop: True Learning
+### 2.6. The Self-Correction and Evolution Loop: True Learning
 
 This is the most powerful and defining feature of the JCA. The cycle of **Reflection -> Insight Generation -> Fine-Tuning** constitutes a true learning loop that is absent in general systems.
 
@@ -126,29 +217,6 @@ Jenova's memory is not a monolith. It's a sophisticated, multi-layered system ma
 Jenova is designed for continuous improvement. The insights generated during its operation can be used to create a dataset for fine-tuning the base model itself.
 
 *   **Data Preparation (`finetune/train.py`):** This script gathers all the `.json` insight files from `~/.jenova-ai/users/<username>/insights/` and transforms them into a `finetune_train.jsonl` file. The script is configurable and can be used to generate a dataset for fine-tuning a model in a separate program.
-
-### 3.10. Automated Hardware Optimization
-
-Jenova includes an intelligent Optimization Engine that automatically configures the system for optimal performance based on your hardware specifications. This eliminates the need for manual tuning and ensures that Jenova runs efficiently on any system.
-
-*   **Intelligent Hardware Profiler:** The `HardwareProfiler` class automatically detects detailed system specifications:
-    *   **CPU Detection:** Architecture, vendor, physical cores, and full model name
-    *   **APU/iGPU Detection:** Specifically identifies integrated graphics (APUs) by checking if the GPU shares the same die as the CPU
-    *   **GPU Detection:** Vendor, VRAM (via nvidia-smi, rocm-smi, and /sys/class/drm fallback), and classification as dedicated or integrated
-    *   **UMA/GART Memory Detection:** For APUs/iGPUs, determines allocated shared memory size instead of looking for non-existent dedicated VRAM
-    *   **GPU Runtime Support:** Verifies the presence of actual CUDA (`libcudart.so`) or ROCm (`libamdhip64.so`) runtime libraries
-    *   **ARM SoC Detection:** Parses `/proc/cpuinfo` on aarch64 systems to identify specific SoC types (Snapdragon, Apple Silicon, Tensor)
-    *   **System RAM:** Total available system memory
-*   **Multi-Strategy Configuration:** The `OptimizationEngine` analyzes your hardware and applies the most appropriate optimization strategy:
-    *   **High-Performance ARM SoC Strategy:** For Apple Silicon, Snapdragon, and Tensor SoCs with unified memory, offloads all layers to GPU and uses all available performance cores to leverage high-bandwidth memory architecture
-    *   **APU-Balanced Strategy:** For AMD/Intel APUs with shared memory, conservatively calculates `n_gpu_layers` to avoid memory swapping and reserves 1-2 physical cores for system/GPU data feeding, preventing stuttering and maximizing throughput
-    *   **Dedicated GPU-Aggressive Strategy:** For discrete NVIDIA/AMD GPUs with proper runtime support, maximizes `n_gpu_layers` to fill dedicated VRAM for maximum GPU utilization
-    *   **CPU-Only Fallback:** When no capable GPU is detected or runtime support is missing, optimizes for CPU-only operation with appropriate thread count
-*   **Settings Persistence:** Calculated settings are saved to a user-specific `optimization.json` file
-*   **Automatic Application:** The optimization engine runs automatically on every startup, applying calculated settings before loading the language model
-*   **Enhanced Feedback:** Displays detected hardware profile (e.g., "AMD APU with shared memory") and the optimization strategy being applied (e.g., "Applying APU-Balanced strategy for speed")
-*   **Manual Inspection:** The `/optimize` command displays a detailed report of detected hardware, active strategy, and current performance settings
-*   **Configuration:** The `optimization` section in `main_config.yaml` allows users to enable/disable the auto-tuning feature as needed
 
 ## 4. System-Wide Installation
 
@@ -250,9 +318,11 @@ Jenova's behavior is controlled by two YAML files in `src/jenova/config/`.
 This file controls the technical parameters of the AI.
 
 -   **`hardware`**:
-    -   `threads`: Number of CPU threads to use. (Note: This value may be automatically overridden by the Optimization Engine if auto-tuning is enabled.)
-    -   `gpu_layers`: Number of model layers to offload to the GPU. Set to -1 to offload all possible layers for maximum performance. Requires a compatible GPU and `llama-cpp-python` built with GPU support. (Note: This value may be automatically overridden by the Optimization Engine if auto-tuning is enabled.)
+    -   `threads`: Number of CPU threads to use. Hard-coded default is 16 for optimal performance.
+    -   `gpu_layers`: Number of model layers to offload to the GPU. Hard-coded default is -1 to offload all possible layers for maximum performance. Requires a compatible GPU and `llama-cpp-python` built with GPU support.
     -   `mlock`: Whether to lock the model in memory (RAM). Set to `true` for a significant performance increase by preventing the model from being swapped to disk.
+-   **`cpa`**:
+    -   `cache_size_gb`: Size of the persistent RAM/VRAM cache for model layers (in GB). Default is 5GB. This is part of the AI's primary memory.
 -   **`model`**:
     -   `embedding_model`: The sentence-transformer model to use for creating vector embeddings for memory search.
     -   `context_size`: The default context window size (will be overridden by the model's metadata if possible).

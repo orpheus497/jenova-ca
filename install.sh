@@ -1,11 +1,16 @@
 #!/bin/bash
 # Jenova AI System-Wide Installation Script
-# This script installs Jenova AI for all users on the system.
+# This script installs Jenova AI with Ground-Up Rebuilt CPA for all users on the system.
 # It must be run with root privileges (e.g., using 'sudo').
 
 set -e
 
-echo "--- Installing Jenova AI for All Users ---"
+echo "--- Installing Jenova AI (v3.1.0) with Ground-Up Rebuilt CPA ---"
+echo "    Ground-Up Rebuild: Stable, performant, no complex hardware profiles"
+echo "    Large Persistent Cache: 5GB default RAM/VRAM cache for model layers"
+echo "    Safe JIT Compilation: Surgical optimization with robust error handling"
+echo "    Hard-Coded Defaults: 16 threads, all GPU layers for reliable performance"
+echo ""
 
 # 1. Check for Root Privileges
 if [ "$(id -u)" -ne 0 ]; then
@@ -21,86 +26,52 @@ if ! command -v python3 &> /dev/null || ! command -v pip &> /dev/null || ! comma
     exit 1
 fi
 
-# Check for python3-psutil
-echo "--> Checking for python3-psutil system package..."
-if ! python3 -c "import psutil" &> /dev/null; then
-    echo "[WARNING] python3-psutil system package not found."
-    echo "          This package is required for hardware detection."
-    echo "          On Debian/Ubuntu, install it with: sudo apt-get install python3-psutil"
-    echo "          On other systems, it will be installed via pip."
+# 3. Verify Python version (>=3.10 required)
+echo "--> Checking Python version (3.10+ required)..."
+python_version=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+required_version="3.10"
+if [ "$(printf '%s\n' "$required_version" "$python_version" | sort -V | head -n1)" != "$required_version" ]; then
+    echo "[ERROR] Python 3.10 or higher is required. Current version: $python_version"
+    exit 1
 fi
 
-# 3. Upgrade Pip
+# 4. Upgrade Pip
 echo "--> Upgrading system's pip..."
 pip install --upgrade pip > /dev/null
 
-# 4. Install the Package
+# 5. Install the Package with all dependencies
 # This installs the package into the system's site-packages directory.
 # The 'jenova' command will be placed in a system-wide bin location (e.g., /usr/local/bin).
 echo "--> Installing Jenova AI package globally..."
+echo "    Installing core dependencies: llama-cpp-python, chromadb, sentence-transformers, rich..."
+echo "    Installing CPA dependencies: numba (JIT compilation), psutil (system monitoring)..."
 if ! pip install --ignore-installed .; then
     echo "[ERROR] Installation failed. Please check setup.py and ensure all dependencies can be installed."
     exit 1
 fi
 
-# 5. Check for Swap on ARM Systems
-ARCH=$(uname -m)
-if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
-    echo "--> Checking for swap configuration on ARM system..."
-    
-    # Try multiple methods to detect swap
-    SWAP_DETECTED=0
-    
-    # Method 1: Use swapon command
-    if command -v swapon &> /dev/null; then
-        SWAP_TOTAL=$(swapon --show=SIZE --noheadings --bytes 2>/dev/null | awk '{sum+=$1} END {print sum}')
-        if [ ! -z "$SWAP_TOTAL" ] && [ "$SWAP_TOTAL" -gt 0 ]; then
-            SWAP_DETECTED=1
-        fi
-    fi
-    
-    # Method 2: Check /proc/swaps
-    if [ $SWAP_DETECTED -eq 0 ] && [ -f /proc/swaps ]; then
-        SWAP_LINES=$(grep -v "^Filename" /proc/swaps | wc -l)
-        if [ "$SWAP_LINES" -gt 0 ]; then
-            SWAP_DETECTED=1
-        fi
-    fi
-    
-    # Method 3: Use free command
-    if [ $SWAP_DETECTED -eq 0 ] && command -v free &> /dev/null; then
-        SWAP_KB=$(free -k | grep "^Swap:" | awk '{print $2}')
-        if [ ! -z "$SWAP_KB" ] && [ "$SWAP_KB" -gt 0 ]; then
-            SWAP_DETECTED=1
-        fi
-    fi
-    
-    if [ $SWAP_DETECTED -eq 0 ]; then
-        echo ""
-        echo "[INFO] No swap file detected on this ARM system."
-        echo "       A swap file can significantly improve performance and stability."
-        echo "       Jenova will display a one-time setup guide on first run."
-    fi
-fi
-
 echo
-
 echo "======================================================================"
-
-echo "✅ Jenova AI has been successfully installed for all users."
-
-echo
-
+echo "✅ Jenova AI v3.1.0 with Ground-Up Rebuilt CPA"
+echo "   has been successfully installed for all users."
+echo ""
+echo "🚀 KEY IMPROVEMENTS:"
+echo "   • Ground-Up CPA Rebuild - Eliminates 'stuck on thinking' bugs"
+echo "   • Large Persistent Cache - 5GB default for instant model access"
+echo "   • Safe JIT Compilation - Maximum performance with stability"
+echo "   • Hard-Coded Defaults - 16 threads, all GPU layers"
+echo "   • Thread-Safe UI - No race conditions on multi-core systems"
+echo "   • No Complex Profiles - Simple, stable, performant by default"
+echo ""
 echo "Any user can now run the application by simply typing the command:"
-
 echo "  jenova"
-
-echo
-
-echo "User-specific data, memories, and insights will be automatically"
-
-echo "stored separately for each user in their home directory at:"
-
+echo ""
+echo "User-specific data, memories, insights, and CPA state will be"
+echo "automatically stored separately for each user in their home directory at:"
 echo "  ~/.jenova-ai/users/<username>/"
-
+echo ""
+echo "The CPA maintains persistent learning state at:"
+echo "  ~/.jenova-ai/users/<username>/.cpa_state/"
+echo ""
+echo "For help and available commands, run 'jenova' and type '/help'"
 echo "======================================================================"

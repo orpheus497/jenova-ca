@@ -1,6 +1,5 @@
 import os
 import traceback
-import psutil
 from jenova.utils.telemetry_fix import apply_telemetry_patch
 apply_telemetry_patch()
 
@@ -18,20 +17,18 @@ from jenova.config import load_configuration
 from jenova.ui.logger import UILogger
 from jenova.utils.file_logger import FileLogger
 from jenova.utils.model_loader import load_embedding_model
-from jenova.utils.optimization_engine import OptimizationEngine
 from jenova import tools
 
 from jenova.assumptions.manager import AssumptionManager
 
 from jenova.cortex.cortex import Cortex
-from jenova.cognitive_engine.cpa import CognitiveProcessAccelerator
+
+from jenova.core.engine.cpa import CognitiveProcessAccelerator
 
 import getpass
 
-
 def main():
     """Main entry point for the perfected Jenova Cognitive Architecture."""
-    
     username = getpass.getuser()
     user_data_root = os.path.join(os.path.expanduser("~"), ".jenova-ai", "users", username)
     os.makedirs(user_data_root, exist_ok=True)
@@ -45,32 +42,12 @@ def main():
         insights_root = os.path.join(user_data_root, "insights")
         cortex_root = os.path.join(user_data_root, "cortex")
         
-        # Run optimization engine if enabled
-        optimization_enabled = config.get('optimization', {}).get('enabled', True)
-        if optimization_enabled:
-            ui_logger.info(">> Running Performance Optimization Engine...")
-            optimizer = OptimizationEngine(user_data_root, ui_logger)
-            optimizer.run()
-            config = optimizer.apply_settings(config)
-            
-            # Display optimization report
-            hardware = optimizer.settings.get('hardware', {})
-            optimal = optimizer.settings.get('optimal_settings', {})
-            
-            cpu_cores = hardware.get('cpu', {}).get('physical_cores', 'Unknown')
-            
-            ui_logger.system_message(f"Hardware: {cpu_cores} CPU cores")
-            ui_logger.system_message(f"Optimal Settings: {optimal.get('n_threads', 'N/A')} threads, {optimal.get('n_gpu_layers', 'N/A')} GPU layers")
+        # Initialize CPA for performance optimization
+        cpa = CognitiveProcessAccelerator(config, ui_logger, file_logger)
+        # CPA will be fully initialized after all components are ready
         
         ui_logger.info(">> Initializing Intelligence Matrix...")
-        
-        # Initialize Cognitive Process Accelerator (CPA) for intelligent software optimization
-        model_path = config['model'].get('model_path', '')
-        if model_path and os.path.exists(model_path):
-            ui_logger.system_message(">> Initializing Cognitive Process Accelerator (CPA)...")
-            cpa = CognitiveProcessAccelerator(model_path, ui_logger)
-            cpa.start()
-        
+        # LLMInterface loads the model into memory - it stays persistent
         llm_interface = LLMInterface(config, ui_logger, file_logger)
         
         # Load the embedding model
@@ -99,10 +76,10 @@ def main():
         ui_logger.info(">> Cognitive Engine: Online.")
         cognitive_engine = CognitiveEngine(llm_interface, memory_search, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, rag_system)
         
+        # Connect CPA to cognitive engine for idle-time optimization
+        cpa.initialize(cognitive_engine, memory_search, llm_interface)
+        
         ui = TerminalUI(cognitive_engine, ui_logger)
-        # Pass the console lock to the cognitive engine and ui_logger
-        cognitive_engine.console_lock = ui.console_lock
-        ui_logger.console_lock = ui.console_lock
         # Pass the llm_interface to the tools that need it.
         tools.llm_interface = llm_interface
         ui.run()
@@ -113,6 +90,10 @@ def main():
         file_logger.log_error(error_message)
         file_logger.log_error(traceback.format_exc())
     finally:
+        # Shutdown CPA
+        if 'cpa' in locals():
+            cpa.shutdown()
+        
         # Ensure LLM resources are released
         if 'llm_interface' in locals() and llm_interface.model:
             llm_interface.close()

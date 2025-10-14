@@ -8,9 +8,9 @@ with open('requirements.txt') as f:
 
 setup(
     name="jenova-ai",
-    version="3.4.1",
+    version="3.1.0",
     author="orpheus497",
-    description="The perfected Jenova Cognitive Architecture with a dynamic Insight Engine and self-optimizing context.",
+    description="Jenova Cognitive Architecture with Ground-Up Rebuilt CPA - Stable, high-performance AI with large persistent cache (5GB default), safe JIT compilation, and hard-coded optimal defaults (16 threads, all GPU layers).",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/orpheus497/jenova-ai",

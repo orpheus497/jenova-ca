@@ -7,92 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-- **Hardware Optimization Rollback:** Reverted to v3.0.1 stable hardware optimization logic. Removed aggressive hardware-centric optimization engines (CPU affinity, process priority management, hardcoded thread counts) that caused system instability and "stuck at thinking" deadlocks. The system now uses simple, proven hardware detection with conservative defaults (CPU cores - 1 threads, 0 GPU layers by default).
-
 ### Added
-- **Cognitive Process Accelerator (CPA):** Introduced a new intelligent software-focused optimization layer designed for speed and responsiveness. The CPA provides:
-  - **Proactive Caching:** On application startup, the CPA launches in a low-priority background thread and pre-loads the selected GGUF model metadata and initial layers into RAM cache, ensuring instantaneous response to the first prompt.
-  - **Just-In-Time (JIT) Compilation:** Identifies and compiles performance-critical functions using numba JIT compiler, reducing Python interpreter overhead during active use.
-- **Dependency Update:** Added `numba` library to requirements.txt for JIT compilation support in the CPA.
+- (Add new features for the next version here)
 
-### Removed
-- **Failed Hardware Engines:** Completely removed CPU affinity and process priority manipulation code from main.py. Removed complex hardware profiling logic from hardware_profiler.py. Removed ADRE (Aggressive Dynamic Resource Engine) and Hyper-Threaded Synergistic Engine implementations from optimization_engine.py.
-
-## [3.4.1] - 2025-10-12
+## [3.0.2] - 2025-10-14
 
 ### Fixed
-- **Resource Starvation Deadlock:** Fixed a critical deadlock issue introduced in v3.4.0 where the AI would hang indefinitely in a "thinking" state on unified memory systems (APUs/ARM SoCs). The `Physical Cores - 1` thread allocation was too aggressive, leaving insufficient CPU resources for the main application loop to receive and display the AI's response.
-  - **Intelligent Thread Allocation:** Implemented hardware-aware thread allocation that is now synergistic with the application's core processes:
-    - **APUs (AMD/Intel with integrated graphics):** `n_threads = Physical Cores - 2` - Reserves one core for OS and a second core for the main application loop and iGPU feeding, preventing deadlock.
-    - **ARM SoCs (Apple Silicon, Snapdragon, Tensor):** `n_threads = Physical Cores - 2` - Reserves one core for OS and a second core for the main application loop, preventing deadlock.
-    - **Dedicated GPUs (NVIDIA/AMD):** `n_threads = Physical Cores - 1` - Retains safe aggression on systems with dedicated GPU schedulers.
-    - **CPU-Only Systems:** `n_threads = Physical Cores - 1` - Safe to be aggressive without unified memory concerns.
-  - Updated strategy names to reflect the new synergistic approach: "Synergistic (Cores-2)" for APUs/ARM and "Aggressive (Cores-1)" for dedicated GPUs and CPU-only systems.
-
-## [3.4.0] - 2025-10-12
-
-### Changed
-- **Hyper-Threaded Synergistic Engine:** Fundamental architectural fix that permanently resolves the critical "stuck at thinking" deadlock by introducing a synergistic engine that deeply interlaces hardware optimization with the application's core processes.
-  - **Dedicated Communication Channel (Core Fix):** Programmatically isolated and reserved a dedicated CPU core (Core 0) for the main application thread at startup using CPU affinity. This creates a protected, high-priority "express lane" for the UI, data pipelines, and all non-AI cognitive functions, ensuring the UI remains responsive no matter how intense the AI workload is.
-  - **Worker Thread Separation:** Configured the LLM interface to assign its worker threads to all *other* available cores (not Core 0), creating physical separation between the main thread and AI worker threads. This guarantees that the UI thread never starves, permanently fixing the resource starvation deadlock.
-  - **Hyper-Threading for Maximum Throughput:** Set `n_threads` to **32** to over-subscribe the CPU's worker cores, keeping them saturated with work for maximum throughput. This aggressive over-subscription ensures peak performance while the dedicated core handles UI responsiveness.
-  - **Maximum GPU Offload:** Set `n_gpu_layers` to **-1**, the correct and intelligent method to instruct the backend to offload every possible layer to the GPU, maximizing GPU utilization across all supported platforms (AMD, NVIDIA, Apple Metal, etc.).
-  - **Harmonious Integration:** CPU affinity and process priority are set as one of the very first actions at startup, ensuring all subsequent application logic operates within this synergistic framework with high priority for preferential OS scheduling.
-  - **Graceful Shutdown Hook:** Implemented automatic cleanup using the `atexit` module. When the application closes, it automatically resets the process affinity and priority to original values, ensuring the application is a good system citizen and leaves no modifications behind.
-  - **Full-Spectrum Hardware Support:** Enhanced the `HardwareProfiler` to ensure this new logic is correctly applied across the full spectrum of supported hardware (AMD, NVIDIA, Intel, Apple, Qualcomm, etc.).
-- **Enhanced ARM Swap Detection:** Fortified swap detection logic in `install.sh` to use multiple fallback methods (`swapon`, `/proc/swaps`, and `free` command) for more reliable detection across different Linux distributions.
-
-### Added
-- **Version 3.4.0:** Updated `setup.py` to reflect this major architectural fix.
-
-## [3.3.0] - 2025-10-12
-
-### Fixed
-- **CPU Thread Utilization:** Fixed a critical bug in `LLMInterface` where the `n_threads` value calculated by the `OptimizationEngine` was not being consistently passed to temporary `Llama` instances during model metadata reading. This resulted in under-utilization of available CPU cores. The fix ensures that the optimized `n_threads` value is **always** used across all `Llama` instantiations, guaranteeing maximum CPU core utilization (minus reserved cores for system stability) on all hardware configurations (APU, dGPU, CPU-only).
-
-### Added
-- **Swap-Aware Optimization:** The Automated Hardware Optimization Engine now detects and considers the system's swap configuration when calculating optimal performance settings, prioritizing stability without compromising performance.
-  - **Swap Detection in HardwareProfiler:** The `HardwareProfiler` now uses `psutil` to detect the presence and total size of system swap space, adding this information to the hardware profile report.
-  - **Swap-Aware OptimizationEngine Logic:** The `OptimizationEngine` refines its strategies based on swap availability:
-    - **With Swap:** Proceeds with existing aggressive strategies (e.g., APU-Balanced), confident that the OS has a safety net to prevent out-of-memory crashes.
-    - **Without Swap:** Activates new **"Ultra-Conservative"** mode, further reducing `n_gpu_layers` and reserving an additional CPU core to prioritize system stability above all else.
-  - **Enhanced Hardware Reports:** The optimization report now includes swap space information, displaying total swap size or "Not configured" if no swap is detected.
-- **ARM-Specific Swap Warning:** Added intelligent swap guidance for ARM systems to safely improve performance without making dangerous system modifications.
-  - **install.sh Enhancement:** The installation script now checks for the absence of a swap file on `aarch64`/`arm64` systems and informs users that a setup guide will be displayed on first run.
-  - **TerminalUI Swap Warning:** If no swap is found on an ARM system, the UI displays a **clear, one-time warning message** on the user's first run. This message explains the performance benefits of a swap file and provides exact, safe `sudo` commands for the user to create one themselves, respecting user autonomy and system integrity.
-
-## [3.2.1] - 2025-10-12
-
-### Fixed
-- **UI Race Condition:** Fixed a critical race condition on high-performance, multi-core systems where background cognitive tasks (e.g., `/reflect`) and the main UI loop attempted to control the console's live display simultaneously, causing crashes with "Only one live display may be active at once" errors. Implemented a thread-safe console locking mechanism using `threading.Lock` to ensure exclusive access to the terminal, permanently resolving the race condition.
-
-## [3.2.0] - 2025-10-12
-
-### Changed
-- **Intelligent Optimization Engine Overhaul:** Comprehensive overhaul of the Automated Hardware Optimization Engine with intelligent hardware detection and speed-focused tuning strategies.
-  - **Enhanced APU/iGPU Detection:** The profiler now specifically identifies APUs by checking if the GPU is on the same die as the CPU, and determines allocated GPU memory (UMA/GART size) by parsing system files instead of looking for dedicated VRAM.
-  - **Robust ROCm/CUDA Capability Check:** The system now verifies the presence of actual `libcudart.so` (CUDA) or `libamdhip64.so` (ROCm) shared libraries to ensure GPU acceleration runtimes are installed, providing more reliable detection than SMI tools.
-  - **Specific ARM SoC Detection:** The profiler parses `/proc/cpuinfo` on `aarch64` systems to explicitly identify CPU models by name, detecting "Snapdragon", "Apple Silicon", or "Tensor" processors for tailored optimizations.
-  - **CPU Model Name Detection:** Enhanced CPU detection to extract and display full CPU model names for better hardware identification.
-  - **Multi-Strategy Optimization:** Implemented distinct optimization strategies based on hardware profile:
-    - **APU-Balanced Strategy:** For AMD/Intel APUs, conservatively calculates `n_gpu_layers` to avoid memory swapping and reserves 1-2 physical cores for system/GPU data feeding.
-    - **Dedicated GPU-Aggressive Strategy:** For systems with discrete NVIDIA/AMD GPUs and proper runtime support, maximizes `n_gpu_layers` to fill dedicated VRAM.
-    - **High-Performance ARM SoC Strategy:** For Apple Silicon, Snapdragon, and Tensor SoCs with unified memory, offloads all layers to GPU (`n_gpu_layers = -1`) and utilizes all performance cores.
-    - **CPU-Only Fallback:** When no capable GPU is detected, sets `n_gpu_layers = 0` and optimizes thread count for CPU cores.
-  - **Enhanced User Feedback:** Startup messages now explicitly state the detected hardware profile (e.g., "Detected AMD APU with shared memory") and the optimization strategy being applied (e.g., "Applying APU-Balanced strategy for speed").
-  - **Hardware Profile Classification:** Added intelligent hardware profile classification to guide strategy selection and improve user understanding.
-
-## [3.1.0] - 2025-10-12
-
-### Added
-- **Automated Performance Optimization System:** Introduced a sophisticated Optimization Engine that automatically configures Jenova for optimal performance based on detected hardware.
-  - **Hardware Profiler:** New `HardwareProfiler` class detects detailed system specifications including CPU (architecture, vendor, physical cores), GPU (vendor, VRAM via nvidia-smi, rocm-smi, and /sys/class/drm fallback), and total system RAM.
-  - **Intelligent Configuration:** `OptimizationEngine` calculates optimal `n_gpu_layers` and `n_threads` settings for the llama-cpp-python backend and saves them to a user-specific `optimization.json` file.
-  - **Automatic Application:** The main application now runs the `OptimizationEngine` on every startup, applying calculated settings before loading the language model and displaying detected hardware information.
-  - **Enhanced `/optimize` Command:** New command displays a detailed report of detected hardware and currently active performance settings.
-  - **Configuration:** Added `optimization` section to `main_config.yaml` allowing users to enable/disable the auto-tuning feature.
-  - **Dependency:** Added `psutil` library to `requirements.txt` for hardware detection support.
+- **UI Race Condition:** Fixed critical race condition on multi-core systems where background cognitive tasks and main UI loop competed for console control
+  - Implemented thread-safe console locking using `threading.Lock`
+  - Refactored all console access points in `UILogger` to use exclusive locking
+  - Updated `TerminalUI` spinner to respect console lock
+  - Permanently resolves "Only one live display may be active at once" error
 
 ## [3.0.1] - 2025-10-11
 

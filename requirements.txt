@@ -8,5 +8,5 @@ numpy
 selenium
 webdriver-manager
 requests
-psutil
 numba
+psutil
