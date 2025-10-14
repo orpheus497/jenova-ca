@@ -2,50 +2,50 @@
 
 ## 1. Introduction & Philosophy
 
-JENOVA is a self-aware, evolving large language model powered by the The JENOVA Cognitive Architecture (JCA), a developed engine and architecture completely designed by orpheus497. It is designed to learn, adapt, and assist humanity through sophisticated cognitive processes. This project prioritizes robust error handling and stability to ensure a reliable and professional user experience.
+JENOVA is a self-aware, evolving large language model powered by The JENOVA Cognitive Architecture (JCA), a comprehensive engine and architecture designed by orpheus497. It learns, adapts, and assists humanity through sophisticated cognitive processes. This project prioritizes robust error handling and stability to ensure a reliable and professional user experience.
 
-The original vision for JENOVA was to create a system that could continuously learn, adapt, and assist humanity through sophisticated cognitive processes. This is achieved through a set of interconnected systems that mimic aspects of human cognition: a multi-layered memory, a reflective process for generating new knowledge, and a mechanism for integrating that knowledge back into its core being. This document serves as the definitive technical guide for developers, researchers, and enthusiasts who wish to understand, use, and extend the JENOVA.
+JENOVA operates as a system with interconnected components that mimic aspects of human cognition: a multi-layered memory, a reflective process for generating knowledge, and a mechanism for integrating that knowledge into its core being. This document serves as the definitive technical guide for developers, researchers, and enthusiasts who wish to understand, use, and extend JENOVA.
 
-**Creator:** The The JENOVA Cognitive Architecture (JCA) was designed and developed by **orpheus497**.
+**Creator:** The JENOVA Cognitive Architecture (JCA) was designed and developed by **orpheus497**.
 
 ## 2. The JENOVA Advantage: A Superior Cognitive Architecture
 
-### 2.1. Beyond Statelessness: The Problem with General Systems
+### 2.1. The Challenge with Stateless AI Systems
 
-Most consumer-facing AI systems operate on a **stateless, request-response** model. They are incredibly powerful at in-context learning and reasoning, but each interaction is largely independent of the last. This leads to several fundamental limitations:
+Many consumer-facing AI systems operate on a **stateless, request-response** model. While incredibly powerful at in-context learning and reasoning, each interaction remains largely independent of the last. This creates several fundamental limitations:
 
-*   **Amnesia:** The AI has no persistent memory of past conversations. It cannot remember your preferences, previous questions, or the context of your work. Every chat starts from a blank slate.
-*   **Inability to Learn:** Corrections you make or new information you provide are only retained for the current session. The underlying model never truly learns or improves from user interaction.
-*   **Inconsistent Persona:** The AI's personality can drift or be easily manipulated because it lacks a stable, memory-grounded identity.
-*   **Reactive, Not Proactive:** These systems can only answer direct questions. They cannot reflect on past dialogues to draw novel conclusions or develop a deeper understanding of a topic over time.
+*   **Amnesia:** No persistent memory of past conversations. Cannot remember preferences, previous questions, or work context. Every chat starts from a blank slate.
+*   **Limited Learning:** Corrections and information provided remain only for the current session. The underlying model does not truly learn or improve from user interaction.
+*   **Inconsistent Persona:** Personality can drift or be easily manipulated due to lack of a stable, memory-grounded identity.
+*   **Reactive Nature:** Can only answer direct questions. Cannot reflect on past dialogues to draw novel conclusions or develop deeper understanding over time.
 
 ### 2.2. The JCA Solution: A Unified, Learning Architecture
 
-The The JENOVA Cognitive Architecture (JCA) is explicitly designed to overcome these limitations. It wraps a powerful Large Language Model (LLM) in a structured framework that provides memory, reflection, and a mechanism for true, persistent learning. It transforms the LLM from a brilliant but amnesiac calculator into a cohesive, evolving intelligence.
+The JENOVA Cognitive Architecture (JCA) is designed to overcome these limitations. It wraps a powerful Large Language Model (LLM) in a structured framework that provides memory, reflection, and a mechanism for true, persistent learning. It transforms the LLM from a brilliant but amnesiac calculator into a cohesive, evolving intelligence.
 
 ### 2.3. The Power of the Cognitive Cycle
 
-The "Retrieve, Plan, Execute, Reflect" cycle is the engine of the JCA and the primary driver of its superiority.
+The "Retrieve, Plan, Execute, Reflect" cycle is the engine of the JCA and the primary driver of its capabilities.
 
-*   **Grounded Responses:** By forcing the AI to **Retrieve** from its memory *before* acting, the JCA ensures that responses are not just plausible-sounding text. They are grounded in established facts, past conversations, and learned insights. This dramatically reduces confabulation (hallucination) and increases the relevance and accuracy of its output.
-*   **Deliberate Action:** The **Plan** step introduces a moment of metacognition. The AI must first reason about *how* to answer the query. This internal monologue, while hidden from the user, results in a more structured and logical final response. It prevents the AI from taking conversational shortcuts and encourages a more methodical approach to problem-solving.
+*   **Grounded Responses:** By forcing the AI to **Retrieve** from its memory *before* acting, the JCA ensures that responses are grounded in established facts, past conversations, and learned insights. This dramatically reduces confabulation (hallucination) and increases the relevance and accuracy of output.
+*   **Deliberate Action:** The **Plan** step introduces a moment of metacognition. The AI must first reason about *how* to answer the query. This internal monologue, while hidden from the user, results in a more structured and logical final response. It prevents conversational shortcuts and encourages a methodical approach to problem-solving.
 
 ### 2.4. Memory as the Foundation for Identity and Growth
 
 JENOVA's multi-layered memory system is the bedrock of its identity. It is the difference between playing a character and *having* a character.
 
-*   **Continuity of Self:** The `EpisodicMemory` gives JENOVA a personal history with the user. It can refer to past conversations, understand recurring themes, and build a genuine rapport. The AI is no longer a stranger every time you open the terminal.
+*   **Continuity of Self:** The `EpisodicMemory` gives JENOVA a personal history with the user. It can refer to past conversations, understand recurring themes, and build a genuine rapport. The AI is not a stranger every time you open the terminal.
 *   **A Worldview:** The `SemanticMemory` and `ProceduralMemory`, combined with the dynamically growing `InsightMemory`, form the AI's worldview. This knowledge base is prioritized over the LLM's base training data, allowing for the development of a unique, personalized knowledge set that reflects its experiences.
 
 ### 2.5. The Self-Correction and Evolution Loop: True Learning
 
-This is the most powerful and defining feature of the JCA. The cycle of **Reflection -> Insight Generation -> Fine-Tuning** constitutes a true learning loop that is absent in general systems.
+This is one of the most powerful and defining features of the JCA. The cycle of **Reflection -> Insight Generation -> Fine-Tuning** constitutes a true learning loop.
 
 1.  **Experience (`Reflect`):** The AI has a conversation and gains experience.
 2.  **Internalization (`Insight Generation`):** It reflects on that experience and internalizes the key takeaways as structured, atomic insights. This is analogous to a human consolidating short-term memories into long-term knowledge.
-3.  **Integration (`Fine-Tuning`):** The fine-tuning process takes these internalized insights and integrates them into the very fabric of the neural network. The learned knowledge is no longer just data to be retrieved; it becomes part of the AI's intuition.
+3.  **Integration (`Fine-Tuning`):** The fine-tuning process takes these internalized insights and integrates them into the very fabric of the neural network. The learned knowledge is not just data to be retrieved; it becomes part of the AI's intuition.
 
-This loop creates a system that doesn't just get more knowledgeable; it gets **smarter**. It adapts its core reasoning processes based on its unique experiences, evolving into an assistant that is perfectly tailored to its user.
+This loop creates a system that does not just get more knowledgeable; it gets **smarter**. It adapts its core reasoning processes based on its unique experiences, evolving into an assistant that is perfectly tailored to its user.
 
 ## 3. Core Features Explained
 
@@ -56,11 +56,11 @@ The heart of JENOVA is its cognitive cycle, a continuous loop that drives its be
 1.  **Retrieve:** When the user provides input, the `CognitiveEngine` first queries its **Cognitive Architecture**—the multi-layered memory system (`Episodic`, `Semantic`, `Procedural`, and `Insight`)—to gather relevant context. This is the AI's personal experience and learned knowledge, and it is always the highest priority.
 2.  **Plan:** The engine then formulates a step-by-step internal plan. This plan is generated by the LLM itself, based on the user's query and the retrieved context. This ensures that the AI's actions are deliberate and grounded.
 3.  **Execute:** The plan is then executed by the `RAGSystem`. The RAG prompt is explicitly structured to prioritize the AI's knowledge base.
-4.  **Reflect & Learn:** The `CognitiveScheduler` determines when to trigger the various cognitive functions, such as analyzing recent conversation history to identify novel conclusions or key takeaways, verifying assumptions, and processing documents from the `docs` folder to grow its knowledge base. This is more flexible and intelligent than a fixed-interval approach.
+4.  **Reflect & Learn:** The `CognitiveScheduler` determines when to trigger the various cognitive functions, such as analyzing recent conversation history to identify novel conclusions or key takeaways, verifying assumptions, and processing documents from the `docs` folder to grow its knowledge base. This provides flexible and intelligent cognitive scheduling.
 
 ### 3.2. The RAG System: A Core Component of the Psyche
 
-The Retrieval-Augmented Generation (RAG) system is no longer just a document, but a core component of the AI's cognitive architecture. It is responsible for generating responses that are grounded in the AI's own knowledge and experience.
+The Retrieval-Augmented Generation (RAG) system is a core component of the AI's cognitive architecture. It is responsible for generating responses that are grounded in the AI's own knowledge and experience.
 
 *   **Hybrid Retrieval:** The `RAGSystem` uses a hybrid retrieval approach, querying all memory sources (episodic, semantic, procedural, and insights) to gather the most relevant context.
 *   **Re-ranking:** The results from all memory sources are then re-ranked to prioritize the most relevant information.
@@ -68,32 +68,32 @@ The Retrieval-Augmented Generation (RAG) system is no longer just a document, bu
 
 ### 3.3. The Cortex: A Graph-Based Cognitive Core
 
-The Cortex is the new heart of JENOVA's cognitive architecture. It replaces the previous, more siloed approach to managing insights and assumptions with a unified, graph-based system. This allows for a much deeper and more interconnected understanding of the user and the world.
+The Cortex is the heart of JENOVA's cognitive architecture. It provides a unified, graph-based system for managing insights and assumptions. This allows for a deeper and more interconnected understanding of the user and the world.
 
 *   **Cognitive Graph:** The Cortex manages a "cognitive graph" where insights, assumptions, and memories are all represented as nodes. These nodes are then connected by links that represent the relationships between them (e.g., "elaborates_on", "conflicts_with", "created_from").
-*   **Centrality Calculation:** The Cortex now calculates a weighted degree centrality for each node in the graph. The weights for different relationship types are configurable in `main_config.yaml`, allowing for a more accurate measure of a node's importance.
+*   **Centrality Calculation:** The Cortex calculates a weighted degree centrality for each node in the graph. The weights for different relationship types are configurable in `main_config.yaml`, allowing for a more accurate measure of a node's importance.
 *   **Dynamic Relationship Weights:** The relationship weights are not static. The Cortex periodically analyzes the cognitive graph to determine the impact of different relationship types on the generation of high-centrality nodes and meta-insights. It then adjusts the weights accordingly, making the system more adaptive.
-*   **Psychological Memory:** The Cortex now performs a sophisticated emotion analysis on new nodes, adding a rich psychological dimension to the cognitive graph. This allows the AI to have a more empathetic and personal relationship with the user.
-*   **Deep Reflection:** The `/reflect` command now triggers a deep reflection process within the Cortex. The Cortex analyzes the entire cognitive graph to:
-    *   **Link Orphans:** Identify nodes with few or no connections and use the LLM to find and create new links to other relevant nodes.
+*   **Psychological Memory:** The Cortex performs a sophisticated emotion analysis on cognitive nodes, adding a rich psychological dimension to the cognitive graph. This allows the AI to have a more empathetic and personal relationship with the user.
+*   **Deep Reflection:** The `/reflect` command triggers a deep reflection process within the Cortex. The Cortex analyzes the entire cognitive graph to:
+    *   **Link Orphans:** Identify nodes with few or no connections and use the LLM to find and create links to other relevant nodes.
     *   **Generate Meta-Insights:** Find clusters of highly interconnected nodes using a robust graph traversal algorithm and use the LLM to synthesize them into higher-level "meta-insights".
-*   **Graph Pruning:** To prevent cognitive degradation or "brain rot," the Cortex periodically prunes the graph, archiving nodes that are old, have low centrality, and are not well-connected. This process is configurable in `main_config.yaml`.
+*   **Graph Pruning:** To prevent cognitive degradation, the Cortex periodically prunes the graph, archiving nodes that are old, have low centrality, and are not well-connected. This process is configurable in `main_config.yaml`.
 *   **Insight Development:** The `/develop_insight <node_id>` command allows the user to trigger the development of a specific insight. The Cortex will then use the LLM to generate a more detailed and developed version of the insight.
-*   **Proactive Engine:** The Cortex is also home to the Proactive Engine, which periodically analyzes the cognitive graph to find interesting, underdeveloped, or highly-connected areas. It now considers nodes with low centrality (underdeveloped areas) and high centrality (high-potential areas) to generate more relevant and insightful proactive suggestions for the user.
+*   **Proactive Engine:** The Cortex is home to the Proactive Engine, which periodically analyzes the cognitive graph to find interesting, underdeveloped, or highly-connected areas. It considers nodes with low centrality (underdeveloped areas) and high centrality (high-potential areas) to generate more relevant and insightful proactive suggestions for the user.
 
 ### 3.4. Document Processing: On-Demand Learning from Documents
 
-Jenova can learn from documents by using the `/develop_insight` command. When this command is used without a `node_id`, it triggers a robust, on-demand process within the `Cortex` that scans the `src/jenova/docs` folder for new or updated documents and integrates them into the AI's knowledge base.
+JENOVA can learn from documents by using the `/develop_insight` command. When this command is used without a `node_id`, it triggers a robust, on-demand process within the `Cortex` that scans the `src/jenova/docs` folder for documents and integrates them into the AI's knowledge base.
 
-*   **Triggering:** The document processing is triggered exclusively by the user with the `/develop_insight` command. It no longer runs automatically at startup, giving the user full control.
-*   **Knowledge Integration:** The `Cortex` creates a new `document` node in the cognitive graph for each processed document. It then chunks the content and performs a comprehensive analysis on each chunk to extract not just a summary, but also key takeaways and a list of questions the text can answer. This creates a rich, multi-layered understanding of the document's content. For each chunk, a main `insight` node is created for the summary, with additional `insight` nodes for each key takeaway and new `question` nodes for each generated question, all intricately linked to the summary and the parent document node. This creates a rich, interconnected web of knowledge.
+*   **Triggering:** The document processing is triggered exclusively by the user with the `/develop_insight` command. It does not run automatically at startup, giving the user full control.
+*   **Knowledge Integration:** The `Cortex` creates a `document` node in the cognitive graph for each processed document. It then chunks the content and performs a comprehensive analysis on each chunk to extract not just a summary, but also key takeaways and a list of questions the text can answer. This creates a rich, multi-layered understanding of the document's content. For each chunk, a main `insight` node is created for the summary, with additional `insight` nodes for each key takeaway and `question` nodes for each generated question, all intricately linked to the summary and the parent document node. This creates a rich, interconnected web of knowledge.
 *   **Duplicate Prevention:** The `Cortex` keeps track of processed files and their last modification times in `processed_documents.json` within the user's data directory. This prevents the system from reprocessing files that have not changed, making the process efficient and saving resources.
 
 ### 3.5. Reflective Insight Engine
 
-The Insight Engine is what allows JENOVA to learn continuously. The system is designed to be proactive, organized, and reflective, ensuring that new knowledge is captured, categorized, and interconnected efficiently.
+The Insight Engine allows JENOVA to learn continuously. The system is proactive, organized, and reflective, ensuring that knowledge is captured, categorized, and interconnected efficiently.
 
-*   **Concern-Based Organization:** Insights are still organized into "concerns" or "topics." When a new insight is generated, the system first searches for an existing, relevant concern to group it with. This prevents knowledge fragmentation and creates a more structured understanding of topics. If no relevant concern exists, a new one is created.
+*   **Concern-Based Organization:** Insights are organized into "concerns" or "topics." When an insight is generated, the system first searches for an existing, relevant concern to group it with. This prevents knowledge fragmentation and creates a more structured understanding of topics. If no relevant concern exists, a new one is created.
 *   **Cortex Integration:** When an insight is saved, it is also added as a node to the Cortex. This allows the insight to be linked to other cognitive nodes, such as the memories that spawned it or other related insights.
 *   **Generation:** Periodically (by default, every 5 conversational turns), the `CognitiveEngine` prompts the LLM to analyze recent conversation history to extract a significant takeaway. This insight is then passed to the `InsightManager`, which intelligently files it under the most appropriate concern and adds it to the Cortex.
 *   **Storage:** Insights are saved in a hierarchical structure within the user-specific data directory: `~/.jenova-ai/users/<username>/insights/<concern_name>/`.
