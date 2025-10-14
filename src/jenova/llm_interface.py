@@ -11,6 +11,32 @@ class LLMInterface:
         self.model_path = config['model']['model_path']
         self.system_prompt = self._build_system_prompt()
         self.model = self._load_model()
+    
+    def _detect_optimal_threads(self, configured_threads):
+        """Detect optimal thread count for the system."""
+        cpu_count = os.cpu_count()
+        if cpu_count is None:
+            self.ui_logger.system_message("⚠️  Could not detect CPU count. Using configured value.")
+            self.file_logger.log_warning("Could not detect CPU count.")
+            return configured_threads
+        
+        # If configured threads is 0 or None, use all available CPUs
+        if configured_threads == 0 or configured_threads is None:
+            optimal_threads = cpu_count
+            self.ui_logger.system_message(f"🔧 Auto-detected {cpu_count} CPU cores. Using all {optimal_threads} threads.")
+            self.file_logger.log_info(f"Auto-detected {cpu_count} CPUs, using {optimal_threads} threads")
+            return optimal_threads
+        
+        # Warn if configured threads exceed available CPUs
+        if configured_threads > cpu_count:
+            self.ui_logger.system_message(f"⚠️  Configured threads ({configured_threads}) exceeds available CPU cores ({cpu_count}).")
+            self.ui_logger.system_message(f"    Using configured value, but performance may be suboptimal.")
+            self.file_logger.log_warning(f"Configured threads ({configured_threads}) > CPU count ({cpu_count})")
+        else:
+            self.ui_logger.system_message(f"🔧 Using {configured_threads} threads on system with {cpu_count} CPU cores.")
+            self.file_logger.log_info(f"Using {configured_threads} threads (system has {cpu_count} CPUs)")
+        
+        return configured_threads
 
     def close(self):
         """Cleans up the LLM resources."""
@@ -67,6 +93,11 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
         hw_config = self.config['hardware']
         self.ui_logger.info(f"Found model: {self.model_path}")
         self.file_logger.log_info(f"Found model: {self.model_path}")
+        
+        # Detect optimal thread count
+        configured_threads = hw_config.get('threads', 0)
+        optimal_threads = self._detect_optimal_threads(configured_threads)
+        hw_config['threads'] = optimal_threads
 
         # --- Dynamic Context Optimization ---
         try:
@@ -88,14 +119,26 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
             self.ui_logger.system_message(f"Notice: Model context size ({model_n_ctx_train}) is being used, overriding config value ({config_n_ctx}).")
             self.file_logger.log_info(f"Using model context size: {model_n_ctx_train}")
         # --- End Optimization ---
+        
+        # Display GPU configuration
+        gpu_layers = hw_config['gpu_layers']
+        if gpu_layers == -1:
+            self.ui_logger.system_message(f"🎮 GPU Acceleration: Enabled (offloading ALL layers)")
+            self.file_logger.log_info(f"GPU acceleration enabled: offloading all layers")
+        elif gpu_layers > 0:
+            self.ui_logger.system_message(f"🎮 GPU Acceleration: Enabled (offloading {gpu_layers} layers)")
+            self.file_logger.log_info(f"GPU acceleration enabled: {gpu_layers} layers")
+        else:
+            self.ui_logger.system_message(f"💻 GPU Acceleration: Disabled (CPU-only mode)")
+            self.file_logger.log_info(f"GPU acceleration disabled, using CPU only")
 
-        self.ui_logger.info(f"Loading model with {hw_config['threads']} threads and {hw_config['gpu_layers']} GPU layers. Context: {final_n_ctx}")
-        self.file_logger.log_info(f"Loading model. Threads: {hw_config['threads']}, GPU Layers: {hw_config['gpu_layers']}, Context: {final_n_ctx}")
+        self.ui_logger.info(f"⚡ Loading model with {optimal_threads} threads, {gpu_layers} GPU layers, context: {final_n_ctx}")
+        self.file_logger.log_info(f"Loading model. Threads: {optimal_threads}, GPU Layers: {gpu_layers}, Context: {final_n_ctx}")
         
         return Llama(
             model_path=self.model_path,
             n_ctx=final_n_ctx,
-            n_threads=hw_config['threads'],
+            n_threads=optimal_threads,
             n_gpu_layers=hw_config['gpu_layers'],
             use_mlock=hw_config.get('mlock', True),
             verbose=False
