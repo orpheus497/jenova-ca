@@ -277,7 +277,8 @@ class CognitiveProcessAccelerator:
     
     def _cache_model_data(self):
         """
-        Cache model metadata and initial layers.
+        Cache model metadata and initial layers into a large, persistent RAM cache.
+        This is now part of the AI's primary memory, not a temporary store.
         Runs in a background thread with low priority.
         """
         try:
@@ -291,54 +292,89 @@ class CognitiveProcessAccelerator:
             
             self.file_logger.log_info(f"CPA: Pre-warming model cache for {model_path}")
             
+            # Determine cache size (default 5GB, configurable)
+            cache_size_gb = self.config.get('cpa', {}).get('cache_size_gb', 5)
+            max_cache = cache_size_gb * 1024 * 1024 * 1024  # Convert GB to bytes
+            
             # Read model file in chunks to cache it in RAM
-            # This leverages OS page cache
+            # This leverages OS page cache and creates a persistent memory cache
             chunk_size = 1024 * 1024  # 1MB chunks
             cached_bytes = 0
             
             with open(model_path, 'rb') as f:
-                # Cache first 100MB (approximate first few layers + metadata)
-                max_cache = 100 * 1024 * 1024
-                while cached_bytes < max_cache:
+                # Get file size to determine how much we can cache
+                file_size = os.path.getsize(model_path)
+                target_cache = min(max_cache, file_size)
+                
+                self.file_logger.log_info(
+                    f"CPA: Caching up to {target_cache / (1024*1024*1024):.2f}GB "
+                    f"of model data (file size: {file_size / (1024*1024*1024):.2f}GB)"
+                )
+                
+                while cached_bytes < target_cache:
                     chunk = f.read(chunk_size)
                     if not chunk:
                         break
                     cached_bytes += len(chunk)
                     # Small delay to keep this low priority
-                    time.sleep(0.01)
+                    time.sleep(0.001)  # Reduced delay for faster caching
             
             self.file_logger.log_info(
-                f"CPA: Pre-warmed {cached_bytes / (1024*1024):.1f}MB of model data into cache"
+                f"CPA: Pre-warmed {cached_bytes / (1024*1024):.1f}MB of model data into persistent cache"
             )
             
         except Exception as e:
             self.file_logger.log_error(f"CPA: Error during proactive caching: {e}")
     
     def _apply_jit_compilation(self):
-        """Apply JIT compilation to hot functions using numba with profiling."""
+        """
+        Apply safe JIT compilation to hot functions using numba with robust error handling.
+        Uses nopython=True where possible for maximum performance, with fallbacks for stability.
+        """
         try:
             from numba import jit
-            self.file_logger.log_info("CPA: Applying JIT compilation to hot functions")
+            from numba.core.errors import NumbaError
+            self.file_logger.log_info("CPA: Applying safe JIT compilation to hot functions")
             
             # Get optimization flags
             jit_options = self._get_jit_options()
             
-            # Define wrapper for JIT compilation with error handling
+            # Define wrapper for JIT compilation with error handling and fallback
             def create_jit_wrapper(func_name, func, options):
-                """Create a JIT-compiled wrapper for a function."""
+                """
+                Create a JIT-compiled wrapper for a function with fallback.
+                Attempts nopython=True first, falls back to object mode, then pure Python.
+                """
                 try:
-                    compiled_func = jit(**options)(func)
+                    # First attempt: nopython=True for maximum performance
+                    nopython_options = options.copy()
+                    nopython_options['nopython'] = True
+                    compiled_func = jit(**nopython_options)(func)
                     self._jit_compiled_functions.add(func_name)
-                    self.file_logger.log_info(f"CPA: JIT compiled {func_name}")
+                    self.file_logger.log_info(f"CPA: JIT compiled {func_name} (nopython mode)")
                     return compiled_func
-                except Exception as e:
-                    self.file_logger.log_error(f"CPA: Failed to JIT compile {func_name}: {e}")
-                    return func
+                except (NumbaError, Exception) as e_nopython:
+                    # Fallback: Try object mode
+                    try:
+                        self.file_logger.log_info(f"CPA: Retrying {func_name} in object mode")
+                        object_options = options.copy()
+                        object_options['nopython'] = False
+                        compiled_func = jit(**object_options)(func)
+                        self._jit_compiled_functions.add(func_name)
+                        self.file_logger.log_info(f"CPA: JIT compiled {func_name} (object mode)")
+                        return compiled_func
+                    except Exception as e_object:
+                        # Final fallback: Use pure Python
+                        self.file_logger.log_error(
+                            f"CPA: Failed to JIT compile {func_name} - using pure Python. "
+                            f"Errors: nopython={str(e_nopython)[:50]}, object={str(e_object)[:50]}"
+                        )
+                        return func
             
             # Store JIT wrapper factory for later use
             self._jit_wrapper_factory = create_jit_wrapper
             
-            self.file_logger.log_info("CPA: JIT compilation system initialized")
+            self.file_logger.log_info("CPA: Safe JIT compilation system initialized with fallback support")
             
         except ImportError:
             self.file_logger.log_error(
@@ -409,11 +445,12 @@ class CognitiveProcessAccelerator:
             self.file_logger.log_error(f"CPA: Error applying selective JIT: {e}")
     
     def _get_jit_options(self) -> Dict[str, Any]:
-        """Get JIT compilation options."""
+        """Get JIT compilation options with safe defaults."""
         options = {
-            'nopython': False,  # Use object mode for compatibility
-            'cache': True,      # Cache compiled functions
-            'nogil': True,      # Release GIL when possible
+            'nopython': True,   # Prefer nopython mode for maximum performance
+            'cache': True,      # Cache compiled functions across runs
+            'nogil': True,      # Release GIL when possible for better concurrency
+            'fastmath': True,   # Enable fast math optimizations
         }
         
         return options

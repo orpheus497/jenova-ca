@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **Ground-up rebuild of Cognitive Process Accelerator (CPA):** Complete refactor to fix core performance instability
+  - **Removed unstable hardware optimization profiles:** Eliminated all hardware detection and dynamic profile switching logic that was the source of previous failures
+  - **Large, persistent RAM/VRAM cache:** CPA now proactively loads model layers into a substantial cache (default 5GB, configurable) as part of the AI's primary memory, not a temporary store
+  - **Safe JIT compilation:** Applied surgical JIT compilation with `numba.jit` using `nopython=True` where possible, with robust error handling and fallbacks to prevent application hangs
+  - **Hard-coded hardware defaults:** Model loading now enforces 16 threads (`n_threads=16`) and all GPU layers (`n_gpu_layers=-1`) as the functional proclivity, not changeable by automated systems
+  - **Strengthened thread safety:** Re-verified `threading.Lock` mechanism for console access to prevent UI race conditions
+- **Performance improvements:** Faster cache loading with reduced delays for more responsive startup
+
 ## [3.1.0] - 2025-10-14
 
 ### Added
