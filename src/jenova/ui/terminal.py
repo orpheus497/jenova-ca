@@ -39,11 +39,13 @@ class TerminalUI:
         color_code = '\033[93m' # Yellow color
         reset_code = '\033[0m'
         while self._spinner_running:
-            sys.stdout.write(f'{color_code}\r{next(spinner_chars)}{reset_code}')
-            sys.stdout.flush()
+            with self.logger._console_lock:
+                sys.stdout.write(f'{color_code}\r{next(spinner_chars)}{reset_code}')
+                sys.stdout.flush()
             time.sleep(0.2)
-        sys.stdout.write('\r' + ' ' * 5 + '\r') # Clear spinner line completely
-        sys.stdout.flush()
+        with self.logger._console_lock:
+            sys.stdout.write('\r' + ' ' * 5 + '\r') # Clear spinner line completely
+            sys.stdout.flush()
 
     def start_spinner(self):
         self._spinner_running = True
@@ -75,7 +77,7 @@ class TerminalUI:
                     self.logger.system_message("") # Add line space after system message
                     continue
 
-                prompt_message = [('class:username', self.username), ('class:at', '@'), ('class:hostname', 'Jenova'), ('class:prompt', '> ')]
+                prompt_message = [('class:username', self.username), ('class:at', '@'), ('class:hostname', 'JENOVA'), ('class:prompt', '> ')]
                 user_input = self.session.prompt(prompt_message, style=self.prompt_style).strip()
 
                 if not user_input:
@@ -157,32 +159,94 @@ class TerminalUI:
 
     def _show_help(self):
         """Displays a detailed list of available commands and their functions."""
-        self.logger.help_message("\n[bright_yellow]--- Jenova AI Commands ---[/bright_yellow]")
-        self.logger.help_message("[bright_yellow]  /help[/bright_yellow]                            - [#BDB2FF]Displays this comprehensive help message, detailing each command's purpose and impact.[/]")
-        self.logger.help_message("")
-        self.logger.help_message("[bright_yellow]  /insight[/bright_yellow]                         - [#BDB2FF]Triggers the AI to analyze the current conversation history and generate new, high-quality insights. These insights are stored in Jenova's long-term memory and contribute to its evolving understanding.[/]")
-        self.logger.help_message("")
-        self.logger.help_message("[bright_yellow]  /reflect[/bright_yellow]                         - [#BDB2FF]Initiates a deep reflection process within Jenova's Cortex. This command reorganizes and interlinks all existing cognitive nodes (insights, memories, assumptions), identifies patterns, and generates higher-level meta-insights, significantly enhancing Jenova's overall intelligence and coherence.[/]")
-        self.logger.help_message("")
-        self.logger.help_message("[bright_yellow]  /memory-insight[/bright_yellow]                  - [#BDB2FF]Prompts Jenova to perform a broad search across its multi-layered long-term memory (episodic, semantic, procedural) to develop new insights or assumptions based on its accumulated knowledge.[/]")
-        self.logger.help_message("")
-        self.logger.help_message("[bright_yellow]  /meta[/bright_yellow]                            - [#BDB2FF]Generates a new, higher-level meta-insight by analyzing clusters of existing insights within the Cortex. This helps Jenova to form more abstract conclusions and identify overarching themes.[/]")
-        self.logger.help_message("")
-        self.logger.help_message("[bright_yellow]  /verify[/bright_yellow]                          - [#BDB2FF]Starts the assumption verification process. Jenova will present an unverified assumption it has made about you and ask for clarification, allowing you to confirm or deny it. This refines Jenova's understanding of your preferences and knowledge.[/]")
-        self.logger.help_message("")
-        self.logger.help_message("[bright_yellow]  /train[/bright_yellow]                           - [#BDB2FF]Provides instructions on how to create a training file for fine-tuning the model with your own data.[/]")
-        self.logger.help_message("")
-        self.logger.help_message("[bright_yellow]  /develop_insight [node_id][/bright_yellow]       - [#BDB2FF]This command has dual functionality:[/]")
-        self.logger.help_message("[#BDB2FF]                                       - If a `node_id` is provided: Jenova will take an existing insight and generate a more detailed and developed version of it, adding more context or connections.[/]")
-        self.logger.help_message("[#BDB2FF]                                       - If no `node_id` is provided: Jenova will scan the `src/jenova/docs` directory for new or updated documents, process their content, and integrate new insights and summaries into its cognitive graph. This is how Jenova learns from external documentation.[/]")
-        self.logger.help_message("")
-        self.logger.help_message("[bright_yellow]  /learn_procedure[/bright_yellow]                 - [#BDB2FF]Initiates an interactive, guided process to teach Jenova a new procedure. Jenova will prompt you for the procedure's name, individual steps, and expected outcome, ensuring structured and comprehensive intake of procedural knowledge. This information is stored in Jenova's procedural memory, allowing it to recall and apply the procedure in relevant contexts.[/]")
-        self.logger.help_message("")
-        self.logger.help_message("[bright_yellow]  /exit[/bright_yellow]                            - [#BDB2FF]Exits the Jenova AI application. All current session data will be saved.[/]")
-        self.logger.help_message("")
-        self.logger.help_message("[bright_yellow]--- Jenova's Innate Abilities ---[/bright_yellow]")
-        self.logger.help_message("[#BDB2FF]Jenova can intelligently use its tools to answer your questions without needing specific commands. For example, you can ask for the current time, or to read and write files in its sandbox directory (`~/jenova_files` by default).[/]")
-        self.logger.help_message("[bright_yellow]-----------------------------------[/bright_yellow]\n")
+        self.logger.help_message("\n[bold bright_cyan]╔═══════════════════════════════════════════════════════════════════════════════╗[/bold bright_cyan]")
+        self.logger.help_message("[bold bright_cyan]║                        JENOVA COMMAND REFERENCE                               ║[/bold bright_cyan]")
+        self.logger.help_message("[bold bright_cyan]╚═══════════════════════════════════════════════════════════════════════════════╝[/bold bright_cyan]\n")
+        
+        self.logger.help_message("[bold bright_yellow]COGNITIVE COMMANDS[/bold bright_yellow]")
+        self.logger.help_message("[dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/dim]\n")
+        
+        self.logger.help_message("  [bright_yellow]/help[/bright_yellow]")
+        self.logger.help_message("    [#BDB2FF]Displays this comprehensive command reference guide.[/]")
+        self.logger.help_message("    [dim italic]Shows all available commands with detailed descriptions.[/dim italic]\n")
+        
+        self.logger.help_message("  [bright_yellow]/insight[/bright_yellow]")
+        self.logger.help_message("    [#BDB2FF]Analyzes the current conversation and generates new insights.[/]")
+        self.logger.help_message("    [dim italic]JENOVA will extract key takeaways from your recent interactions and[/dim italic]")
+        self.logger.help_message("    [dim italic]store them as structured insights in long-term memory, contributing[/dim italic]")
+        self.logger.help_message("    [dim italic]to its evolving understanding of topics and patterns.[/dim italic]\n")
+        
+        self.logger.help_message("  [bright_yellow]/reflect[/bright_yellow]")
+        self.logger.help_message("    [#BDB2FF]Initiates deep reflection within The JENOVA Cognitive Architecture.[/]")
+        self.logger.help_message("    [dim italic]This powerful command reorganizes and interlinks all cognitive nodes[/dim italic]")
+        self.logger.help_message("    [dim italic](insights, memories, assumptions), identifies patterns, and generates[/dim italic]")
+        self.logger.help_message("    [dim italic]higher-level meta-insights, significantly enhancing intelligence and[/dim italic]")
+        self.logger.help_message("    [dim italic]cognitive coherence across the entire knowledge graph.[/dim italic]\n")
+        
+        self.logger.help_message("  [bright_yellow]/memory-insight[/bright_yellow]")
+        self.logger.help_message("    [#BDB2FF]Performs a comprehensive search across all memory layers.[/]")
+        self.logger.help_message("    [dim italic]JENOVA will scan episodic, semantic, and procedural memory to[/dim italic]")
+        self.logger.help_message("    [dim italic]develop new insights or assumptions based on accumulated knowledge[/dim italic]")
+        self.logger.help_message("    [dim italic]from past interactions and learned information.[/dim italic]\n")
+        
+        self.logger.help_message("  [bright_yellow]/meta[/bright_yellow]")
+        self.logger.help_message("    [#BDB2FF]Generates higher-level meta-insights from existing knowledge.[/]")
+        self.logger.help_message("    [dim italic]Analyzes clusters of related insights within the cognitive graph[/dim italic]")
+        self.logger.help_message("    [dim italic]to form abstract conclusions and identify overarching themes,[/dim italic]")
+        self.logger.help_message("    [dim italic]enabling more sophisticated pattern recognition and understanding.[/dim italic]\n")
+        
+        self.logger.help_message("  [bright_yellow]/verify[/bright_yellow]")
+        self.logger.help_message("    [#BDB2FF]Starts the assumption verification process.[/]")
+        self.logger.help_message("    [dim italic]JENOVA will present an unverified assumption about your preferences[/dim italic]")
+        self.logger.help_message("    [dim italic]or knowledge and ask for clarification, allowing you to confirm or[/dim italic]")
+        self.logger.help_message("    [dim italic]deny it. This refines JENOVA's understanding of your context.[/dim italic]\n")
+        
+        self.logger.help_message("[bold bright_yellow]LEARNING COMMANDS[/bold bright_yellow]")
+        self.logger.help_message("[dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/dim]\n")
+        
+        self.logger.help_message("  [bright_yellow]/develop_insight[/bright_yellow] [dim][node_id][/dim]")
+        self.logger.help_message("    [#BDB2FF]Dual-purpose insight development and document learning command.[/]")
+        self.logger.help_message("    [dim italic]• With node_id: Expands an existing insight with more context[/dim italic]")
+        self.logger.help_message("    [dim italic]  and connections, generating a more detailed version.[/dim italic]")
+        self.logger.help_message("    [dim italic]• Without node_id: Scans the src/jenova/docs directory for new[/dim italic]")
+        self.logger.help_message("    [dim italic]  or updated documents, processes their content, and integrates[/dim italic]")
+        self.logger.help_message("    [dim italic]  insights and summaries into the cognitive graph, enabling[/dim italic]")
+        self.logger.help_message("    [dim italic]  learning from external documentation.[/dim italic]\n")
+        
+        self.logger.help_message("  [bright_yellow]/learn_procedure[/bright_yellow]")
+        self.logger.help_message("    [#BDB2FF]Interactive guided process to teach JENOVA a new procedure.[/]")
+        self.logger.help_message("    [dim italic]JENOVA will prompt you for the procedure's name, individual steps,[/dim italic]")
+        self.logger.help_message("    [dim italic]and expected outcome. This structured approach ensures comprehensive[/dim italic]")
+        self.logger.help_message("    [dim italic]intake of procedural knowledge, stored in procedural memory for[/dim italic]")
+        self.logger.help_message("    [dim italic]future recall and application in relevant contexts.[/dim italic]\n")
+        
+        self.logger.help_message("  [bright_yellow]/train[/bright_yellow]")
+        self.logger.help_message("    [#BDB2FF]Provides instructions for creating fine-tuning training data.[/]")
+        self.logger.help_message("    [dim italic]Shows how to generate a training dataset from your interactions[/dim italic]")
+        self.logger.help_message("    [dim italic]for fine-tuning the underlying language model with personalized[/dim italic]")
+        self.logger.help_message("    [dim italic]knowledge and conversation patterns.[/dim italic]\n")
+        
+        self.logger.help_message("[bold bright_yellow]SYSTEM COMMANDS[/bold bright_yellow]")
+        self.logger.help_message("[dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/dim]\n")
+        
+        self.logger.help_message("  [bright_yellow]/exit[/bright_yellow] [dim]or[/dim] [bright_yellow]quit[/bright_yellow]")
+        self.logger.help_message("    [#BDB2FF]Exits The JENOVA Cognitive Architecture application.[/]")
+        self.logger.help_message("    [dim italic]All current session data will be automatically saved.[/dim italic]\n")
+        
+        self.logger.help_message("[bold bright_yellow]INNATE CAPABILITIES[/bold bright_yellow]")
+        self.logger.help_message("[dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/dim]\n")
+        
+        self.logger.help_message("  [#BDB2FF]JENOVA can intelligently use its built-in tools to answer your[/]")
+        self.logger.help_message("  [#BDB2FF]questions without requiring specific commands. For example:[/]\n")
+        self.logger.help_message("    [dim]• Ask for the current time[/dim]")
+        self.logger.help_message("    [dim]• Request file operations in the sandbox directory (~/jenova_files)[/dim]")
+        self.logger.help_message("    [dim]• Perform calculations and data analysis[/dim]")
+        self.logger.help_message("    [dim]• Access and process information from its knowledge graph[/dim]\n")
+        
+        self.logger.help_message("[bold bright_cyan]╔═══════════════════════════════════════════════════════════════════════════════╗[/bold bright_cyan]")
+        self.logger.help_message("[bold bright_cyan]║  Tip: Commands are not stored in conversational memory and can be used       ║[/bold bright_cyan]")
+        self.logger.help_message("[bold bright_cyan]║  freely to manage JENOVA's cognitive processes.                              ║[/bold bright_cyan]")
+        self.logger.help_message("[bold bright_cyan]╚═══════════════════════════════════════════════════════════════════════════════╝[/bold bright_cyan]\n")
 
     def _verify_assumption(self):
         """Handles the /verify command."""

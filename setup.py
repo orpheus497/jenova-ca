@@ -8,9 +8,9 @@ with open('requirements.txt') as f:
 
 setup(
     name="jenova-ai",
-    version="3.0.1",
+    version="3.0.2",
     author="orpheus497",
-    description="The perfected Jenova Cognitive Architecture with a dynamic Insight Engine and self-optimizing context.",
+    description="The JENOVA Cognitive Architecture with a dynamic Insight Engine and self-optimizing context.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/orpheus497/jenova-ai",

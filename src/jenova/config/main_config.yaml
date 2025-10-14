@@ -1,4 +1,4 @@
-# Main Configuration for Jenova AI - JCA v1.0
+# Main Configuration for The JENOVA Cognitive Architecture - JCA v3.0
 # Optimized for AMD Ryzen 7 5700U with Radeon Graphics
 hardware:
   threads: 16
