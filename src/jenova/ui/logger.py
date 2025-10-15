@@ -9,7 +9,7 @@ from rich.text import Text
 class UILogger:
     def __init__(self):
         self.console = Console()
-        self._console_lock = threading.Lock()
+        self._console_lock = threading.RLock()
         try:
             self.term_width = os.get_terminal_size().columns
         except OSError:

@@ -8,8 +8,17 @@ class RAGSystem:
         self.insight_manager = insight_manager
         self.config = config
 
-    def generate_response(self, query: str, username: str, history: list[str], plan: str, search_results: list[dict] | None = None) -> str:
-        """Generates a response using the RAG process."""
+    def generate_response(self, query: str, username: str, history: list[str], plan: str, search_results: list[dict] | None = None, thinking_process=None) -> str:
+        """Generates a response using the RAG process.
+        
+        Args:
+            query: The user's query
+            username: The username
+            history: Conversation history
+            plan: The execution plan
+            search_results: Optional web search results
+            thinking_process: Optional context manager for thinking status (avoids nested spinners)
+        """
         # 1. Retrieve context from all memory sources
         context = self.memory_search.search_all(query, username)
 
@@ -71,7 +80,7 @@ Do not re-introduce yourself unless asked. Provide ONLY {identity.get('name', 'J
 User ({username}): \"{query}\"\n\n{identity.get('name', 'Jenova')}:"""
 
         try:
-            response = self.llm.generate(prompt)
+            response = self.llm.generate(prompt, thinking_process=thinking_process)
         except Exception as e:
             self.ui_logger.system_message(f"Error during response generation: {e}")
             self.file_logger.log_error(f"Error during response generation: {e}")

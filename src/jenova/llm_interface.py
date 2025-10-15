@@ -144,8 +144,16 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
             verbose=False
         )
 
-    def generate(self, prompt: str, stop: list = None, temperature: float = None, grammar: str = None) -> str:
-        """Generates a response from the LLM."""
+    def generate(self, prompt: str, stop: list = None, temperature: float = None, grammar: str = None, thinking_process=None) -> str:
+        """Generates a response from the LLM.
+        
+        Args:
+            prompt: The prompt to generate from
+            stop: Stop sequences
+            temperature: Temperature for generation
+            grammar: Grammar specification
+            thinking_process: Optional context manager for thinking status (avoids nested spinners)
+        """
         full_prompt = self.system_prompt + "\n\n" + prompt
         
         if stop is None:

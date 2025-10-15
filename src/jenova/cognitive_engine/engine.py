@@ -27,7 +27,7 @@ class CognitiveEngine:
 
     def think(self, user_input: str, username: str) -> str:
         """Runs the full cognitive cycle: Retrieve, Plan, Execute, and Reflect."""
-        with self.ui_logger.cognitive_process("Thinking..."):
+        with self.ui_logger.cognitive_process("Thinking...") as thinking_status:
             self.file_logger.log_info(f"New query received from {username}: {user_input}")
             self.turn_count += 1
 
@@ -39,11 +39,11 @@ class CognitiveEngine:
             else:
                 context = []
             
-            plan = self._plan(user_input, context, username)
+            plan = self._plan(user_input, context, username, thinking_status)
             if not plan:
                 plan = f"I will formulate a response to the user's query: {user_input}"
 
-            response = self._execute(user_input, context, plan, username)
+            response = self._execute(user_input, context, plan, username, thinking_status)
 
             # Only add to history if it's not a command
             if not user_input.startswith('/'):
@@ -58,7 +58,7 @@ class CognitiveEngine:
         return response
 
 
-    def _plan(self, user_input: str, context: list[str], username: str) -> str:
+    def _plan(self, user_input: str, context: list[str], username: str, thinking_process=None) -> str:
         # Ensure all context items are strings before joining
         safe_context = [str(c) for c in context]
         context_str = "\n".join(f"- {c}" for c in safe_context)
@@ -89,14 +89,26 @@ Based on your identity, directives, the user's query, and the provided context, 
 {user_title} ({username}): "{user_input}"
 
 Plan:"""
-        with self.ui_logger.thinking_process("Formulating plan..."):
-            plan = self.llm.generate(prompt, temperature=0.1)
+        
+        # Use the passed thinking_process if available, otherwise create a new one
+        if thinking_process is not None:
+            thinking_process.update("Formulating plan...")
+            plan = self.llm.generate(prompt, temperature=0.1, thinking_process=thinking_process)
+        else:
+            with self.ui_logger.thinking_process("Formulating plan..."):
+                plan = self.llm.generate(prompt, temperature=0.1)
+        
         self.file_logger.log_info(f"Generated Plan: {plan}")
         return plan
 
-    def _execute(self, user_input: str, context: list[str], plan: str, username: str) -> str:
-        with self.ui_logger.thinking_process("Executing plan..."):
-            return self.rag_system.generate_response(user_input, username, self.history, plan)
+    def _execute(self, user_input: str, context: list[str], plan: str, username: str, thinking_process=None) -> str:
+        # Use the passed thinking_process if available, otherwise create a new one
+        if thinking_process is not None:
+            thinking_process.update("Executing plan...")
+            return self.rag_system.generate_response(user_input, username, self.history, plan, thinking_process=thinking_process)
+        else:
+            with self.ui_logger.thinking_process("Executing plan..."):
+                return self.rag_system.generate_response(user_input, username, self.history, plan)
 
     def generate_insight_from_history(self, username: str):
         """Analyzes recent conversation history to generate and save a new, high-quality insight."""
