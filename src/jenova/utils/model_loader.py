@@ -1,14 +1,29 @@
 from sentence_transformers import SentenceTransformer
+import torch
 
-def load_embedding_model(model_name: str, device: str = 'cpu'):
+def load_embedding_model(model_name: str, device: str = None):
     """
-    Loads the SentenceTransformer model with specified device.
+    Loads the SentenceTransformer model with automatic device detection.
+    
+    Args:
+        model_name: Name of the model to load
+        device: Device to use ('cpu', 'cuda', or None for auto-detection)
     """
     try:
-        print(f"Loading embedding model '{model_name}' on device '{device}'...")
+        # Auto-detect device if not specified
+        if device is None:
+            if torch.cuda.is_available():
+                device = 'cuda'
+                print(f"🎮 GPU detected: Using CUDA for embedding model '{model_name}'")
+            else:
+                device = 'cpu'
+                print(f"💻 Loading embedding model '{model_name}' on CPU (no GPU detected)")
+        else:
+            print(f"Loading embedding model '{model_name}' on device '{device}'...")
+        
         model = SentenceTransformer(model_name, device=device)
-        print("Embedding model loaded successfully.")
+        print(f"✓ Embedding model loaded successfully on {device.upper()}")
         return model
     except Exception as e:
-        print(f"Error loading embedding model: {e}")
+        print(f"❌ Error loading embedding model: {e}")
         return None

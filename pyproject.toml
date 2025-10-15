@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jenova-ai"
+version = "3.0.2"
+authors = [
+    {name = "orpheus497"}
+]
+description = "The JENOVA Cognitive Architecture with a dynamic Insight Engine and self-optimizing context."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+]
+dependencies = [
+    "llama-cpp-python",
+    "chromadb",
+    "sentence-transformers",
+    "rich",
+    "prompt-toolkit",
+    "PyYAML",
+    "numpy",
+    "selenium",
+    "webdriver-manager",
+    "requests",
+]
+
+[project.urls]
+Homepage = "https://github.com/orpheus497/jenova-ai"
+Repository = "https://github.com/orpheus497/jenova-ai"
+
+[project.scripts]
+jenova = "jenova.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
