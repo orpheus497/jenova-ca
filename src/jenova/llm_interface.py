@@ -20,8 +20,9 @@ class LLMInterface:
             self.file_logger.log_warning("Could not detect CPU count.")
             return configured_threads
         
-        # If configured threads is 0 or None, use all available CPUs
-        if configured_threads == 0 or configured_threads is None:
+        # If configured threads is 0, -1, or None, use all available CPUs
+        # -1 mirrors the gpu_layers=-1 convention (use all available)
+        if configured_threads == 0 or configured_threads == -1 or configured_threads is None:
             optimal_threads = cpu_count
             self.ui_logger.system_message(f"🔧 Auto-detected {cpu_count} CPU cores. Using all {optimal_threads} threads.")
             self.file_logger.log_info(f"Auto-detected {cpu_count} CPUs, using {optimal_threads} threads")

@@ -1,8 +1,8 @@
 # Main Configuration for The JENOVA Cognitive Architecture - JCA v3.0
 # Optimized for AMD Ryzen 7 5700U with Radeon Graphics
 hardware:
-  threads: 16 # Number of CPU threads to use. Set to 0 for auto-detection (uses all available cores)
-  gpu_layers: -1 # Offload all possible layers to the GPU for maximum performance. Set to 0 to disable GPU
+  threads: 16 # Number of CPU threads. Set to -1 or 0 for auto-detection (uses all available cores)
+  gpu_layers: -1 # GPU layers to offload. Set to -1 to offload ALL layers (maximum GPU usage). Set to 0 to disable GPU
   mlock: false # Set to false to allow the OS to swap the model to disk, freeing up RAM.
 model:
   model_path: "" # IMPORTANT: Replace with the actual path to your GGUF model file
