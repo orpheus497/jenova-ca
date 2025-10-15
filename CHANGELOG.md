@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - (Add new features for the next version here)
 
-## [3.0.2] - 2025-10-14
+## [3.0.2] - 2025-10-15
 
 ### Fixed
 - **Critical Race Condition:** Fixed a critical race condition on multi-core systems where background cognitive tasks and the main UI loop competed for console control, causing the "Only one live display may be active at once" error. Implemented thread-safe console locking using `threading.Lock` in the `UILogger` class to ensure exclusive access to console operations.
