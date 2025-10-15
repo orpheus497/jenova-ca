@@ -98,7 +98,6 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
         # Detect optimal thread count
         configured_threads = hw_config.get('threads', 0)
         optimal_threads = self._detect_optimal_threads(configured_threads)
-        hw_config['threads'] = optimal_threads
 
         # --- Dynamic Context Optimization ---
         try:
