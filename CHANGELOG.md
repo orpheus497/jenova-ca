@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - (Add new features for the next version here)
 
+### Fixed
+- **Threading Deadlock:** Resolved a critical deadlock in the cognitive cycle caused by threading conflicts between background cognitive processes and UI updates. Implemented a thread-safe `queue.Queue` message bus in `TerminalUI` for asynchronous UI updates. Modified `UILogger` to be non-blocking by queuing status updates and log messages instead of directly manipulating the UI. Refactored `TerminalUI` to process queued messages on the main thread while cognitive operations run in background threads, eliminating circular wait conditions.
+
 ## [3.0.2] - 2025-10-15
 
 ### Fixed

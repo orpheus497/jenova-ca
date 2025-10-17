@@ -4,6 +4,7 @@ import threading
 import itertools
 import time
 import sys
+import queue
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
@@ -33,19 +34,24 @@ class TerminalUI:
         self.verifying_assumption = None
         self._spinner_running = False
         self._spinner_thread = None
+        
+        # Initialize message queue for thread-safe UI updates
+        self.message_queue = queue.Queue()
+        # Configure logger to use the queue for non-blocking updates
+        self.logger.message_queue = self.message_queue
 
     def _spinner(self):
         spinner_chars = itertools.cycle(['   ', '.  ', '.. ', '...'])
         color_code = '\033[93m' # Yellow color
         reset_code = '\033[0m'
         while self._spinner_running:
-            with self.logger._console_lock:
-                sys.stdout.write(f'{color_code}\r{next(spinner_chars)}{reset_code}')
-                sys.stdout.flush()
-            time.sleep(0.2)
-        with self.logger._console_lock:
-            sys.stdout.write('\r' + ' ' * 5 + '\r') # Clear spinner line completely
+            # No lock needed - spinner runs independently and TerminalUI processes queue
+            sys.stdout.write(f'{color_code}\r{next(spinner_chars)}{reset_code}')
             sys.stdout.flush()
+            time.sleep(0.2)
+        # Clear spinner line completely
+        sys.stdout.write('\r' + ' ' * 5 + '\r')
+        sys.stdout.flush()
 
     def start_spinner(self):
         self._spinner_running = True
@@ -66,6 +72,8 @@ class TerminalUI:
         self.logger.info("Initialized and Ready.")
         self.logger.info("Type your message, use a command, or type 'exit' to quit.")
         self.logger.info("Type /help to see a list of available commands.\n")
+        # Process startup messages
+        self.logger.process_queued_messages()
 
         while True:
             try:
@@ -75,6 +83,7 @@ class TerminalUI:
                     self.engine.assumption_manager.resolve_assumption(self.verifying_assumption, user_input, self.username)
                     self.verifying_assumption = None
                     self.logger.system_message("") # Add line space after system message
+                    self.logger.process_queued_messages()
                     continue
 
                 prompt_message = [('class:username', self.username), ('class:at', '@'), ('class:hostname', 'JENOVA'), ('class:prompt', '> ')]
@@ -82,6 +91,7 @@ class TerminalUI:
 
                 if not user_input:
                     self.logger.system_message("") # Add line space after system message
+                    self.logger.process_queued_messages()
                     continue
 
                 if user_input.lower() in ['exit', 'quit']:
@@ -91,19 +101,41 @@ class TerminalUI:
                 if user_input.startswith('/'):
                     self._handle_command(user_input)
                     self.logger.system_message("") # Add line space after system message
+                    self.logger.process_queued_messages()
                 else:
-                    # Regular conversation
-                    response = self.engine.think(user_input, self.username)
+                    # Regular conversation - run in background thread
+                    response_container = []
+                    def task():
+                        response_container.append(self.engine.think(user_input, self.username))
+                    
+                    thread = threading.Thread(target=task)
+                    thread.start()
+                    
+                    # Process queue messages while waiting
+                    while thread.is_alive():
+                        self.logger.process_queued_messages()
+                        time.sleep(0.1)
+                    thread.join()
+                    
+                    # Get response
+                    response = response_container[0] if response_container else "Error: No response generated"
+                    
+                    # Process any remaining messages
+                    self.logger.process_queued_messages()
+                    
                     if not isinstance(response, str):
                         response = str(response)
                     self.logger.system_message("") # Add line space before AI output
                     self.logger.jenova_response(response)
+                    # Process the jenova_response message
+                    self.logger.process_queued_messages()
                     self.logger.system_message("") # Add line space after AI output
 
             except (KeyboardInterrupt, EOFError):
                 break
             except Exception as e:
                 self.logger.system_message(f"An unexpected error occurred in the UI loop: {e}")
+                self.logger.process_queued_messages()
 
     def _process_and_log_messages(self, returned_messages):
         if returned_messages:
@@ -126,34 +158,96 @@ class TerminalUI:
         command, *args = user_input.lower().split(' ', 1)
         
         returned_messages = []
-        if command == '/insight':
+        
+        # Start spinner for long-running operations
+        should_spin = command in ['/insight', '/reflect', '/memory-insight', '/meta']
+        
+        if should_spin:
             self.start_spinner()
-            returned_messages = self.engine.develop_insights_from_conversation(self.username)
-            self.stop_spinner()
-        elif command == '/reflect':
-            self.start_spinner()
-            returned_messages = self.engine.reflect_on_insights(self.username)
-            self.stop_spinner()
-        elif command == '/memory-insight':
-            self.start_spinner()
-            returned_messages = self.engine.develop_insights_from_memory(self.username)
-            self.stop_spinner()
-        elif command == '/meta':
-            self.start_spinner()
-            returned_messages = self.engine.generate_meta_insight(self.username)
-            self.stop_spinner()
-        elif command == '/verify':
-            self._verify_assumption()
-        elif command == '/train':
-            self.logger.system_message("To create a training file for fine-tuning, run the following command in your terminal: python3 finetune/train.py")
-        elif command == '/develop_insight':
-            self._develop_insight(args)
-        elif command == '/learn_procedure':
-            self._learn_procedure(args)
-        elif command == '/help':
-            self._show_help()
-        else:
-            self.logger.system_message(f"Unknown command: {command}")
+        
+        try:
+            if command == '/insight':
+                # Run in background thread
+                result_container = []
+                def task():
+                    result_container.append(self.engine.develop_insights_from_conversation(self.username))
+                
+                thread = threading.Thread(target=task)
+                thread.start()
+                
+                # Process queue messages while waiting
+                while thread.is_alive():
+                    self.logger.process_queued_messages()
+                    time.sleep(0.1)
+                thread.join()
+                
+                returned_messages = result_container[0] if result_container else []
+                
+            elif command == '/reflect':
+                result_container = []
+                def task():
+                    result_container.append(self.engine.reflect_on_insights(self.username))
+                
+                thread = threading.Thread(target=task)
+                thread.start()
+                
+                # Process queue messages while waiting
+                while thread.is_alive():
+                    self.logger.process_queued_messages()
+                    time.sleep(0.1)
+                thread.join()
+                
+                returned_messages = result_container[0] if result_container else []
+                
+            elif command == '/memory-insight':
+                result_container = []
+                def task():
+                    result_container.append(self.engine.develop_insights_from_memory(self.username))
+                
+                thread = threading.Thread(target=task)
+                thread.start()
+                
+                # Process queue messages while waiting
+                while thread.is_alive():
+                    self.logger.process_queued_messages()
+                    time.sleep(0.1)
+                thread.join()
+                
+                returned_messages = result_container[0] if result_container else []
+                
+            elif command == '/meta':
+                result_container = []
+                def task():
+                    result_container.append(self.engine.generate_meta_insight(self.username))
+                
+                thread = threading.Thread(target=task)
+                thread.start()
+                
+                # Process queue messages while waiting
+                while thread.is_alive():
+                    self.logger.process_queued_messages()
+                    time.sleep(0.1)
+                thread.join()
+                
+                returned_messages = result_container[0] if result_container else []
+                
+            elif command == '/verify':
+                self._verify_assumption()
+            elif command == '/train':
+                self.logger.system_message("To create a training file for fine-tuning, run the following command in your terminal: python3 finetune/train.py")
+            elif command == '/develop_insight':
+                self._develop_insight(args)
+            elif command == '/learn_procedure':
+                self._learn_procedure(args)
+            elif command == '/help':
+                self._show_help()
+            else:
+                self.logger.system_message(f"Unknown command: {command}")
+        finally:
+            if should_spin:
+                self.stop_spinner()
+            # Process any remaining queued messages
+            self.logger.process_queued_messages()
 
         self._process_and_log_messages(returned_messages)
 
@@ -251,26 +345,57 @@ class TerminalUI:
     def _verify_assumption(self):
         """Handles the /verify command."""
         self.start_spinner()
-        assumption, question = self.engine.verify_assumptions(self.username)
+        
+        result_container = []
+        def task():
+            result_container.append(self.engine.verify_assumptions(self.username))
+        
+        thread = threading.Thread(target=task)
+        thread.start()
+        
+        # Process queue messages while waiting
+        while thread.is_alive():
+            self.logger.process_queued_messages()
+            time.sleep(0.1)
+        thread.join()
+        
         self.stop_spinner()
+        self.logger.process_queued_messages()
+        
+        assumption, question = result_container[0] if result_container else (None, None)
+        
         if question: # Check if there's a message to display
             self.logger.system_message(f"Jenova is asking for clarification: {question}")
+            self.logger.process_queued_messages()
             if assumption: # Only set verifying_assumption if there's an actual assumption
                 self.verifying_assumption = assumption
 
     def _develop_insight(self, args: list):
         """Handles the /develop_insight command."""
-        if args:
-            node_id = args[0]
-            self.start_spinner()
-            returned_messages = self.engine.cortex.develop_insight(node_id, self.username)
-            self.stop_spinner()
-            self._process_and_log_messages(returned_messages)
-        else:
-            self.start_spinner()
-            returned_messages = self.engine.cortex.develop_insights_from_docs(self.username)
-            self.stop_spinner()
-            self._process_and_log_messages(returned_messages)
+        self.start_spinner()
+        
+        result_container = []
+        def task():
+            if args:
+                node_id = args[0]
+                result_container.append(self.engine.cortex.develop_insight(node_id, self.username))
+            else:
+                result_container.append(self.engine.cortex.develop_insights_from_docs(self.username))
+        
+        thread = threading.Thread(target=task)
+        thread.start()
+        
+        # Process queue messages while waiting
+        while thread.is_alive():
+            self.logger.process_queued_messages()
+            time.sleep(0.1)
+        thread.join()
+        
+        self.stop_spinner()
+        self.logger.process_queued_messages()
+        
+        returned_messages = result_container[0] if result_container else []
+        self._process_and_log_messages(returned_messages)
 
 
 
@@ -308,6 +433,22 @@ class TerminalUI:
         }
 
         self.start_spinner()
-        returned_messages = self.engine.learn_procedure(procedure_data, self.username)
+        
+        result_container = []
+        def task():
+            result_container.append(self.engine.learn_procedure(procedure_data, self.username))
+        
+        thread = threading.Thread(target=task)
+        thread.start()
+        
+        # Process queue messages while waiting
+        while thread.is_alive():
+            self.logger.process_queued_messages()
+            time.sleep(0.1)
+        thread.join()
+        
         self.stop_spinner()
+        self.logger.process_queued_messages()
+        
+        returned_messages = result_container[0] if result_container else []
         self._process_and_log_messages(returned_messages)
