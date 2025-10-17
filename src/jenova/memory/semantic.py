@@ -7,6 +7,7 @@ import uuid
 
 from jenova.utils.json_parser import extract_json
 from jenova.utils.embedding import CustomEmbeddingFunction
+from jenova.utils.data_sanitizer import sanitize_metadata
 
 class SemanticMemory:
     def __init__(self, config, ui_logger, file_logger, db_path, llm, embedding_model):
@@ -89,6 +90,9 @@ JSON Response:'''
             "temporal_validity": temporal_validity,
             "timestamp": datetime.now().isoformat()
         }
+        
+        # Sanitize metadata to remove None values before passing to ChromaDB
+        metadata = sanitize_metadata(metadata)
         
         if not doc_id:
             doc_id = f"fact_{uuid.uuid4()}"

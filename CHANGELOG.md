@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - (Add new features for the next version here)
 
 ### Fixed
+- **Memory TypeError Fix (All Memory Modules):** Fixed a `TypeError` in all memory modules (episodic, procedural, and semantic) where `None` values in metadata were being passed to ChromaDB, causing crashes when adding new entries. Created a `sanitize_metadata` utility function in `jenova/utils/data_sanitizer.py` to remove `None` values from metadata dictionaries before passing them to ChromaDB. This comprehensive fix ensures that when NLP analysis fails to extract metadata (entities, emotion, goal, steps, context, source, confidence, or temporal_validity), the application gracefully handles the situation by excluding the missing fields rather than crashing.
 - **Critical Regression from Threading Fix:** Fixed multiple critical issues introduced by the v3.0.3 threading deadlock fix that broke core functionality:
   - **Message Queue Initialization:** Fixed the message queue not being set on `UILogger` before component initialization. The queue is now created in `main.py` and passed to `UILogger` during construction, ensuring all components (CognitiveEngine, Cortex, InsightManager, etc.) have access to the thread-safe message queue from the start.
   - **Missing Thinking Spinner:** Restored the visual "thinking wheel" (yellow dots spinner) for regular conversation by ensuring the spinner is started and stopped around the `think()` method execution in background threads.

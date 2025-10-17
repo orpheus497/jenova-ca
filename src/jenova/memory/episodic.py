@@ -7,6 +7,7 @@ from chromadb.utils import embedding_functions
 import uuid
 
 from jenova.utils.json_parser import extract_json
+from jenova.utils.data_sanitizer import sanitize_metadata
 
 class EpisodicMemory:
     def __init__(self, config, ui_logger, file_logger, db_path, llm):
@@ -52,6 +53,9 @@ JSON Response:'''
             "emotion": emotion,
             "timestamp": timestamp
         }
+        
+        # Sanitize metadata to remove None values before passing to ChromaDB
+        metadata = sanitize_metadata(metadata)
         
         doc_id = f"ep_{uuid.uuid4()}"
         self.collection.add(ids=[doc_id], documents=[summary], metadatas=[metadata])

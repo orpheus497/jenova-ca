@@ -72,5 +72,9 @@ Thumbs.db
 /src/jenova/docs/*
 !/src/jenova/docs/.gitkeep
 
+# Development documentation (already integrated into CHANGELOG)
+/docs/*
+!/docs/.gitkeep
+
 # Unnecessary vendored code
 /llama.cpp/
