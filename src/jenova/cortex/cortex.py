@@ -23,14 +23,29 @@ class Cortex:
         self.json_grammar = self._load_grammar()
 
     def _load_grammar(self):
-        """Loads the JSON grammar from the llama.cpp submodule."""
-        grammar_path = os.path.join(os.getcwd(), "llama.cpp", "grammars", "json.gbnf")
-        if os.path.exists(grammar_path):
-            with open(grammar_path, 'r') as f:
-                grammar_text = f.read()
-            from llama_cpp.llama_grammar import LlamaGrammar
-            return LlamaGrammar.from_string(grammar_text)
-        self.ui_logger.system_message("JSON grammar file not found at " + grammar_path)
+        """Loads the JSON grammar from multiple possible locations."""
+        # Define candidate paths: packaged fallback first, then llama.cpp
+        packaged_grammar_path = os.path.join(os.path.dirname(__file__), "json.gbnf")
+        llama_cpp_grammar_path = os.path.join(os.getcwd(), "llama.cpp", "grammars", "json.gbnf")
+        
+        candidate_paths = [packaged_grammar_path, llama_cpp_grammar_path]
+        
+        for grammar_path in candidate_paths:
+            if os.path.exists(grammar_path):
+                try:
+                    with open(grammar_path, 'r') as f:
+                        grammar_text = f.read()
+                    from llama_cpp.llama_grammar import LlamaGrammar
+                    grammar = LlamaGrammar.from_string(grammar_text)
+                    self.file_logger.log_info(f"JSON grammar loaded from {grammar_path}")
+                    return grammar
+                except Exception as e:
+                    self.file_logger.log_error(f"Failed to load grammar from {grammar_path}: {e}")
+                    continue
+        
+        # If no grammar file found, log info (not error) and continue
+        self.ui_logger.info("JSON grammar file not found in any location. Continuing without grammar constraint.")
+        self.file_logger.log_info("JSON grammar file not found. Checked paths: " + ", ".join(candidate_paths))
         return None
 
     def _load_graph(self):

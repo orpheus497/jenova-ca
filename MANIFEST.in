@@ -1,3 +1,4 @@
 graft src/jenova/config
 graft src/jenova/docs
+graft src/jenova/cortex
 recursive-include models *
