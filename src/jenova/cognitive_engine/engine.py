@@ -92,7 +92,9 @@ Plan:"""
         
         # Use the passed thinking_process if available, otherwise create a new one
         if thinking_process is not None:
-            thinking_process.update("Formulating plan...")
+            # In queue mode, status might be None, so check before calling update
+            if hasattr(thinking_process, 'update'):
+                thinking_process.update("Formulating plan...")
             plan = self.llm.generate(prompt, temperature=0.1, thinking_process=thinking_process)
         else:
             with self.ui_logger.thinking_process("Formulating plan..."):
@@ -104,7 +106,9 @@ Plan:"""
     def _execute(self, user_input: str, context: list[str], plan: str, username: str, thinking_process=None) -> str:
         # Use the passed thinking_process if available, otherwise create a new one
         if thinking_process is not None:
-            thinking_process.update("Executing plan...")
+            # In queue mode, status might be None, so check before calling update
+            if hasattr(thinking_process, 'update'):
+                thinking_process.update("Executing plan...")
             return self.rag_system.generate_response(user_input, username, self.history, plan, thinking_process=thinking_process)
         else:
             with self.ui_logger.thinking_process("Executing plan..."):
