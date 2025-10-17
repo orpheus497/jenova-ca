@@ -35,10 +35,8 @@ class TerminalUI:
         self._spinner_running = False
         self._spinner_thread = None
         
-        # Initialize message queue for thread-safe UI updates
-        self.message_queue = queue.Queue()
-        # Configure logger to use the queue for non-blocking updates
-        self.logger.message_queue = self.message_queue
+        # Use the existing message queue from logger (already set in main.py)
+        self.message_queue = self.logger.message_queue
 
     def _spinner(self):
         spinner_chars = itertools.cycle(['   ', '.  ', '.. ', '...'])
