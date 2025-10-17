@@ -11,7 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - (Add new features for the next version here)
 
 ### Fixed
+- (Add bug fixes for the next version here)
+
+## [3.0.3] - 2025-10-17
+
+### Fixed
 - **Threading Deadlock:** Resolved a critical deadlock in the cognitive cycle caused by threading conflicts between background cognitive processes and UI updates. Implemented a thread-safe `queue.Queue` message bus in `TerminalUI` for asynchronous UI updates. Modified `UILogger` to be non-blocking by queuing status updates and log messages instead of directly manipulating the UI. Refactored `TerminalUI` to process queued messages on the main thread while cognitive operations run in background threads, eliminating circular wait conditions.
+- **Missing PyTorch Dependency:** Added `torch` to both `requirements.txt` and `pyproject.toml` dependencies to fix import errors in `model_loader.py` which uses PyTorch for GPU detection when loading embedding models.
 
 ## [3.0.2] - 2025-10-15
 

@@ -1,6 +1,7 @@
 llama-cpp-python
 chromadb
 sentence-transformers
+torch
 rich
 prompt-toolkit
 PyYAML
