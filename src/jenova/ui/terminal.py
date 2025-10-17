@@ -101,7 +101,8 @@ class TerminalUI:
                     self.logger.system_message("") # Add line space after system message
                     self.logger.process_queued_messages()
                 else:
-                    # Regular conversation - run in background thread
+                    # Regular conversation - run in background thread with spinner
+                    self.start_spinner()
                     response_container = []
                     def task():
                         response_container.append(self.engine.think(user_input, self.username))
@@ -114,6 +115,8 @@ class TerminalUI:
                         self.logger.process_queued_messages()
                         time.sleep(0.1)
                     thread.join()
+                    
+                    self.stop_spinner()
                     
                     # Get response
                     response = response_container[0] if response_container else "Error: No response generated"
