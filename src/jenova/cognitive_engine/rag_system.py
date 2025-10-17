@@ -7,6 +7,9 @@ class RAGSystem:
         self.memory_search = memory_search
         self.insight_manager = insight_manager
         self.config = config
+        # Get ui_logger and file_logger from memory_search which has access to them
+        self.ui_logger = memory_search.episodic_memory.ui_logger
+        self.file_logger = memory_search.file_logger
 
     def generate_response(self, query: str, username: str, history: list[str], plan: str, search_results: list[dict] | None = None, thinking_process=None) -> str:
         """Generates a response using the RAG process.

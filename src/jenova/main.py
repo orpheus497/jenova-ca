@@ -1,5 +1,6 @@
 import os
 import traceback
+import queue
 from jenova.utils.telemetry_fix import apply_telemetry_patch
 apply_telemetry_patch()
 
@@ -31,7 +32,9 @@ def main():
     user_data_root = os.path.join(os.path.expanduser("~"), ".jenova-ai", "users", username)
     os.makedirs(user_data_root, exist_ok=True)
     
-    ui_logger = UILogger()
+    # Create message queue BEFORE UILogger to enable thread-safe UI updates
+    message_queue = queue.Queue()
+    ui_logger = UILogger(message_queue=message_queue)
     file_logger = FileLogger(user_data_root=user_data_root)
 
     try:

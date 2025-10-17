@@ -11,7 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - (Add new features for the next version here)
 
 ### Fixed
-- (Add bug fixes for the next version here)
+- **Critical Regression from Threading Fix:** Fixed multiple critical issues introduced by the v3.0.3 threading deadlock fix that broke core functionality:
+  - **Message Queue Initialization:** Fixed the message queue not being set on `UILogger` before component initialization. The queue is now created in `main.py` and passed to `UILogger` during construction, ensuring all components (CognitiveEngine, Cortex, InsightManager, etc.) have access to the thread-safe message queue from the start.
+  - **Missing Thinking Spinner:** Restored the visual "thinking wheel" (yellow dots spinner) for regular conversation by ensuring the spinner is started and stopped around the `think()` method execution in background threads.
+  - **RAG System Logger References:** Fixed missing `ui_logger` and `file_logger` references in `RAGSystem` that would cause AttributeError during error handling. The loggers are now obtained from the `memory_search` component which has access to them.
+  - These fixes restore the cognitive architecture's ability to generate, retrieve, and utilize insights and memories, distinguish between users, display UI status updates correctly, and handle slash commands properly.
 
 ## [3.0.3] - 2025-10-17
 
