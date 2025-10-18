@@ -133,12 +133,12 @@ JENOVA is designed to be installed once on a system by an administrator and then
 
 ### 4.1. For Administrators
 
-To install JENOVA on the system, you must run the installation script with root privileges.
+To install JENOVA on the system, run the installation script with root privileges.
 
 1.  **Prerequisites:**
-    *   A Linux-based operating system.
-    *   `git`, `python3`, and `python3-pip` must be installed.
-    *   A C++ compiler (like `g++`) is required for the `llama-cpp-python` dependency. On Debian/Ubuntu, this can be installed with `sudo apt-get install build-essential`.
+    *   A Linux-based operating system
+    *   `git`, `python3`, and `python3-pip` installed
+    *   Internet connection for downloading the TinyLlama model (~2.2GB)
 
 2.  **Clone the Repository:**
     ```bash
@@ -146,18 +146,13 @@ To install JENOVA on the system, you must run the installation script with root 
     cd jenova-ai
     ```
 
-3.  **Download a Model:**
-    JENOVA requires a GGUF-formatted model. You must download one and place it in the `models/` directory within the project. This model will be shared by all users.
-    ```bash
-    mkdir models
-    wget -P models/ https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q8_0.gguf
-    ```
-
-4.  **Run the Installation Script:**
-    Execute the script with `sudo`. It will handle the installation of all dependencies and make the `jenova` command available system-wide.
+3.  **Run the Installation Script:**
+    Execute the script with `sudo`. It handles installation of all dependencies, downloads the TinyLlama model to `/usr/local/share/jenova-ai/models`, and makes the `jenova` command available system-wide.
     ```bash
     sudo ./install.sh
     ```
+    
+    The installation script automatically downloads TinyLlama-1.1B-step-50K-105b from HuggingFace and installs it to the system-wide model directory.
 
 ### 4.2. For Users
 
@@ -198,7 +193,7 @@ JENOVA responds to a set of powerful commands that act as direct instructions fo
 ```
 /
 ├── finetune/             # Scripts for model fine-tuning data generation
-├── models/               # Where you place your .gguf model files
+├── models/               # System-wide model directory (not in repo)
 ├── src/
 │   └── jenova/
 │       ├── assumptions/      # Manages the assumption lifecycle
@@ -211,7 +206,7 @@ JENOVA responds to a set of powerful commands that act as direct instructions fo
 │       ├── ui/               # The terminal user interface
 │       ├── utils/            # Utility scripts and patches
 │       ├── __init__.py
-│       ├── llm_interface.py  # Handles all interaction with llama.cpp
+│       ├── llm_interface.py  # Handles interaction with HuggingFace transformers
 │       └── main.py           # Main application entry point
 ├── install.sh            # Installation script
 ├── requirements.txt      # Python dependencies
@@ -226,23 +221,19 @@ JENOVA's behavior is controlled by two YAML files in `src/jenova/config/`.
 
 This file controls the technical parameters of the AI.
 
--   **`hardware`**:
-    -   `threads`: Number of CPU threads to use.
-    -   `gpu_layers`: Number of model layers to offload to the GPU. Set to -1 to offload all possible layers for maximum performance. Requires a compatible GPU and `llama-cpp-python` built with GPU support.
-    -   `mlock`: Whether to lock the model in memory (RAM). Set to `true` for a significant performance increase by preventing the model from being swapped to disk.
 -   **`model`**:
-    -   `embedding_model`: The sentence-transformer model to use for creating vector embeddings for memory search.
-    -   `context_size`: The default context window size (will be overridden by the model's metadata if possible).
-    -   `max_tokens`: The maximum number of tokens to generate in a single response.
-    -   `temperature`: Controls the "creativity" of the LLM. Lower is more deterministic.
-    -   `top_p`: Nucleus sampling parameter.
+    -   `context_size`: The context window size for TinyLlama (2048 tokens)
+    -   `max_tokens`: The maximum number of tokens to generate in a single response
+    -   `temperature`: Controls the "creativity" of the LLM. Lower is more deterministic
+    -   `top_p`: Nucleus sampling parameter
+    -   `embedding_model`: The sentence-transformer model to use for creating vector embeddings for memory search
 -   **`memory`**:
-    -   `..._db_path`: Paths to the ChromaDB databases. These are relative to the user's data directory (`~/.jenova-ai/users/<username>/memory/`).
+    -   `..._db_path`: Paths to the ChromaDB databases. These are relative to the user's data directory (`~/.jenova-ai/users/<username>/memory/`)
 -   **`memory_search`**:
-    -   `semantic_n_results`: The number of results to retrieve from semantic memory.
-    -   `episodic_n_results`: The number of results to retrieve from episodic memory.
-    -   `procedural_n_results`: The number of results to retrieve from procedural memory.
-    -   `insight_n_results`: The number of results to retrieve from insight memory.
+    -   `semantic_n_results`: The number of results to retrieve from semantic memory
+    -   `episodic_n_results`: The number of results to retrieve from episodic memory
+    -   `procedural_n_results`: The number of results to retrieve from procedural memory
+    -   `insight_n_results`: The number of results to retrieve from insight memory
 -   **`scheduler`**:
     -   `generate_insight_interval`: The interval (in conversation turns) for generating insights.
     -   `generate_assumption_interval`: The interval for generating assumptions.
@@ -260,3 +251,28 @@ This file defines the AI's personality and core directives.
     -   `type`: A description of the AI's nature.
 -   **`directives`**: A list of rules the AI must follow. These are injected into the system prompt.
 -   **`initial_facts`**: A list of foundational facts that are loaded into the AI's memory on first run.
+
+## 7. Credits and Acknowledgments
+
+The JENOVA Cognitive Architecture builds upon excellent open-source work from the community:
+
+### Language Model
+-   **TinyLlama-1.1B-step-50K-105b** by the TinyLlama team
+    -   [HuggingFace Repository](https://huggingface.co/TinyLlama/TinyLlama-1.1B-step-50K-105b)
+    -   A compact, efficient 1.1B parameter language model trained on 3 trillion tokens
+    -   Licensed under Apache 2.0
+
+### Core Dependencies
+-   **Transformers** by HuggingFace - State-of-the-art Natural Language Processing library
+-   **PyTorch** by Meta AI - Deep learning framework powering the model inference
+-   **ChromaDB** - Vector database for efficient memory storage and retrieval
+-   **Sentence Transformers** - Framework for computing dense vector representations
+-   **Rich** by Will McGugan - Beautiful terminal formatting and UI components
+-   **Prompt Toolkit** - Library for building interactive command-line applications
+-   **PyYAML** - YAML parser for configuration files
+-   **Selenium** & **WebDriver Manager** - Web automation for external information retrieval
+
+### Architecture Design
+-   **The JENOVA Cognitive Architecture (JCA)** designed and developed by **orpheus497**
+
+All dependencies are used in accordance with their respective open-source licenses. JENOVA itself is released under the MIT License.

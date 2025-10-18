@@ -1,16 +1,10 @@
-# Main Configuration for The JENOVA Cognitive Architecture - JCA v3.0
-# Optimized for AMD Ryzen 7 5700U with Radeon Graphics
-hardware:
-  threads: 16 # Number of CPU threads. Set to -1 or 0 for auto-detection (uses all available cores)
-  gpu_layers: -1 # GPU layers to offload. Set to -1 to offload ALL layers (maximum GPU usage). Set to 0 to disable GPU
-  mlock: false # Set to false to allow the OS to swap the model to disk, freeing up RAM.
+# Main Configuration for The JENOVA Cognitive Architecture - JCA v3.1
 model:
-  model_path: "" # IMPORTANT: Replace with the actual path to your GGUF model file
+  context_size: 2048 # Context window size for TinyLlama (maximum supported)
+  max_tokens: 512 # Maximum tokens to generate per response
+  temperature: 0.7
+  top_p: 0.95
   embedding_model: 'all-MiniLM-L6-v2'
-  context_size: 4096 # Will be dynamically overridden by model's max capacity if smaller
-  max_tokens: 1500
-  temperature: 0.4
-  top_p: 0.9
 memory:
   preload_memories: true
   episodic_db_path: "memory_db/episodic"
@@ -48,8 +42,8 @@ memory_search:
 
 finetuning:
   training_file: "finetune_train.jsonl"
-  lora_output_file: "models/lora-jenova-adapter.bin"
-  finetuned_model_output: "models/jenova-finetuned.gguf"
+  lora_output_dir: "/usr/local/share/jenova-ai/lora"
+  finetuned_model_output: "/usr/local/share/jenova-ai/models/jenova-finetuned"
 
 tools:
   file_sandbox_path: "~/jenova_files"

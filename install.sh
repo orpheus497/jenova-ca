@@ -1,11 +1,11 @@
 #!/bin/bash
-# Jenova AI System-Wide Installation Script
-# This script installs Jenova AI for all users on the system.
+# JENOVA AI System-Wide Installation Script
+# This script installs JENOVA AI for all users on the system.
 # It must be run with root privileges (e.g., using 'sudo').
 
 set -e
 
-echo "--- Installing Jenova AI for All Users ---"
+echo "--- Installing JENOVA AI for All Users ---"
 
 # 1. Check for Root Privileges
 if [ "$(id -u)" -ne 0 ]; then
@@ -25,33 +25,69 @@ fi
 echo "--> Upgrading system's pip..."
 pip install --upgrade pip > /dev/null
 
-# 4. Install the Package
-# This installs the package into the system's site-packages directory.
-# The 'jenova' command will be placed in a system-wide bin location (e.g., /usr/local/bin).
-echo "--> Installing Jenova AI package globally..."
+# 4. Create system-wide model directory
+echo "--> Creating model directory at /usr/local/share/jenova-ai/models..."
+mkdir -p /usr/local/share/jenova-ai/models
+chmod 755 /usr/local/share/jenova-ai
+chmod 755 /usr/local/share/jenova-ai/models
+
+# 5. Download TinyLlama model
+echo "--> Downloading TinyLlama-1.1B model from HuggingFace..."
+echo "    This may take a few minutes..."
+
+# Install transformers and torch first to download model
+pip install torch transformers accelerate > /dev/null 2>&1
+
+# Download model using Python
+python3 << 'PYTHON_SCRIPT'
+import os
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model_dir = "/usr/local/share/jenova-ai/models"
+model_name = "TinyLlama/TinyLlama-1.1B-step-50K-105b"
+
+print(f"Downloading {model_name}...")
+try:
+    # Download tokenizer
+    print("  - Downloading tokenizer...")
+    tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=model_dir)
+    
+    # Download model
+    print("  - Downloading model weights...")
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        cache_dir=model_dir,
+        low_cpu_mem_usage=True
+    )
+    
+    print(f"✓ Model successfully downloaded to {model_dir}")
+except Exception as e:
+    print(f"✗ Error downloading model: {e}")
+    exit(1)
+PYTHON_SCRIPT
+
+if [ $? -ne 0 ]; then
+    echo "[ERROR] Failed to download TinyLlama model."
+    exit 1
+fi
+
+# 6. Install the Package
+echo "--> Installing JENOVA AI package globally..."
 if ! pip install --ignore-installed .; then
     echo "[ERROR] Installation failed. Please check setup.py and ensure all dependencies can be installed."
     exit 1
 fi
 
 echo
-
 echo "======================================================================"
-
-echo "✅ Jenova AI has been successfully installed for all users."
-
+echo "✅ JENOVA AI has been successfully installed for all users."
 echo
-
-echo "Any user can now run the application by simply typing the command:"
-
+echo "Model: TinyLlama-1.1B-step-50K-105b"
+echo "Location: /usr/local/share/jenova-ai/models"
+echo
+echo "Any user can now run the application by typing:"
 echo "  jenova"
-
 echo
-
-echo "User-specific data, memories, and insights will be automatically"
-
-echo "stored separately for each user in their home directory at:"
-
+echo "User-specific data, memories, and insights will be stored at:"
 echo "  ~/.jenova-ai/users/<username>/"
-
 echo "======================================================================"

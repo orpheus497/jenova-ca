@@ -235,7 +235,10 @@ class TerminalUI:
             elif command == '/verify':
                 self._verify_assumption()
             elif command == '/train':
-                self.logger.system_message("To create a training file for fine-tuning, run the following command in your terminal: python3 finetune/train.py")
+                self.logger.system_message("To create fine-tuning data from your insights:")
+                self.logger.system_message("  Prepare data only: python3 finetune/train.py --prepare-only")
+                self.logger.system_message("  Full LoRA fine-tune: python3 finetune/train.py --epochs 3 --batch-size 4")
+                self.logger.system_message("Note: Fine-tuning with LoRA requires GPU and additional packages (peft, bitsandbytes)")
             elif command == '/develop_insight':
                 self._develop_insight(args)
             elif command == '/learn_procedure':
@@ -316,10 +319,9 @@ class TerminalUI:
         self.logger.help_message("    [dim italic]future recall and application in relevant contexts.[/dim italic]\n")
         
         self.logger.help_message("  [bright_yellow]/train[/bright_yellow]")
-        self.logger.help_message("    [#BDB2FF]Provides instructions for creating fine-tuning training data.[/]")
-        self.logger.help_message("    [dim italic]Shows how to generate a training dataset from your interactions[/dim italic]")
-        self.logger.help_message("    [dim italic]for fine-tuning the underlying language model with personalized[/dim italic]")
-        self.logger.help_message("    [dim italic]knowledge and conversation patterns.[/dim italic]\n")
+        self.logger.help_message("    [#BDB2FF]Provides instructions for creating LoRA fine-tuning training data.[/]")
+        self.logger.help_message("    [dim italic]Shows how to generate a training dataset from your insights and[/dim italic]")
+        self.logger.help_message("    [dim italic]fine-tune TinyLlama with LoRA for personalized knowledge.[/dim italic]\n")
         
         self.logger.help_message("[bold bright_yellow]SYSTEM COMMANDS[/bold bright_yellow]")
         self.logger.help_message("[dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/dim]\n")

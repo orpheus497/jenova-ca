@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jenova-ai"
-version = "3.0.3"
+version = "3.1.0"
 authors = [
     {name = "orpheus497"}
 ]
@@ -21,10 +21,11 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
 ]
 dependencies = [
-    "llama-cpp-python",
+    "transformers>=4.30.0",
+    "torch",
     "chromadb",
     "sentence-transformers",
-    "torch",
+    "accelerate",
     "rich",
     "prompt-toolkit",
     "PyYAML",
