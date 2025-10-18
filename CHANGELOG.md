@@ -8,30 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.1.0] - 2025-10-18
 
 ### Changed
-- **Complete Architecture Migration:** Migrated from llama-cpp-python (GGUF models) to HuggingFace transformers with TinyLlama-1.1B-step-50K-105b
-- **Model Management:** Changed model storage location to system-wide `/usr/local/share/jenova-ai/models` directory
-- **Installation Process:** Updated install.sh to automatically download TinyLlama model during installation (requires sudo)
-- **Dependencies:** Replaced llama-cpp-python with transformers, added accelerate for better GPU support
-- **Configuration:** Simplified hardware configuration, removed GGUF-specific settings (threads, gpu_layers, mlock)
-- **Model Loading:** Automatic GPU detection and usage with CUDA when available, CPU fallback otherwise
-- **Grammar System:** Removed llama.cpp JSON grammar dependency (not needed with transformers)
+- **Complete Architecture Migration:** Migrated the core architecture from `llama-cpp-python` (GGUF models) to the HuggingFace `transformers` library.
+- **Model Management:** The installation process (`install.sh`) now automatically downloads the `TinyLlama-1.1B` model to a system-wide `/usr/local/share/jenova-ai/models` directory.
+- **Dependencies:** Replaced `llama-cpp-python` with `transformers` and added `accelerate` for better GPU support.
+- **Configuration:** Simplified hardware configuration in `main_config.yaml`, removing GGUF-specific settings (`threads`, `gpu_layers`, `mlock`).
+- **Hardware Utilization:** The model loader now automatically detects and utilizes CUDA GPUs when available, with a fallback to CPU.
+- **Grammar System:** Removed the dependency on `llama.cpp`'s JSON grammar system.
 
 ### Fixed
-- **Model Detection:** Removed complex GGUF model search logic in favor of direct HuggingFace model loading
-- **Resource Management:** Improved GPU memory cleanup with torch.cuda.empty_cache()
-
-## [Unreleased]
-
-### Added
-- (Add new features for the next version here)
-
-### Fixed
-- **Memory TypeError Fix (All Memory Modules):** Fixed a `TypeError` in all memory modules (episodic, procedural, and semantic) where `None` values in metadata were being passed to ChromaDB, causing crashes when adding new entries. Created a `sanitize_metadata` utility function in `jenova/utils/data_sanitizer.py` to remove `None` values from metadata dictionaries before passing them to ChromaDB. This comprehensive fix ensures that when NLP analysis fails to extract metadata (entities, emotion, goal, steps, context, source, confidence, or temporal_validity), the application gracefully handles the situation by excluding the missing fields rather than crashing.
-- **Critical Regression from Threading Fix:** Fixed multiple critical issues introduced by the v3.0.3 threading deadlock fix that broke core functionality:
-  - **Message Queue Initialization:** Fixed the message queue not being set on `UILogger` before component initialization. The queue is now created in `main.py` and passed to `UILogger` during construction, ensuring all components (CognitiveEngine, Cortex, InsightManager, etc.) have access to the thread-safe message queue from the start.
-  - **Missing Thinking Spinner:** Restored the visual "thinking wheel" (yellow dots spinner) for regular conversation by ensuring the spinner is started and stopped around the `think()` method execution in background threads.
-  - **RAG System Logger References:** Fixed missing `ui_logger` and `file_logger` references in `RAGSystem` that would cause AttributeError during error handling. The loggers are now obtained from the `memory_search` component which has access to them.
-  - These fixes restore the cognitive architecture's ability to generate, retrieve, and utilize insights and memories, distinguish between users, display UI status updates correctly, and handle slash commands properly.
+- **Critical Regression from Threading Fix:** Fixed multiple critical issues introduced by the v3.0.3 threading fix that broke core functionality, including message queue initialization, missing UI spinners, and broken RAG system logger references.
+- **Memory Stability:** Fixed a `TypeError` in all memory modules that caused crashes when NLP analysis failed to extract metadata. A new `sanitize_metadata` utility now prevents `None` values from being passed to the database.
+- **Resource Management:** Improved GPU memory cleanup by calling `torch.cuda.empty_cache()`.
 
 ## [3.0.3] - 2025-10-17
 
