@@ -1,7 +1,8 @@
-llama-cpp-python
+transformers>=4.30.0
+torch
 chromadb
 sentence-transformers
-torch
+accelerate
 rich
 prompt-toolkit
 PyYAML

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2025-10-18
+
+### Changed
+- **Complete Architecture Migration:** Migrated from llama-cpp-python (GGUF models) to HuggingFace transformers with TinyLlama-1.1B-step-50K-105b
+- **Model Management:** Changed model storage location to system-wide `/usr/local/share/jenova-ai/models` directory
+- **Installation Process:** Updated install.sh to automatically download TinyLlama model during installation (requires sudo)
+- **Dependencies:** Replaced llama-cpp-python with transformers, added accelerate for better GPU support
+- **Configuration:** Simplified hardware configuration, removed GGUF-specific settings (threads, gpu_layers, mlock)
+- **Model Loading:** Automatic GPU detection and usage with CUDA when available, CPU fallback otherwise
+- **Grammar System:** Removed llama.cpp JSON grammar dependency (not needed with transformers)
+
+### Fixed
+- **Model Detection:** Removed complex GGUF model search logic in favor of direct HuggingFace model loading
+- **Resource Management:** Improved GPU memory cleanup with torch.cuda.empty_cache()
+
 ## [Unreleased]
 
 ### Added

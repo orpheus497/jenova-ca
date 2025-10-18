@@ -23,16 +23,8 @@ class Cortex:
         self.json_grammar = self._load_grammar()
 
     def _load_grammar(self):
-        """Loads the JSON grammar from the llama.cpp submodule."""
-        grammar_path = os.path.join(os.getcwd(), "llama.cpp", "grammars", "json.gbnf")
-        if os.path.exists(grammar_path):
-            with open(grammar_path, 'r') as f:
-                grammar_text = f.read()
-            from llama_cpp.llama_grammar import LlamaGrammar
-            self.file_logger.log_info(f"JSON grammar loaded from: {grammar_path}")
-            return LlamaGrammar.from_string(grammar_text)
-        self.ui_logger.system_message(f"⚠️  JSON grammar file not found at {grammar_path}")
-        self.file_logger.log_warning(f"JSON grammar file not found at {grammar_path}")
+        """JSON grammar not used with transformers-based models."""
+        self.file_logger.log_info("JSON grammar not required for transformers-based model")
         return None
 
     def _load_graph(self):

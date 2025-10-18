@@ -1,48 +1,21 @@
 import os
-import glob
-from llama_cpp import Llama
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 class LLMInterface:
     def __init__(self, config, ui_logger, file_logger):
         self.config = config
         self.ui_logger = ui_logger
         self.file_logger = file_logger
-        self.model_path = config['model']['model_path']
         self.system_prompt = self._build_system_prompt()
-        self.model = self._load_model()
+        self.model, self.tokenizer = self._load_model()
     
-    def _detect_optimal_threads(self, configured_threads):
-        """Detect optimal thread count for the system."""
-        cpu_count = os.cpu_count()
-        if cpu_count is None:
-            self.ui_logger.system_message("⚠️  Could not detect CPU count. Using configured value.")
-            self.file_logger.log_warning("Could not detect CPU count.")
-            return configured_threads
-        
-        # If configured threads is 0, -1, or None, use all available CPUs
-        # -1 mirrors the gpu_layers=-1 convention (use all available)
-        if configured_threads == 0 or configured_threads == -1 or configured_threads is None:
-            optimal_threads = cpu_count
-            self.ui_logger.system_message(f"🔧 Auto-detected {cpu_count} CPU cores. Using all {optimal_threads} threads.")
-            self.file_logger.log_info(f"Auto-detected {cpu_count} CPUs, using {optimal_threads} threads")
-            return optimal_threads
-        
-        # Warn if configured threads exceed available CPUs
-        if configured_threads > cpu_count:
-            self.ui_logger.system_message(f"⚠️  Configured threads ({configured_threads}) exceeds available CPU cores ({cpu_count}).")
-            self.ui_logger.system_message(f"    Using configured value, but performance may be suboptimal.")
-            self.file_logger.log_warning(f"Configured threads ({configured_threads}) > CPU count ({cpu_count})")
-        else:
-            self.ui_logger.system_message(f"🔧 Using {configured_threads} threads on system with {cpu_count} CPU cores.")
-            self.file_logger.log_info(f"Using {configured_threads} threads (system has {cpu_count} CPUs)")
-        
-        return configured_threads
-
     def close(self):
         """Cleans up the LLM resources."""
         if self.model:
-            # The Llama object from llama-cpp-python does not have an explicit close() method.
-            # Resources are released when the object is garbage collected.
+            # Clear CUDA cache if using GPU
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
             self.file_logger.log_info("LLM model resources released.")
 
     def _build_system_prompt(self) -> str:
@@ -62,125 +35,118 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
         return prompt
 
     def _load_model(self):
-        # Expand user path (~) and resolve to absolute path if model_path is set
-        if self.model_path:
-            self.model_path = os.path.abspath(os.path.expanduser(self.model_path))
+        """Load TinyLlama model from HuggingFace or local cache."""
+        model_dir = "/usr/local/share/jenova-ai/models"
+        model_name = "TinyLlama/TinyLlama-1.1B-step-50K-105b"
         
-        # Check if model_path points to a valid file
-        if self.model_path and os.path.isfile(self.model_path):
-            self.ui_logger.info(f"Using configured model: {self.model_path}")
-            self.file_logger.log_info(f"Using configured model: {self.model_path}")
+        self.ui_logger.info(f"Loading TinyLlama model...")
+        self.file_logger.log_info(f"Loading model: {model_name}")
+        
+        # Determine device
+        if torch.cuda.is_available():
+            device = "cuda"
+            self.ui_logger.system_message(f"🎮 GPU Acceleration: Enabled (CUDA)")
+            self.file_logger.log_info(f"GPU acceleration enabled: CUDA")
         else:
-            # Model path is unset, invalid, or points to a directory
-            if self.model_path:
-                self.ui_logger.info(f"Configured model path is invalid or points to a directory: {self.model_path}")
-                self.file_logger.log_info(f"Configured model path invalid: {self.model_path}")
-            else:
-                self.ui_logger.info("Model path not configured. Searching for a model in the 'models/' directory...")
-                self.file_logger.log_info("Model path not configured. Searching for models.")
-            
-            # Search for .gguf files in the local 'models/' directory at repository root
-            models_dir = os.path.join(os.getcwd(), 'models')
-            
-            available_models = []
-            if os.path.exists(models_dir):
-                available_models = sorted(glob.glob(f"{models_dir}/**/*.gguf", recursive=True))
-                self.ui_logger.info(f"Searching for GGUF models in: {models_dir}")
-                self.file_logger.log_info(f"Searching for models in: {models_dir}")
-
-            if available_models:
-                self.model_path = available_models[0]
-                self.ui_logger.system_message(f"✓ Found and selected model: {self.model_path}")
-                self.file_logger.log_info(f"Auto-selected model: {self.model_path}")
-                # Update the config in memory for this session
-                self.config['model']['model_path'] = self.model_path
-            else:
-                self.ui_logger.system_message(f"✗ No GGUF models found in the '{models_dir}/' directory.")
-                self.file_logger.log_error("No GGUF models found.")
-                self.ui_logger.system_message("Please download a GGUF-compatible model and place it in the 'models/' directory.")
-                raise FileNotFoundError(f"No GGUF model found in the '{models_dir}/' directory. Please add a model file.")
-
-        hw_config = self.config['hardware']
-        self.ui_logger.info(f"Found model: {self.model_path}")
-        self.file_logger.log_info(f"Found model: {self.model_path}")
-        
-        # Detect optimal thread count
-        configured_threads = hw_config.get('threads', 0)
-        optimal_threads = self._detect_optimal_threads(configured_threads)
-
-        # --- Dynamic Context Optimization ---
-        try:
-            # Create a temporary Llama instance to fetch metadata
-            temp_model_info = Llama(model_path=self.model_path, verbose=False, n_gpu_layers=0)
-            model_metadata = temp_model_info.metadata
-            model_n_ctx_train = int(model_metadata.get('llama.context_length', self.config['model']['context_size']))
-            del temp_model_info  # Clean up temporary instance
-        except Exception as e:
-            # Log error and re-raise to prevent dangling instances
-            self.ui_logger.system_message(f"✗ Critical failure while reading model metadata: {e}")
-            self.file_logger.log_error(f"Error reading model metadata: {e}")
-            raise
-        
-        config_n_ctx = self.config['model']['context_size']
-        final_n_ctx = model_n_ctx_train
-
-        if config_n_ctx != model_n_ctx_train:
-            self.ui_logger.system_message(f"Notice: Model context size ({model_n_ctx_train}) is being used, overriding config value ({config_n_ctx}).")
-            self.file_logger.log_info(f"Using model context size: {model_n_ctx_train}")
-        # --- End Optimization ---
-        
-        # Display GPU configuration
-        gpu_layers = hw_config['gpu_layers']
-        if gpu_layers == -1:
-            self.ui_logger.system_message(f"🎮 GPU Acceleration: Enabled (offloading ALL layers)")
-            self.file_logger.log_info(f"GPU acceleration enabled: offloading all layers")
-        elif gpu_layers > 0:
-            self.ui_logger.system_message(f"🎮 GPU Acceleration: Enabled (offloading {gpu_layers} layers)")
-            self.file_logger.log_info(f"GPU acceleration enabled: {gpu_layers} layers")
-        else:
+            device = "cpu"
             self.ui_logger.system_message(f"💻 GPU Acceleration: Disabled (CPU-only mode)")
             self.file_logger.log_info(f"GPU acceleration disabled, using CPU only")
-
-        self.ui_logger.info(f"⚡ Loading model with {optimal_threads} threads, {gpu_layers} GPU layers, context: {final_n_ctx}")
-        self.file_logger.log_info(f"Loading model. Threads: {optimal_threads}, GPU Layers: {gpu_layers}, Context: {final_n_ctx}")
         
-        return Llama(
-            model_path=self.model_path,
-            n_ctx=final_n_ctx,
-            n_threads=optimal_threads,
-            n_gpu_layers=hw_config['gpu_layers'],
-            use_mlock=hw_config.get('mlock', True),
-            verbose=False
-        )
+        try:
+            # Load tokenizer
+            self.ui_logger.info("Loading tokenizer...")
+            tokenizer = AutoTokenizer.from_pretrained(
+                model_name,
+                cache_dir=model_dir,
+                local_files_only=False
+            )
+            
+            # Set pad token if not set
+            if tokenizer.pad_token is None:
+                tokenizer.pad_token = tokenizer.eos_token
+            
+            # Load model
+            self.ui_logger.info("Loading model weights...")
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                cache_dir=model_dir,
+                torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+                low_cpu_mem_usage=True,
+                local_files_only=False
+            )
+            
+            model = model.to(device)
+            model.eval()
+            
+            # Get model info
+            total_params = sum(p.numel() for p in model.parameters())
+            self.ui_logger.system_message(f"✓ Model loaded: TinyLlama-1.1B ({total_params:,} parameters)")
+            self.ui_logger.system_message(f"   Device: {device.upper()}")
+            self.file_logger.log_info(f"Model loaded successfully on {device}")
+            
+            return model, tokenizer
+            
+        except Exception as e:
+            self.ui_logger.system_message(f"✗ Failed to load model: {e}")
+            self.file_logger.log_error(f"Error loading model: {e}")
+            raise
 
     def generate(self, prompt: str, stop: list = None, temperature: float = None, grammar: str = None, thinking_process=None) -> str:
         """Generates a response from the LLM.
         
         Args:
             prompt: The prompt to generate from
-            stop: Stop sequences
+            stop: Stop sequences (not used with transformers, kept for compatibility)
             temperature: Temperature for generation
-            grammar: Grammar specification
-            thinking_process: Optional context manager for thinking status (avoids nested spinners)
+            grammar: Grammar specification (not used with transformers, kept for compatibility)
+            thinking_process: Optional context manager for thinking status
         """
         full_prompt = self.system_prompt + "\n\n" + prompt
-        
-        if stop is None:
-            stop = ["\nUser:", "\nJenova:"]
         
         temp = temperature if temperature is not None else self.config['model']['temperature']
         max_tokens = self.config['model'].get('max_tokens', 1500)
         
         try:
-            response = self.model(
-                prompt=full_prompt,
-                max_tokens=max_tokens,
-                temperature=temp,
-                top_p=self.config['model']['top_p'],
-                stop=stop,
-                grammar=grammar
+            # Tokenize input
+            inputs = self.tokenizer(
+                full_prompt,
+                return_tensors="pt",
+                truncation=True,
+                max_length=self.config['model']['context_size']
             )
-            return response['choices'][0]['text'].strip()
+            
+            # Move to device
+            device = next(self.model.parameters()).device
+            inputs = {k: v.to(device) for k, v in inputs.items()}
+            
+            # Generate
+            with torch.no_grad():
+                outputs = self.model.generate(
+                    **inputs,
+                    max_new_tokens=max_tokens,
+                    temperature=temp,
+                    top_p=self.config['model']['top_p'],
+                    do_sample=True,
+                    pad_token_id=self.tokenizer.eos_token_id,
+                )
+            
+            # Decode response
+            generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            
+            # Extract only the generated part (remove prompt)
+            if generated_text.startswith(full_prompt):
+                response = generated_text[len(full_prompt):].strip()
+            else:
+                response = generated_text.strip()
+            
+            # Remove common stop patterns manually
+            if stop:
+                for stop_seq in stop:
+                    if stop_seq in response:
+                        response = response.split(stop_seq)[0].strip()
+            
+            return response
+            
         except Exception as e:
             self.file_logger.log_error(f"Error during LLM generation: {e}")
             return "I'm sorry, I'm having trouble generating a response right now. Please try again later."
