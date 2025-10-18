@@ -10,3 +10,9 @@ numpy
 selenium
 webdriver-manager
 requests
+
+# Optional dependencies for fine-tuning with LoRA
+# Install with: pip install peft bitsandbytes datasets
+# peft>=0.5.0
+# bitsandbytes>=0.41.0
+# datasets>=2.14.0

@@ -1,9 +1,9 @@
 # Main Configuration for The JENOVA Cognitive Architecture - JCA v3.1
 model:
-  context_size: 2048 # Context window size for TinyLlama
-  max_tokens: 1500
-  temperature: 0.4
-  top_p: 0.9
+  context_size: 2048 # Context window size for TinyLlama (maximum supported)
+  max_tokens: 512 # Maximum tokens to generate per response
+  temperature: 0.7
+  top_p: 0.95
   embedding_model: 'all-MiniLM-L6-v2'
 memory:
   preload_memories: true
@@ -42,8 +42,8 @@ memory_search:
 
 finetuning:
   training_file: "finetune_train.jsonl"
-  lora_output_file: "models/lora-jenova-adapter.bin"
-  finetuned_model_output: "models/jenova-finetuned.gguf"
+  lora_output_dir: "/usr/local/share/jenova-ai/lora"
+  finetuned_model_output: "/usr/local/share/jenova-ai/models/jenova-finetuned"
 
 tools:
   file_sandbox_path: "~/jenova_files"

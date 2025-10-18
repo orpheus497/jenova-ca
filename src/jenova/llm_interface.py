@@ -49,8 +49,8 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
             self.file_logger.log_info(f"GPU acceleration enabled: CUDA")
         else:
             device = "cpu"
-            self.ui_logger.system_message(f"💻 GPU Acceleration: Disabled (CPU-only mode)")
-            self.file_logger.log_info(f"GPU acceleration disabled, using CPU only")
+            self.ui_logger.system_message(f"💻 Running on CPU")
+            self.file_logger.log_info(f"Running on CPU")
         
         try:
             # Load tokenizer
@@ -58,7 +58,8 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
             tokenizer = AutoTokenizer.from_pretrained(
                 model_name,
                 cache_dir=model_dir,
-                local_files_only=False
+                local_files_only=False,
+                trust_remote_code=True
             )
             
             # Set pad token if not set
@@ -72,7 +73,8 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
                 cache_dir=model_dir,
                 torch_dtype=torch.float16 if device == "cuda" else torch.float32,
                 low_cpu_mem_usage=True,
-                local_files_only=False
+                local_files_only=False,
+                trust_remote_code=True
             )
             
             model = model.to(device)
@@ -80,9 +82,14 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
             
             # Get model info
             total_params = sum(p.numel() for p in model.parameters())
-            self.ui_logger.system_message(f"✓ Model loaded: TinyLlama-1.1B ({total_params:,} parameters)")
+            trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+            
+            self.ui_logger.system_message(f"✓ Model loaded: TinyLlama-1.1B")
+            self.ui_logger.system_message(f"   Total parameters: {total_params:,}")
             self.ui_logger.system_message(f"   Device: {device.upper()}")
+            self.ui_logger.system_message(f"   Model max context: {tokenizer.model_max_length} tokens")
             self.file_logger.log_info(f"Model loaded successfully on {device}")
+            self.file_logger.log_info(f"Total params: {total_params:,}, Trainable: {trainable_params:,}")
             
             return model, tokenizer
             
@@ -96,7 +103,7 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
         
         Args:
             prompt: The prompt to generate from
-            stop: Stop sequences (not used with transformers, kept for compatibility)
+            stop: Stop sequences for early termination
             temperature: Temperature for generation
             grammar: Grammar specification (not used with transformers, kept for compatibility)
             thinking_process: Optional context manager for thinking status
@@ -104,7 +111,11 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
         full_prompt = self.system_prompt + "\n\n" + prompt
         
         temp = temperature if temperature is not None else self.config['model']['temperature']
-        max_tokens = self.config['model'].get('max_tokens', 1500)
+        max_tokens = self.config['model'].get('max_tokens', 512)
+        
+        # Use default stop sequences if none provided
+        if stop is None:
+            stop = ["\nUser:", "\nJenova:", "User:", "Jenova:"]
         
         try:
             # Tokenize input
@@ -119,15 +130,25 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
             device = next(self.model.parameters()).device
             inputs = {k: v.to(device) for k, v in inputs.items()}
             
+            # Prepare stopping criteria if stop sequences provided
+            stop_token_ids = []
+            if stop:
+                for stop_seq in stop:
+                    tokens = self.tokenizer.encode(stop_seq, add_special_tokens=False)
+                    if tokens:
+                        stop_token_ids.extend(tokens)
+            
             # Generate
             with torch.no_grad():
                 outputs = self.model.generate(
                     **inputs,
                     max_new_tokens=max_tokens,
-                    temperature=temp,
+                    temperature=max(temp, 0.1),  # Ensure temp is not too low
                     top_p=self.config['model']['top_p'],
                     do_sample=True,
                     pad_token_id=self.tokenizer.eos_token_id,
+                    eos_token_id=self.tokenizer.eos_token_id,
+                    repetition_penalty=1.1,  # Reduce repetition
                 )
             
             # Decode response
@@ -139,14 +160,23 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
             else:
                 response = generated_text.strip()
             
-            # Remove common stop patterns manually
+            # Apply stop sequences manually (remove everything after stop sequence)
             if stop:
                 for stop_seq in stop:
                     if stop_seq in response:
                         response = response.split(stop_seq)[0].strip()
             
+            # Clean up response
+            response = response.strip()
+            
+            # If response is empty, provide fallback
+            if not response:
+                response = "I understand your query, but I need more context to provide a helpful response."
+            
             return response
             
         except Exception as e:
             self.file_logger.log_error(f"Error during LLM generation: {e}")
+            import traceback
+            self.file_logger.log_error(f"Traceback: {traceback.format_exc()}")
             return "I'm sorry, I'm having trouble generating a response right now. Please try again later."
