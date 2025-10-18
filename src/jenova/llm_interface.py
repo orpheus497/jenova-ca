@@ -1,6 +1,5 @@
 import os
 import glob
-import importlib.resources
 from llama_cpp import Llama
 
 class LLMInterface:
@@ -63,33 +62,43 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
         return prompt
 
     def _load_model(self):
-        if not self.model_path or not os.path.exists(self.model_path) or os.path.isdir(self.model_path):
-            self.ui_logger.info("Model path not configured or invalid. Searching for a model in the 'models/' directory...")
-            self.file_logger.log_info("Model path not configured. Searching for models.")
+        # Expand user path (~) and resolve to absolute path if model_path is set
+        if self.model_path:
+            self.model_path = os.path.abspath(os.path.expanduser(self.model_path))
+        
+        # Check if model_path points to a valid file
+        if self.model_path and os.path.isfile(self.model_path):
+            self.ui_logger.info(f"Using configured model: {self.model_path}")
+            self.file_logger.log_info(f"Using configured model: {self.model_path}")
+        else:
+            # Model path is unset, invalid, or points to a directory
+            if self.model_path:
+                self.ui_logger.info(f"Configured model path is invalid or points to a directory: {self.model_path}")
+                self.file_logger.log_info(f"Configured model path invalid: {self.model_path}")
+            else:
+                self.ui_logger.info("Model path not configured. Searching for a model in the 'models/' directory...")
+                self.file_logger.log_info("Model path not configured. Searching for models.")
             
-            # Find the models directory within the package
-            try:
-                models_dir_traversable = importlib.resources.files('jenova') / 'models'
-                models_dir = str(models_dir_traversable)
-            except (ModuleNotFoundError, FileNotFoundError):
-                # Fallback for development environments or if the package structure is unexpected
-                models_dir = 'models'
-
+            # Search for .gguf files in the local 'models/' directory at repository root
+            models_dir = os.path.join(os.getcwd(), 'models')
+            
             available_models = []
             if os.path.exists(models_dir):
                 available_models = sorted(glob.glob(f"{models_dir}/**/*.gguf", recursive=True))
+                self.ui_logger.info(f"Searching for GGUF models in: {models_dir}")
+                self.file_logger.log_info(f"Searching for models in: {models_dir}")
 
             if available_models:
                 self.model_path = available_models[0]
-                self.ui_logger.system_message(f"Found and selected model: {self.model_path}")
+                self.ui_logger.system_message(f"✓ Found and selected model: {self.model_path}")
                 self.file_logger.log_info(f"Auto-selected model: {self.model_path}")
                 # Update the config in memory for this session
                 self.config['model']['model_path'] = self.model_path
             else:
-                self.ui_logger.system_message(f"No GGUF models found in the '{models_dir}/' directory.")
+                self.ui_logger.system_message(f"✗ No GGUF models found in the '{models_dir}/' directory.")
                 self.file_logger.log_error("No GGUF models found.")
                 self.ui_logger.system_message("Please download a GGUF-compatible model and place it in the 'models/' directory.")
-                raise FileNotFoundError("No GGUF model found in the 'models/' directory.")
+                raise FileNotFoundError(f"No GGUF model found in the '{models_dir}/' directory. Please add a model file.")
 
         hw_config = self.config['hardware']
         self.ui_logger.info(f"Found model: {self.model_path}")
@@ -101,14 +110,14 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
 
         # --- Dynamic Context Optimization ---
         try:
-            # Create a temporary Llama instance to fetch metadata without using a context manager
+            # Create a temporary Llama instance to fetch metadata
             temp_model_info = Llama(model_path=self.model_path, verbose=False, n_gpu_layers=0)
             model_metadata = temp_model_info.metadata
             model_n_ctx_train = int(model_metadata.get('llama.context_length', self.config['model']['context_size']))
-            # Since we are not using a with statement, we don't need to worry about cleanup
+            del temp_model_info  # Clean up temporary instance
         except Exception as e:
-            # This will catch errors during Llama object creation for valid paths
-            self.ui_logger.system_message(f"A critical failure occurred while reading model metadata: {e}")
+            # Log error and re-raise to prevent dangling instances
+            self.ui_logger.system_message(f"✗ Critical failure while reading model metadata: {e}")
             self.file_logger.log_error(f"Error reading model metadata: {e}")
             raise
         
