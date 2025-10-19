@@ -32,11 +32,11 @@ You must follow these directives:
         return prompt
 
     def _load_model(self):
-        """Load Phi-3.5 Mini Instruct model from HuggingFace or local cache."""
+        """Load Gemma 3 4B (NoVision) model from HuggingFace or local cache."""
         model_dir = "/usr/local/share/jenova-ai/models"
-        model_name = "microsoft/Phi-3.5-mini-instruct"
+        model_name = "gghfez/gemma-3-4b-novision"
         
-        self.ui_logger.info(f"Loading Phi-3.5 Mini Instruct model...")
+        self.ui_logger.info(f"Loading Gemma 3 4B (NoVision) model...")
         self.file_logger.log_info(f"Loading model: {model_name}")
         
         # Determine device
@@ -103,7 +103,7 @@ You must follow these directives:
             if model_max_context is None:
                 model_max_context = tokenizer.model_max_length
                 if model_max_context is None or model_max_context > 100000:  # Unreasonable default
-                    model_max_context = 131072  # Safe fallback for Phi-3.5 (supports up to 128K context)
+                    model_max_context = 8192  # Safe fallback for Gemma 3 4B (supports up to 8K context)
                     self.file_logger.log_info(f"Could not determine model's max context. Using fallback: {model_max_context} tokens.")
                 else:
                     self.file_logger.log_info(f"Model max context read from tokenizer: {model_max_context} tokens.")
@@ -136,7 +136,14 @@ You must follow these directives:
             trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
             
             # Determine model name for display
-            if "phi-3.5" in model_name.lower() or "phi-3-5" in model_name.lower():
+            if "gemma" in model_name.lower():
+                if "novision" in model_name.lower():
+                    display_name = "Gemma 3 4B (NoVision)"
+                elif "4bit" in model_name or "bnb" in model_name:
+                    display_name = "Gemma 3 4B (4-bit quantized)"
+                else:
+                    display_name = "Gemma 3 4B"
+            elif "phi-3.5" in model_name.lower() or "phi-3-5" in model_name.lower():
                 if "mini" in model_name.lower():
                     display_name = "Phi-3.5 Mini Instruct"
                 elif "4bit" in model_name or "bnb" in model_name:

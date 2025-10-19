@@ -31,8 +31,8 @@ mkdir -p /usr/local/share/jenova-ai/models
 chmod 755 /usr/local/share/jenova-ai
 chmod 755 /usr/local/share/jenova-ai/models
 
-# 5. Download Phi-3.5 Mini Instruct model
-echo "--> Downloading Phi-3.5 Mini Instruct model from HuggingFace..."
+# 5. Download Gemma 3 4B (NoVision) model
+echo "--> Downloading Gemma 3 4B (NoVision) model from HuggingFace..."
 echo "    This may take a few minutes..."
 
 # Install transformers and torch first to download model
@@ -44,7 +44,7 @@ import os
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 model_dir = "/usr/local/share/jenova-ai/models"
-model_name = "microsoft/Phi-3.5-mini-instruct"
+model_name = "gghfez/gemma-3-4b-novision"
 
 print(f"Downloading {model_name}...")
 try:
@@ -68,7 +68,7 @@ except Exception as e:
 PYTHON_SCRIPT
 
 if [ $? -ne 0 ]; then
-    echo "[ERROR] Failed to download Phi-3.5 Mini Instruct model."
+    echo "[ERROR] Failed to download Gemma 3 4B (NoVision) model."
     exit 1
 fi
 
@@ -83,7 +83,7 @@ echo
 echo "======================================================================"
 echo "✅ JENOVA AI has been successfully installed for all users."
 echo
-echo "Model: Phi-3.5 Mini Instruct"
+echo "Model: Gemma 3 4B (NoVision)"
 echo "Location: /usr/local/share/jenova-ai/models"
 echo
 echo "Any user can now run the application by typing:"

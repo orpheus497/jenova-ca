@@ -66,8 +66,8 @@ def finetune_with_lora(train_file, output_dir, epochs=3, batch_size=4, learning_
         print("Install with: pip install peft bitsandbytes accelerate datasets")
         return
     
-    print("Loading Phi-3.5 Mini Instruct model and tokenizer...")
-    model_name = "microsoft/Phi-3.5-mini-instruct"
+    print("Loading Gemma 3 4B (NoVision) model and tokenizer...")
+    model_name = "gghfez/gemma-3-4b-novision"
     
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
     if tokenizer.pad_token is None:

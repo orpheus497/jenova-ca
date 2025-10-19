@@ -8,11 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- **Model:** Switched from Phi-4 Mini Instruct to Phi-3.5 Mini Instruct as the default model.
-  - Updated `install.sh` to download `microsoft/Phi-3.5-mini-instruct` from HuggingFace
+- **Model:** Switched from Phi-4 Mini Instruct to Gemma 3 4B (NoVision) as the default model.
+  - Updated `install.sh` to download `gghfez/gemma-3-4b-novision` from HuggingFace
   - Updated all documentation references in `README.md` and `finetune/README.md`
-  - Updated configuration in `main_config.yaml` to reflect Phi-3.5's extended context window (128K tokens)
+  - Updated configuration in `main_config.yaml` to reflect Gemma 3 4B's context window (8K tokens)
   - Updated `finetune/train.py` to use the new model
+  - Updated `llm_interface.py` with Gemma-specific model detection and display logic
 - **Dependencies:** Updated all dependencies to latest stable versions for improved compatibility and performance
   - transformers: 4.47.0
   - torch: 2.5.1
@@ -28,9 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - requests: 2.32.3
 
 ### Added
-- **Model-Specific Prompt Formatting:** Added `_get_model_specific_prompt()` method to `LLMInterface` to handle model-specific chat templates and special tokens, ensuring optimal compatibility with Phi-3.5's instruction format
+- **Model-Specific Prompt Formatting:** Added `_get_model_specific_prompt()` method to `LLMInterface` to handle model-specific chat templates and special tokens, ensuring optimal compatibility with the model's instruction format
 
 ## [3.1.1] - 2025-10-19
+
+### Fixed
 - **Total Parameters Display:** Corrected the displayed total parameters to accurately reflect the loaded model's size by properly counting all model parameters.
 - **Dynamic Model Max Context:** The model max context is now read directly from the model's configuration (`max_position_embeddings`) instead of using hardcoded values, ensuring accuracy across different models.
 - **Intelligent Program Max Tokens:** Implemented smart logic for program max tokens:
