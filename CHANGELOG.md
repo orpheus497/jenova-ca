@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- **Model Upgrade:** Switched from TinyLlama-1.1B to Phi-4 (14B parameters, 4-bit quantized) as the default model. This provides significantly improved intelligence and capabilities with a 16K context window (vs. 2K for TinyLlama).
+- **Model Upgrade:** Switched from TinyLlama-1.1B to Phi-4 Mini Instruct as the default model. This provides significantly improved intelligence and capabilities with a larger context window.
 
 ### Fixed
 - **Total Parameters Display:** Corrected the displayed total parameters to accurately reflect the loaded model's size by properly counting all model parameters.

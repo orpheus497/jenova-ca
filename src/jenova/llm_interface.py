@@ -32,11 +32,11 @@ You must follow these directives:
         return prompt
 
     def _load_model(self):
-        """Load Phi-4 model from HuggingFace or local cache."""
+        """Load Phi-4 Mini Instruct model from HuggingFace or local cache."""
         model_dir = "/usr/local/share/jenova-ai/models"
-        model_name = "unsloth/phi-4-bnb-4bit"
+        model_name = "unsloth/Phi-4-mini-instruct"
         
-        self.ui_logger.info(f"Loading Phi-4 model...")
+        self.ui_logger.info(f"Loading Phi-4 Mini Instruct model...")
         self.file_logger.log_info(f"Loading model: {model_name}")
         
         # Determine device
@@ -137,7 +137,12 @@ You must follow these directives:
             
             # Determine model name for display
             if "phi-4" in model_name.lower():
-                display_name = "Phi-4 (4-bit quantized)" if "4bit" in model_name or "bnb" in model_name else "Phi-4"
+                if "mini" in model_name.lower():
+                    display_name = "Phi-4 Mini Instruct"
+                elif "4bit" in model_name or "bnb" in model_name:
+                    display_name = "Phi-4 (4-bit quantized)"
+                else:
+                    display_name = "Phi-4"
             else:
                 display_name = model_name.split("/")[-1]
             
