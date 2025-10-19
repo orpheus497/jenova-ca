@@ -133,6 +133,8 @@ class TerminalUI:
                     self.logger.system_message("") # Add line space after AI output
 
             except (KeyboardInterrupt, EOFError):
+                self.logger.system_message("\n🛑 Shutdown signal received. Exiting gracefully...")
+                self.logger.process_queued_messages()
                 break
             except Exception as e:
                 self.logger.system_message(f"An unexpected error occurred in the UI loop: {e}")
