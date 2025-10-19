@@ -31,26 +31,12 @@ mkdir -p /usr/local/share/jenova-ai/models
 chmod 755 /usr/local/share/jenova-ai
 chmod 755 /usr/local/share/jenova-ai/models
 
-# 5. Download Gemma 3 4B (NoVision) model
-echo "--> Downloading Gemma 3 4B (NoVision) model from HuggingFace..."
+# 5. Download TinyLlama model
+echo "--> Downloading TinyLlama-1.1B model from HuggingFace..."
 echo "    This may take a few minutes..."
 
-# Clear Hugging Face cache to ensure clean download
-echo "    Clearing Hugging Face cache..."
-rm -rf ~/.cache/huggingface/
-
-# Install specific version of transformers and torch to ensure compatibility
-echo "    Installing transformers 4.42.3 and dependencies..."
-pip install torch accelerate transformers==4.42.3 > /dev/null 2>&1
-
-# Force-reinstall a compatible tokenizer version
-echo "    Ensuring compatible tokenizers version..."
-pip uninstall -y tokenizers > /dev/null 2>&1 || true
-pip install --ignore-installed "tokenizers>=0.14,<0.19"
-if [ $? -ne 0 ]; then
-    echo "[ERROR] Failed to install compatible tokenizers version."
-    exit 1
-fi
+# Install transformers and torch first to download model
+pip install torch transformers accelerate > /dev/null 2>&1
 
 # Download model using Python
 python3 << 'PYTHON_SCRIPT'
@@ -58,21 +44,20 @@ import os
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 model_dir = "/usr/local/share/jenova-ai/models"
-model_name = "gghfez/gemma-3-4b-novision"
+model_name = "TinyLlama/TinyLlama-1.1B-step-50K-105b"
 
 print(f"Downloading {model_name}...")
 try:
     # Download tokenizer
     print("  - Downloading tokenizer...")
-    tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=model_dir, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=model_dir)
     
     # Download model
     print("  - Downloading model weights...")
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         cache_dir=model_dir,
-        low_cpu_mem_usage=True,
-        trust_remote_code=True
+        low_cpu_mem_usage=True
     )
     
     print(f"✓ Model successfully downloaded to {model_dir}")
@@ -82,7 +67,7 @@ except Exception as e:
 PYTHON_SCRIPT
 
 if [ $? -ne 0 ]; then
-    echo "[ERROR] Failed to download Gemma 3 4B (NoVision) model."
+    echo "[ERROR] Failed to download TinyLlama model."
     exit 1
 fi
 
@@ -97,7 +82,7 @@ echo
 echo "======================================================================"
 echo "✅ JENOVA AI has been successfully installed for all users."
 echo
-echo "Model: Gemma 3 4B (NoVision)"
+echo "Model: TinyLlama-1.1B-step-50K-105b"
 echo "Location: /usr/local/share/jenova-ai/models"
 echo
 echo "Any user can now run the application by typing:"

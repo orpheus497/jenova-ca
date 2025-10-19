@@ -1,8 +1,6 @@
 import os
 import traceback
 import queue
-import signal
-import sys
 from jenova.utils.telemetry_fix import apply_telemetry_patch
 apply_telemetry_patch()
 
@@ -30,21 +28,6 @@ import getpass
 
 def main():
     """Main entry point for The JENOVA Cognitive Architecture."""
-    # Set up graceful shutdown handlers
-    shutdown_requested = [False]  # Use list to allow modification in nested function
-    
-    def signal_handler(signum, frame):
-        """Handle shutdown signals gracefully."""
-        if not shutdown_requested[0]:
-            shutdown_requested[0] = True
-            print("\n🛑 Shutdown signal received. Exiting gracefully...")
-            # Raise KeyboardInterrupt to be caught by main loop
-            raise KeyboardInterrupt
-    
-    # Register signal handlers
-    signal.signal(signal.SIGINT, signal_handler)   # Ctrl+C
-    signal.signal(signal.SIGTERM, signal_handler)  # Termination signal
-    
     username = getpass.getuser()
     user_data_root = os.path.join(os.path.expanduser("~"), ".jenova-ai", "users", username)
     os.makedirs(user_data_root, exist_ok=True)
@@ -94,9 +77,6 @@ def main():
         tools.llm_interface = llm_interface
         ui.run()
         
-    except KeyboardInterrupt:
-        # Handle Ctrl+C gracefully
-        ui_logger.system_message("\n🛑 Keyboard interrupt received. Shutting down gracefully...")
     except Exception as e:
         error_message = f"A critical failure occurred: {e}"
         ui_logger.system_message(error_message)
@@ -104,16 +84,9 @@ def main():
         file_logger.log_error(traceback.format_exc())
     finally:
         # Ensure LLM resources are released
-        try:
-            if 'llm_interface' in locals() and llm_interface and hasattr(llm_interface, 'model') and llm_interface.model:
-                llm_interface.close()
-        except Exception as e:
-            # Don't crash during cleanup
-            if 'file_logger' in locals():
-                file_logger.log_error(f"Error during LLM cleanup: {e}")
+        if 'llm_interface' in locals() and llm_interface.model:
+            llm_interface.close()
 
         shutdown_message = "JENOVA shutting down."
-        if 'ui_logger' in locals():
-            ui_logger.info(shutdown_message)
-        if 'file_logger' in locals():
-            file_logger.log_info(shutdown_message)
+        ui_logger.info(shutdown_message)
+        file_logger.log_info(shutdown_message)

@@ -32,11 +32,11 @@ You must follow these directives:
         return prompt
 
     def _load_model(self):
-        """Load Gemma 3 4B (NoVision) model from HuggingFace or local cache."""
+        """Load TinyLlama model from HuggingFace or local cache."""
         model_dir = "/usr/local/share/jenova-ai/models"
-        model_name = "gghfez/gemma-3-4b-novision"
+        model_name = "TinyLlama/TinyLlama-1.1B-step-50K-105b"
         
-        self.ui_logger.info(f"Loading Gemma 3 4B (NoVision) model...")
+        self.ui_logger.info(f"Loading TinyLlama model...")
         self.file_logger.log_info(f"Loading model: {model_name}")
         
         # Determine device
@@ -65,106 +65,44 @@ You must follow these directives:
             
             # Load model
             self.ui_logger.info("Loading model weights...")
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                cache_dir=model_dir,
+                dtype=torch.float16 if device == "cuda" else torch.float32,
+                low_cpu_mem_usage=True,
+                local_files_only=False,
+                trust_remote_code=True
+            )
             
-            # Check if this is a quantized model (4bit/8bit)
-            is_quantized = "4bit" in model_name.lower() or "bnb" in model_name.lower() or "8bit" in model_name.lower()
-            
-            if is_quantized:
-                # For quantized models, don't specify dtype - let it use the quantized format
-                self.ui_logger.info("Detected quantized model - using optimized loading...")
-                model = AutoModelForCausalLM.from_pretrained(
-                    model_name,
-                    cache_dir=model_dir,
-                    device_map="auto" if device == "cuda" else None,
-                    low_cpu_mem_usage=True,
-                    local_files_only=False,
-                    trust_remote_code=True
-                )
-            else:
-                # For non-quantized models, use appropriate dtype
-                model = AutoModelForCausalLM.from_pretrained(
-                    model_name,
-                    cache_dir=model_dir,
-                    dtype=torch.float16 if device == "cuda" else torch.float32,
-                    low_cpu_mem_usage=True,
-                    local_files_only=False,
-                    trust_remote_code=True
-                )
-                model = model.to(device)
-            
+            model = model.to(device)
             model.eval()
             
-            # --- Dynamic Model Max Context ---
-            # Read the model's actual maximum context length from its config
-            model_config = model.config
-            model_max_context = getattr(model_config, 'max_position_embeddings', None)
-            
-            # Fallback to tokenizer if config doesn't have max_position_embeddings
-            if model_max_context is None:
-                model_max_context = tokenizer.model_max_length
-                if model_max_context is None or model_max_context > 100000:  # Unreasonable default
-                    model_max_context = 8192  # Safe fallback for Gemma 3 4B (supports up to 8K context)
-                    self.file_logger.log_info(f"Could not determine model's max context. Using fallback: {model_max_context} tokens.")
-                else:
-                    self.file_logger.log_info(f"Model max context read from tokenizer: {model_max_context} tokens.")
+            # --- Self-Optimizing Context Window ---
+            # Override config with model's actual max context length
+            model_max_len = tokenizer.model_max_length
+            if model_max_len is None or model_max_len > 4096:
+                self.file_logger.log_info(f"Model's max length ({model_max_len}) is unreasonable. Using context size from config: {self.config['model']['context_size']} tokens.")
             else:
-                self.file_logger.log_info(f"Model max context read from model config: {model_max_context} tokens.")
-            
-            # Update config with the model's actual max context
-            self.config['model']['context_size'] = model_max_context
-            
-            # --- Intelligent Program Max Tokens ---
-            # If model's natural context length > 4000: set program max tokens = model's max context
-            # If model's natural context length <= 4000: set program max tokens = 2x model's native context
-            # Note: For context extension beyond native length, RoPE scaling would be needed in generation
-            if model_max_context > 4000:
-                program_max_tokens = model_max_context
-                self.file_logger.log_info(f"Model context > 4000. Program max tokens set to model's max context: {program_max_tokens} tokens.")
+                self.config['model']['context_size'] = model_max_len
+                self.file_logger.log_info(f"Context size automatically set to {model_max_len} tokens.")
+
+            # --- Set max_tokens based on context size ---
+            context_size = self.config['model']['context_size']
+            if context_size < 4000:
+                self.config['model']['max_tokens'] = context_size // 2
             else:
-                # For models with smaller context, double the context
-                program_max_tokens = model_max_context * 2
-                # Note: This requires RoPE scaling during generation for positions beyond native training
-                self.file_logger.log_info(f"Model context <= 4000. Program max tokens set to 2x native context: {program_max_tokens} tokens (with RoPE scaling).")
-                # Store RoPE scaling flag for generation
-                self.config['model']['use_rope_scaling'] = True
-                self.config['model']['rope_scaling_factor'] = 2.0
-            
-            self.config['model']['max_tokens'] = program_max_tokens
-            
-            # Get accurate model info
+                self.config['model']['max_tokens'] = 2048
+            self.file_logger.log_info(f"Max generation tokens automatically set to {self.config['model']['max_tokens']} tokens.")
+
+            # Get model info
             total_params = sum(p.numel() for p in model.parameters())
             trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
             
-            # Determine model name for display
-            if "gemma" in model_name.lower():
-                if "novision" in model_name.lower():
-                    display_name = "Gemma 3 4B (NoVision)"
-                elif "4bit" in model_name or "bnb" in model_name:
-                    display_name = "Gemma 3 4B (4-bit quantized)"
-                else:
-                    display_name = "Gemma 3 4B"
-            elif "phi-3.5" in model_name.lower() or "phi-3-5" in model_name.lower():
-                if "mini" in model_name.lower():
-                    display_name = "Phi-3.5 Mini Instruct"
-                elif "4bit" in model_name or "bnb" in model_name:
-                    display_name = "Phi-3.5 (4-bit quantized)"
-                else:
-                    display_name = "Phi-3.5"
-            elif "phi-4" in model_name.lower():
-                if "mini" in model_name.lower():
-                    display_name = "Phi-4 Mini Instruct"
-                elif "4bit" in model_name or "bnb" in model_name:
-                    display_name = "Phi-4 (4-bit quantized)"
-                else:
-                    display_name = "Phi-4"
-            else:
-                display_name = model_name.split("/")[-1]
-            
-            self.ui_logger.system_message(f"✓ Model loaded: {display_name}")
+            self.ui_logger.system_message(f"✓ Model loaded: TinyLlama-1.1B")
             self.ui_logger.system_message(f"   Total parameters: {total_params:,}")
             self.ui_logger.system_message(f"   Device: {device.upper()}")
-            self.ui_logger.system_message(f"   Model max context: {model_max_context} tokens")
-            self.ui_logger.system_message(f"   Program max tokens: {program_max_tokens} tokens")
+            self.ui_logger.system_message(f"   Model max context: {self.config['model']['context_size']} tokens")
+            self.ui_logger.system_message(f"   Program max tokens: {self.config['model']['max_tokens']} tokens")
             self.file_logger.log_info(f"Model loaded successfully on {device}")
             self.file_logger.log_info(f"Total params: {total_params:,}, Trainable: {trainable_params:,}")
             
@@ -175,37 +113,6 @@ You must follow these directives:
             self.file_logger.log_error(f"Error loading model: {e}")
             raise
 
-    def _get_model_specific_prompt(self, prompt: str) -> str:
-        """Formats the prompt according to the model's chat template if available.
-        
-        Args:
-            prompt: The raw prompt text
-            
-        Returns:
-            Formatted prompt string
-        """
-        # Check if tokenizer has a chat template (e.g., Phi-3.5)
-        if hasattr(self.tokenizer, 'chat_template') and self.tokenizer.chat_template:
-            try:
-                # Format as a chat conversation with system and user messages
-                messages = [
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": prompt}
-                ]
-                formatted_prompt = self.tokenizer.apply_chat_template(
-                    messages,
-                    tokenize=False,
-                    add_generation_prompt=True
-                )
-                self.file_logger.log_info("Using model's chat template for prompt formatting")
-                return formatted_prompt
-            except Exception as e:
-                self.file_logger.log_warning(f"Failed to apply chat template: {e}. Using basic formatting.")
-                return self.system_prompt + "\n\n" + prompt
-        else:
-            # Fallback to basic formatting
-            return self.system_prompt + "\n\n" + prompt
-
     def generate(self, prompt: str, stop: list = None, temperature: float = None) -> str:
         """Generates a response from the LLM.
         
@@ -215,8 +122,7 @@ You must follow these directives:
             temperature: Temperature for generation
             grammar: Grammar specification (not used with transformers, kept for compatibility)
         """
-        # Use model-specific prompt formatting
-        full_prompt = self._get_model_specific_prompt(prompt)
+        full_prompt = self.system_prompt + "\n\n" + prompt
         
         temp = temperature if temperature is not None else self.config['model']['temperature']
         max_tokens = self.config['model'].get('max_tokens', 512)
@@ -227,12 +133,11 @@ You must follow these directives:
         
         try:
             # Tokenize input
-            # Use program max tokens for truncation to allow extended context
             inputs = self.tokenizer(
                 full_prompt,
                 return_tensors="pt",
                 truncation=True,
-                max_length=self.config['model']['max_tokens']
+                max_length=self.config['model']['context_size']
             )
             
             # Move to device
@@ -247,27 +152,17 @@ You must follow these directives:
                     if tokens:
                         stop_token_ids.extend(tokens)
             
-            # Apply RoPE scaling if enabled for extended context
-            # This allows the model to handle positions beyond its native training length
-            generation_kwargs = {
-                'max_new_tokens': max_tokens,
-                'temperature': max(temp, 0.1),  # Ensure temp is not too low
-                'top_p': self.config['model']['top_p'],
-                'do_sample': True,
-                'pad_token_id': self.tokenizer.eos_token_id,
-                'eos_token_id': self.tokenizer.eos_token_id,
-                'repetition_penalty': 1.2,  # Reduce repetition
-            }
-            
-            # Note: RoPE scaling is typically configured in the model config at load time
-            # For runtime scaling, we would need to modify model.config.rope_scaling
-            # but this is model-dependent. The flag is set for future implementation.
-            
             # Generate
             with torch.no_grad():
                 outputs = self.model.generate(
                     **inputs,
-                    **generation_kwargs
+                    max_new_tokens=max_tokens,
+                    temperature=max(temp, 0.1),  # Ensure temp is not too low
+                    top_p=self.config['model']['top_p'],
+                    do_sample=True,
+                    pad_token_id=self.tokenizer.eos_token_id,
+                    eos_token_id=self.tokenizer.eos_token_id,
+                    repetition_penalty=1.2,  # Reduce repetition
                 )
             
             # Decode response

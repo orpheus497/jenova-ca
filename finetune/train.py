@@ -53,7 +53,7 @@ def create_training_data(insights_dir, output_file):
 
 def finetune_with_lora(train_file, output_dir, epochs=3, batch_size=4, learning_rate=2e-4):
     """
-    Fine-tune the base model with LoRA using the prepared training data.
+    Fine-tune TinyLlama with LoRA using the prepared training data.
     Requires: transformers, peft, accelerate, bitsandbytes
     """
     try:
@@ -66,18 +66,17 @@ def finetune_with_lora(train_file, output_dir, epochs=3, batch_size=4, learning_
         print("Install with: pip install peft bitsandbytes accelerate datasets")
         return
     
-    print("Loading Gemma 3 4B (NoVision) model and tokenizer...")
-    model_name = "gghfez/gemma-3-4b-novision"
+    print("Loading TinyLlama model and tokenizer...")
+    model_name = "TinyLlama/TinyLlama-1.1B-step-50K-105b"
     
-    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
-        low_cpu_mem_usage=True,
-        trust_remote_code=True
+        low_cpu_mem_usage=True
     )
     
     # Configure LoRA

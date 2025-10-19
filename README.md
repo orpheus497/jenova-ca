@@ -138,7 +138,7 @@ To install JENOVA on the system, run the installation script with root privilege
 1.  **Prerequisites:**
     *   A Linux-based operating system
     *   `git`, `python3`, and `python3-pip` installed
-    *   Internet connection for downloading the Gemma 3 4B (NoVision) model
+    *   Internet connection for downloading the TinyLlama model (~2.2GB)
 
 2.  **Clone the Repository:**
     ```bash
@@ -147,12 +147,12 @@ To install JENOVA on the system, run the installation script with root privilege
     ```
 
 3.  **Run the Installation Script:**
-    Execute the script with `sudo`. It handles installation of all dependencies, downloads the Gemma 3 4B (NoVision) model to `/usr/local/share/jenova-ai/models`, and makes the `jenova` command available system-wide.
+    Execute the script with `sudo`. It handles installation of all dependencies, downloads the TinyLlama model to `/usr/local/share/jenova-ai/models`, and makes the `jenova` command available system-wide.
     ```bash
     sudo ./install.sh
     ```
     
-    The installation script automatically downloads gghfez/gemma-3-4b-novision from HuggingFace and installs it to the system-wide model directory.
+    The installation script automatically downloads TinyLlama-1.1B-step-50K-105b from HuggingFace and installs it to the system-wide model directory.
 
 ### 4.2. Uninstallation
 
@@ -283,7 +283,7 @@ JENOVA's behavior is controlled by two YAML files in `src/jenova/config/`.
 This file controls the technical parameters of the AI.
 
 -   **`model`**:
-    -   `context_size`: The context window size (dynamically read from model configuration at runtime)
+    -   `context_size`: The context window size for TinyLlama (2048 tokens)
     -   `max_tokens`: The maximum number of tokens to generate in a single response
     -   `temperature`: Controls the "creativity" of the LLM. Lower is more deterministic
     -   `top_p`: Nucleus sampling parameter
@@ -333,10 +333,10 @@ This file defines the AI's personality and core directives.
 The JENOVA Cognitive Architecture builds upon excellent open-source work from the community:
 
 ### Language Model
--   **Gemma 3 4B (NoVision)** by gghfez
-    -   [HuggingFace Repository](https://huggingface.co/gghfez/gemma-3-4b-novision)
-    -   A capable language model optimized for efficient deployment
-    -   Free and open-source
+-   **TinyLlama-1.1B-step-50K-105b** by the TinyLlama team
+    -   [HuggingFace Repository](https://huggingface.co/TinyLlama/TinyLlama-1.1B-step-50K-105b)
+    -   A compact, efficient 1.1B parameter language model trained on 3 trillion tokens
+    -   Licensed under Apache 2.0
 
 ### Core Dependencies
 -   **Transformers** by HuggingFace - State-of-the-art Natural Language Processing library
