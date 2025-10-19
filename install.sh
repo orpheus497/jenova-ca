@@ -31,8 +31,8 @@ mkdir -p /usr/local/share/jenova-ai/models
 chmod 755 /usr/local/share/jenova-ai
 chmod 755 /usr/local/share/jenova-ai/models
 
-# 5. Download TinyLlama model
-echo "--> Downloading TinyLlama-1.1B model from HuggingFace..."
+# 5. Download Phi-4 Mini Instruct model
+echo "--> Downloading Phi-4 Mini Instruct model from HuggingFace..."
 echo "    This may take a few minutes..."
 
 # Install transformers and torch first to download model
@@ -44,20 +44,21 @@ import os
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 model_dir = "/usr/local/share/jenova-ai/models"
-model_name = "TinyLlama/TinyLlama-1.1B-step-50K-105b"
+model_name = "unsloth/Phi-4-mini-instruct"
 
 print(f"Downloading {model_name}...")
 try:
     # Download tokenizer
     print("  - Downloading tokenizer...")
-    tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=model_dir)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=model_dir, trust_remote_code=True)
     
     # Download model
     print("  - Downloading model weights...")
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         cache_dir=model_dir,
-        low_cpu_mem_usage=True
+        low_cpu_mem_usage=True,
+        trust_remote_code=True
     )
     
     print(f"✓ Model successfully downloaded to {model_dir}")
@@ -67,7 +68,7 @@ except Exception as e:
 PYTHON_SCRIPT
 
 if [ $? -ne 0 ]; then
-    echo "[ERROR] Failed to download TinyLlama model."
+    echo "[ERROR] Failed to download Phi-4 Mini Instruct model."
     exit 1
 fi
 
@@ -82,7 +83,7 @@ echo
 echo "======================================================================"
 echo "✅ JENOVA AI has been successfully installed for all users."
 echo
-echo "Model: TinyLlama-1.1B-step-50K-105b"
+echo "Model: Phi-4 Mini Instruct"
 echo "Location: /usr/local/share/jenova-ai/models"
 echo
 echo "Any user can now run the application by typing:"

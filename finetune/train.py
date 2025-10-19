@@ -53,7 +53,7 @@ def create_training_data(insights_dir, output_file):
 
 def finetune_with_lora(train_file, output_dir, epochs=3, batch_size=4, learning_rate=2e-4):
     """
-    Fine-tune TinyLlama with LoRA using the prepared training data.
+    Fine-tune the base model with LoRA using the prepared training data.
     Requires: transformers, peft, accelerate, bitsandbytes
     """
     try:
@@ -66,17 +66,18 @@ def finetune_with_lora(train_file, output_dir, epochs=3, batch_size=4, learning_
         print("Install with: pip install peft bitsandbytes accelerate datasets")
         return
     
-    print("Loading TinyLlama model and tokenizer...")
-    model_name = "TinyLlama/TinyLlama-1.1B-step-50K-105b"
+    print("Loading Phi-4 Mini Instruct model and tokenizer...")
+    model_name = "unsloth/Phi-4-mini-instruct"
     
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
-        low_cpu_mem_usage=True
+        low_cpu_mem_usage=True,
+        trust_remote_code=True
     )
     
     # Configure LoRA
