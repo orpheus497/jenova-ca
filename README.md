@@ -138,7 +138,7 @@ To install JENOVA on the system, run the installation script with root privilege
 1.  **Prerequisites:**
     *   A Linux-based operating system
     *   `git`, `python3`, and `python3-pip` installed
-    *   Internet connection for downloading the Phi-4 Mini Instruct model
+    *   Internet connection for downloading the Phi-3.5 Mini Instruct model
 
 2.  **Clone the Repository:**
     ```bash
@@ -147,12 +147,12 @@ To install JENOVA on the system, run the installation script with root privilege
     ```
 
 3.  **Run the Installation Script:**
-    Execute the script with `sudo`. It handles installation of all dependencies, downloads the Phi-4 Mini Instruct model to `/usr/local/share/jenova-ai/models`, and makes the `jenova` command available system-wide.
+    Execute the script with `sudo`. It handles installation of all dependencies, downloads the Phi-3.5 Mini Instruct model to `/usr/local/share/jenova-ai/models`, and makes the `jenova` command available system-wide.
     ```bash
     sudo ./install.sh
     ```
     
-    The installation script automatically downloads unsloth/Phi-4-mini-instruct from HuggingFace and installs it to the system-wide model directory.
+    The installation script automatically downloads microsoft/Phi-3.5-mini-instruct from HuggingFace and installs it to the system-wide model directory.
 
 ### 4.2. Uninstallation
 
@@ -333,10 +333,10 @@ This file defines the AI's personality and core directives.
 The JENOVA Cognitive Architecture builds upon excellent open-source work from the community:
 
 ### Language Model
--   **Phi-4 Mini Instruct** by Unsloth
-    -   [HuggingFace Repository](https://huggingface.co/unsloth/Phi-4-mini-instruct)
-    -   An instruction-tuned language model optimized for efficient deployment
-    -   Licensed under Apache 2.0
+-   **Phi-3.5 Mini Instruct** by Microsoft
+    -   [HuggingFace Repository](https://huggingface.co/microsoft/Phi-3.5-mini-instruct)
+    -   An advanced instruction-tuned language model with enhanced capabilities
+    -   Licensed under MIT
 
 ### Core Dependencies
 -   **Transformers** by HuggingFace - State-of-the-art Natural Language Processing library

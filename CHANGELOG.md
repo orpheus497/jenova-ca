@@ -8,9 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- **Model:** Switched from TinyLlama-1.1B to Phi-4 Mini Instruct as the default model.
+- **Model:** Switched from Phi-4 Mini Instruct to Phi-3.5 Mini Instruct as the default model.
+  - Updated `install.sh` to download `microsoft/Phi-3.5-mini-instruct` from HuggingFace
+  - Updated all documentation references in `README.md` and `finetune/README.md`
+  - Updated configuration in `main_config.yaml` to reflect Phi-3.5's extended context window (128K tokens)
+  - Updated `finetune/train.py` to use the new model
+- **Dependencies:** Updated all dependencies to latest stable versions for improved compatibility and performance
+  - transformers: 4.47.0
+  - torch: 2.5.1
+  - chromadb: 0.5.23
+  - sentence-transformers: 3.3.1
+  - accelerate: 1.2.1
+  - rich: 13.9.4
+  - prompt-toolkit: 3.0.48
+  - PyYAML: 6.0.2
+  - numpy: 2.2.1
+  - selenium: 4.27.1
+  - webdriver-manager: 4.0.2
+  - requests: 2.32.3
 
-### Fixed
+### Added
+- **Model-Specific Prompt Formatting:** Added `_get_model_specific_prompt()` method to `LLMInterface` to handle model-specific chat templates and special tokens, ensuring optimal compatibility with Phi-3.5's instruction format
+
+## [3.1.1] - 2025-10-19
 - **Total Parameters Display:** Corrected the displayed total parameters to accurately reflect the loaded model's size by properly counting all model parameters.
 - **Dynamic Model Max Context:** The model max context is now read directly from the model's configuration (`max_position_embeddings`) instead of using hardcoded values, ensuring accuracy across different models.
 - **Intelligent Program Max Tokens:** Implemented smart logic for program max tokens:

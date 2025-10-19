@@ -32,11 +32,11 @@ You must follow these directives:
         return prompt
 
     def _load_model(self):
-        """Load Phi-4 Mini Instruct model from HuggingFace or local cache."""
+        """Load Phi-3.5 Mini Instruct model from HuggingFace or local cache."""
         model_dir = "/usr/local/share/jenova-ai/models"
-        model_name = "unsloth/Phi-4-mini-instruct"
+        model_name = "microsoft/Phi-3.5-mini-instruct"
         
-        self.ui_logger.info(f"Loading Phi-4 Mini Instruct model...")
+        self.ui_logger.info(f"Loading Phi-3.5 Mini Instruct model...")
         self.file_logger.log_info(f"Loading model: {model_name}")
         
         # Determine device
@@ -103,7 +103,7 @@ You must follow these directives:
             if model_max_context is None:
                 model_max_context = tokenizer.model_max_length
                 if model_max_context is None or model_max_context > 100000:  # Unreasonable default
-                    model_max_context = 16384  # Safe fallback for Phi-4
+                    model_max_context = 131072  # Safe fallback for Phi-3.5 (supports up to 128K context)
                     self.file_logger.log_info(f"Could not determine model's max context. Using fallback: {model_max_context} tokens.")
                 else:
                     self.file_logger.log_info(f"Model max context read from tokenizer: {model_max_context} tokens.")
@@ -136,7 +136,14 @@ You must follow these directives:
             trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
             
             # Determine model name for display
-            if "phi-4" in model_name.lower():
+            if "phi-3.5" in model_name.lower() or "phi-3-5" in model_name.lower():
+                if "mini" in model_name.lower():
+                    display_name = "Phi-3.5 Mini Instruct"
+                elif "4bit" in model_name or "bnb" in model_name:
+                    display_name = "Phi-3.5 (4-bit quantized)"
+                else:
+                    display_name = "Phi-3.5"
+            elif "phi-4" in model_name.lower():
                 if "mini" in model_name.lower():
                     display_name = "Phi-4 Mini Instruct"
                 elif "4bit" in model_name or "bnb" in model_name:
@@ -161,6 +168,37 @@ You must follow these directives:
             self.file_logger.log_error(f"Error loading model: {e}")
             raise
 
+    def _get_model_specific_prompt(self, prompt: str) -> str:
+        """Formats the prompt according to the model's chat template if available.
+        
+        Args:
+            prompt: The raw prompt text
+            
+        Returns:
+            Formatted prompt string
+        """
+        # Check if tokenizer has a chat template (e.g., Phi-3.5)
+        if hasattr(self.tokenizer, 'chat_template') and self.tokenizer.chat_template:
+            try:
+                # Format as a chat conversation with system and user messages
+                messages = [
+                    {"role": "system", "content": self.system_prompt},
+                    {"role": "user", "content": prompt}
+                ]
+                formatted_prompt = self.tokenizer.apply_chat_template(
+                    messages,
+                    tokenize=False,
+                    add_generation_prompt=True
+                )
+                self.file_logger.log_info("Using model's chat template for prompt formatting")
+                return formatted_prompt
+            except Exception as e:
+                self.file_logger.log_warning(f"Failed to apply chat template: {e}. Using basic formatting.")
+                return self.system_prompt + "\n\n" + prompt
+        else:
+            # Fallback to basic formatting
+            return self.system_prompt + "\n\n" + prompt
+
     def generate(self, prompt: str, stop: list = None, temperature: float = None) -> str:
         """Generates a response from the LLM.
         
@@ -170,7 +208,8 @@ You must follow these directives:
             temperature: Temperature for generation
             grammar: Grammar specification (not used with transformers, kept for compatibility)
         """
-        full_prompt = self.system_prompt + "\n\n" + prompt
+        # Use model-specific prompt formatting
+        full_prompt = self._get_model_specific_prompt(prompt)
         
         temp = temperature if temperature is not None else self.config['model']['temperature']
         max_tokens = self.config['model'].get('max_tokens', 512)
