@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Installation Script:** Fixed model download failures in `install.sh` caused by corrupted Hugging Face cache or version incompatibilities
+  - Added cache clearing step to remove `~/.cache/huggingface/` before model download to ensure clean downloads
+  - Pinned `transformers` library to version 4.42.3 for stable, predictable behavior with the `gghfez/gemma-3-4b-novision` model
+  - Maintained compatible tokenizers version constraint (`>=0.14,<0.19`) which works with transformers 4.42.3
+
 ## [3.2.0] - 2025-10-19
 
 ### Changed
