@@ -154,7 +154,22 @@ To install JENOVA on the system, run the installation script with root privilege
     
     The installation script automatically downloads TinyLlama-1.1B-step-50K-105b from HuggingFace and installs it to the system-wide model directory.
 
-### 4.2. For Users
+### 4.2. Uninstallation
+
+To completely remove JENOVA AI from the system, including all user data and downloaded models, an uninstallation script is provided. It must be run with root privileges.
+
+1.  **Navigate to the repository directory:**
+    ```bash
+    cd jenova-ai
+    ```
+
+2.  **Run the Uninstallation Script:**
+    Execute the script with `sudo`. It will guide you through the process of removing the application, all user data, and the language model.
+    ```bash
+    sudo ./uninstall.sh
+    ```
+
+### 4.3. For Users
 
 Once an administrator has installed JENOVA, no further setup is required. You can start interacting with the AI immediately.
 
@@ -192,25 +207,71 @@ JENOVA responds to a set of powerful commands that act as direct instructions fo
 
 ```
 /
-├── finetune/             # Scripts for model fine-tuning data generation
-├── models/               # System-wide model directory (not in repo)
+├── .gitignore
+├── CHANGELOG.md
+├── docs/
+│   └── .gitkeep
+├── finetune/
+│   ├── README.md
+│   └── train.py
+├── install.sh
+├── LICENSE
+├── MANIFEST.in
+├── pylint_report.txt
+├── pyproject.toml
+├── README.md
+├── requirements.txt
+├── setup.py
 ├── src/
 │   └── jenova/
-│       ├── assumptions/      # Manages the assumption lifecycle
-│       ├── cognitive_engine/ # The core "thinking" loop
-│       ├── config/           # Default YAML configuration files
-│       ├── cortex/           # The graph-based cognitive core
-│       ├── docs/             # RAG documents for semantic memory
-│       ├── insights/         # Manages saving and loading learned insights
-│       ├── memory/           # Manages the different memory types (ChromaDB)
-│       ├── ui/               # The terminal user interface
-│       ├── utils/            # Utility scripts and patches
+│       ├── assumptions/
+│       │   ├── __init__.py
+│       │   └── manager.py
+│       ├── cognitive_engine/
+│       │   ├── __init__.py
+│       │   ├── document_processor.py
+│       │   ├── engine.py
+│       │   ├── memory_search.py
+│       │   ├── rag_system.py
+│       │   └── scheduler.py
+│       ├── config/
+│       │   ├── __init__.py
+│       │   ├── main_config.yaml
+│       │   └── persona.yaml
+│       ├── cortex/
+│       │   ├── __init__.py
+│       │   ├── cortex.py
+│       │   ├── graph_components.py
+│       │   └── proactive_engine.py
+│       ├── docs/
+│       │   └── __init__.py
+│       ├── insights/
+│       │   ├── __init__.py
+│       │   ├── concerns.py
+│       │   └── manager.py
+│       ├── memory/
+│       │   ├── __init__.py
+│       │   ├── episodic.py
+│       │   ├── procedural.py
+│       │   └── semantic.py
+│       ├── ui/
+│       │   ├── __init__.py
+│       │   ├── logger.py
+│       │   └── terminal.py
+│       ├── utils/
+│       │   ├── __init__.py
+│       │   ├── data_sanitizer.py
+│       │   ├── embedding.py
+│       │   ├── file_logger.py
+│       │   ├── json_parser.py
+│       │   ├── model_loader.py
+│       │   └── telemetry_fix.py
 │       ├── __init__.py
-│       ├── llm_interface.py  # Handles interaction with HuggingFace transformers
-│       └── main.py           # Main application entry point
-├── install.sh            # Installation script
-├── requirements.txt      # Python dependencies
-└── setup.py              # Package definition and entry point
+│       ├── default_api.py
+│       ├── llm_interface.py
+│       ├── main.py
+│       └── tools.py
+└── uninstall.sh
 ```
 
 ### 6.2. Configuration Files
@@ -228,17 +289,30 @@ This file controls the technical parameters of the AI.
     -   `top_p`: Nucleus sampling parameter
     -   `embedding_model`: The sentence-transformer model to use for creating vector embeddings for memory search
 -   **`memory`**:
+    -   `preload_memories`: Whether to load all memories into RAM at startup.
     -   `..._db_path`: Paths to the ChromaDB databases. These are relative to the user's data directory (`~/.jenova-ai/users/<username>/memory/`)
--   **`memory_search`**:
-    -   `semantic_n_results`: The number of results to retrieve from semantic memory
-    -   `episodic_n_results`: The number of results to retrieve from episodic memory
-    -   `procedural_n_results`: The number of results to retrieve from procedural memory
-    -   `insight_n_results`: The number of results to retrieve from insight memory
+    -   `reflection_interval`: The interval (in conversation turns) for reflecting on memories.
+-   **`cortex`**:
+    -   `relationship_weights`: Weights for different types of relationships between cognitive nodes.
+    -   `pruning`: Settings for automatically pruning the cognitive graph to remove old or irrelevant nodes.
 -   **`scheduler`**:
     -   `generate_insight_interval`: The interval (in conversation turns) for generating insights.
     -   `generate_assumption_interval`: The interval for generating assumptions.
     -   `proactively_verify_assumption_interval`: The interval for verifying assumptions.
     -   `reflect_interval`: The interval for reflecting on the cognitive graph.
+    -   `reorganize_insights_interval`: The interval for reorganizing insights.
+    -   `process_documents_interval`: The interval for processing documents.
+-   **`memory_search`**:
+    -   `semantic_n_results`: The number of results to retrieve from semantic memory
+    -   `episodic_n_results`: The number of results to retrieve from episodic memory
+    -   `procedural_n_results`: The number of results to retrieve from procedural memory
+    -   `insight_n_results`: The number of results to retrieve from insight memory
+-   **`finetuning`**:
+    -   `training_file`: The name of the generated training file.
+    -   `lora_output_dir`: The directory to save LoRA adapters.
+    -   `finetuned_model_output`: The path to save the merged, fine-tuned model.
+-   **`tools`**:
+    -   `file_sandbox_path`: The path to the directory where the AI can read and write files.
 
 #### `persona.yaml`
 
@@ -247,8 +321,10 @@ This file defines the AI's personality and core directives.
 -   **`identity`**:
     -   `name`: The AI's name.
     -   `creator`: The creator's name.
+    -   `creator_alias`: An alias for the creator.
     -   `origin_story`: A brief backstory.
     -   `type`: A description of the AI's nature.
+    -   `architecture`: A description of the AI's architecture.
 -   **`directives`**: A list of rules the AI must follow. These are injected into the system prompt.
 -   **`initial_facts`**: A list of foundational facts that are loaded into the AI's memory on first run.
 
@@ -270,7 +346,9 @@ The JENOVA Cognitive Architecture builds upon excellent open-source work from th
 -   **Rich** by Will McGugan - Beautiful terminal formatting and UI components
 -   **Prompt Toolkit** - Library for building interactive command-line applications
 -   **PyYAML** - YAML parser for configuration files
+-   **NumPy** - Fundamental package for scientific computing with Python
 -   **Selenium** & **WebDriver Manager** - Web automation for external information retrieval
+-   **Requests** - Elegant and simple HTTP library for Python
 
 ### Architecture Design
 -   **The JENOVA Cognitive Architecture (JCA)** designed and developed by **orpheus497**

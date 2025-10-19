@@ -1,10 +1,6 @@
 import json
-import os
-import shlex
-import inspect
 from jenova.cortex.proactive_engine import ProactiveEngine
 from jenova.cognitive_engine.scheduler import CognitiveScheduler
-from jenova import tools
 
 class CognitiveEngine:
     """The Perfected Cognitive Engine. Manages the refined cognitive cycle."""
@@ -22,7 +18,7 @@ class CognitiveEngine:
         self.scheduler = CognitiveScheduler(config, cortex, insight_manager)
         self.history = []
         self.turn_count = 0
-        self.MAX_HISTORY_TURNS = 10 # Keep the last 10 conversation turns
+        self.MAX_HISTORY_TURNS = 5 # Keep the last 5 conversation turns
         self.pending_assumption = None
 
     def think(self, user_input: str, username: str) -> str:
@@ -39,11 +35,11 @@ class CognitiveEngine:
             else:
                 context = []
             
-            plan = self._plan(user_input, context, username, thinking_status)
+            plan = self._plan(user_input, context, username)
             if not plan:
                 plan = f"I will formulate a response to the user's query: {user_input}"
 
-            response = self._execute(user_input, context, plan, username, thinking_status)
+            response = self._execute(user_input, context, plan, username)
 
             # Only add to history if it's not a command
             if not user_input.startswith('/'):
@@ -58,7 +54,7 @@ class CognitiveEngine:
         return response
 
 
-    def _plan(self, user_input: str, context: list[str], username: str, thinking_process=None) -> str:
+    def _plan(self, user_input: str, context: list[str], username: str) -> str:
         # Ensure all context items are strings before joining
         safe_context = [str(c) for c in context]
         context_str = "\n".join(f"- {c}" for c in safe_context)
@@ -84,35 +80,21 @@ Your core directives are: {directives}
 {context_str if context else "No context available."}
 
 == TASK ==
-Based on your identity, directives, the user's query, and the provided context, create a step-by-step plan to formulate a response. The plan should be a short paragraph describing the steps you will take.
+Your task is to create a step-by-step plan to formulate a response to the user's query. The plan should be a numbered list of steps. Each step should be a clear and concise action you will take to construct the response. The plan should be detailed enough to guide your response generation process.
 
 {user_title} ({username}): "{user_input}"
 
 Plan:"""
         
-        # Use the passed thinking_process if available, otherwise create a new one
-        if thinking_process is not None:
-            # In queue mode, status might be None, so check before calling update
-            if hasattr(thinking_process, 'update'):
-                thinking_process.update("Formulating plan...")
-            plan = self.llm.generate(prompt, temperature=0.1, thinking_process=thinking_process)
-        else:
-            with self.ui_logger.thinking_process("Formulating plan..."):
-                plan = self.llm.generate(prompt, temperature=0.1)
+        with self.ui_logger.thinking_process("Formulating plan..."):
+            plan = self.llm.generate(prompt, temperature=0.1)
         
         self.file_logger.log_info(f"Generated Plan: {plan}")
         return plan
 
-    def _execute(self, user_input: str, context: list[str], plan: str, username: str, thinking_process=None) -> str:
-        # Use the passed thinking_process if available, otherwise create a new one
-        if thinking_process is not None:
-            # In queue mode, status might be None, so check before calling update
-            if hasattr(thinking_process, 'update'):
-                thinking_process.update("Executing plan...")
-            return self.rag_system.generate_response(user_input, username, self.history, plan, thinking_process=thinking_process)
-        else:
-            with self.ui_logger.thinking_process("Executing plan..."):
-                return self.rag_system.generate_response(user_input, username, self.history, plan)
+    def _execute(self, user_input: str, context: list[str], plan: str, username: str) -> str:
+        with self.ui_logger.thinking_process("Executing plan..."):
+            return self.rag_system.generate_response(user_input, username, self.history, plan)
 
     def generate_insight_from_history(self, username: str):
         """Analyzes recent conversation history to generate and save a new, high-quality insight."""
@@ -140,7 +122,7 @@ Format the output as a valid JSON object with "topic" and "insight" keys.
 [JSON_OUTPUT]
 """
         with self.ui_logger.thinking_process("Generating insight from recent conversation..."):
-            insight_json_str = self.llm.generate(prompt, temperature=0.2, grammar=self.cortex.json_grammar)
+            insight_json_str = self.llm.generate(prompt, temperature=0.2)
         
         try:
             data = json.loads(insight_json_str)
@@ -176,7 +158,7 @@ Format the output as a valid JSON object with an "assumption" key.
 [JSON_OUTPUT]
 """
         with self.ui_logger.thinking_process("Forming new assumption..."):
-            assumption_json_str = self.llm.generate(prompt, temperature=0.3, grammar=self.cortex.json_grammar)
+            assumption_json_str = self.llm.generate(prompt, temperature=0.3)
 
         try:
             assumption_data = json.loads(assumption_json_str)
@@ -209,7 +191,7 @@ Format the output as a valid JSON array of objects, where each object has 'topic
 
 [JSON_OUTPUT]
 """
-        insights_json_str = self.llm.generate(prompt, temperature=0.3, grammar=self.cortex.json_grammar)
+        insights_json_str = self.llm.generate(prompt, temperature=0.3)
         
         try:
             insights = json.loads(insights_json_str)
@@ -257,7 +239,7 @@ You are {ai_name}. You are analyzing a collection of insights for {user_title} (
 """
         self.file_logger.log_info(f"Meta-insight prompt: {prompt}")
 
-        meta_insight_json_str = self.llm.generate(prompt, temperature=0.4, grammar=self.cortex.json_grammar)
+        meta_insight_json_str = self.llm.generate(prompt, temperature=0.4)
         
         self.file_logger.log_info(f"Meta-insight response: {meta_insight_json_str}")
 
@@ -305,7 +287,7 @@ Format the output as a valid JSON object with one of two structures:
 
 [JSON_OUTPUT]
 """
-        insight_json_str = self.llm.generate(prompt, temperature=0.3, grammar=self.cortex.json_grammar)
+        insight_json_str = self.llm.generate(prompt, temperature=0.3)
         
         try:
             data = json.loads(insight_json_str)

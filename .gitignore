@@ -78,3 +78,6 @@ Thumbs.db
 
 # Unnecessary vendored code
 /llama.cpp/
+
+# Reports
+pylint_report.txt

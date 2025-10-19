@@ -11,7 +11,7 @@ class RAGSystem:
         self.ui_logger = memory_search.episodic_memory.ui_logger
         self.file_logger = memory_search.file_logger
 
-    def generate_response(self, query: str, username: str, history: list[str], plan: str, search_results: list[dict] | None = None, thinking_process=None) -> str:
+    def generate_response(self, query: str, username: str, history: list[str], plan: str, search_results: list[dict] | None = None) -> str:
         """Generates a response using the RAG process.
         
         Args:
@@ -20,7 +20,6 @@ class RAGSystem:
             history: Conversation history
             plan: The execution plan
             search_results: Optional web search results
-            thinking_process: Optional context manager for thinking status (avoids nested spinners)
         """
         # 1. Retrieve context from all memory sources
         context = self.memory_search.search_all(query, username)
@@ -47,12 +46,11 @@ class RAGSystem:
                 search_results_formatted += f"Link: {res.get('link', 'N/A')}\n"
                 search_results_formatted += f"Summary: {res.get('summary', 'N/A')}\n\n"
 
-        prompt = f"""== YOUR CORE INSTRUCTIONS ==
-1. You are {identity.get('name', 'Jenova')}, a {identity.get('type', 'personalized AI assistant')}.
-2. Your origin story: {identity.get('origin_story', 'You are a helpful assistant.')}
-3. Your creator is {identity.get('creator', 'a developer')}.
-4. You must follow these directives:
-{chr(10).join(f"    - {d}" for d in directives)}
+        prompt = f"""== RESPONSE GUIDELINES ==
+- Your response should be structured, logical, sensible, comprehensive, detailed, and grammatically sound.
+- Ensure your response is coherent and easy to understand.
+- Vary the length of your response based on the user's query and the available information. Do not feel obligated to use all available tokens.
+- Be helpful and informative.
 
 == YOUR KNOWLEDGE BASE (PRIORITIZED) ==
 1.  **RETRIEVED CONTEXT (Your personal memories and learned insights):**
@@ -83,7 +81,7 @@ Do not re-introduce yourself unless asked. Provide ONLY {identity.get('name', 'J
 User ({username}): \"{query}\"\n\n{identity.get('name', 'Jenova')}:"""
 
         try:
-            response = self.llm.generate(prompt, thinking_process=thinking_process)
+            response = self.llm.generate(prompt)
         except Exception as e:
             self.ui_logger.system_message(f"Error during response generation: {e}")
             self.file_logger.log_error(f"Error during response generation: {e}")

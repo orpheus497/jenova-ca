@@ -20,12 +20,8 @@ class Cortex:
         self.graph_file = os.path.join(self.cortex_root, 'cognitive_graph.json')
         self.graph = self._load_graph()
         self.reflection_cycle_count = 0
-        self.json_grammar = self._load_grammar()
-
-    def _load_grammar(self):
-        """JSON grammar not used with transformers-based models."""
-        self.file_logger.log_info("JSON grammar not required for transformers-based model")
-        return None
+        self.processed_docs_file = os.path.join(self.cortex_root, 'processed_documents.json')
+        self.processed_docs = self._load_processed_docs()
 
     def _load_graph(self):
         """Loads the cognitive graph from a file."""
@@ -306,8 +302,6 @@ Relationship JSON:"""
         and links them to the document node.
         """
         messages = []
-        self.processed_docs_file = os.path.join(self.cortex_root, 'processed_documents.json')
-        self.processed_docs = self._load_processed_docs()
 
         if not os.path.exists(self.docs_path):
             os.makedirs(self.docs_path)

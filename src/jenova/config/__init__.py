@@ -7,14 +7,12 @@ def load_configuration(ui_logger, file_logger):
         ui_logger.info(">> Loading configuration...")
         
         # Assuming this file is at src/jenova/config/__init__.py
-        config_dir = Path(__file__).parent
-        main_config_path = config_dir / "main_config.yaml"
-        persona_path = config_dir / "persona.yaml"
-
-        with open(main_config_path, 'r') as f:
+        main_config_path = Path(__file__).parent / 'main_config.yaml'
+        with open(main_config_path, 'r', encoding='utf-8') as f:
             main_config = yaml.safe_load(f)
 
-        with open(persona_path, 'r') as f:
+        persona_config_path = Path(__file__).parent / 'persona.yaml'
+        with open(persona_config_path, 'r', encoding='utf-8') as f:
             persona_config = yaml.safe_load(f)
 
         # Merge configurations

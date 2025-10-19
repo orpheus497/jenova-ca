@@ -1,4 +1,3 @@
-import os
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -29,9 +28,7 @@ Your origin story: {identity.get('origin_story', 'You are a helpful assistant.')
 Your creator is {identity.get('creator', 'a developer')}. You and the user are separate entities.
 
 You must follow these directives:
-{chr(10).join(f"    - {d}" for d in directives)}
-
-Answer the user's query directly and factually. Do not be evasive. If you do not know an answer, say so and explain why. Do not output role-playing prefixes like 'User:'. Do not output your internal plan or reasoning.""".strip()
+{chr(10).join(f'    - {d}' for d in directives)}""".strip()
         return prompt
 
     def _load_model(self):
@@ -71,7 +68,7 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
             model = AutoModelForCausalLM.from_pretrained(
                 model_name,
                 cache_dir=model_dir,
-                torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+                dtype=torch.float16 if device == "cuda" else torch.float32,
                 low_cpu_mem_usage=True,
                 local_files_only=False,
                 trust_remote_code=True
@@ -80,6 +77,23 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
             model = model.to(device)
             model.eval()
             
+            # --- Self-Optimizing Context Window ---
+            # Override config with model's actual max context length
+            model_max_len = tokenizer.model_max_length
+            if model_max_len is None or model_max_len > 4096:
+                self.file_logger.log_info(f"Model's max length ({model_max_len}) is unreasonable. Using context size from config: {self.config['model']['context_size']} tokens.")
+            else:
+                self.config['model']['context_size'] = model_max_len
+                self.file_logger.log_info(f"Context size automatically set to {model_max_len} tokens.")
+
+            # --- Set max_tokens based on context size ---
+            context_size = self.config['model']['context_size']
+            if context_size < 4000:
+                self.config['model']['max_tokens'] = context_size // 2
+            else:
+                self.config['model']['max_tokens'] = 2048
+            self.file_logger.log_info(f"Max generation tokens automatically set to {self.config['model']['max_tokens']} tokens.")
+
             # Get model info
             total_params = sum(p.numel() for p in model.parameters())
             trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -87,7 +101,8 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
             self.ui_logger.system_message(f"✓ Model loaded: TinyLlama-1.1B")
             self.ui_logger.system_message(f"   Total parameters: {total_params:,}")
             self.ui_logger.system_message(f"   Device: {device.upper()}")
-            self.ui_logger.system_message(f"   Model max context: {tokenizer.model_max_length} tokens")
+            self.ui_logger.system_message(f"   Model max context: {self.config['model']['context_size']} tokens")
+            self.ui_logger.system_message(f"   Program max tokens: {self.config['model']['max_tokens']} tokens")
             self.file_logger.log_info(f"Model loaded successfully on {device}")
             self.file_logger.log_info(f"Total params: {total_params:,}, Trainable: {trainable_params:,}")
             
@@ -98,7 +113,7 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
             self.file_logger.log_error(f"Error loading model: {e}")
             raise
 
-    def generate(self, prompt: str, stop: list = None, temperature: float = None, grammar: str = None, thinking_process=None) -> str:
+    def generate(self, prompt: str, stop: list = None, temperature: float = None) -> str:
         """Generates a response from the LLM.
         
         Args:
@@ -106,7 +121,6 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
             stop: Stop sequences for early termination
             temperature: Temperature for generation
             grammar: Grammar specification (not used with transformers, kept for compatibility)
-            thinking_process: Optional context manager for thinking status
         """
         full_prompt = self.system_prompt + "\n\n" + prompt
         
@@ -148,7 +162,7 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
                     do_sample=True,
                     pad_token_id=self.tokenizer.eos_token_id,
                     eos_token_id=self.tokenizer.eos_token_id,
-                    repetition_penalty=1.1,  # Reduce repetition
+                    repetition_penalty=1.2,  # Reduce repetition
                 )
             
             # Decode response

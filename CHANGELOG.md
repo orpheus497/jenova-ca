@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- (Add new features for the next version here)
+
+## [3.1.1] - 2025-10-19
+
+### Added
+- **Uninstall Script:** Added a comprehensive `uninstall.sh` script to allow administrators to easily remove the application, user data, and downloaded models from the system.
+
+### Fixed
+- **AI Behavior:** Overhauled prompt engineering and increased the repetition penalty to improve the quality, coherence, and reduce repetitiveness of the AI's responses.
+- **Context Window:** Fixed an `OverflowError` during tokenization and now correctly cap the context size to a reasonable value to prevent crashes and improve performance.
+- **Stability:** Resolved several startup and runtime errors, including `SyntaxError`, `TypeError`, and deprecated argument usage.
+- **Code Quality:** Addressed multiple issues reported by `pylint`, removing unused code, arguments, and fixing warnings throughout the codebase.
 ## [3.1.0] - 2025-10-18
 
 ### Changed
