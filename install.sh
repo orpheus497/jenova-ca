@@ -39,8 +39,8 @@ echo "    This may take a few minutes..."
 pip install torch transformers accelerate > /dev/null 2>&1
 
 # Force-reinstall a compatible tokenizer version
-pip uninstall -y tokenizers
-pip install "tokenizers>=0.14,<0.19"
+pip uninstall -y tokenizers > /dev/null 2>&1 || true
+pip install --ignore-installed "tokenizers>=0.14,<0.19" > /dev/null 2>&1
 
 # Download model using Python
 python3 << 'PYTHON_SCRIPT'
