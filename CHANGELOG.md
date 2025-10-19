@@ -29,13 +29,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - selenium: 4.27.1
   - webdriver-manager: 4.0.2
   - requests: 2.32.3
+- **Cognitive Architecture Stability:** Improved reliability and robustness of all cognitive functions
+  - Cognitive Engine maintains proper integration with Cortex, RAG system, and all memory systems
+  - Memory Search properly coordinates between episodic, semantic, procedural memories and insights
+  - Insight Manager correctly interfaces with Cortex for cognitive node creation
+  - Assumption Manager properly integrates with Cortex for assumption tracking
+  - RAG System maintains proper coordination with all memory sources for context retrieval
 
 ### Added
 - **Model-Specific Prompt Formatting:** Added `_get_model_specific_prompt()` method to `LLMInterface` to handle model-specific chat templates and special tokens, ensuring optimal compatibility with the model's instruction format
+- **Robust JSON Extraction:** Added `_extract_json_from_response()` helper method in Cortex for reliable JSON parsing from LLM responses, handling cases where JSON is embedded in additional text
 
 ### Fixed
-- **Cortex JSON Parsing:** Removed deprecated `grammar` parameter from LLM generate calls and implemented robust JSON extraction from LLM responses throughout the Cortex system
+- **Cortex JSON Parsing:** Removed deprecated `grammar` parameter from all LLM generate calls and implemented robust JSON extraction from LLM responses throughout the Cortex system
 - **Cognitive Stability:** Improved JSON parsing reliability in cognitive functions to prevent failures when LLM responses contain additional text
+- **Emotion Analysis:** Fixed emotion detection in cognitive node creation to handle varied LLM response formats
+- **Node Linking:** Improved reliability of orphan node linking and external information integration
+- **Gitignore Coverage:** Added comprehensive coverage for Python cache files, build artifacts, and temporary files
 
 ## [3.1.1] - 2025-10-19
 
