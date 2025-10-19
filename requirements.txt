@@ -1,15 +1,15 @@
-transformers>=4.30.0
-torch
-chromadb
-sentence-transformers
-accelerate
-rich
-prompt-toolkit
-PyYAML
-numpy
-selenium
-webdriver-manager
-requests
+transformers>=4.47.0
+torch>=2.5.1
+chromadb>=0.5.23
+sentence-transformers>=3.3.1
+accelerate>=1.2.1
+rich>=13.9.4
+prompt-toolkit>=3.0.48
+PyYAML>=6.0.2
+numpy>=2.2.1
+selenium>=4.27.1
+webdriver-manager>=4.0.2
+requests>=2.32.3
 
 # Optional dependencies for fine-tuning with LoRA
 # Install with: pip install peft bitsandbytes datasets

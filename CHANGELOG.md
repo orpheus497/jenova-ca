@@ -7,8 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2025-10-19
+
 ### Changed
-- **Model:** Switched from TinyLlama-1.1B to Phi-4 Mini Instruct as the default model.
+- **Model:** Switched from Phi-4 Mini Instruct to Gemma 3 4B (NoVision) as the default model.
+  - Updated `install.sh` to download `gghfez/gemma-3-4b-novision` from HuggingFace
+  - Updated all documentation references in `README.md` and `finetune/README.md`
+  - Updated configuration in `main_config.yaml` to reflect Gemma 3 4B's context window (8K tokens)
+  - Updated `finetune/train.py` to use the new model
+  - Updated `llm_interface.py` with Gemma-specific model detection and display logic
+- **Dependencies:** Updated all dependencies to latest stable versions for improved compatibility and performance
+  - transformers: 4.47.0
+  - torch: 2.5.1
+  - chromadb: 0.5.23
+  - sentence-transformers: 3.3.1
+  - accelerate: 1.2.1
+  - rich: 13.9.4
+  - prompt-toolkit: 3.0.48
+  - PyYAML: 6.0.2
+  - numpy: 2.2.1
+  - selenium: 4.27.1
+  - webdriver-manager: 4.0.2
+  - requests: 2.32.3
+- **Cognitive Architecture Stability:** Improved reliability and robustness of all cognitive functions
+  - Cognitive Engine maintains proper integration with Cortex, RAG system, and all memory systems
+  - Memory Search properly coordinates between episodic, semantic, procedural memories and insights
+  - Insight Manager correctly interfaces with Cortex for cognitive node creation
+  - Assumption Manager properly integrates with Cortex for assumption tracking
+  - RAG System maintains proper coordination with all memory sources for context retrieval
+
+### Added
+- **Model-Specific Prompt Formatting:** Added `_get_model_specific_prompt()` method to `LLMInterface` to handle model-specific chat templates and special tokens, ensuring optimal compatibility with the model's instruction format
+- **Robust JSON Extraction:** Added `_extract_json_from_response()` helper method in Cortex for reliable JSON parsing from LLM responses, handling cases where JSON is embedded in additional text
+
+### Fixed
+- **Cortex JSON Parsing:** Removed deprecated `grammar` parameter from all LLM generate calls and implemented robust JSON extraction from LLM responses throughout the Cortex system
+- **Cognitive Stability:** Improved JSON parsing reliability in cognitive functions to prevent failures when LLM responses contain additional text
+- **Emotion Analysis:** Fixed emotion detection in cognitive node creation to handle varied LLM response formats
+- **Node Linking:** Improved reliability of orphan node linking and external information integration
+- **Gitignore Coverage:** Added comprehensive coverage for Python cache files, build artifacts, and temporary files
+
+## [3.1.1] - 2025-10-19
 
 ### Fixed
 - **Total Parameters Display:** Corrected the displayed total parameters to accurately reflect the loaded model's size by properly counting all model parameters.
