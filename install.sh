@@ -39,8 +39,13 @@ echo "    This may take a few minutes..."
 pip install torch transformers accelerate > /dev/null 2>&1
 
 # Force-reinstall a compatible tokenizer version
+echo "    Ensuring compatible tokenizers version..."
 pip uninstall -y tokenizers > /dev/null 2>&1 || true
-pip install --ignore-installed "tokenizers>=0.14,<0.19" > /dev/null 2>&1
+pip install --ignore-installed "tokenizers>=0.14,<0.19"
+if [ $? -ne 0 ]; then
+    echo "[ERROR] Failed to install compatible tokenizers version."
+    exit 1
+fi
 
 # Download model using Python
 python3 << 'PYTHON_SCRIPT'
