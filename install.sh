@@ -38,6 +38,10 @@ echo "    This may take a few minutes..."
 # Install transformers and torch first to download model
 pip install torch transformers accelerate > /dev/null 2>&1
 
+# Force-reinstall a compatible tokenizer version
+pip uninstall -y tokenizers
+pip install "tokenizers>=0.14,<0.19"
+
 # Download model using Python
 python3 << 'PYTHON_SCRIPT'
 import os
