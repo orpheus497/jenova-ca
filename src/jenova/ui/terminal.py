@@ -323,7 +323,7 @@ class TerminalUI:
         self.logger.help_message("  [bright_yellow]/train[/bright_yellow]")
         self.logger.help_message("    [#BDB2FF]Provides instructions for creating LoRA fine-tuning training data.[/]")
         self.logger.help_message("    [dim italic]Shows how to generate a training dataset from your insights and[/dim italic]")
-        self.logger.help_message("    [dim italic]fine-tune TinyLlama with LoRA for personalized knowledge.[/dim italic]\n")
+        self.logger.help_message("    [dim italic]fine-tune the model with LoRA for personalized knowledge.[/dim italic]\n")
         
         self.logger.help_message("[bold bright_yellow]SYSTEM COMMANDS[/bold bright_yellow]")
         self.logger.help_message("[dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/dim]\n")

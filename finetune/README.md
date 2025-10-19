@@ -1,6 +1,6 @@
 # JENOVA - Fine-Tuning Framework
 
-This directory contains the tools to prepare your AI's learned insights for fine-tuning with transformers and LoRA/PEFT. This allows you to create an adapter that enhances TinyLlama with knowledge from your past interactions.
+This directory contains the tools to prepare your AI's learned insights for fine-tuning with transformers and LoRA/PEFT. This allows you to create an adapter that enhances the base model with knowledge from your past interactions.
 
 ## How It Works
 
@@ -32,4 +32,4 @@ This directory contains the tools to prepare your AI's learned insights for fine
 
     This creates a LoRA adapter in `/usr/local/share/jenova-ai/lora/` that can be loaded alongside the base model.
 
-4.  **Integrate the Adapter:** The system can automatically load LoRA adapters if configured. The adapter will enhance the base TinyLlama model with your personalized knowledge without modifying the original model weights.
+4.  **Integrate the Adapter:** The system can automatically load LoRA adapters if configured. The adapter will enhance the base model with your personalized knowledge without modifying the original model weights.
