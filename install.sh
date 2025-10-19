@@ -35,8 +35,13 @@ chmod 755 /usr/local/share/jenova-ai/models
 echo "--> Downloading Gemma 3 4B (NoVision) model from HuggingFace..."
 echo "    This may take a few minutes..."
 
-# Install transformers and torch first to download model
-pip install torch transformers accelerate > /dev/null 2>&1
+# Clear Hugging Face cache to ensure clean download
+echo "    Clearing Hugging Face cache..."
+rm -rf ~/.cache/huggingface/
+
+# Install specific version of transformers and torch to ensure compatibility
+echo "    Installing transformers 4.42.3 and dependencies..."
+pip install torch accelerate transformers==4.42.3 > /dev/null 2>&1
 
 # Force-reinstall a compatible tokenizer version
 echo "    Ensuring compatible tokenizers version..."
