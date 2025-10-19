@@ -7,12 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Model Upgrade:** Switched from TinyLlama-1.1B to Phi-4 (14B parameters, 4-bit quantized) as the default model. This provides significantly improved intelligence and capabilities with a 16K context window (vs. 2K for TinyLlama).
+
 ### Fixed
 - **Total Parameters Display:** Corrected the displayed total parameters to accurately reflect the loaded model's size by properly counting all model parameters.
 - **Dynamic Model Max Context:** The model max context is now read directly from the model's configuration (`max_position_embeddings`) instead of using hardcoded values, ensuring accuracy across different models.
 - **Intelligent Program Max Tokens:** Implemented smart logic for program max tokens:
   - If the model's natural context length is greater than 4000 tokens, the program max tokens is set to match the model's maximum context.
-  - If the model's natural context length is 4000 tokens or less (like TinyLlama's 2048), the program max tokens is set to double the model's native context length (e.g., 4096 for TinyLlama), with support for RoPE scaling to maintain model performance.
+  - If the model's natural context length is 4000 tokens or less, the program max tokens is set to double the model's native context length with support for RoPE scaling to maintain model performance.
 - **Graceful Shutdown:** Fixed KeyboardInterrupt and "Aborted (core dumped)" errors that occurred on exit by implementing proper signal handlers and ensuring all resources are cleaned up gracefully during shutdown.
 
 ### Added

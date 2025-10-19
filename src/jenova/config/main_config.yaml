@@ -1,7 +1,7 @@
 # Main Configuration for The JENOVA Cognitive Architecture - JCA v3.1
 model:
-  context_size: 2048 # Context window size for TinyLlama (maximum supported)
-  max_tokens: 512 # Maximum tokens to generate per response
+  context_size: 16384 # Context window size for Phi-4 (maximum supported)
+  max_tokens: 16384 # Maximum tokens to generate per response (dynamically adjusted at runtime)
   temperature: 0.7
   top_p: 0.95
   embedding_model: 'all-MiniLM-L6-v2'

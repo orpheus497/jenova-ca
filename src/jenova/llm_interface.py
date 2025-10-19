@@ -32,11 +32,11 @@ You must follow these directives:
         return prompt
 
     def _load_model(self):
-        """Load TinyLlama model from HuggingFace or local cache."""
+        """Load Phi-4 model from HuggingFace or local cache."""
         model_dir = "/usr/local/share/jenova-ai/models"
-        model_name = "TinyLlama/TinyLlama-1.1B-step-50K-105b"
+        model_name = "unsloth/phi-4-bnb-4bit"
         
-        self.ui_logger.info(f"Loading TinyLlama model...")
+        self.ui_logger.info(f"Loading Phi-4 model...")
         self.file_logger.log_info(f"Loading model: {model_name}")
         
         # Determine device
@@ -65,16 +65,33 @@ You must follow these directives:
             
             # Load model
             self.ui_logger.info("Loading model weights...")
-            model = AutoModelForCausalLM.from_pretrained(
-                model_name,
-                cache_dir=model_dir,
-                dtype=torch.float16 if device == "cuda" else torch.float32,
-                low_cpu_mem_usage=True,
-                local_files_only=False,
-                trust_remote_code=True
-            )
             
-            model = model.to(device)
+            # Check if this is a quantized model (4bit/8bit)
+            is_quantized = "4bit" in model_name.lower() or "bnb" in model_name.lower() or "8bit" in model_name.lower()
+            
+            if is_quantized:
+                # For quantized models, don't specify dtype - let it use the quantized format
+                self.ui_logger.info("Detected quantized model - using optimized loading...")
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_name,
+                    cache_dir=model_dir,
+                    device_map="auto" if device == "cuda" else None,
+                    low_cpu_mem_usage=True,
+                    local_files_only=False,
+                    trust_remote_code=True
+                )
+            else:
+                # For non-quantized models, use appropriate dtype
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_name,
+                    cache_dir=model_dir,
+                    dtype=torch.float16 if device == "cuda" else torch.float32,
+                    low_cpu_mem_usage=True,
+                    local_files_only=False,
+                    trust_remote_code=True
+                )
+                model = model.to(device)
+            
             model.eval()
             
             # --- Dynamic Model Max Context ---
@@ -86,7 +103,7 @@ You must follow these directives:
             if model_max_context is None:
                 model_max_context = tokenizer.model_max_length
                 if model_max_context is None or model_max_context > 100000:  # Unreasonable default
-                    model_max_context = 2048  # Safe fallback for TinyLlama
+                    model_max_context = 16384  # Safe fallback for Phi-4
                     self.file_logger.log_info(f"Could not determine model's max context. Using fallback: {model_max_context} tokens.")
                 else:
                     self.file_logger.log_info(f"Model max context read from tokenizer: {model_max_context} tokens.")
@@ -104,7 +121,7 @@ You must follow these directives:
                 program_max_tokens = model_max_context
                 self.file_logger.log_info(f"Model context > 4000. Program max tokens set to model's max context: {program_max_tokens} tokens.")
             else:
-                # For models with smaller context (like TinyLlama with 2048), double the context
+                # For models with smaller context, double the context
                 program_max_tokens = model_max_context * 2
                 # Note: This requires RoPE scaling during generation for positions beyond native training
                 self.file_logger.log_info(f"Model context <= 4000. Program max tokens set to 2x native context: {program_max_tokens} tokens (with RoPE scaling).")
@@ -118,7 +135,13 @@ You must follow these directives:
             total_params = sum(p.numel() for p in model.parameters())
             trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
             
-            self.ui_logger.system_message(f"✓ Model loaded: TinyLlama-1.1B")
+            # Determine model name for display
+            if "phi-4" in model_name.lower():
+                display_name = "Phi-4 (4-bit quantized)" if "4bit" in model_name or "bnb" in model_name else "Phi-4"
+            else:
+                display_name = model_name.split("/")[-1]
+            
+            self.ui_logger.system_message(f"✓ Model loaded: {display_name}")
             self.ui_logger.system_message(f"   Total parameters: {total_params:,}")
             self.ui_logger.system_message(f"   Device: {device.upper()}")
             self.ui_logger.system_message(f"   Model max context: {model_max_context} tokens")
