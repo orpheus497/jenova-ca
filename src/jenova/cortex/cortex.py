@@ -23,6 +23,24 @@ class Cortex:
         self.processed_docs_file = os.path.join(self.cortex_root, 'processed_documents.json')
         self.processed_docs = self._load_processed_docs()
 
+    def _extract_json_from_response(self, response_str: str) -> dict:
+        """Robustly extracts JSON from LLM response, handling cases where JSON is embedded in text."""
+        import re
+        try:
+            # Try direct JSON parsing first
+            return json.loads(response_str)
+        except json.JSONDecodeError:
+            # Try to find JSON object in the response
+            json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', response_str, re.DOTALL)
+            if json_match:
+                try:
+                    return json.loads(json_match.group())
+                except json.JSONDecodeError:
+                    pass
+            # If all else fails, return empty dict
+            self.file_logger.log_error(f"Could not extract JSON from response: {response_str[:200]}")
+            return {}
+
     def _load_graph(self):
         """Loads the cognitive graph from a file."""
         if os.path.exists(self.graph_file):
@@ -43,13 +61,11 @@ class Cortex:
 
 Text: "{content}"
 
+Respond ONLY with valid JSON in this format: {{"Joy": 0.5, "Sadness": 0.0, ...}}
+
 Emotion JSON:"""        
-        emotion_str = self.llm.generate(prompt=emotion_prompt, temperature=0.2, grammar=self.json_grammar)
-        try:
-            emotions = json.loads(emotion_str)
-        except json.JSONDecodeError:
-            emotions = {}
-            self.file_logger.log_error(f"Failed to decode emotion JSON: {emotion_str}")
+        emotion_str = self.llm.generate(prompt=emotion_prompt, temperature=0.2)
+        emotions = self._extract_json_from_response(emotion_str)
 
         new_node = {
             "id": node_id,
@@ -195,7 +211,7 @@ Respond with a valid JSON object containing a list of related node IDs and the r
 
 JSON Response:"""
 
-            response_str = self.llm.generate(prompt, temperature=0.3, grammar=self.json_grammar)
+            response_str = self.llm.generate(prompt, temperature=0.3)
             
             try:
                 response_data = json.loads(response_str)
@@ -233,7 +249,7 @@ Insight: "{insight['content']}"
 External Information: "{ext_node['content']}"
 
 Relationship JSON:"""
-                    response_str = self.llm.generate(prompt, temperature=0.3, grammar=self.json_grammar)
+                    response_str = self.llm.generate(prompt, temperature=0.3)
                     
                     try:
                         response_data = json.loads(response_str)
@@ -259,7 +275,7 @@ Information 1: "{node1['content']}"
 Information 2: "{node2['content']}"
 
 Relationship JSON:"""
-                response_str = self.llm.generate(prompt, temperature=0.3, grammar=self.json_grammar)
+                response_str = self.llm.generate(prompt, temperature=0.3)
                 
                 try:
                     response_data = json.loads(response_str)
@@ -358,7 +374,7 @@ Text: '''{chunk}'''
 JSON Response:"""
                         
                         analysis_data = None
-                        analysis_json_str = self.llm.generate(prompt, temperature=0.2, grammar=self.json_grammar)
+                        analysis_json_str = self.llm.generate(prompt, temperature=0.2)
                         try:
                             analysis_data = json.loads(analysis_json_str)
                         except (json.JSONDecodeError, KeyError, ValueError) as e:

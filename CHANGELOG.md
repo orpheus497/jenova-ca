@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2025-10-19
+
 ### Changed
 - **Model:** Switched from Phi-4 Mini Instruct to Gemma 3 4B (NoVision) as the default model.
   - Updated `install.sh` to download `gghfez/gemma-3-4b-novision` from HuggingFace
@@ -30,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Model-Specific Prompt Formatting:** Added `_get_model_specific_prompt()` method to `LLMInterface` to handle model-specific chat templates and special tokens, ensuring optimal compatibility with the model's instruction format
+
+### Fixed
+- **Cortex JSON Parsing:** Removed deprecated `grammar` parameter from LLM generate calls and implemented robust JSON extraction from LLM responses throughout the Cortex system
+- **Cognitive Stability:** Improved JSON parsing reliability in cognitive functions to prevent failures when LLM responses contain additional text
 
 ## [3.1.1] - 2025-10-19
 

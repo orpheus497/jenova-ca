@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+.Python
 
 # Environments
 .env
@@ -12,7 +13,6 @@ ENV/
 env/
 
 # Distribution / packaging
-.Python
 build/
 dist/
 downloads/
@@ -27,6 +27,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # PyInstaller
 *.manifest
@@ -49,6 +50,9 @@ htmlcov/
 # IDEs
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
 
 # OS-specific
 .DS_Store
@@ -71,6 +75,7 @@ Thumbs.db
 # Documentation content - keep the directory, ignore contents
 /src/jenova/docs/*
 !/src/jenova/docs/.gitkeep
+!/src/jenova/docs/__init__.py
 
 # Development documentation (already integrated into CHANGELOG)
 /docs/*
@@ -81,3 +86,8 @@ Thumbs.db
 
 # Reports
 pylint_report.txt
+
+# Temporary files
+/tmp/
+*.tmp
+*.temp
