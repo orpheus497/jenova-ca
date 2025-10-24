@@ -235,10 +235,17 @@ class TerminalUI:
             elif command == '/verify':
                 self._verify_assumption()
             elif command == '/train':
-                self.logger.system_message("To create fine-tuning data from your insights:")
-                self.logger.system_message("  Prepare data only: python3 finetune/train.py --prepare-only")
-                self.logger.system_message("  Full LoRA fine-tune: python3 finetune/train.py --epochs 3 --batch-size 4")
-                self.logger.system_message("Note: Fine-tuning with LoRA requires GPU and additional packages (peft, bitsandbytes)")
+                self.logger.system_message("⚠️  Fine-tuning is deprecated as of v3.2.0")
+                self.logger.system_message("")
+                self.logger.system_message("The fine-tuning system has been removed with the migration to GGUF models.")
+                self.logger.system_message("GGUF models are pre-quantized and optimized for inference, not fine-tuning.")
+                self.logger.system_message("")
+                self.logger.system_message("For personalization, JENOVA now uses:")
+                self.logger.system_message("  • Semantic Memory: Your interactions stored in vector database")
+                self.logger.system_message("  • RAG System: Documents retrieved contextually")
+                self.logger.system_message("  • Cognitive Graph: Insights and memories organized for deep personalization")
+                self.logger.system_message("")
+                self.logger.system_message("See finetune/DEPRECATED.md for more information.")
             elif command == '/develop_insight':
                 self._develop_insight(args)
             elif command == '/learn_procedure':
@@ -318,10 +325,10 @@ class TerminalUI:
         self.logger.help_message("    [dim italic]intake of procedural knowledge, stored in procedural memory for[/dim italic]")
         self.logger.help_message("    [dim italic]future recall and application in relevant contexts.[/dim italic]\n")
         
-        self.logger.help_message("  [bright_yellow]/train[/bright_yellow]")
-        self.logger.help_message("    [#BDB2FF]Provides instructions for creating LoRA fine-tuning training data.[/]")
-        self.logger.help_message("    [dim italic]Shows how to generate a training dataset from your insights and[/dim italic]")
-        self.logger.help_message("    [dim italic]fine-tune TinyLlama with LoRA for personalized knowledge.[/dim italic]\n")
+        self.logger.help_message("  [bright_yellow]/train[/bright_yellow] [dim](deprecated)[/dim]")
+        self.logger.help_message("    [#BDB2FF]Shows deprecation notice for fine-tuning system.[/]")
+        self.logger.help_message("    [dim italic]Fine-tuning is no longer supported with GGUF models. Use RAG[/dim italic]")
+        self.logger.help_message("    [dim italic]and semantic memory for personalization instead.[/dim italic]\n")
         
         self.logger.help_message("[bold bright_yellow]SYSTEM COMMANDS[/bold bright_yellow]")
         self.logger.help_message("[dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/dim]\n")
