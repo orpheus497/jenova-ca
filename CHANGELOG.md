@@ -8,89 +8,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **GGUF Model Support:** Migrated to llama-cpp-python for local GGUF model support, enabling more flexible model selection and better performance.
-- **Virtualenv Installation:** New virtualenv-based local installation system replaces system-wide deployment for better isolation and user control.
-- **Models Directory:** Created `models/` directory structure with comprehensive README for GGUF model downloads and configuration.
-- **GPU Detection:** Install script now detects NVIDIA GPUs and builds llama-cpp-python with CUDA support automatically.
-- **Document Canonical Storage:** Documents are now stored as canonical source knowledge nodes without automatic insight generation, preserving original content for RAG retrieval.
+- GGUF model support via llama-cpp-python for flexible model selection and better performance
+- Virtualenv-based local installation system for better isolation and user control
+- Models directory structure with README for GGUF model downloads and configuration
+- GPU detection in install script with automatic CUDA support build for llama-cpp-python
+- Document canonical storage as knowledge nodes without automatic insight generation
+- Comprehensive fine-tuning data generation from complete cognitive architecture (insights, memories, assumptions, documents)
 
 ### Changed
-- **Dependencies:** 
-  - Removed: `transformers`, `accelerate`, `peft`, `bitsandbytes` (HuggingFace ecosystem)
-  - Added: `llama-cpp-python` for GGUF model support
-  - Kept: `sentence-transformers`, `chromadb`, `torch`, `rich`, `prompt-toolkit`, `pyyaml`, `numpy`, `selenium`, `webdriver-manager`, `requests`
-- **Configuration:** Updated `main_config.yaml` with GGUF-specific options:
-  - `model_path`: Path to GGUF model file (required)
-  - `threads`: CPU threads for inference (default: 8)
-  - `gpu_layers`: GPU layers to offload (-1 for all, 0 for CPU-only)
-  - `mlock`: Lock model in RAM (default: true)
-  - `n_batch`: Batch size for processing (default: 512)
-  - Removed automatic context_size detection; now set explicitly in config
-- **Installation Process:**
-  - No longer requires sudo/root privileges
-  - Creates Python virtualenv in project directory (./venv/)
-  - No automatic model downloads - users provide their own GGUF models
-  - Provides clear instructions for model placement and activation
-  - Includes GPU driver and build requirement guidance
-- **LLM Interface:** Complete rewrite of `llm_interface.py`:
-  - Replaced HuggingFace `AutoModelForCausalLM` and `AutoTokenizer` with llama-cpp-python `Llama`
-  - Removed tokenizer dependencies
-  - Simplified generation API using `create_completion()`
-  - Better error messages for missing models and configuration issues
-- **Document Processing:** Modified `Cortex.develop_insights_from_docs()`:
-  - Documents stored as 'document' and 'document_chunk' nodes in cognitive graph
-  - No automatic insight generation or analysis
-  - Documents chunked for better RAG retrieval
-  - Full content preserved as canonical source knowledge
-  - Metadata includes summary, filename, and chunk information
-- **Cortex Prompts:** Removed `grammar` parameter from all LLM generation calls (not supported by llama-cpp-python)
-- **JSON Parsing:** Enhanced JSON extraction from LLM responses with fallback parsing
-- **Fine-Tuning System:** Marked as deprecated (see `finetune/DEPRECATED.md`):
-  - GGUF models are pre-quantized and not directly fine-tunable
-  - System now relies on RAG and semantic memory for personalization
-  - Original files retained for reference
+- Dependencies: Replaced `transformers`, `accelerate`, `peft`, `bitsandbytes` with `llama-cpp-python`; kept `sentence-transformers`, `chromadb`, `torch`, `rich`, `prompt-toolkit`, `pyyaml`, `numpy`, `selenium`, `webdriver-manager`, `requests`
+- Configuration: Added GGUF-specific options in `main_config.yaml`: `model_path`, `threads`, `gpu_layers`, `mlock`, `n_batch`; removed automatic context_size detection
+- Installation: Virtualenv-based local installation without sudo; no automatic model downloads; users provide GGUF models; includes GPU driver guidance
+- LLM Interface: Complete rewrite using llama-cpp-python `Llama` class; removed tokenizer dependencies; simplified generation API with `create_completion()`
+- Document Processing: Documents stored as 'document' and 'document_chunk' nodes in cognitive graph; no automatic insight generation; documents chunked for RAG retrieval; full content preserved as canonical knowledge
+- Cortex: Removed `grammar` parameter from LLM generation calls (not supported by llama-cpp-python); enhanced JSON extraction with fallback parsing
+- Fine-Tuning: Updated to generate comprehensive training data from all cognitive sources (insights, episodic/semantic/procedural memory, assumptions, documents); creates .jsonl for use with external tools
 
 ### Removed
-- **System-Wide Installation:** No longer installs globally or creates `/usr/local/share/jenova-ai/`
-- **Automatic Model Downloads:** Install script no longer downloads models from HuggingFace
-- **HuggingFace Dependencies:** Removed transformers, accelerate, and related packages
-- **Grammar System:** Removed grammar-constrained generation (incompatible with llama-cpp-python)
-- **Auto-Insight Generation:** Documents no longer automatically analyzed for insights during processing
+- System-wide installation: No longer installs globally or creates `/usr/local/share/jenova-ai/`
+- Automatic model downloads: Install script no longer downloads models from HuggingFace
+- HuggingFace dependencies: Removed transformers, accelerate packages
+- Grammar system: Removed grammar-constrained generation (incompatible with llama-cpp-python)
+- Auto-insight generation: Documents no longer automatically analyzed for insights during processing
 
 ### Fixed
-- **Model Loading:** Clear error messages when GGUF model file is missing
-- **GPU Support:** Proper detection and configuration for NVIDIA GPU acceleration
-- **Resource Cleanup:** Improved LLM resource cleanup on shutdown
+- Model loading: Clear error messages when GGUF model file is missing
+- GPU support: Proper detection and configuration for NVIDIA GPU acceleration
+- Resource cleanup: Improved LLM resource cleanup on shutdown
 
 ### Security
-- **Local-Only Operation:** No external API calls or automatic downloads during installation
-- **User Control:** Users explicitly provide and control their GGUF models
-- **Virtualenv Isolation:** Better dependency isolation and security through virtualenv
-
-### Migration Guide
-
-**For existing users:**
-
-1. Backup your user data directory (`~/.jenova-ai/`)
-2. Remove old installation: `sudo pip uninstall jenova-ai`
-3. Clone/pull latest code
-4. Run new installer: `./install.sh` (without sudo)
-5. Download a GGUF model (see `models/README.md` for links)
-6. Update `src/jenova/config/main_config.yaml` with your model path
-7. Activate virtualenv: `source venv/bin/activate`
-8. Run JENOVA: `python -m jenova.main`
-
-**Recommended GGUF models:**
-- Small (testing): TinyLlama 1.1B (~650MB)
-- Medium (balanced): Mistral 7B (~4GB)
-- Large (best quality): Llama-2 13B (~7GB)
-
-**For developers:**
-
-- Update imports: No more `transformers` imports
-- LLM calls: `llm.generate()` API remains similar but no `grammar` parameter
-- Model reference: Use `llm.llm` instead of `llm.model`
-- No tokenizer: Context/token management done by llama-cpp-python
+- Local-only operation: No external API calls or automatic downloads during installation
+- User control: Users explicitly provide and control their GGUF models
+- Virtualenv isolation: Better dependency isolation and security through virtualenv
 
 ---
 

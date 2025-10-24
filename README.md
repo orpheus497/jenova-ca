@@ -108,11 +108,7 @@ JENOVA actively forms assumptions about the user to build a more accurate mental
 *   **Storage:** Assumptions are stored in a dedicated `assumptions.json` file in the user's data directory. Each assumption is categorized by its status: `unverified`, `verified`, `true`, or `false`.
 *   **Verification:** The `/verify` command allows the user to help the AI validate its assumptions. The AI will ask a clarifying question to confirm or deny an unverified assumption. Based on the user's response, the assumption will be moved to the `true` or `false` category. The AI also proactively verifies assumptions during the conversation.
 
-### 3.7. Self-Optimizing Context Window
-
-To maximize performance, the `LLMInterface` dynamically configures the context window (`n_ctx`). On startup, it performs a "dry run" to load the model's metadata and read its maximum supported context length. This value is then used to override the default `context_size` set in `main_config.yaml`, ensuring the AI always uses the largest possible context window the model was trained on, without requiring manual configuration.
-
-### 3.8. Multi-Layered Long-Term Memory
+### 3.7. Multi-Layered Long-Term Memory
 
 JENOVA's memory is not a monolith. It's a sophisticated, multi-layered system managed by `ChromaDB`, a vector database. All memory is stored on a per-user basis.
 
@@ -121,63 +117,103 @@ JENOVA's memory is not a monolith. It's a sophisticated, multi-layered system ma
 *   **Procedural Memory (`ProceduralMemory`):** Stores "how-to" information and instructions. Each procedure is enriched with its goal, a list of steps, and its context.
 *   **Insight Memory (`InsightManager`):** While not a ChromaDB instance, the collection of saved insight files acts as a fourth, highly dynamic memory layer.
 
-### 3.9. Fine-Tuning Data Generation
+### 3.8. Fine-Tuning Data Generation
 
-JENOVA is designed for continuous improvement. The insights generated during its operation can be used to create a dataset for fine-tuning the base model itself.
+JENOVA's cognitive architecture can be exported as comprehensive training data for model fine-tuning. The system extracts knowledge from all cognitive sources to create rich training datasets.
 
-*   **Data Preparation (`finetune/train.py`):** This script gathers all the `.json` insight files from `~/.jenova-ai/users/<username>/insights/` and transforms them into a `finetune_train.jsonl` file. The script is configurable and can be used to generate a dataset for fine-tuning a model in a separate program.
+*   **Comprehensive Extraction (`finetune/train.py`):** This script scans the entire cognitive architecture including insights, episodic/semantic/procedural memory, verified assumptions, and document knowledge, compiling everything into a `finetune_train.jsonl` file formatted for instruction fine-tuning.
+*   **External Fine-Tuning:** The generated `.jsonl` file can be used with various fine-tuning tools including llama.cpp training utilities, HuggingFace Transformers, or Axolotl.
+*   **Model Integration:** After fine-tuning externally and converting to GGUF format, the personalized model can be used by updating `model_path` in the configuration.
 
-## 4. System-Wide Installation
+## 4. Installation
 
-JENOVA is designed to be installed once on a system by an administrator and then be available to all users, while keeping each user's data completely separate and private.
+JENOVA uses a local virtualenv-based installation that keeps dependencies isolated and gives users full control over model selection.
 
-### 4.1. For Administrators
+### 4.1. Prerequisites
 
-To install JENOVA on the system, run the installation script with root privileges.
+*   A Linux-based operating system (tested on Fedora)
+*   `git`, `python3`, and `python3-venv` installed
+*   For GPU acceleration: NVIDIA GPU with CUDA toolkit installed
 
-1.  **Prerequisites:**
-    *   A Linux-based operating system
-    *   `git`, `python3`, and `python3-pip` installed
-    *   Internet connection for downloading the TinyLlama model (~2.2GB)
+### 4.2. Installation Steps
 
-2.  **Clone the Repository:**
+1.  **Clone the Repository:**
     ```bash
     git clone https://github.com/orpheus497/jenova-ai.git
     cd jenova-ai
     ```
 
-3.  **Run the Installation Script:**
-    Execute the script with `sudo`. It handles installation of all dependencies, downloads the TinyLlama model to `/usr/local/share/jenova-ai/models`, and makes the `jenova` command available system-wide.
+2.  **Run the Installation Script:**
+    Execute the script as a regular user (no sudo required). It creates a Python virtualenv and installs all dependencies:
     ```bash
-    sudo ./install.sh
+    ./install.sh
     ```
     
-    The installation script automatically downloads TinyLlama-1.1B-step-50K-105b from HuggingFace and installs it to the system-wide model directory.
+    The script will:
+    - Create a virtualenv in `./venv/`
+    - Install Python dependencies
+    - Build llama-cpp-python (with CUDA if GPU detected)
+    - Create the `models/` directory
+    - Display instructions for next steps
 
-### 4.2. Uninstallation
-
-To completely remove JENOVA AI from the system, including all user data and downloaded models, an uninstallation script is provided. It must be run with root privileges.
-
-1.  **Navigate to the repository directory:**
+3.  **Download a GGUF Model:**
+    JENOVA works with any GGUF format model. Choose based on your hardware:
+    
+    **Small models (2-4GB RAM):**
     ```bash
-    cd jenova-ai
+    cd models
+    wget https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf -O model.gguf
+    cd ..
+    ```
+    
+    **Medium models (8GB+ RAM):**
+    ```bash
+    cd models
+    wget https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf -O model.gguf
+    cd ..
+    ```
+    
+    See `models/README.md` for more model recommendations.
+
+4.  **Configure Model Path:**
+    Update `src/jenova/config/main_config.yaml` if your model filename differs:
+    ```yaml
+    model:
+      model_path: './models/model.gguf'
     ```
 
-2.  **Run the Uninstallation Script:**
-    Execute the script with `sudo`. It will guide you through the process of removing the application, all user data, and the language model.
+5.  **Run JENOVA:**
     ```bash
-    sudo ./uninstall.sh
+    source venv/bin/activate
+    python -m jenova.main
     ```
 
-### 4.3. For Users
+### 4.3. Configuration
 
-Once an administrator has installed JENOVA, no further setup is required. You can start interacting with the AI immediately.
+JENOVA's configuration is in `src/jenova/config/main_config.yaml`. Key settings:
 
-*   **Running the Application:** Simply open your terminal and type the command:
-    ```bash
-    jenova
-    ```
-*   **User-Specific Data:** The first time you run the application, a private directory will be created at `~/.jenova-ai/users/<your_username>/`. All of your conversations, memories, and learned insights will be stored here, inaccessible to other users.
+*   **model_path:** Path to your GGUF model file
+*   **threads:** CPU threads for inference (adjust for your CPU)
+*   **gpu_layers:** GPU layers to offload (-1 for all layers, 0 for CPU-only)
+*   **mlock:** Lock model in RAM for better performance
+*   **n_batch:** Batch size for processing
+*   **context_size:** Context window size
+*   **embedding_model:** Sentence transformer model for memory embeddings
+
+### 4.4. GPU Acceleration
+
+For NVIDIA GPUs with CUDA:
+
+1. Install CUDA toolkit: `sudo dnf install cuda-toolkit`
+2. The install script will automatically build llama-cpp-python with CUDA support
+3. Set `gpu_layers: -1` in config to offload all layers to GPU
+4. Verify GPU usage with `nvidia-smi` while running
+
+### 4.5. User Data
+
+*   **User-Specific Storage:** Each user's data is stored privately at `~/.jenova-ai/users/<username>/`
+*   **Contents:** Conversations, memories, insights, assumptions, and cognitive graph
+*   **Privacy:** Data is local and not shared between users
 
 ## 5. User Guide
 
@@ -195,7 +231,7 @@ JENOVA responds to a set of powerful commands that act as direct instructions fo
 -   `/memory-insight`: Prompts JENOVA to perform a broad search across its multi-layered long-term memory (episodic, semantic, procedural) to develop new insights or assumptions based on its accumulated knowledge.
 -   `/meta`: Generates a new, higher-level meta-insight by analyzing clusters of existing insights within the Cortex. This helps JENOVA to form more abstract conclusions and identify overarching themes.
 -   `/verify`: Starts the assumption verification process. Jenova will present an unverified assumption it has made about you and ask for clarification, allowing you to confirm or deny it. This refines JENOVA's understanding of your preferences and knowledge.
--   `/train`: Provides instructions on how to create a training file for fine-tuning the model with your own data.
+-   `/train`: Generates comprehensive fine-tuning data from the complete cognitive architecture. Creates a `.jsonl` file that includes insights, memories, assumptions, and document knowledge for use with external fine-tuning tools.
 -   `/develop_insight [node_id]`: This command has dual functionality:
     -   If a `node_id` is provided: JENOVA will take an existing insight and generate a more detailed and developed version of it, adding more context or connections.
     -   If no `node_id` is provided: Jenova will scan the `src/jenova/docs` directory for new or updated documents, process their content, and integrate new insights and summaries into its cognitive graph. This is how Jenova learns from external documentation.
@@ -283,36 +319,41 @@ JENOVA's behavior is controlled by two YAML files in `src/jenova/config/`.
 This file controls the technical parameters of the AI.
 
 -   **`model`**:
-    -   `context_size`: The context window size for TinyLlama (2048 tokens)
-    -   `max_tokens`: The maximum number of tokens to generate in a single response
-    -   `temperature`: Controls the "creativity" of the LLM. Lower is more deterministic
+    -   `model_path`: Path to GGUF model file
+    -   `threads`: CPU threads for inference
+    -   `gpu_layers`: GPU layers to offload (-1 for all, 0 for CPU-only)
+    -   `mlock`: Lock model in RAM
+    -   `n_batch`: Batch size for processing
+    -   `context_size`: Context window size
+    -   `max_tokens`: Maximum tokens to generate per response
+    -   `temperature`: Controls the "creativity" of the LLM
     -   `top_p`: Nucleus sampling parameter
-    -   `embedding_model`: The sentence-transformer model to use for creating vector embeddings for memory search
+    -   `embedding_model`: Sentence-transformer model for vector embeddings
 -   **`memory`**:
-    -   `preload_memories`: Whether to load all memories into RAM at startup.
-    -   `..._db_path`: Paths to the ChromaDB databases. These are relative to the user's data directory (`~/.jenova-ai/users/<username>/memory/`)
-    -   `reflection_interval`: The interval (in conversation turns) for reflecting on memories.
+    -   `preload_memories`: Whether to load all memories into RAM at startup
+    -   `..._db_path`: Paths to the ChromaDB databases (relative to user data directory)
+    -   `reflection_interval`: Interval (in turns) for reflecting on memories
 -   **`cortex`**:
-    -   `relationship_weights`: Weights for different types of relationships between cognitive nodes.
-    -   `pruning`: Settings for automatically pruning the cognitive graph to remove old or irrelevant nodes.
+    -   `relationship_weights`: Weights for different relationship types between cognitive nodes
+    -   `pruning`: Settings for automatically pruning the cognitive graph
 -   **`scheduler`**:
-    -   `generate_insight_interval`: The interval (in conversation turns) for generating insights.
-    -   `generate_assumption_interval`: The interval for generating assumptions.
-    -   `proactively_verify_assumption_interval`: The interval for verifying assumptions.
-    -   `reflect_interval`: The interval for reflecting on the cognitive graph.
-    -   `reorganize_insights_interval`: The interval for reorganizing insights.
-    -   `process_documents_interval`: The interval for processing documents.
+    -   `generate_insight_interval`: Interval for generating insights
+    -   `generate_assumption_interval`: Interval for generating assumptions
+    -   `proactively_verify_assumption_interval`: Interval for verifying assumptions
+    -   `reflect_interval`: Interval for reflecting on the cognitive graph
+    -   `reorganize_insights_interval`: Interval for reorganizing insights
+    -   `process_documents_interval`: Interval for processing documents
 -   **`memory_search`**:
-    -   `semantic_n_results`: The number of results to retrieve from semantic memory
-    -   `episodic_n_results`: The number of results to retrieve from episodic memory
-    -   `procedural_n_results`: The number of results to retrieve from procedural memory
-    -   `insight_n_results`: The number of results to retrieve from insight memory
+    -   `semantic_n_results`: Number of results to retrieve from semantic memory
+    -   `episodic_n_results`: Number of results from episodic memory
+    -   `procedural_n_results`: Number of results from procedural memory
+    -   `insight_n_results`: Number of results from insight memory
 -   **`finetuning`**:
-    -   `training_file`: The name of the generated training file.
-    -   `lora_output_dir`: The directory to save LoRA adapters.
-    -   `finetuned_model_output`: The path to save the merged, fine-tuned model.
+    -   `training_file`: Name of the generated training file
+    -   `lora_output_dir`: Directory for LoRA adapters (for reference)
+    -   `finetuned_model_output`: Path for fine-tuned model output (for reference)
 -   **`tools`**:
-    -   `file_sandbox_path`: The path to the directory where the AI can read and write files.
+    -   `file_sandbox_path`: Directory where the AI can read and write files
 
 #### `persona.yaml`
 
@@ -332,15 +373,9 @@ This file defines the AI's personality and core directives.
 
 The JENOVA Cognitive Architecture builds upon excellent open-source work from the community:
 
-### Language Model
--   **TinyLlama-1.1B-step-50K-105b** by the TinyLlama team
-    -   [HuggingFace Repository](https://huggingface.co/TinyLlama/TinyLlama-1.1B-step-50K-105b)
-    -   A compact, efficient 1.1B parameter language model trained on 3 trillion tokens
-    -   Licensed under Apache 2.0
-
 ### Core Dependencies
--   **Transformers** by HuggingFace - State-of-the-art Natural Language Processing library
--   **PyTorch** by Meta AI - Deep learning framework powering the model inference
+-   **llama-cpp-python** - Python bindings for llama.cpp, enabling efficient GGUF model inference
+-   **PyTorch** - Deep learning framework (required by sentence-transformers)
 -   **ChromaDB** - Vector database for efficient memory storage and retrieval
 -   **Sentence Transformers** - Framework for computing dense vector representations
 -   **Rich** by Will McGugan - Beautiful terminal formatting and UI components
