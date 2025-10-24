@@ -1,9 +1,37 @@
-# Main Configuration for The JENOVA Cognitive Architecture - JCA v3.1
+# Main Configuration for The JENOVA Cognitive Architecture - JCA v3.2
 model:
-  context_size: 2048 # Context window size for TinyLlama (maximum supported)
-  max_tokens: 512 # Maximum tokens to generate per response
+  # Path to GGUF model file (required)
+  model_path: './models/model.gguf'
+  
+  # CPU threads for inference (set based on your CPU)
+  # Recommended: number of physical cores (not logical/hyperthreads)
+  threads: 8
+  
+  # GPU layers to offload (-1 = all layers, 0 = CPU only)
+  # For NVIDIA GPUs with CUDA: set to -1 for full GPU acceleration
+  # For CPU-only: set to 0
+  gpu_layers: -1
+  
+  # Lock model in RAM to prevent swapping (recommended for performance)
+  mlock: true
+  
+  # Batch size for prompt processing
+  n_batch: 512
+  
+  # Context window size (will be auto-detected from model, but can override)
+  # Typical values: 2048, 4096, 8192, 16384, 32768
+  context_size: 2048
+  
+  # Maximum tokens to generate per response
+  max_tokens: 512
+  
+  # Temperature for generation (0.0 = deterministic, 1.0 = very creative)
   temperature: 0.7
+  
+  # Top-p (nucleus) sampling
   top_p: 0.95
+  
+  # Embedding model for semantic search (sentence-transformers)
   embedding_model: 'all-MiniLM-L6-v2'
 memory:
   preload_memories: true
@@ -40,10 +68,12 @@ memory_search:
   procedural_n_results: 3
   insight_n_results: 5
 
+# Fine-tuning (DEPRECATED as of v3.2.0 - see finetune/DEPRECATED.md)
+# These settings are retained for backward compatibility but are not used
 finetuning:
   training_file: "finetune_train.jsonl"
-  lora_output_dir: "/usr/local/share/jenova-ai/lora"
-  finetuned_model_output: "/usr/local/share/jenova-ai/models/jenova-finetuned"
+  lora_output_dir: "./output/lora"
+  finetuned_model_output: "./output/models/jenova-finetuned"
 
 tools:
   file_sandbox_path: "~/jenova_files"

@@ -235,10 +235,25 @@ class TerminalUI:
             elif command == '/verify':
                 self._verify_assumption()
             elif command == '/train':
-                self.logger.system_message("To create fine-tuning data from your insights:")
-                self.logger.system_message("  Prepare data only: python3 finetune/train.py --prepare-only")
-                self.logger.system_message("  Full LoRA fine-tune: python3 finetune/train.py --epochs 3 --batch-size 4")
-                self.logger.system_message("Note: Fine-tuning with LoRA requires GPU and additional packages (peft, bitsandbytes)")
+                self.logger.system_message("Fine-Tuning Data Generation")
+                self.logger.system_message("")
+                self.logger.system_message("Generate comprehensive training data from your cognitive architecture:")
+                self.logger.system_message("  python finetune/train.py")
+                self.logger.system_message("")
+                self.logger.system_message("This creates 'finetune_train.jsonl' from:")
+                self.logger.system_message("  • Insights and learned knowledge")
+                self.logger.system_message("  • Conversation history (episodic memory)")
+                self.logger.system_message("  • Factual knowledge (semantic memory)")
+                self.logger.system_message("  • Procedures and how-to knowledge")
+                self.logger.system_message("  • Verified assumptions")
+                self.logger.system_message("  • Document knowledge")
+                self.logger.system_message("")
+                self.logger.system_message("Use the .jsonl file with external fine-tuning tools:")
+                self.logger.system_message("  • llama.cpp training utilities (for GGUF)")
+                self.logger.system_message("  • HuggingFace Transformers/PEFT (convert GGUF first)")
+                self.logger.system_message("  • Axolotl or other training frameworks")
+                self.logger.system_message("")
+                self.logger.system_message("See finetune/README.md for detailed instructions.")
             elif command == '/develop_insight':
                 self._develop_insight(args)
             elif command == '/learn_procedure':
@@ -319,9 +334,9 @@ class TerminalUI:
         self.logger.help_message("    [dim italic]future recall and application in relevant contexts.[/dim italic]\n")
         
         self.logger.help_message("  [bright_yellow]/train[/bright_yellow]")
-        self.logger.help_message("    [#BDB2FF]Provides instructions for creating LoRA fine-tuning training data.[/]")
-        self.logger.help_message("    [dim italic]Shows how to generate a training dataset from your insights and[/dim italic]")
-        self.logger.help_message("    [dim italic]fine-tune TinyLlama with LoRA for personalized knowledge.[/dim italic]\n")
+        self.logger.help_message("    [#BDB2FF]Generates comprehensive fine-tuning data from your cognitive architecture.[/]")
+        self.logger.help_message("    [dim italic]Creates a .jsonl file from insights, memories, assumptions, and documents[/dim italic]")
+        self.logger.help_message("    [dim italic]for use with external fine-tuning tools.[/dim italic]\n")
         
         self.logger.help_message("[bold bright_yellow]SYSTEM COMMANDS[/bold bright_yellow]")
         self.logger.help_message("[dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/dim]\n")

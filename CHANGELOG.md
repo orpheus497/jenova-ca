@@ -8,7 +8,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- (Add new features for the next version here)
+- GGUF model support via llama-cpp-python for flexible model selection and better performance
+- Virtualenv-based local installation system for better isolation and user control
+- Models directory structure with README for GGUF model downloads and configuration
+- GPU detection in install script with automatic CUDA support build for llama-cpp-python
+- Document canonical storage as knowledge nodes without automatic insight generation
+- Comprehensive fine-tuning data generation from complete cognitive architecture (insights, memories, assumptions, documents)
+
+### Changed
+- Dependencies: Replaced `transformers`, `accelerate`, `peft`, `bitsandbytes` with `llama-cpp-python`; kept `sentence-transformers`, `chromadb`, `torch`, `rich`, `prompt-toolkit`, `pyyaml`, `numpy`, `selenium`, `webdriver-manager`, `requests`
+- Configuration: Added GGUF-specific options in `main_config.yaml`: `model_path`, `threads`, `gpu_layers`, `mlock`, `n_batch`; removed automatic context_size detection
+- Installation: Virtualenv-based local installation without sudo; no automatic model downloads; users provide GGUF models; includes GPU driver guidance
+- LLM Interface: Complete rewrite using llama-cpp-python `Llama` class; removed tokenizer dependencies; simplified generation API with `create_completion()`
+- Document Processing: Documents stored as 'document' and 'document_chunk' nodes in cognitive graph; no automatic insight generation; documents chunked for RAG retrieval; full content preserved as canonical knowledge
+- Cortex: Removed `grammar` parameter from LLM generation calls (not supported by llama-cpp-python); enhanced JSON extraction with fallback parsing
+- Fine-Tuning: Updated to generate comprehensive training data from all cognitive sources (insights, episodic/semantic/procedural memory, assumptions, documents); creates .jsonl for use with external tools
+
+### Removed
+- System-wide installation: No longer installs globally or creates `/usr/local/share/jenova-ai/`
+- Automatic model downloads: Install script no longer downloads models from HuggingFace
+- HuggingFace dependencies: Removed transformers, accelerate packages
+- Grammar system: Removed grammar-constrained generation (incompatible with llama-cpp-python)
+- Auto-insight generation: Documents no longer automatically analyzed for insights during processing
+
+### Fixed
+- Model loading: Clear error messages when GGUF model file is missing
+- GPU support: Proper detection and configuration for NVIDIA GPU acceleration
+- Resource cleanup: Improved LLM resource cleanup on shutdown
+
+### Security
+- Local-only operation: No external API calls or automatic downloads during installation
+- User control: Users explicitly provide and control their GGUF models
+- Virtualenv isolation: Better dependency isolation and security through virtualenv
+
+---
 
 ## [3.1.1] - 2025-10-19
 

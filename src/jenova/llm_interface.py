@@ -1,5 +1,5 @@
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+import os
+from llama_cpp import Llama
 
 class LLMInterface:
     def __init__(self, config, ui_logger, file_logger):
@@ -7,14 +7,14 @@ class LLMInterface:
         self.ui_logger = ui_logger
         self.file_logger = file_logger
         self.system_prompt = self._build_system_prompt()
-        self.model, self.tokenizer = self._load_model()
+        self.llm = self._load_model()
     
     def close(self):
         """Cleans up the LLM resources."""
-        if self.model:
-            # Clear CUDA cache if using GPU
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
+        if self.llm:
+            # llama-cpp-python cleanup
+            del self.llm
+            self.llm = None
             self.file_logger.log_info("LLM model resources released.")
 
     def _build_system_prompt(self) -> str:
@@ -32,162 +32,124 @@ You must follow these directives:
         return prompt
 
     def _load_model(self):
-        """Load TinyLlama model from HuggingFace or local cache."""
-        model_dir = "/usr/local/share/jenova-ai/models"
-        model_name = "TinyLlama/TinyLlama-1.1B-step-50K-105b"
+        """Load GGUF model using llama-cpp-python."""
+        model_config = self.config.get('model', {})
+        model_path = model_config.get('model_path', './models/model.gguf')
+        threads = model_config.get('threads', 8)
+        gpu_layers = model_config.get('gpu_layers', -1)
+        use_mlock = model_config.get('mlock', True)
+        n_batch = model_config.get('n_batch', 512)
         
-        self.ui_logger.info(f"Loading TinyLlama model...")
-        self.file_logger.log_info(f"Loading model: {model_name}")
+        self.ui_logger.info(f"Loading GGUF model from {model_path}...")
+        self.file_logger.log_info(f"Model path: {model_path}")
+        self.file_logger.log_info(f"Threads: {threads}, GPU layers: {gpu_layers}, mlock: {use_mlock}, batch: {n_batch}")
         
-        # Determine device
-        if torch.cuda.is_available():
-            device = "cuda"
-            self.ui_logger.system_message(f"🎮 GPU Acceleration: Enabled (CUDA)")
-            self.file_logger.log_info(f"GPU acceleration enabled: CUDA")
-        else:
-            device = "cpu"
-            self.ui_logger.system_message(f"💻 Running on CPU")
-            self.file_logger.log_info(f"Running on CPU")
+        # Check if model file exists
+        if not os.path.exists(model_path):
+            error_msg = f"Model file not found: {model_path}\n\n" \
+                       f"Please download a GGUF model and place it at {model_path}\n" \
+                       f"See models/README.md for download instructions."
+            self.ui_logger.system_message(f"✗ {error_msg}")
+            self.file_logger.log_error(error_msg)
+            raise FileNotFoundError(error_msg)
+        
+        if not model_path.endswith('.gguf'):
+            warning_msg = f"Warning: Model file does not have .gguf extension: {model_path}"
+            self.ui_logger.system_message(f"⚠ {warning_msg}")
+            self.file_logger.log_info(warning_msg)
         
         try:
-            # Load tokenizer
-            self.ui_logger.info("Loading tokenizer...")
-            tokenizer = AutoTokenizer.from_pretrained(
-                model_name,
-                cache_dir=model_dir,
-                local_files_only=False,
-                trust_remote_code=True
+            # Load model with llama-cpp-python
+            self.ui_logger.info("Initializing llama-cpp-python...")
+            
+            llm = Llama(
+                model_path=model_path,
+                n_threads=threads,
+                n_gpu_layers=gpu_layers,
+                use_mlock=use_mlock,
+                n_batch=n_batch,
+                n_ctx=model_config.get('context_size', 2048),
+                verbose=False
             )
             
-            # Set pad token if not set
-            if tokenizer.pad_token is None:
-                tokenizer.pad_token = tokenizer.eos_token
-            
-            # Load model
-            self.ui_logger.info("Loading model weights...")
-            model = AutoModelForCausalLM.from_pretrained(
-                model_name,
-                cache_dir=model_dir,
-                dtype=torch.float16 if device == "cuda" else torch.float32,
-                low_cpu_mem_usage=True,
-                local_files_only=False,
-                trust_remote_code=True
-            )
-            
-            model = model.to(device)
-            model.eval()
-            
-            # --- Self-Optimizing Context Window ---
-            # Override config with model's actual max context length
-            model_max_len = tokenizer.model_max_length
-            if model_max_len is None or model_max_len > 4096:
-                self.file_logger.log_info(f"Model's max length ({model_max_len}) is unreasonable. Using context size from config: {self.config['model']['context_size']} tokens.")
+            # Log GPU usage
+            if gpu_layers > 0 or gpu_layers == -1:
+                self.ui_logger.system_message(f"🎮 GPU Acceleration: Enabled (GPU layers: {gpu_layers})")
+                self.file_logger.log_info(f"GPU acceleration enabled with {gpu_layers} layers")
             else:
-                self.config['model']['context_size'] = model_max_len
-                self.file_logger.log_info(f"Context size automatically set to {model_max_len} tokens.")
-
-            # --- Set max_tokens based on context size ---
-            context_size = self.config['model']['context_size']
-            if context_size < 4000:
-                self.config['model']['max_tokens'] = context_size // 2
-            else:
-                self.config['model']['max_tokens'] = 2048
-            self.file_logger.log_info(f"Max generation tokens automatically set to {self.config['model']['max_tokens']} tokens.")
-
-            # Get model info
-            total_params = sum(p.numel() for p in model.parameters())
-            trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+                self.ui_logger.system_message(f"💻 Running on CPU only")
+                self.file_logger.log_info(f"Running on CPU")
             
-            self.ui_logger.system_message(f"✓ Model loaded: TinyLlama-1.1B")
-            self.ui_logger.system_message(f"   Total parameters: {total_params:,}")
-            self.ui_logger.system_message(f"   Device: {device.upper()}")
-            self.ui_logger.system_message(f"   Model max context: {self.config['model']['context_size']} tokens")
-            self.ui_logger.system_message(f"   Program max tokens: {self.config['model']['max_tokens']} tokens")
-            self.file_logger.log_info(f"Model loaded successfully on {device}")
-            self.file_logger.log_info(f"Total params: {total_params:,}, Trainable: {trainable_params:,}")
+            # Get model metadata if available
+            try:
+                metadata = llm.metadata
+                if metadata:
+                    self.file_logger.log_info(f"Model metadata: {metadata}")
+            except:
+                pass
             
-            return model, tokenizer
+            self.ui_logger.system_message(f"✓ Model loaded: {os.path.basename(model_path)}")
+            self.ui_logger.system_message(f"   Context size: {model_config.get('context_size', 2048)} tokens")
+            self.ui_logger.system_message(f"   Max generation: {model_config.get('max_tokens', 512)} tokens")
+            self.file_logger.log_info(f"Model loaded successfully from {model_path}")
+            
+            return llm
             
         except Exception as e:
-            self.ui_logger.system_message(f"✗ Failed to load model: {e}")
+            error_msg = f"Failed to load model: {e}\n\n" \
+                       f"Troubleshooting:\n" \
+                       f"- Ensure the model file is a valid GGUF format\n" \
+                       f"- For GPU support, install CUDA toolkit and rebuild llama-cpp-python\n" \
+                       f"- Try reducing gpu_layers if out of VRAM\n" \
+                       f"- Check that you have enough RAM for the model"
+            self.ui_logger.system_message(f"✗ {error_msg}")
             self.file_logger.log_error(f"Error loading model: {e}")
             raise
 
-    def generate(self, prompt: str, stop: list = None, temperature: float = None) -> str:
-        """Generates a response from the LLM.
+    def generate(self, prompt: str, stop: list = None, temperature: float = None, max_tokens: int = None) -> str:
+        """Generates a response from the LLM using llama-cpp-python.
         
         Args:
             prompt: The prompt to generate from
             stop: Stop sequences for early termination
-            temperature: Temperature for generation
-            grammar: Grammar specification (not used with transformers, kept for compatibility)
+            temperature: Temperature for generation (overrides config)
+            max_tokens: Maximum tokens to generate (overrides config)
         """
         full_prompt = self.system_prompt + "\n\n" + prompt
         
+        # Get parameters from config or use provided values
         temp = temperature if temperature is not None else self.config['model']['temperature']
-        max_tokens = self.config['model'].get('max_tokens', 512)
+        max_new_tokens = max_tokens if max_tokens is not None else self.config['model'].get('max_tokens', 512)
         
         # Use default stop sequences if none provided
         if stop is None:
             stop = ["\nUser:", "\nJenova:", "User:", "Jenova:"]
         
         try:
-            # Tokenize input
-            inputs = self.tokenizer(
-                full_prompt,
-                return_tensors="pt",
-                truncation=True,
-                max_length=self.config['model']['context_size']
+            # Generate using llama-cpp-python
+            response = self.llm.create_completion(
+                prompt=full_prompt,
+                max_tokens=max_new_tokens,
+                temperature=max(temp, 0.1),  # Ensure temp is not too low
+                top_p=self.config['model']['top_p'],
+                stop=stop,
+                echo=False
             )
             
-            # Move to device
-            device = next(self.model.parameters()).device
-            inputs = {k: v.to(device) for k, v in inputs.items()}
-            
-            # Prepare stopping criteria if stop sequences provided
-            stop_token_ids = []
-            if stop:
-                for stop_seq in stop:
-                    tokens = self.tokenizer.encode(stop_seq, add_special_tokens=False)
-                    if tokens:
-                        stop_token_ids.extend(tokens)
-            
-            # Generate
-            with torch.no_grad():
-                outputs = self.model.generate(
-                    **inputs,
-                    max_new_tokens=max_tokens,
-                    temperature=max(temp, 0.1),  # Ensure temp is not too low
-                    top_p=self.config['model']['top_p'],
-                    do_sample=True,
-                    pad_token_id=self.tokenizer.eos_token_id,
-                    eos_token_id=self.tokenizer.eos_token_id,
-                    repetition_penalty=1.2,  # Reduce repetition
-                )
-            
-            # Decode response
-            generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            
-            # Extract only the generated part (remove prompt)
-            if generated_text.startswith(full_prompt):
-                response = generated_text[len(full_prompt):].strip()
+            # Extract text from response
+            if response and 'choices' in response and len(response['choices']) > 0:
+                generated_text = response['choices'][0]['text']
             else:
-                response = generated_text.strip()
-            
-            # Apply stop sequences manually (remove everything after stop sequence)
-            if stop:
-                for stop_seq in stop:
-                    if stop_seq in response:
-                        response = response.split(stop_seq)[0].strip()
+                generated_text = ""
             
             # Clean up response
-            response = response.strip()
+            generated_text = generated_text.strip()
             
             # If response is empty, provide fallback
-            if not response:
-                response = "I understand your query, but I need more context to provide a helpful response."
+            if not generated_text:
+                generated_text = "I understand your query, but I need more context to provide a helpful response."
             
-            return response
+            return generated_text
             
         except Exception as e:
             self.file_logger.log_error(f"Error during LLM generation: {e}")

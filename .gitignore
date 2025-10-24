@@ -61,11 +61,13 @@ Thumbs.db
 .jenova-ai/
 /users/
 
-# LLM models - ignore all files in models/, but keep the directory
+# LLM models - ignore all GGUF files in models/, but keep the directory
 /models/*
 !/models/.gitkeep
+!/models/README.md
+*.gguf
 
-# Generated fine-tuning data
+# Generated fine-tuning data (deprecated)
 *.jsonl
 
 # Documentation content - keep the directory, ignore contents
