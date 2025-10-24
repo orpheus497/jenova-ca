@@ -39,15 +39,22 @@ class Cortex:
         """Adds a new node to the cognitive graph."""
         node_id = str(uuid.uuid4())
         
-        emotion_prompt = f"""Analyze the emotional content of the following text. Respond with a JSON object containing the detected emotions from the following list: ['Joy', 'Sadness', 'Anger', 'Surprise', 'Fear', 'Disgust', 'Love', 'Curiosity'] and their corresponding intensity on a scale from 0.0 to 1.0.
+        # Simple emotion analysis without grammar constraints
+        emotion_prompt = f"""Analyze the emotional content of the following text. Respond ONLY with a valid JSON object containing the detected emotions from this list: ['Joy', 'Sadness', 'Anger', 'Surprise', 'Fear', 'Disgust', 'Love', 'Curiosity'] and their intensity (0.0 to 1.0).
 
 Text: "{content}"
 
-Emotion JSON:"""        
-        emotion_str = self.llm.generate(prompt=emotion_prompt, temperature=0.2, grammar=self.json_grammar)
+JSON:"""        
+        emotion_str = self.llm.generate(prompt=emotion_prompt, temperature=0.2)
         try:
-            emotions = json.loads(emotion_str)
-        except json.JSONDecodeError:
+            # Try to extract JSON from response
+            emotion_str_clean = emotion_str.strip()
+            if '{' in emotion_str_clean:
+                json_start = emotion_str_clean.index('{')
+                json_end = emotion_str_clean.rindex('}') + 1
+                emotion_str_clean = emotion_str_clean[json_start:json_end]
+            emotions = json.loads(emotion_str_clean)
+        except (json.JSONDecodeError, ValueError) as e:
             emotions = {}
             self.file_logger.log_error(f"Failed to decode emotion JSON: {emotion_str}")
 
@@ -195,10 +202,16 @@ Respond with a valid JSON object containing a list of related node IDs and the r
 
 JSON Response:"""
 
-            response_str = self.llm.generate(prompt, temperature=0.3, grammar=self.json_grammar)
+            response_str = self.llm.generate(prompt, temperature=0.3)
             
             try:
-                response_data = json.loads(response_str)
+                # Try to extract JSON from response
+                response_str_clean = response_str.strip()
+                if '{' in response_str_clean:
+                    json_start = response_str_clean.index('{')
+                    json_end = response_str_clean.rindex('}') + 1
+                    response_str_clean = response_str_clean[json_start:json_end]
+                response_data = json.loads(response_str_clean)
                 target_ids = response_data.get('relevant_node_ids', [])
                 relationship = response_data.get('relationship')
 
@@ -233,10 +246,16 @@ Insight: "{insight['content']}"
 External Information: "{ext_node['content']}"
 
 Relationship JSON:"""
-                    response_str = self.llm.generate(prompt, temperature=0.3, grammar=self.json_grammar)
+                    response_str = self.llm.generate(prompt, temperature=0.3)
                     
                     try:
-                        response_data = json.loads(response_str)
+                        # Try to extract JSON from response
+                        response_str_clean = response_str.strip()
+                        if '{' in response_str_clean:
+                            json_start = response_str_clean.index('{')
+                            json_end = response_str_clean.rindex('}') + 1
+                            response_str_clean = response_str_clean[json_start:json_end]
+                        response_data = json.loads(response_str_clean)
                         relationship = response_data.get('relationship')
 
                         if relationship:
@@ -259,10 +278,16 @@ Information 1: "{node1['content']}"
 Information 2: "{node2['content']}"
 
 Relationship JSON:"""
-                response_str = self.llm.generate(prompt, temperature=0.3, grammar=self.json_grammar)
+                response_str = self.llm.generate(prompt, temperature=0.3)
                 
                 try:
-                    response_data = json.loads(response_str)
+                    # Try to extract JSON from response
+                    response_str_clean = response_str.strip()
+                    if '{' in response_str_clean:
+                        json_start = response_str_clean.index('{')
+                        json_end = response_str_clean.rindex('}') + 1
+                        response_str_clean = response_str_clean[json_start:json_end]
+                    response_data = json.loads(response_str_clean)
                     relationship = response_data.get('relationship')
                     contradiction = response_data.get('contradiction')
 
@@ -298,8 +323,10 @@ Relationship JSON:"""
 
     def develop_insights_from_docs(self, user: str) -> list[str]:
         """
-        Reads documents from the docs folder, chunks them, develops insights,
-        and links them to the document node.
+        Reads documents from the docs folder, stores them as canonical knowledge nodes
+        in the cognitive graph with embeddings for retrieval via RAG.
+        Documents are NOT automatically analyzed for insights - they are stored as-is
+        as reference material.
         """
         messages = []
 
@@ -310,7 +337,7 @@ Relationship JSON:"""
             sample_doc_path = os.path.join(self.docs_path, "example.md")
             if not os.path.exists(sample_doc_path):
                 with open(sample_doc_path, "w") as f:
-                    f.write("# Example Document\n\nThis is an example document. Jenova can read this and generate insights from it.")
+                    f.write("# Example Document\n\nThis is an example document. Jenova can read this and retrieve information from it via RAG.")
                 messages.append("An example document has been created for you.")
             return messages
 
@@ -322,12 +349,12 @@ Relationship JSON:"""
                     if filename in self.processed_docs and self.processed_docs[filename]['last_modified'] >= last_modified:
                         continue
 
-                    messages.append(f"Processing new document: {filename}")
-                    self.file_logger.log_info(f"Processing new document: {filename}")
+                    messages.append(f"Processing document: {filename}")
+                    self.file_logger.log_info(f"Processing document: {filename}")
                     with open(filepath, 'r', encoding='utf-8') as f:
                         content = f.read()
 
-                    # Generate summary
+                    # Generate a brief summary for metadata
                     summary_prompt = f"""Summarize the following document in 2-3 sentences, capturing its main purpose and key topics.
 
 Document: \"""{content}\"""
@@ -335,69 +362,44 @@ Document: \"""{content}\"""
 Summary:"""
                     summary = self.llm.generate(summary_prompt, temperature=0.3)
 
-                    # Create a document node with summary in metadata
-                    doc_metadata = {"summary": summary} if summary else {}
-                    doc_node_id = self.add_node('document', f"Content from document: {filename}", user, metadata=doc_metadata)
+                    # Create a document node with the full content and summary
+                    doc_metadata = {
+                        "summary": summary if summary else "No summary available",
+                        "filename": filename,
+                        "source": "document"
+                    }
+                    
+                    # Store the document as a canonical knowledge node
+                    # Content includes both filename and full text for better context
+                    doc_content = f"Document: {filename}\n\n{content}"
+                    doc_node_id = self.add_node('document', doc_content, user, metadata=doc_metadata)
 
-                    # Chunk content and generate insights
+                    # Chunk the document for better retrieval (stored as child nodes)
                     chunks = self._chunk_text(content)
-                    insight_ids = []
+                    chunk_ids = []
                     for i, chunk in enumerate(chunks):
-                        self.ui_logger.system_message(f"Analyzing chunk {i+1}/{len(chunks)} of {filename}...")
-                        prompt = f"""Analyze the following text from a document. Your task is to perform a comprehensive analysis and extract the following information:
-1.  A concise summary of the text.
-2.  A list of key takeaways or main points (as a list of strings).
-3.  A list of any questions that this text can answer (as a list of strings).
-4.  A list of key entities (people, places, organizations).
-5.  The overall sentiment of the text.
-
-Respond with a single, valid JSON object containing the keys: 'summary', 'takeaways', 'questions', 'entities', and 'sentiment'.
-
-Text: '''{chunk}'''
-
-JSON Response:"""
-                        
-                        analysis_data = None
-                        analysis_json_str = self.llm.generate(prompt, temperature=0.2, grammar=self.json_grammar)
-                        try:
-                            analysis_data = json.loads(analysis_json_str)
-                        except (json.JSONDecodeError, KeyError, ValueError) as e:
-                            self.file_logger.log_error(f"Failed to process analysis from document chunk. Invalid JSON response: {analysis_json_str}. Error: {e}")
-                            continue
-                        
-                        if analysis_data:
-                            chunk_summary = analysis_data.get('summary')
-                            if chunk_summary:
-                                insight_metadata = {
-                                    'entities': analysis_data.get('entities'),
-                                    'sentiment': analysis_data.get('sentiment'),
-                                    'source_chunk': i
-                                }
-                                summary_insight_id = self.add_node('insight', chunk_summary, user, metadata=insight_metadata)
-                                self.add_link(summary_insight_id, doc_node_id, 'derived_from')
-                                insight_ids.append(summary_insight_id)
-
-                                # Add takeaways as separate insight nodes
-                                for takeaway in analysis_data.get('takeaways', []):
-                                    takeaway_id = self.add_node('insight', takeaway, user, metadata={'source_chunk': i})
-                                    self.add_link(takeaway_id, summary_insight_id, 'elaborates_on')
-                                    self.add_link(takeaway_id, doc_node_id, 'derived_from')
-
-                                # Add questions as separate question nodes
-                                for question in analysis_data.get('questions', []):
-                                    question_id = self.add_node('question', question, user, metadata={'source_chunk': i})
-                                    self.add_link(question_id, summary_insight_id, 'answered_by')
-                                    self.add_link(question_id, doc_node_id, 'related_to_document')
-
+                        chunk_metadata = {
+                            "chunk_index": i,
+                            "total_chunks": len(chunks),
+                            "source_document": filename,
+                            "parent_document_id": doc_node_id
+                        }
+                        chunk_content = f"Chunk {i+1}/{len(chunks)} from {filename}:\n\n{chunk}"
+                        chunk_id = self.add_node('document_chunk', chunk_content, user, metadata=chunk_metadata)
+                        self.add_link(chunk_id, doc_node_id, 'part_of')
+                        chunk_ids.append(chunk_id)
 
                     # Update processed docs tracker
                     self.processed_docs[filename] = {
                         'last_modified': last_modified,
                         'summary': summary,
-                        'insight_ids': insight_ids
+                        'document_node_id': doc_node_id,
+                        'chunk_ids': chunk_ids
                     }
                     self._save_processed_docs()
-                    messages.append(f"Generated {len(insight_ids)} insights and a summary for {filename}.")
+                    messages.append(f"Document '{filename}' stored as canonical knowledge with {len(chunks)} chunks.")
+                    self.file_logger.log_info(f"Stored document '{filename}' with {len(chunks)} chunks")
+                    
                 except Exception as e:
                     self.file_logger.log_error(f"Error processing document {filename}: {e}")
                     messages.append(f"Error processing document {filename}: {e}")

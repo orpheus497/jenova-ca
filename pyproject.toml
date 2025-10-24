@@ -21,11 +21,10 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
 ]
 dependencies = [
-    "transformers>=4.30.0",
+    "llama-cpp-python",
     "torch",
     "chromadb",
     "sentence-transformers",
-    "accelerate",
     "rich",
     "prompt-toolkit",
     "PyYAML",

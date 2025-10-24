@@ -84,7 +84,7 @@ def main():
         file_logger.log_error(traceback.format_exc())
     finally:
         # Ensure LLM resources are released
-        if 'llm_interface' in locals() and llm_interface.model:
+        if 'llm_interface' in locals() and llm_interface.llm:
             llm_interface.close()
 
         shutdown_message = "JENOVA shutting down."
