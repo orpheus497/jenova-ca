@@ -5,43 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [4.0.0] - 2025-10-25
 
 ### Added
-- GGUF model support via llama-cpp-python for flexible model selection and better performance
-- Virtualenv-based local installation system for better isolation and user control
-- Models directory structure with README for GGUF model downloads and configuration
-- GPU detection in install script with automatic CUDA support build for llama-cpp-python
-- Document canonical storage as knowledge nodes without automatic insight generation
-- Comprehensive fine-tuning data generation from complete cognitive architecture (insights, memories, assumptions, documents)
+- Added `__init__.py` to `src/jenova/docs` for better package structure.
+- Enhanced `Cortex.develop_insights_from_docs` to extract key takeaways and questions from document chunks and create corresponding insight and question nodes, as described in the `README.md`.
+- **GGUF Support:** Re-implemented support for GGUF models via `llama-cpp-python` for flexible model selection and better performance.
+- **Intelligent Model Loading:** Implemented a multi-strategy loading fallback (GPU -> Partial GPU -> CPU-only) to handle VRAM limitations and prevent crashes.
+- **Dynamic Resource Allocation:** The system now dynamically detects physical CPU cores and VRAM to intelligently allocate `threads` and `gpu_layers`.
+- **GPU Accelerated Embeddings:** All memory systems (Episodic, Semantic, Procedural) now use a shared, GPU-accelerated embedding model for 5-10x performance improvement.
+- **ToolHandler System:** Added a new `ToolHandler` for managing and executing tools, including `web_search`, `file_tools`, `get_current_datetime`, and `execute_shell_command`.
+- **Model Discovery:** The system now automatically discovers GGUF models by searching in priority order: `/usr/local/share/models` (system-wide) and then `./models` (local).
+- **Fine-Tuning Data Generation:** The fine-tuning script now generates a comprehensive training dataset from all cognitive sources (insights, memories, assumptions, documents).
 
 ### Changed
-- Dependencies: Replaced `transformers`, `accelerate`, `peft`, `bitsandbytes` with `llama-cpp-python`; kept `sentence-transformers`, `chromadb`, `torch`, `rich`, `prompt-toolkit`, `pyyaml`, `numpy`, `selenium`, `webdriver-manager`, `requests`
-- Configuration: Added GGUF-specific options in `main_config.yaml`: `model_path`, `threads`, `gpu_layers`, `mlock`, `n_batch`; removed automatic context_size detection
-- Installation: Virtualenv-based local installation without sudo; no automatic model downloads; users provide GGUF models; includes GPU driver guidance
-- LLM Interface: Complete rewrite using llama-cpp-python `Llama` class; removed tokenizer dependencies; simplified generation API with `create_completion()`
-- Document Processing: Documents stored as 'document' and 'document_chunk' nodes in cognitive graph; no automatic insight generation; documents chunked for RAG retrieval; full content preserved as canonical knowledge
-- Cortex: Removed `grammar` parameter from LLM generation calls (not supported by llama-cpp-python); enhanced JSON extraction with fallback parsing
-- Fine-Tuning: Updated to generate comprehensive training data from all cognitive sources (insights, episodic/semantic/procedural memory, assumptions, documents); creates .jsonl for use with external tools
+- Updated `pyproject.toml` version to `4.0.0` to reflect the latest release version.
+- **Architecture:** Reverted the core architecture from HuggingFace `transformers` back to `llama-cpp-python`.
+- **Installation:** Reverted from a system-wide installation to a local, virtualenv-based installation for better isolation and user control.
+- **Dependencies:** Replaced `transformers`, `accelerate`, `peft`, and `bitsandbytes` with `llama-cpp-python`.
+- **LLM Interface:** The `LLMInterface` has been completely rewritten to use the `llama-cpp-python` `Llama` class.
+- **Cortex:** Refactored the Cortex to use `CognitiveNode` and `CognitiveLink` dataclasses for improved readability and maintainability.
+- **Document Processing:** Documents are now chunked and stored as canonical 'document' nodes in the cognitive graph, without automatic insight generation.
+- **README:** The `README.md` and `main_config.yaml` have been updated to reflect the new GGUF-based architecture and dynamic resource allocation.
 
 ### Removed
-- System-wide installation: No longer installs globally or creates `/usr/local/share/jenova-ai/`
-- Automatic model downloads: Install script no longer downloads models from HuggingFace
-- HuggingFace dependencies: Removed transformers, accelerate packages
-- Grammar system: Removed grammar-constrained generation (incompatible with llama-cpp-python)
-- Auto-insight generation: Documents no longer automatically analyzed for insights during processing
+- **HuggingFace Dependencies:** Removed `transformers`, `accelerate`, `peft`, and `bitsandbytes` from all dependencies.
+- **System-Wide Installation:** The `install.sh` script no longer installs the package globally.
+- **Automatic Model Downloads:** The install script no longer downloads models automatically; users must provide their own GGUF models.
+- **Grammar System:** Removed the grammar-constrained generation feature, as it is not supported in the same way by `llama-cpp-python`.
+- **Deprecated Code:** Removed the `document_processor.py` file and the `reorganize_insights` method.
 
 ### Fixed
-- Model loading: Clear error messages when GGUF model file is missing
-- GPU support: Proper detection and configuration for NVIDIA GPU acceleration
-- Resource cleanup: Improved LLM resource cleanup on shutdown
+- **Model Loading:** Fixed VRAM allocation errors by forcing the embedding model to the CPU, maximizing VRAM for the main LLM.
+- **Model Loading:** Resolved deadlocks and insufficient VRAM errors with the new multi-strategy fallback system.
+- **Startup Crash:** Fixed a silent exit on startup by adding the `if __name__ == "__main__":` block to `main.py`.
+- **Startup Crash:** Fixed a `SyntaxError` in `llm_interface.py` by removing an orphaned `except` block.
+- **Database Conflicts:** Added data migration support for Episodic and Procedural memory to handle embedding function changes.
+- **Stability:** Fixed numerous `TypeError` and `SyntaxError` issues in the Cortex and `UILogger`.
+- **Code Quality:** Removed all debug `print()` statements, standardizing on the `UILogger` for all user-facing messages.
 
 ### Security
-- Local-only operation: No external API calls or automatic downloads during installation
-- User control: Users explicitly provide and control their GGUF models
-- Virtualenv isolation: Better dependency isolation and security through virtualenv
-
----
+- **Local-Only Operation:** The architecture is now fully local-only, with no external API calls or automatic downloads during installation.
+- **User Control:** Users explicitly provide and control their own GGUF models.
+- **Virtualenv Isolation:** The virtualenv installation provides better dependency isolation and security.
 
 ## [3.1.1] - 2025-10-19
 

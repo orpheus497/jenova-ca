@@ -2,15 +2,15 @@ import os
 import json
 import chromadb
 from datetime import datetime
-from chromadb.utils import embedding_functions
 
 import uuid
 
 from jenova.utils.json_parser import extract_json
 from jenova.utils.data_sanitizer import sanitize_metadata
+from jenova.utils.embedding import CustomEmbeddingFunction
 
 class EpisodicMemory:
-    def __init__(self, config, ui_logger, file_logger, db_path, llm):
+    def __init__(self, config, ui_logger, file_logger, db_path, llm, embedding_model):
         self.config = config
         self.ui_logger = ui_logger
         self.file_logger = file_logger
@@ -19,8 +19,37 @@ class EpisodicMemory:
         os.makedirs(self.db_path, exist_ok=True)
         
         client = chromadb.PersistentClient(path=self.db_path)
-        self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=config['model']['embedding_model'])
-        self.collection = client.get_or_create_collection(name="episodic_episodes", embedding_function=self.embedding_function)
+        self.embedding_function = CustomEmbeddingFunction(model=embedding_model, model_name=config['model']['embedding_model'])
+        
+        try:
+            self.collection = client.get_or_create_collection(name="episodic_episodes", embedding_function=self.embedding_function)
+        except ValueError as e:
+            if "Embedding function conflict" in str(e):
+                self.ui_logger.system_message("Embedding function conflict detected in episodic memory. Recreating collection and migrating data...")
+                self.file_logger.log_warning("Embedding function conflict detected. Recreating collection 'episodic_episodes' and migrating data.")
+                
+                try:
+                    old_collection = client.get_collection(name="episodic_episodes")
+                    data = old_collection.get(include=["documents", "metadatas"])
+                    
+                    client.delete_collection(name="episodic_episodes")
+                    self.collection = client.get_or_create_collection(name="episodic_episodes", embedding_function=self.embedding_function)
+                    
+                    if data['ids']:
+                        self.collection.add(
+                            ids=data['ids'],
+                            documents=data['documents'],
+                            metadatas=data['metadatas']
+                        )
+                    self.ui_logger.system_message("Episodic memory data migration successful.")
+                    self.file_logger.log_info("Episodic memory data migration to new collection successful.")
+
+                except Exception as migration_error:
+                    self.file_logger.log_error(f"Error during episodic memory data migration: {migration_error}")
+                    self.ui_logger.system_message("Warning: Failed to migrate episodic memory data during collection recreation.")
+
+            else:
+                raise e
 
     def add_episode(self, summary: str, username: str, entities: list = None, emotion: str = None, timestamp: str = None):
         if not timestamp:

@@ -159,7 +159,14 @@ JENOVA uses a local virtualenv-based installation that keeps dependencies isolat
 3.  **Download a GGUF Model:**
     JENOVA works with any GGUF format model. Choose based on your hardware:
     
-    **Small models (2-4GB RAM):**
+    **System-wide installation (recommended, requires sudo):**
+    ```bash
+    sudo mkdir -p /usr/local/share/models
+    cd /usr/local/share/models
+    sudo wget https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf -O model.gguf
+    ```
+    
+    **Local installation (no sudo required):**
     ```bash
     cd models
     wget https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf -O model.gguf
@@ -168,31 +175,29 @@ JENOVA uses a local virtualenv-based installation that keeps dependencies isolat
     
     **Medium models (8GB+ RAM):**
     ```bash
-    cd models
     wget https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf -O model.gguf
-    cd ..
     ```
     
-    See `models/README.md` for more model recommendations.
+    See README.md in the models directory for more model recommendations.
 
-4.  **Configure Model Path:**
-    Update `src/jenova/config/main_config.yaml` if your model filename differs:
-    ```yaml
-    model:
-      model_path: './models/model.gguf'
-    ```
-
-5.  **Run JENOVA:**
+4.  **Run JENOVA:**
     ```bash
     source venv/bin/activate
     python -m jenova.main
     ```
+    
+    **Model Discovery:**
+    Models are automatically discovered in priority order:
+    1. `/usr/local/share/models` (system-wide, checked first)
+    2. `./models` (local directory, fallback)
+    
+    The system loads the first `.gguf` file found in these directories.
 
 ### 4.3. Configuration
 
 JENOVA's configuration is in `src/jenova/config/main_config.yaml`. Key settings:
 
-*   **model_path:** Path to your GGUF model file
+*   **model_path:** Default path for GGUF model file (set to `/usr/local/share/models/model.gguf`). If not found, system automatically searches `/usr/local/share/models` then `./models` for any `.gguf` file.
 *   **threads:** CPU threads for inference (adjust for your CPU)
 *   **gpu_layers:** GPU layers to offload (-1 for all layers, 0 for CPU-only)
 *   **mlock:** Lock model in RAM for better performance
@@ -208,6 +213,30 @@ For NVIDIA GPUs with CUDA:
 2. The install script will automatically build llama-cpp-python with CUDA support
 3. Set `gpu_layers: -1` in config to offload all layers to GPU
 4. Verify GPU usage with `nvidia-smi` while running
+
+**Verifying GPU Support:**
+
+Check CUDA availability:
+```bash
+source venv/bin/activate
+python -c "import torch; print(f'CUDA: {torch.cuda.is_available()}'); print(f'GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"None\"}')"
+```
+
+Check llama-cpp-python CUDA support:
+```bash
+source venv/bin/activate
+python -c "from llama_cpp import llama_cpp; print('GPU offload:', llama_cpp.llama_supports_gpu_offload())"
+```
+
+Monitor GPU usage during operation:
+```bash
+watch -n 1 nvidia-smi
+```
+
+**GPU Configuration:**
+- **Embedding Model**: Automatically uses GPU when CUDA is available (5-10x faster than CPU)
+- **LLM Inference**: Controlled by `gpu_layers` setting (-1 offloads all layers to GPU)
+- **Memory Systems**: All three memory types (Episodic, Semantic, Procedural) share a single GPU-enabled embedding model for optimal performance and memory efficiency
 
 ### 4.5. User Data
 

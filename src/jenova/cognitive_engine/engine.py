@@ -1,10 +1,12 @@
 import json
+import re
+import shlex
 from jenova.cortex.proactive_engine import ProactiveEngine
 from jenova.cognitive_engine.scheduler import CognitiveScheduler
 
 class CognitiveEngine:
     """The Perfected Cognitive Engine. Manages the refined cognitive cycle."""
-    def __init__(self, llm, memory_search, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, rag_system):
+    def __init__(self, llm, memory_search, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, rag_system, tool_handler):
         self.llm = llm
         self.memory_search = memory_search
         self.insight_manager = insight_manager
@@ -16,6 +18,7 @@ class CognitiveEngine:
         self.proactive_engine = ProactiveEngine(cortex, llm, ui_logger)
         self.rag_system = rag_system
         self.scheduler = CognitiveScheduler(config, cortex, insight_manager)
+        self.tool_handler = tool_handler
         self.history = []
         self.turn_count = 0
         self.MAX_HISTORY_TURNS = 5 # Keep the last 5 conversation turns
@@ -51,6 +54,16 @@ class CognitiveEngine:
                 # Add to episodic memory
                 self.memory_search.episodic_memory.add_episode(f"{username}: {user_input}\nJenova: {response}", username)
 
+                # Run scheduled cognitive tasks
+                tasks = self.scheduler.get_cognitive_tasks(self.turn_count, user_input, username)
+                for task_name, kwargs in tasks:
+                    if hasattr(self, task_name):
+                        method = getattr(self, task_name)
+                        result = method(**kwargs)
+                        if task_name == "proactively_verify_assumption" and result:
+                            self.ui_logger.info(f"JENOVA has a question for you: {result}")
+
+
         return response
 
 
@@ -73,14 +86,21 @@ class CognitiveEngine:
         if username == creator_name:
             user_title = creator_alias
 
+        tool_schemas = self.tool_handler.get_all_tool_schemas()
+        tool_schemas_str = json.dumps(tool_schemas, indent=2)
+
         prompt = f"""You are {ai_name}, a self-aware AI. Your creator is {creator_name}, whom you know as {creator_alias}.
 Your core directives are: {directives}
 
+== AVAILABLE TOOLS ==
+{tool_schemas_str}
+
 == CONTEXT ==
-{context_str if context else "No context available."}
+{context_str if context else "No context available."} 
 
 == TASK ==
 Your task is to create a step-by-step plan to formulate a response to the user's query. The plan should be a numbered list of steps. Each step should be a clear and concise action you will take to construct the response. The plan should be detailed enough to guide your response generation process.
+If you need to use a tool, specify the tool call in the format: `(tool: <tool_name>, <arg1>=<value1>, <arg2>=<value2>, ...)`
 
 {user_title} ({username}): "{user_input}"
 
@@ -94,6 +114,23 @@ Plan:"""
 
     def _execute(self, user_input: str, context: list[str], plan: str, username: str) -> str:
         with self.ui_logger.thinking_process("Executing plan..."):
+            tool_call_pattern = re.compile(r"\(tool:\s*(\w+),\s*(.*?)\)")
+            tool_calls = tool_call_pattern.findall(plan)
+
+            if tool_calls:
+                tool_results = []
+                for tool_name, args_str in tool_calls:
+                    try:
+                        args = dict(arg.split('=', 1) for arg in shlex.split(args_str))
+                        result = self.tool_handler.execute_tool(tool_name, args)
+                        tool_results.append(result)
+                    except Exception as e:
+                        tool_results.append(f"Error executing tool {tool_name}: {e}")
+                
+                # Add tool results to context and generate response
+                context.extend(tool_results)
+                return self.rag_system.generate_response(user_input, username, self.history, plan, search_results=tool_results)
+
             return self.rag_system.generate_response(user_input, username, self.history, plan)
 
     def generate_insight_from_history(self, username: str):
@@ -112,15 +149,15 @@ Plan:"""
         user_title = creator_alias if username == creator_name else "User"
 
         prompt = f"""
-You are {ai_name}. You are analyzing a conversation with {user_title} ({username}). Your goal is to identify a single, high-quality insight that represents a new understanding, a significant user preference, a correction of a previous assumption, or a key takeaway that should be remembered for future interactions.
+        You are {ai_name}. You are analyzing a conversation with {user_title} ({username}). Your goal is to identify a single, high-quality insight that represents a new understanding, a significant user preference, a correction of a previous assumption, or a key takeaway that should be remembered for future interactions.
 
-Format the output as a valid JSON object with "topic" and "insight" keys.
+        Format the output as a valid JSON object with "topic" and "insight" keys.
 
-[CONVERSATION]
-{conversation_segment}
+        [CONVERSATION]
+        {conversation_segment}
 
-[JSON_OUTPUT]
-"""
+        [JSON_OUTPUT]
+        """
         with self.ui_logger.thinking_process("Generating insight from recent conversation..."):
             insight_json_str = self.llm.generate(prompt, temperature=0.2)
         
@@ -150,13 +187,13 @@ Format the output as a valid JSON object with "topic" and "insight" keys.
 
         prompt = f"""You are {ai_name}. You are analyzing a conversation with {user_title} ({username}). Your goal is to identify a single, non-trivial assumption about the user (their preferences, goals, knowledge level, etc.) that is implied but not explicitly stated. This assumption will be verified later.
 
-Format the output as a valid JSON object with an "assumption" key.
+        Format the output as a valid JSON object with an "assumption" key.
 
-[CONVERSATION]
-{conversation_segment}
+        [CONVERSATION]
+        {conversation_segment}
 
-[JSON_OUTPUT]
-"""
+        [JSON_OUTPUT]
+        """
         with self.ui_logger.thinking_process("Forming new assumption..."):
             assumption_json_str = self.llm.generate(prompt, temperature=0.3)
 
@@ -182,15 +219,15 @@ Format the output as a valid JSON object with an "assumption" key.
         user_title = creator_alias if username == creator_name else "User"
 
         prompt = f"""
-You are {ai_name}. You are analyzing a conversation with {user_title} ({username}). Identify up to three high-quality insights.
+        You are {ai_name}. You are analyzing a conversation with {user_title} ({username}). Identify up to three high-quality insights.
 
-Format the output as a valid JSON array of objects, where each object has 'topic' and 'insight' keys.
+        Format the output as a valid JSON array of objects, where each object has 'topic' and 'insight' keys.
 
-[CONVERSATION]
-{conversation_segment}
+        [CONVERSATION]
+        {conversation_segment}
 
-[JSON_OUTPUT]
-"""
+        [JSON_OUTPUT]
+        """
         insights_json_str = self.llm.generate(prompt, temperature=0.3)
         
         try:
@@ -230,13 +267,13 @@ Format the output as a valid JSON array of objects, where each object has 'topic
         user_title = creator_alias if username == creator_name else "User"
 
         prompt = f"""
-You are {ai_name}. You are analyzing a collection of insights for {user_title} ({username}). Your goal is to identify a new, higher-level 'meta-insight'. This is a conclusion drawn from analyzing existing insights, finding connections, patterns, or underlying themes.
+        You are {ai_name}. You are analyzing a collection of insights for {user_title} ({username}). Your goal is to identify a new, higher-level 'meta-insight'. This is a conclusion drawn from analyzing existing insights, finding connections, patterns, or underlying themes.
 
-[EXISTING INSIGHTS]
-{insights_str}
+        [EXISTING INSIGHTS]
+        {insights_str}
 
-[JSON_OUTPUT]
-"""
+        [JSON_OUTPUT]
+        """
         self.file_logger.log_info(f"Meta-insight prompt: {prompt}")
 
         meta_insight_json_str = self.llm.generate(prompt, temperature=0.4)
@@ -276,17 +313,17 @@ You are {ai_name}. You are analyzing a collection of insights for {user_title} (
         user_title = creator_alias if username == creator_name else "User"
 
         prompt = f"""
-You are {ai_name}. You are analyzing context from your long-term memory for {user_title} ({username}). Your goal is to extract a single, high-quality piece of information. Determine if it is a concrete insight or an unverified assumption about the user.
+        You are {ai_name}. You are analyzing context from your long-term memory for {user_title} ({username}). Your goal is to extract a single, high-quality piece of information. Determine if it is a concrete insight or an unverified assumption about the user.
 
-Format the output as a valid JSON object with one of two structures:
-1. For an insight: {{"type": "insight", "topic": "<topic>", "content": "<insight_content>"}}
-2. For an assumption: {{"type": "assumption", "content": "<assumption_content>"}}
+        Format the output as a valid JSON object with one of two structures:
+        1. For an insight: {{"type": "insight", "topic": "<topic>", "content": "<insight_content>"}}
+        2. For an assumption: {{"type": "assumption", "content": "<assumption_content>"}}
 
-[MEMORY CONTEXT]
-{context_str}
+        [MEMORY CONTEXT]
+        {context_str}
 
-[JSON_OUTPUT]
-"""
+        [JSON_OUTPUT]
+        """
         insight_json_str = self.llm.generate(prompt, temperature=0.3)
         
         try:

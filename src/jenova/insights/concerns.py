@@ -19,7 +19,7 @@ class ConcernManager:
                 with open(self.concerns_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
             except (json.JSONDecodeError, OSError) as e:
-                # self.file_logger.log_error(f"Error loading concerns file: {e}")
+                self.file_logger.log_error(f"Error loading concerns file: {e}")
                 return {}
         return {}
 
@@ -29,7 +29,7 @@ class ConcernManager:
             with open(self.concerns_file, 'w', encoding='utf-8') as f:
                 json.dump(self.concerns, f, indent=4)
         except OSError as e:
-            # self.file_logger.log_error(f"Error saving concerns file: {e}")
+            self.file_logger.log_error(f"Error saving concerns file: {e}")
             pass
 
     def get_all_concerns(self) -> list[str]:
@@ -57,7 +57,7 @@ Relevant Topic:'''
             else:
                 return self._create_new_concern(insight_content)
         except Exception as e:
-            # self.file_logger.log_error(f"Error finding or creating concern: {e}")
+            self.file_logger.log_error(f"Error finding or creating concern: {e}")
             return self._create_new_concern(insight_content) # Fallback to creating a new concern
 
     def _create_new_concern(self, insight_content: str) -> str:
@@ -74,7 +74,7 @@ Topic:'''
                 self._save_concerns()
             return new_topic
         except Exception as e:
-            # self.file_logger.log_error(f"Error creating new concern: {e}")
+            self.file_logger.log_error(f"Error creating new concern: {e}")
             return "general"
 
     def reorganize_insights(self, all_insights: list) -> list:

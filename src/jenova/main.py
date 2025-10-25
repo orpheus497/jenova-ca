@@ -17,7 +17,8 @@ from jenova.insights.manager import InsightManager
 from jenova.config import load_configuration
 from jenova.ui.logger import UILogger
 from jenova.utils.file_logger import FileLogger
-from jenova.utils.model_loader import load_embedding_model
+from jenova.utils.model_loader import load_embedding_model, load_llm_model
+from jenova.tools import ToolHandler
 from jenova import tools
 
 from jenova.assumptions.manager import AssumptionManager
@@ -44,13 +45,32 @@ def main():
         cortex_root = os.path.join(user_data_root, "cortex")
         
         ui_logger.info(">> Initializing Intelligence Matrix...")
-        llm_interface = LLMInterface(config, ui_logger, file_logger)
+        
+        # Load the LLM model
+        llm = load_llm_model(config)
+        if not llm:
+            ui_logger.error("Fatal: Could not load the LLM model. Please check the logs for details.")
+            return
+
+        try:
+            llm_interface = LLMInterface(config, ui_logger, file_logger, llm)
+        except Exception as e:
+            print(f"FATAL ERROR: LLM Interface Initialization Failed")
+            print(f"{ '='*70}")
+            print(f"\n{str(e)}\n")
+            print(f"{ '='*70}\n")
+            return
         
         # Load the embedding model
-        embedding_model = load_embedding_model(config['model']['embedding_model'])
+        # Use CPU for embedding model to free VRAM for LLM
+        ui_logger.info("Loading embedding model...")
+        embedding_model = load_embedding_model(config['model']['embedding_model'], device='cpu')
         if not embedding_model:
             ui_logger.system_message("Fatal: Could not load the embedding model. Please check the logs for details.")
             return
+        
+        ui_logger.system_message("Embedding model: Running on CPU (to maximize VRAM for LLM)")
+        file_logger.log_info("Embedding model loaded on device: CPU")
 
         # User-specific memory paths
         episodic_mem_path = os.path.join(user_data_root, 'memory', 'episodic')
@@ -58,8 +78,8 @@ def main():
         semantic_mem_path = os.path.join(user_data_root, 'memory', 'semantic')
 
         semantic_memory = SemanticMemory(config, ui_logger, file_logger, semantic_mem_path, llm_interface, embedding_model)
-        episodic_memory = EpisodicMemory(config, ui_logger, file_logger, episodic_mem_path, llm_interface)
-        procedural_memory = ProceduralMemory(config, ui_logger, file_logger, procedural_mem_path, llm_interface)
+        episodic_memory = EpisodicMemory(config, ui_logger, file_logger, episodic_mem_path, llm_interface, embedding_model)
+        procedural_memory = ProceduralMemory(config, ui_logger, file_logger, procedural_mem_path, llm_interface, embedding_model)
 
         cortex = Cortex(config, ui_logger, file_logger, llm_interface, cortex_root)
         memory_search = MemorySearch(semantic_memory, episodic_memory, procedural_memory, config, file_logger)
@@ -67,10 +87,11 @@ def main():
         memory_search.insight_manager = insight_manager # Set insight_manager after initialization
         assumption_manager = AssumptionManager(config, ui_logger, file_logger, user_data_root, cortex, llm_interface)
         
+        tool_handler = ToolHandler(config, ui_logger, file_logger)
         rag_system = RAGSystem(llm_interface, memory_search, insight_manager, config)
 
         ui_logger.info(">> Cognitive Engine: Online.")
-        cognitive_engine = CognitiveEngine(llm_interface, memory_search, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, rag_system)
+        cognitive_engine = CognitiveEngine(llm_interface, memory_search, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, rag_system, tool_handler)
         
         ui = TerminalUI(cognitive_engine, ui_logger)
         # Pass the llm_interface to the tools that need it.
@@ -90,3 +111,7 @@ def main():
         shutdown_message = "JENOVA shutting down."
         ui_logger.info(shutdown_message)
         file_logger.log_info(shutdown_message)
+
+
+if __name__ == "__main__":
+    main()

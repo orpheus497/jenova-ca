@@ -2,6 +2,9 @@ import os
 import json
 from datetime import datetime
 import uuid
+from dataclasses import asdict
+
+from jenova.cortex.graph_components import CognitiveNode, CognitiveLink
 
 class Cortex:
     """
@@ -27,15 +30,22 @@ class Cortex:
         """Loads the cognitive graph from a file."""
         if os.path.exists(self.graph_file):
             with open(self.graph_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                data = json.load(f)
+                nodes = {node_id: CognitiveNode(**node_data) for node_id, node_data in data.get('nodes', {}).items()}
+                links = [CognitiveLink(**link_data) for link_data in data.get('links', [])]
+                return {"nodes": nodes, "links": links}
         return {"nodes": {}, "links": []}
 
     def _save_graph(self):
         """Saves the cognitive graph to a file."""
         with open(self.graph_file, 'w', encoding='utf-8') as f:
-            json.dump(self.graph, f, indent=4)
+            data = {
+                "nodes": {node_id: asdict(node) for node_id, node in self.graph['nodes'].items()},
+                "links": [asdict(link) for link in self.graph['links']]
+            }
+            json.dump(data, f, indent=4)
 
-    def add_node(self, node_type: str, content: str, user: str, linked_to: list = None, metadata: dict = None):
+    def add_node(self, node_type: str, content: str, user: str, linked_to: list = None, metadata: dict = None) -> str:
         """Adds a new node to the cognitive graph."""
         node_id = str(uuid.uuid4())
         
@@ -44,7 +54,7 @@ class Cortex:
 
 Text: "{content}"
 
-JSON:"""        
+JSON:"""
         emotion_str = self.llm.generate(prompt=emotion_prompt, temperature=0.2)
         try:
             # Try to extract JSON from response
@@ -58,20 +68,21 @@ JSON:"""
             emotions = {}
             self.file_logger.log_error(f"Failed to decode emotion JSON: {emotion_str}")
 
-        new_node = {
-            "id": node_id,
-            "type": node_type,
-            "content": content,
-            "user": user,
-            "timestamp": datetime.now().isoformat(),
-            "metadata": {
-                "emotions": emotions,
-                "centrality": 0
-            }
+        new_node_metadata = {
+            "emotions": emotions,
+            "centrality": 0
         }
 
         if metadata:
-            new_node["metadata"].update(metadata)
+            new_node_metadata.update(metadata)
+
+        new_node = CognitiveNode(
+            id=node_id,
+            node_type=node_type,
+            content=content,
+            user=user,
+            metadata=new_node_metadata
+        )
 
         self.graph["nodes"][node_id] = new_node
         
@@ -86,25 +97,24 @@ JSON:"""
 
     def add_link(self, source_id: str, target_id: str, relationship: str):
         """Adds a directed link between two nodes in the graph."""
-        new_link = {
-            "source": source_id,
-            "target": target_id,
-            "relationship": relationship,
-            "timestamp": datetime.now().isoformat()
-        }
+        new_link = CognitiveLink(
+            source_id=source_id,
+            target_id=target_id,
+            relationship=relationship
+        )
         self.graph["links"].append(new_link)
         self._save_graph()
 
-    def get_node(self, node_id: str):
+    def get_node(self, node_id: str) -> CognitiveNode | None:
         """Retrieves a node by its ID."""
         return self.graph["nodes"].get(node_id)
 
-    def get_all_nodes_by_type(self, node_type: str, user: str = None):
+    def get_all_nodes_by_type(self, node_type: str, user: str = None) -> list[CognitiveNode]:
         """Retrieves all nodes of a specific type, optionally filtered by user."""
         nodes = []
         for node in self.graph["nodes"].values():
-            if node["type"] == node_type:
-                if user and node.get("user") == user:
+            if node.node_type == node_type:
+                if user and node.user == user:
                     nodes.append(node)
                 elif not user:
                     nodes.append(node)
@@ -112,16 +122,17 @@ JSON:"""
 
     def update_node(self, node_id: str, content: str = None, linked_to: list = None):
         """Updates an existing node in the cognitive graph."""
-        if node_id not in self.graph["nodes"]:
+        node = self.get_node(node_id)
+        if not node:
             return
 
         if content:
-            self.graph["nodes"][node_id]["content"] = content
-            self.graph["nodes"][node_id]["timestamp"] = datetime.now().isoformat()
+            node.content = content
+            node.timestamp = datetime.now().isoformat()
 
         if linked_to:
             # Remove existing links from this node
-            self.graph["links"] = [link for link in self.graph["links"] if link["source"] != node_id]
+            self.graph["links"] = [link for link in self.graph["links"] if link.source_id != node_id]
             # Add new links
             for target_id in linked_to:
                 if target_id in self.graph["nodes"]:
@@ -139,7 +150,7 @@ JSON:"""
         messages = []
         messages.append(f"Initiating deep reflection for user '{user}'...")
         
-        user_nodes = [n for n in self.graph["nodes"].values() if n.get("user") == user]
+        user_nodes = [n for n in self.graph["nodes"].values() if n.user == user]
         if len(user_nodes) < 5:
             messages.append("Insufficient data for a meaningful reflection.")
             return messages
@@ -167,33 +178,34 @@ JSON:"""
         node_link_counts = {node_id: 0 for node_id in self.graph["nodes"]}
         
         for link in self.graph['links']:
-            weight = weights.get(link['relationship'], 1.0)
-            if link['source'] in node_link_counts:
-                node_link_counts[link['source']] += weight
-            if link['target'] in node_link_counts:
-                node_link_counts[link['target']] += weight
+            weight = weights.get(link.relationship, 1.0)
+            if link.source_id in node_link_counts:
+                node_link_counts[link.source_id] += weight
+            if link.target_id in node_link_counts:
+                node_link_counts[link.target_id] += weight
         
         for node_id, count in node_link_counts.items():
-            if node_id in self.graph["nodes"]:
-                self.graph["nodes"][node_id]["metadata"]["centrality"] = count
+            node = self.get_node(node_id)
+            if node:
+                node.metadata["centrality"] = count
 
-    def _link_orphans(self, user_nodes: list):
+    def _link_orphans(self, user_nodes: list[CognitiveNode]):
         """Identifies nodes with few links and attempts to create new connections."""
-        orphan_nodes = [node for node in user_nodes if node['metadata']['centrality'] == 0]
+        orphan_nodes = [node for node in user_nodes if node.metadata['centrality'] == 0]
 
         if len(orphan_nodes) < 2:
             return
 
         for orphan in orphan_nodes:
-            other_nodes = [node for node in user_nodes if node['id'] != orphan['id']]
+            other_nodes = [node for node in user_nodes if node.id != orphan.id]
             if not other_nodes:
                 continue
 
-            node_contents = "\n".join([f"- Node {i+1} (ID: {node['id']}): {node['content']}" for i, node in enumerate(other_nodes)])
+            node_contents = "\n".join([f"- Node {i+1} (ID: {node.id}): {node.content}" for i, node in enumerate(other_nodes)])
 
             prompt = f"""Analyze the following 'orphan' node and the list of other nodes. Your task is to identify which nodes from the list are strongly related to the orphan node. 
 
-Orphan Node: "{orphan['content']}"
+Orphan Node: "{orphan.content}"
 
 List of other nodes:
 {node_contents}
@@ -218,17 +230,17 @@ JSON Response:"""
                 if target_ids and relationship:
                     for target_id in target_ids:
                         if target_id in self.graph["nodes"]:
-                            self.add_link(orphan['id'], target_id, relationship)
-                            self.ui_logger.info(f"Linked orphan node {orphan['id']} to {target_id}")
+                            self.add_link(orphan.id, target_id, relationship)
+                            self.ui_logger.info(f"Linked orphan node {orphan.id} to {target_id}")
             except (json.JSONDecodeError, KeyError, ValueError) as e:
-                self.file_logger.log_error(f"Failed to link orphan node {orphan['id']}. Invalid JSON response: {response_str}. Error: {e}")
+                self.file_logger.log_error(f"Failed to link orphan node {orphan.id}. Invalid JSON response: {response_str}. Error: {e}")
                 continue
 
-    def _link_external_information(self, user_nodes: list):
+    def _link_external_information(self, user_nodes: list[CognitiveNode]):
         """Links insights to external information and finds relationships between external sources."""
-        insights = [node for node in user_nodes if node['type'] == 'insight']
-        documents = [node for node in user_nodes if node['type'] == 'document']
-        web_results = [node for node in user_nodes if node['type'] == 'web_search_result']
+        insights = [node for node in user_nodes if node.node_type == 'insight']
+        documents = [node for node in user_nodes if node.node_type == 'document']
+        web_results = [node for node in user_nodes if node.node_type == 'web_search_result']
 
         external_nodes = documents + web_results
 
@@ -241,9 +253,9 @@ JSON Response:"""
                 for ext_node in external_nodes:
                     prompt = f"""Given the following insight and the summary of an external information source, what is the relationship between them (e.g., 'confirms', 'refutes', 'expands_on', 'related_to')? Respond with a JSON object containing the relationship type.
 
-Insight: "{insight['content']}"
+Insight: "{insight.content}"
 
-External Information: "{ext_node['content']}"
+External Information: "{ext_node.content}"
 
 Relationship JSON:"""
                     response_str = self.llm.generate(prompt, temperature=0.3)
@@ -259,10 +271,10 @@ Relationship JSON:"""
                         relationship = response_data.get('relationship')
 
                         if relationship:
-                            self.add_link(insight['id'], ext_node['id'], relationship)
-                            self.ui_logger.info(f"Linked insight {insight['id']} to {ext_node['id']} as '{relationship}'")
+                            self.add_link(insight.id, ext_node.id, relationship)
+                            self.ui_logger.info(f"Linked insight {insight.id} to {ext_node.id} as '{relationship}'")
                     except (json.JSONDecodeError, KeyError, ValueError) as e:
-                        self.file_logger.log_error(f"Failed to link external information for insight {insight['id']}. Invalid JSON response: {response_str}. Error: {e}")
+                        self.file_logger.log_error(f"Failed to link external information for insight {insight.id}. Invalid JSON response: {response_str}. Error: {e}")
                         continue
         
         # Link external nodes to each other and find contradictions
@@ -273,9 +285,9 @@ Relationship JSON:"""
 
                 prompt = f"""Compare the following two pieces of information. What is the relationship between them (e.g., 'agrees_with', 'contradicts', 'related_to')? If they contradict, briefly explain the contradiction. Respond with a JSON object containing 'relationship' and an optional 'contradiction' field.
 
-Information 1: "{node1['content']}"
+Information 1: "{node1.content}"
 
-Information 2: "{node2['content']}"
+Information 2: "{node2.content}"
 
 Relationship JSON:"""
                 response_str = self.llm.generate(prompt, temperature=0.3)
@@ -292,26 +304,30 @@ Relationship JSON:"""
                     contradiction = response_data.get('contradiction')
 
                     if relationship:
-                        self.add_link(node1['id'], node2['id'], relationship)
-                        self.ui_logger.info(f"Linked {node1['id']} to {node2['id']} as '{relationship}'")
+                        self.add_link(node1.id, node2.id, relationship)
+                        self.ui_logger.info(f"Linked {node1.id} to {node2.id} as '{relationship}'")
 
                     if contradiction:
-                        contradiction_insight = f"Contradiction found between {node1['id']} and {node2['id']}: {contradiction}"
-                        self.add_node('insight', contradiction_insight, node1['user'], linked_to=[node1['id'], node2['id']])
+                        contradiction_insight = f"Contradiction found between {node1.id} and {node2.id}: {contradiction}"
+                        self.add_node('insight', contradiction_insight, node1.user, linked_to=[node1.id, node2.id])
 
                 except (json.JSONDecodeError, KeyError, ValueError) as e:
-                    self.file_logger.log_error(f"Failed to link external sources {node1['id']} and {node2['id']}. Invalid JSON response: {response_str}. Error: {e}")
+                    self.file_logger.log_error(f"Failed to link external sources {node1.id} and {node2.id}. Invalid JSON response: {response_str}. Error: {e}")
                     continue
 
     def develop_insight(self, insight_id: str, user: str) -> list[str]:
         """Develops an existing insight by generating a more detailed version."""
         messages = []
         insight_node = self.get_node(insight_id)
-        if not insight_node or insight_node.get('type') != 'insight':
+        if not insight_node or insight_node.node_type != 'insight':
             messages.append(f"Node {insight_id} is not a valid insight.")
             return messages
 
-        prompt = f"""Analyze the following insight and generate a more detailed and developed version of it. You can add more context, examples, or connections to other ideas.\n\nOriginal Insight: "{insight_node['content']}"\n\nDeveloped Insight:"""
+        prompt = f"""Analyze the following insight and generate a more detailed and developed version of it. You can add more context, examples, or connections to other ideas.
+
+Original Insight: "{insight_node.content}"
+
+Developed Insight:"""
 
         developed_content = self.llm.generate(prompt, temperature=0.5)
 
@@ -355,11 +371,11 @@ Relationship JSON:"""
                         content = f.read()
 
                     # Generate a brief summary for metadata
-                    summary_prompt = f"""Summarize the following document in 2-3 sentences, capturing its main purpose and key topics.
+                    summary_prompt = f'''Summarize the following document in 2-3 sentences, capturing its main purpose and key topics.
 
-Document: \"""{content}\"""
+Document: """{content}"""
 
-Summary:"""
+Summary:'''
                     summary = self.llm.generate(summary_prompt, temperature=0.3)
 
                     # Create a document node with the full content and summary
@@ -389,6 +405,42 @@ Summary:"""
                         self.add_link(chunk_id, doc_node_id, 'part_of')
                         chunk_ids.append(chunk_id)
 
+                        # Extract key takeaways from the chunk
+                        takeaways_prompt = f'''Analyze the following document chunk and extract up to 3 key takeaways.
+Respond with a JSON array of strings, where each string is a key takeaway.
+
+Chunk: """{chunk}"""
+
+JSON:'''
+                        takeaways_str = self.llm.generate(takeaways_prompt, temperature=0.3)
+                        try:
+                            takeaways = json.loads(takeaways_str)
+                            for takeaway in takeaways:
+                                if takeaway:
+                                    takeaway_id = self.add_node('insight', takeaway, user, linked_to=[chunk_id, doc_node_id])
+                                    self.add_link(takeaway_id, chunk_id, 'derived_from')
+                                    self.add_link(takeaway_id, doc_node_id, 'derived_from')
+                        except (json.JSONDecodeError, ValueError) as e:
+                            self.file_logger.log_error(f"Failed to decode takeaways from LLM response for chunk {chunk_id}: {takeaways_str}. Error: {e}")
+
+                        # Extract questions the chunk can answer
+                        questions_prompt = f'''Analyze the following document chunk and generate up to 3 questions that this chunk can answer.
+Respond with a JSON array of strings, where each string is a question.
+
+Chunk: """{chunk}"""
+
+JSON:'''
+                        questions_str = self.llm.generate(questions_prompt, temperature=0.3)
+                        try:
+                            questions = json.loads(questions_str)
+                            for question in questions:
+                                if question:
+                                    question_id = self.add_node('question', question, user, linked_to=[chunk_id, doc_node_id])
+                                    self.add_link(question_id, chunk_id, 'answers')
+                                    self.add_link(question_id, doc_node_id, 'answers')
+                        except (json.JSONDecodeError, ValueError) as e:
+                            self.file_logger.log_error(f"Failed to decode questions from LLM response for chunk {chunk_id}: {questions_str}. Error: {e}")
+
                     # Update processed docs tracker
                     self.processed_docs[filename] = {
                         'last_modified': last_modified,
@@ -397,8 +449,8 @@ Summary:"""
                         'chunk_ids': chunk_ids
                     }
                     self._save_processed_docs()
-                    messages.append(f"Document '{filename}' stored as canonical knowledge with {len(chunks)} chunks.")
-                    self.file_logger.log_info(f"Stored document '{filename}' with {len(chunks)} chunks")
+                    messages.append(f"Document '{filename}' stored as canonical knowledge with {len(chunks)} chunks, key takeaways, and questions.")
+                    self.file_logger.log_info(f"Stored document '{filename}' with {len(chunks)} chunks, key takeaways, and questions.")
                     
                 except Exception as e:
                     self.file_logger.log_error(f"Error processing document {filename}: {e}")
@@ -426,14 +478,14 @@ Summary:"""
         words = text.split()
         return [' '.join(words[i:i + chunk_size]) for i in range(0, len(words), chunk_size)]
 
-    def _generate_meta_insights(self, user_nodes: list):
+    def _generate_meta_insights(self, user_nodes: list[CognitiveNode]):
         """Analyzes clusters of nodes to generate higher-level meta-insights."""
-        user_node_ids = {node['id'] for node in user_nodes}
+        user_node_ids = {node.id for node in user_nodes}
         adj = {node_id: [] for node_id in user_node_ids}
         for link in self.graph['links']:
-            if link['source'] in user_node_ids and link['target'] in user_node_ids:
-                adj[link['source']].append(link['target'])
-                adj[link['target']].append(link['source'])
+            if link.source_id in user_node_ids and link.target_id in user_node_ids:
+                adj[link.source_id].append(link.target_id)
+                adj[link.target_id].append(link.source_id)
 
         visited = set()
         clusters = []
@@ -460,16 +512,16 @@ Summary:"""
             meta_insight_exists = False
             for node_id in cluster:
                 node = self.get_node(node_id)
-                if node['type'] == 'meta-insight':
+                if node.node_type == 'meta-insight':
                     # Check if this meta-insight links to all nodes in the current cluster
-                    linked_nodes = {link['target'] for link in self.graph['links'] if link['source'] == node_id}
+                    linked_nodes = {link.target_id for link in self.graph['links'] if link.source_id == node_id}
                     if linked_nodes == cluster_set:
                         meta_insight_exists = True
                         break
             if meta_insight_exists:
                 continue
 
-            linked_nodes_content = [self.get_node(node_id)['content'] for node_id in cluster]
+            linked_nodes_content = [self.get_node(node_id).content for node_id in cluster]
             content_str = "\n".join([f"- {content}" for content in linked_nodes_content])
 
             prompt = f"""Analyze the following collection of related insights. Your task is to synthesize them into a single, novel, and higher-level 'meta-insight'. A meta-insight is a new conclusion, pattern, or theme that emerges from the combination of the existing insights, but is not explicitly stated in any of them. Do not simply summarize the related insights. The meta-insight should be a new piece of knowledge.
@@ -482,11 +534,11 @@ Meta-Insight:"""
             meta_insight_content = self.llm.generate(prompt, temperature=0.6)
             
             if meta_insight_content:
-                existing_meta_insights = self.get_all_nodes_by_type('meta-insight', user_nodes[0]['user'])
-                is_duplicate = any(existing_insight['content'] == meta_insight_content for existing_insight in existing_meta_insights)
+                existing_meta_insights = self.get_all_nodes_by_type('meta-insight', user_nodes[0].user)
+                is_duplicate = any(existing_insight.content == meta_insight_content for existing_insight in existing_meta_insights)
                 
                 if not is_duplicate:
-                    meta_insight_id = self.add_node('meta-insight', meta_insight_content, user_nodes[0]['user'])
+                    meta_insight_id = self.add_node('meta-insight', meta_insight_content, user_nodes[0].user)
                     for node_id in cluster:
                         self.add_link(meta_insight_id, node_id, 'summarizes')
                     self.ui_logger.info(f"Generated meta-insight {meta_insight_id} from a cluster of {len(cluster)} nodes.")
@@ -506,11 +558,11 @@ Meta-Insight:"""
 
         nodes_to_prune = []
         for node_id, node in self.graph["nodes"].items():
-            if node.get("user") != user:
+            if node.user != user:
                 continue
 
-            age = now - datetime.fromisoformat(node['timestamp'])
-            if age.days > max_age_days and node['metadata']['centrality'] < min_centrality:
+            age = now - datetime.fromisoformat(node.timestamp)
+            if age.days > max_age_days and node.metadata['centrality'] < min_centrality:
                 nodes_to_prune.append(node_id)
 
         if not nodes_to_prune:
@@ -519,7 +571,7 @@ Meta-Insight:"""
 
         for node_id in nodes_to_prune:
             del self.graph["nodes"][node_id]
-            self.graph["links"] = [link for link in self.graph["links"] if link["source"] != node_id and link["target"] != node_id]
+            self.graph["links"] = [link for link in self.graph["links"] if link.source_id != node_id and link.target_id != node_id]
 
         self._save_graph()
         messages.append(f"Pruned {len(nodes_to_prune)} nodes from the cognitive graph.")
@@ -543,15 +595,15 @@ Meta-Insight:"""
 
         # Calculate scores for each relationship type
         for link in self.graph['links']:
-            relationship = link['relationship']
+            relationship = link.relationship
             if relationship in relationship_scores:
-                source_node = self.get_node(link['source'])
-                target_node = self.get_node(link['target'])
+                source_node = self.get_node(link.source_id)
+                target_node = self.get_node(link.target_id)
                 if source_node and target_node:
-                    relationship_scores[relationship]['total_centrality'] += source_node['metadata']['centrality'] + target_node['metadata']['centrality']
+                    relationship_scores[relationship]['total_centrality'] += source_node.metadata['centrality'] + target_node.metadata['centrality']
                     relationship_scores[relationship]['count'] += 2
 
-                    if source_node['type'] == 'meta-insight' or target_node['type'] == 'meta-insight':
+                    if source_node.node_type == 'meta-insight' or target_node.node_type == 'meta-insight':
                         relationship_scores[relationship]['meta_insights'] += 1
 
         new_weights = {}

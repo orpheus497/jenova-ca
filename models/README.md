@@ -26,34 +26,6 @@ wget https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/
 cd ..
 ```
 
-## Configuration
+## System-Wide Installation
 
-After placing a model file, update the `model_path` in `src/jenova/config/main_config.yaml`:
-
-```yaml
-model:
-  model_path: './models/model.gguf'
-```
-
-Make sure the filename matches your downloaded model.
-
-## Model Size Considerations
-
-**RAM Requirements (approximate):**
-- 1B model: ~2GB RAM
-- 3B model: ~4GB RAM
-- 7B model: ~8GB RAM
-- 13B model: ~16GB RAM
-
-**GPU Acceleration:**
-If you have an NVIDIA GPU with CUDA:
-1. Set `gpu_layers: -1` in config to offload all layers to GPU
-2. Requires CUDA toolkit installed
-3. Significantly improves inference speed
-
-**Quantization:**
-Most GGUF models come in different quantization levels:
-- Q4_K_M: Good balance of quality and size (recommended)
-- Q5_K_M: Better quality, larger size
-- Q8_0: Highest quality, largest size
-- Q3_K_S: Smallest size, lower quality
+For system-wide model storage, place models in /usr/local/share/models (requires sudo).

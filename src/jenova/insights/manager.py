@@ -55,11 +55,6 @@ class InsightManager:
             self.file_logger.log_error(f"Error saving insight: {e}")
             self.ui_logger.system_message("An error occurred while saving the insight.")
 
-    def reorganize_insights(self, username: str) -> list[str]:
-        """DEPRECATED: This method is no longer used. Reorganization is handled by Cortex.reflect."""
-        self.file_logger.log_warning("InsightManager.reorganize_insights is deprecated and should not be called.")
-        return ["This function is deprecated."]
-
     def get_relevant_insights(self, query: str, username: str, max_insights: int = 3) -> list[str]:
         """Uses semantic search to find the most relevant insights for a given query."""
         return self.memory_search.search_insights(query, username, max_insights)

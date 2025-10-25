@@ -6,10 +6,10 @@ import uuid
 @dataclass
 class CognitiveNode:
     """Represents a single node in the cognitive graph."""
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
     node_type: str # e.g., 'insight', 'memory', 'assumption', 'meta-insight'
     content: str
     user: str
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     metadata: dict = field(default_factory=dict)
 

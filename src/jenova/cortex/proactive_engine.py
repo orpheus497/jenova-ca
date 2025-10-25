@@ -15,20 +15,20 @@ class ProactiveEngine:
         """Generates a proactive suggestion for the user based on current cognitive state."""
         # Get unverified assumptions
         unverified_assumptions = self.cortex.get_all_nodes_by_type('assumption', username)
-        unverified_assumptions = [a['content'] for a in unverified_assumptions if a.get('metadata', {}).get('status') == 'unverified']
+        unverified_assumptions = [a.content for a in unverified_assumptions if a.metadata.get('status') == 'unverified']
 
         # Get underdeveloped nodes (low centrality)
         self.cortex._calculate_centrality() # Ensure centrality is up-to-date
-        underdeveloped_nodes = [node for node in self.cortex.get_all_nodes_by_type('insight', username) if node['metadata'].get('centrality', 0) < 0.5]
-        underdeveloped_content = [node['content'] for node in underdeveloped_nodes[:3]] # Limit to a few
+        underdeveloped_nodes = [node for node in self.cortex.get_all_nodes_by_type('insight', username) if node.metadata.get('centrality', 0) < 0.5]
+        underdeveloped_content = [node.content for node in underdeveloped_nodes[:3]] # Limit to a few
 
         # Get high-potential nodes (high centrality, potential for meta-insights)
-        high_potential_nodes = [node for node in self.cortex.get_all_nodes_by_type('insight', username) if node['metadata'].get('centrality', 0) > 1.5]
-        high_potential_content = [node['content'] for node in high_potential_nodes[:3]] # Limit to a few
+        high_potential_nodes = [node for node in self.cortex.get_all_nodes_by_type('insight', username) if node.metadata.get('centrality', 0) > 1.5]
+        high_potential_content = [node.content for node in high_potential_nodes[:3]] # Limit to a few
 
         # Get recent suggestions to avoid repetition
         recent_suggestions = self.cortex.get_all_nodes_by_type('proactive_suggestion', username)
-        recent_suggestions_content = [s['content'] for s in recent_suggestions if (datetime.now() - datetime.fromisoformat(s['timestamp'])).days < 1]
+        recent_suggestions_content = [s.content for s in recent_suggestions if (datetime.now() - datetime.fromisoformat(s.timestamp)).days < 1]
 
         prompt = f"""Based on the following information about the user's cognitive graph, generate a single, concise, and engaging proactive suggestion or question for the user. The goal is to encourage deeper exploration, verify assumptions, or address underdeveloped areas of knowledge.
 

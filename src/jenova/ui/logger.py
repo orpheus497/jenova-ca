@@ -46,6 +46,13 @@ class UILogger:
             # Direct printing with lock (legacy mode)
             getattr(self, f'_direct_{msg_type}')(*args, **kwargs)
 
+    def _direct_error(self, message):
+        with self._console_lock:
+            self.console.print(f"[bold red]>> ERROR: {message}[/bold red]")
+
+    def error(self, message):
+        self._queue_or_print('error', message)
+
     def _direct_info(self, message):
         with self._console_lock:
             self.console.print(f"[bold green]>> {message}[/bold green]")

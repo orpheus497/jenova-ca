@@ -1,26 +1,32 @@
 # Main Configuration for The JENOVA Cognitive Architecture - JCA v3.2
 model:
-  # Path to GGUF model file (required)
-  model_path: './models/model.gguf'
+  # Path to GGUF model file (optional - will auto-discover if not found)
+  # System searches: /usr/local/share/models, then ./models
+  model_path: '/usr/local/share/models/model.gguf'
   
-  # CPU threads for inference (set based on your CPU)
-  # Recommended: number of physical cores (not logical/hyperthreads)
-  threads: 8
+  # CPU threads for inference (-1 = auto-detect, 0 = use all available)
+  # Auto-detection uses physical cores only (excludes hyperthreads)
+  # Manual override: set to specific number (e.g., 4, 8, 16)
+  threads: -1
   
-  # GPU layers to offload (-1 = all layers, 0 = CPU only)
-  # For NVIDIA GPUs with CUDA: set to -1 for full GPU acceleration
-  # For CPU-only: set to 0
+  # GPU layers to offload (-1 = all available layers with dynamic VRAM management)
+  # System automatically manages VRAM and falls back gracefully if needed
+  # -1: Attempts full GPU offload with intelligent fallback
+  # 0: CPU-only mode
+  # N: Specific number of layers (manual override)
   gpu_layers: -1
   
   # Lock model in RAM to prevent swapping (recommended for performance)
+  # Set to false if system has limited RAM
   mlock: true
   
   # Batch size for prompt processing
   n_batch: 512
   
-  # Context window size (will be auto-detected from model, but can override)
-  # Typical values: 2048, 4096, 8192, 16384, 32768
-  context_size: 2048
+  # Context window size (tokens the model can process at once)
+  # Typical values: 2048, 4096, 8192
+  # Higher values require more VRAM/RAM
+  context_size: 8192
   
   # Maximum tokens to generate per response
   max_tokens: 512
@@ -32,6 +38,8 @@ model:
   top_p: 0.95
   
   # Embedding model for semantic search (sentence-transformers)
+  # Uses CPU to maximize VRAM availability for LLM
+  # Shared across all memory systems for efficiency
   embedding_model: 'all-MiniLM-L6-v2'
 memory:
   preload_memories: true
