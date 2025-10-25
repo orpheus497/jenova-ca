@@ -118,18 +118,23 @@ Plan:"""
             tool_calls = tool_call_pattern.findall(plan)
 
             if tool_calls:
-                tool_results = []
+                structured_tool_results = []
+                tool_error_messages = []
                 for tool_name, args_str in tool_calls:
                     try:
                         args = dict(arg.split('=', 1) for arg in shlex.split(args_str))
                         result = self.tool_handler.execute_tool(tool_name, args)
-                        tool_results.append(result)
+                        if isinstance(result, dict):
+                            structured_tool_results.append(result)
+                        else:
+                            tool_error_messages.append(str(result)) # Ensure it's a string
                     except Exception as e:
-                        tool_results.append(f"Error executing tool {tool_name}: {e}")
+                        tool_error_messages.append(f"Error executing tool {tool_name}: {e}")
                 
-                # Add tool results to context and generate response
-                context.extend(tool_results)
-                return self.rag_system.generate_response(user_input, username, self.history, plan, search_results=tool_results)
+                # Add tool error messages to context for LLM awareness
+                context.extend(tool_error_messages)
+                # Pass only structured results to RAG system for formatting
+                return self.rag_system.generate_response(user_input, username, self.history, plan, search_results=structured_tool_results)
 
             return self.rag_system.generate_response(user_input, username, self.history, plan)
 

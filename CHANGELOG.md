@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Deprecated Code:** Removed the `document_processor.py` file and the `reorganize_insights` method.
 
 ### Fixed
+- **Tool Execution:** Fixed `AttributeError` in `rag_system.generate_response` by ensuring only structured tool outputs are passed as search results, while error messages are added to the context.
 - **Model Loading:** Fixed VRAM allocation errors by forcing the embedding model to the CPU, maximizing VRAM for the main LLM.
 - **Model Loading:** Resolved deadlocks and insufficient VRAM errors with the new multi-strategy fallback system.
 - **Startup Crash:** Fixed a silent exit on startup by adding the `if __name__ == "__main__":` block to `main.py`.
