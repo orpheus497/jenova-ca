@@ -1,11 +1,23 @@
-import yaml
+# The JENOVA Cognitive Architecture
+# Copyright (c) 2024, orpheus497. All rights reserved.
+#
+# The JENOVA Cognitive Architecture is licensed under the MIT License.
+# A copy of the license can be found in the LICENSE file in the root directory of this source tree.
+
+"""This module is responsible for loading the configuration for the JENOVA Cognitive Architecture.
+"""
+
 from pathlib import Path
 
-def load_configuration(ui_logger, file_logger):
+import yaml
+
+
+def load_configuration(ui_logger=None, file_logger=None):
     """Loads and merges configuration from YAML files."""
     try:
-        ui_logger.info(">> Loading configuration...")
-        
+        if ui_logger:
+            ui_logger.info(">> Loading configuration...")
+
         # Assuming this file is at src/jenova/config/__init__.py
         main_config_path = Path(__file__).parent / 'main_config.yaml'
         with open(main_config_path, 'r', encoding='utf-8') as f:
@@ -18,24 +30,32 @@ def load_configuration(ui_logger, file_logger):
         # Merge configurations
         merged_config = main_config
         merged_config['persona'] = persona_config
-        
-        ui_logger.info(">> Configuration loaded successfully.")
-        file_logger.log_info("Configuration loaded successfully.")
-        
+
+        if ui_logger:
+            ui_logger.info(">> Configuration loaded successfully.")
+        if file_logger:
+            file_logger.log_info("Configuration loaded successfully.")
+
         return merged_config
 
     except FileNotFoundError as e:
         error_message = f"Configuration file not found: {e}. Please ensure main_config.yaml and persona.yaml are in the config directory."
-        ui_logger.system_message(error_message)
-        file_logger.log_error(error_message)
+        if ui_logger:
+            ui_logger.system_message(error_message)
+        if file_logger:
+            file_logger.log_error(error_message)
         raise
     except yaml.YAMLError as e:
         error_message = f"Error parsing YAML configuration file: {e}"
-        ui_logger.system_message(error_message)
-        file_logger.log_error(error_message)
+        if ui_logger:
+            ui_logger.system_message(error_message)
+        if file_logger:
+            file_logger.log_error(error_message)
         raise
     except Exception as e:
         error_message = f"An unexpected error occurred while loading configuration: {e}"
-        ui_logger.system_message(error_message)
-        file_logger.log_error(error_message)
+        if ui_logger:
+            ui_logger.system_message(error_message)
+        if file_logger:
+            file_logger.log_error(error_message)
         raise

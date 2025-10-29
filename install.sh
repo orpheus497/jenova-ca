@@ -3,7 +3,7 @@
 # This script creates a Python virtualenv and installs JENOVA AI locally.
 # Run without sudo/root privileges.
 
-set -e
+set -euo pipefail
 
 echo "======================================================================"
 echo "        JENOVA AI - Local Installation (Virtualenv)"

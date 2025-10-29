@@ -1,11 +1,22 @@
+# The JENOVA Cognitive Architecture
+# Copyright (c) 2024, orpheus497. All rights reserved.
+#
+# The JENOVA Cognitive Architecture is licensed under the MIT License.
+# A copy of the license can be found in the LICENSE file in the root directory of this source tree.
+
+"""This module is responsible for the UI logging of the JENOVA Cognitive Architecture.
+"""
+
 import os
-import threading
 import queue
+import threading
 from contextlib import contextmanager
+
 from rich.console import Console
-from rich.panel import Panel
 from rich.markdown import Markdown
+from rich.panel import Panel
 from rich.text import Text
+
 
 class UILogger:
     def __init__(self, message_queue=None):
@@ -28,7 +39,8 @@ class UILogger:
                 Text(banner_text, style="bold cyan", justify="center"),
                 title="The JENOVA Cognitive Architecture (JCA)",
                 title_align="center",
-                subtitle=Text(attribution_text, style="cyan", justify="center"),
+                subtitle=Text(attribution_text, style="cyan",
+                              justify="center"),
                 border_style="bold magenta",
             )
             self.console.print(panel)
@@ -62,7 +74,8 @@ class UILogger:
 
     def _direct_system_message(self, message):
         with self._console_lock:
-            self.console.print(Text.from_markup(f"[bold red]>> {message}[/bold red]"))
+            self.console.print(Text.from_markup(
+                f"[bold red]>> {message}[/bold red]"))
 
     def system_message(self, message):
         self._queue_or_print('system_message', message)
@@ -86,7 +99,8 @@ class UILogger:
         """Non-blocking cognitive process status indicator."""
         if self.message_queue is not None:
             # Queue-based mode: just queue the status update
-            self.message_queue.put(('start_status', (message,), {'spinner': 'earth', 'style': 'bold green'}))
+            self.message_queue.put(('start_status', (message,), {
+                                   'spinner': 'earth', 'style': 'bold green'}))
             try:
                 yield None  # No status object in non-blocking mode
             finally:
@@ -102,7 +116,8 @@ class UILogger:
         """Non-blocking thinking process status indicator."""
         if self.message_queue is not None:
             # Queue-based mode: just queue the status update
-            self.message_queue.put(('start_status', (message,), {'spinner': 'dots', 'style': 'bold yellow'}))
+            self.message_queue.put(('start_status', (message,), {
+                                   'spinner': 'dots', 'style': 'bold yellow'}))
             try:
                 yield None  # No status object in non-blocking mode
             finally:
@@ -115,7 +130,8 @@ class UILogger:
 
     def _direct_user_query(self, text, username: str):
         with self._console_lock:
-            panel = Panel(Text(text, style="white"), title=f"{username}@JENOVA", border_style="dark_green")
+            panel = Panel(Text(text, style="white"),
+                          title=f"{username}@JENOVA", border_style="dark_green")
             self.console.print(panel)
 
     def user_query(self, text, username: str):
@@ -127,10 +143,12 @@ class UILogger:
                 text = str(text)
             try:
                 # Try to render as Markdown
-                panel = Panel(Markdown(text, style="cyan"), title="JENOVA", border_style="magenta")
+                panel = Panel(Markdown(text, style="cyan"),
+                              title="JENOVA", border_style="magenta")
             except TypeError:
                 # If Markdown parsing fails, render as plain text
-                panel = Panel(Text(text, style="cyan"), title="JENOVA", border_style="magenta")
+                panel = Panel(Text(text, style="cyan"),
+                              title="JENOVA", border_style="magenta")
             self.console.print(panel)
 
     def jenova_response(self, text):
@@ -140,12 +158,12 @@ class UILogger:
         """Process all queued messages. Called from main UI thread."""
         if self.message_queue is None:
             return
-        
+
         # Process all pending messages
         while not self.message_queue.empty():
             try:
                 msg_type, args, kwargs = self.message_queue.get_nowait()
-                
+
                 # Handle special message types
                 if msg_type == 'start_status':
                     # For status updates in queue mode, we don't actually start a spinner

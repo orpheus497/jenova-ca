@@ -1,6 +1,16 @@
-import os
+# The JENOVA Cognitive Architecture
+# Copyright (c) 2024, orpheus497. All rights reserved.
+#
+# The JENOVA Cognitive Architecture is licensed under the MIT License.
+# A copy of the license can be found in the LICENSE file in the root directory of this source tree.
+
+"""This module is responsible for the file logging of the JENOVA Cognitive Architecture.
+"""
+
 import logging
+import os
 from logging.handlers import RotatingFileHandler
+
 
 class FileLogger:
     def __init__(self, user_data_root: str, log_file_name: str = "jenova.log"):
@@ -10,12 +20,14 @@ class FileLogger:
 
         self.logger = logging.getLogger('JenovaFileLogger')
         self.logger.setLevel(logging.INFO)
-        
+
         # Avoid adding handlers if they already exist
         if not self.logger.handlers:
             # Use a rotating file handler to keep log sizes manageable (5MB per file, 2 backups)
-            handler = RotatingFileHandler(self.log_file_path, maxBytes=5*1024*1024, backupCount=2)
-            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+            handler = RotatingFileHandler(
+                self.log_file_path, maxBytes=5*1024*1024, backupCount=2)
+            formatter = logging.Formatter(
+                '%(asctime)s - %(levelname)s - %(message)s')
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
 

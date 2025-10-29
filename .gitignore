@@ -36,6 +36,7 @@ wheels/
 *.log
 *.sqlite3
 *.db
+*.bak
 
 # Test and coverage reports
 htmlcov/

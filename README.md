@@ -157,7 +157,7 @@ JENOVA uses a local virtualenv-based installation that keeps dependencies isolat
     - Display instructions for next steps
 
 3.  **Download a GGUF Model:**
-    JENOVA works with any GGUF format model. Choose based on your hardware:
+    JENOVA works with any GGUF format model. Choose based on your hardware.
     
     **System-wide installation (recommended, requires sudo):**
     ```bash
@@ -205,9 +205,21 @@ JENOVA's configuration is in `src/jenova/config/main_config.yaml`. Key settings:
 *   **context_size:** Context window size
 *   **embedding_model:** Sentence transformer model for memory embeddings
 
-### 4.4. GPU Acceleration
+### 4.4. Hardware Detection and GPU Acceleration
 
-For NVIDIA GPUs with CUDA:
+JENOVA includes comprehensive hardware detection supporting multiple GPU types and platforms:
+
+**Supported Hardware:**
+- **NVIDIA GPUs** (GeForce, RTX, Quadro) via CUDA
+- **Intel GPUs** (Iris Xe, UHD, Arc) via OpenCL/Vulkan
+- **AMD GPUs and APUs** (Radeon, Ryzen with graphics) via OpenCL/ROCm
+- **Apple Silicon** (M1/M2/M3/M4) via Metal
+- **ARM CPUs** (including Android/Termux support)
+- **Multi-GPU systems** (automatic detection and prioritization)
+
+The system automatically detects available hardware and configures optimal settings. For detailed information on hardware support, configuration options, and troubleshooting, see `docs/HARDWARE_SUPPORT.md`.
+
+**Quick Setup for NVIDIA GPUs with CUDA:**
 
 1. Install CUDA toolkit: `sudo dnf install cuda-toolkit`
 2. The install script will automatically build llama-cpp-python with CUDA support
@@ -275,7 +287,8 @@ JENOVA responds to a set of powerful commands that act as direct instructions fo
 ├── .gitignore
 ├── CHANGELOG.md
 ├── docs/
-│   └── .gitkeep
+│   ├── .gitkeep
+│   └── HARDWARE_SUPPORT.md
 ├── finetune/
 │   ├── README.md
 │   └── train.py
@@ -294,7 +307,6 @@ JENOVA responds to a set of powerful commands that act as direct instructions fo
 │       │   └── manager.py
 │       ├── cognitive_engine/
 │       │   ├── __init__.py
-│       │   ├── document_processor.py
 │       │   ├── engine.py
 │       │   ├── memory_search.py
 │       │   ├── rag_system.py
@@ -328,6 +340,7 @@ JENOVA responds to a set of powerful commands that act as direct instructions fo
 │       │   ├── data_sanitizer.py
 │       │   ├── embedding.py
 │       │   ├── file_logger.py
+│       │   ├── hardware_detector.py
 │       │   ├── json_parser.py
 │       │   ├── model_loader.py
 │       │   └── telemetry_fix.py
@@ -358,6 +371,11 @@ This file controls the technical parameters of the AI.
     -   `temperature`: Controls the "creativity" of the LLM
     -   `top_p`: Nucleus sampling parameter
     -   `embedding_model`: Sentence-transformer model for vector embeddings
+-   **`hardware`**:
+    -   `show_details`: Display detailed hardware detection information at startup
+    -   `prefer_device`: Preferred compute device (`auto`, `cuda`, `opencl`, `vulkan`, `metal`, `cpu`)
+    -   `device_index`: Which GPU to use in multi-GPU systems (0 = first, 1 = second, etc.)
+    -   `memory_strategy`: Memory management strategy (`auto`, `performance`, `balanced`, `swap_optimized`, `minimal`)
 -   **`memory`**:
     -   `preload_memories`: Whether to load all memories into RAM at startup
     -   `..._db_path`: Paths to the ChromaDB databases (relative to user data directory)
@@ -377,10 +395,6 @@ This file controls the technical parameters of the AI.
     -   `episodic_n_results`: Number of results from episodic memory
     -   `procedural_n_results`: Number of results from procedural memory
     -   `insight_n_results`: Number of results from insight memory
--   **`finetuning`**:
-    -   `training_file`: Name of the generated training file
-    -   `lora_output_dir`: Directory for LoRA adapters (for reference)
-    -   `finetuned_model_output`: Path for fine-tuned model output (for reference)
 -   **`tools`**:
     -   `file_sandbox_path`: Directory where the AI can read and write files
 
@@ -398,23 +412,50 @@ This file defines the AI's personality and core directives.
 -   **`directives`**: A list of rules the AI must follow. These are injected into the system prompt.
 -   **`initial_facts`**: A list of foundational facts that are loaded into the AI's memory on first run.
 
+### Changed
+- **Code Quality**: Applied `autopep8` and `isort` for consistent code formatting and import ordering across the entire project.
+- **Documentation**: Added module-level docstrings to all Python files where they were missing.
+- **Attribution**: Added standardized creator attribution and license information to the header of all Python files.
+- Updated `pyproject.toml` version to `4.0.0` to reflect the latest release version.
+- **Architecture:** Reverted the core architecture from HuggingFace `transformers` back to `llama-cpp-python`.
+- **Installation:** Reverted from a system-wide installation to a local, virtualenv-based installation for better isolation and user control.
+- **Dependencies:** Replaced `transformers`, `accelerate`, `peft`, and `bitsandbytes` with `llama-cpp-python`.
+- **LLM Interface:** The `LLMInterface` has been completely rewritten to use the `llama-cpp-python` `Llama` class.
+- **Cortex:** Refactored the Cortex to use `CognitiveNode` and `CognitiveLink` dataclasses for improved readability and maintainability.
+- **Document Processing:** Documents are now chunked and stored as canonical 'document' nodes in the cognitive graph, without automatic insight generation.
+- **README:** The `README.md` and `main_config.yaml` have been updated to reflect the new GGUF-based architecture and dynamic resource allocation.
+
 ## 7. Credits and Acknowledgments
 
-The JENOVA Cognitive Architecture builds upon excellent open-source work from the community:
+The JENOVA Cognitive Architecture is made possible by the following exceptional open-source projects. We extend our gratitude to their authors and contributors.
 
 ### Core Dependencies
--   **llama-cpp-python** - Python bindings for llama.cpp, enabling efficient GGUF model inference
--   **PyTorch** - Deep learning framework (required by sentence-transformers)
--   **ChromaDB** - Vector database for efficient memory storage and retrieval
--   **Sentence Transformers** - Framework for computing dense vector representations
--   **Rich** by Will McGugan - Beautiful terminal formatting and UI components
--   **Prompt Toolkit** - Library for building interactive command-line applications
--   **PyYAML** - YAML parser for configuration files
--   **NumPy** - Fundamental package for scientific computing with Python
--   **Selenium** & **WebDriver Manager** - Web automation for external information retrieval
--   **Requests** - Elegant and simple HTTP library for Python
+
+*   **llama-cpp-python** by Andrei Abacaru: Python bindings for the high-performance `llama.cpp` library, enabling efficient GGUF model inference on CPU and GPU.
+    *   *License: MIT*
+*   **PyTorch**: A foundational deep learning framework from Meta AI, used for tensor computations and powering the sentence-transformers library.
+    *   *License: BSD-style*
+*   **ChromaDB**: An open-source embedding database that provides the backbone for JENOVA's multi-layered memory systems.
+    *   *License: Apache 2.0*
+*   **Sentence Transformers** by Nils Reimers: A framework for state-of-the-art sentence, text, and image embeddings, used to compute dense vector representations for all memory systems.
+    *   *License: Apache 2.0*
+*   **Rich** by Will McGugan: A Python library for rich text and beautiful formatting in the terminal, responsible for JENOVA's polished user interface.
+    *   *License: MIT*
+*   **Prompt Toolkit** by Jonathan Slenders: A library for building powerful interactive command-line applications, providing the core for JENOVA's responsive terminal prompt.
+    *   *License: BSD-3-Clause*
+*   **PyYAML**: A YAML parser and emitter for Python, used for loading the project's configuration files.
+    *   *License: MIT*
+*   **NumPy**: The fundamental package for scientific computing with Python, providing support for large, multi-dimensional arrays and matrices.
+    *   *License: BSD-3-Clause*
+*   **Selenium**: A powerful suite of tools for automating web browsers, used by JENOVA's `web_search` tool for external information retrieval.
+    *   *License: Apache 2.0*
+*   **WebDriver Manager**: A library to automate the management of browser drivers (like geckodriver) required for Selenium.
+    *   *License: Apache 2.0*
+*   **Requests**: An elegant and simple HTTP library for Python, used for making web requests in various tools.
+    *   *License: Apache 2.0*
 
 ### Architecture Design
--   **The JENOVA Cognitive Architecture (JCA)** designed and developed by **orpheus497**
+
+*   **The JENOVA Cognitive Architecture (JCA)** was designed and developed by **orpheus497**.
 
 All dependencies are used in accordance with their respective open-source licenses. JENOVA itself is released under the MIT License.

@@ -1,11 +1,20 @@
+# The JENOVA Cognitive Architecture
+# Copyright (c) 2024, orpheus497. All rights reserved.
+#
+# The JENOVA Cognitive Architecture is licensed under the MIT License.
+# A copy of the license can be found in the LICENSE file in the root directory of this source tree.
+
 import json
 import re
 import shlex
-from jenova.cortex.proactive_engine import ProactiveEngine
+
 from jenova.cognitive_engine.scheduler import CognitiveScheduler
+from jenova.cortex.proactive_engine import ProactiveEngine
+
 
 class CognitiveEngine:
     """The Perfected Cognitive Engine. Manages the refined cognitive cycle."""
+
     def __init__(self, llm, memory_search, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, rag_system, tool_handler):
         self.llm = llm
         self.memory_search = memory_search
@@ -21,13 +30,14 @@ class CognitiveEngine:
         self.tool_handler = tool_handler
         self.history = []
         self.turn_count = 0
-        self.MAX_HISTORY_TURNS = 5 # Keep the last 5 conversation turns
+        self.MAX_HISTORY_TURNS = 5  # Keep the last 5 conversation turns
         self.pending_assumption = None
 
     def think(self, user_input: str, username: str) -> str:
         """Runs the full cognitive cycle: Retrieve, Plan, Execute, and Reflect."""
-        with self.ui_logger.cognitive_process("Thinking...") as thinking_status:
-            self.file_logger.log_info(f"New query received from {username}: {user_input}")
+        with self.ui_logger.cognitive_process("Thinking...") :
+            self.file_logger.log_info(
+                f"New query received from {username}: {user_input}")
             self.turn_count += 1
 
             # Retrieve, Plan, Execute
@@ -37,7 +47,7 @@ class CognitiveEngine:
                 context = [str(item) for item in context]
             else:
                 context = []
-            
+
             plan = self._plan(user_input, context, username)
             if not plan:
                 plan = f"I will formulate a response to the user's query: {user_input}"
@@ -52,31 +62,33 @@ class CognitiveEngine:
                     self.history = self.history[-(self.MAX_HISTORY_TURNS * 2):]
 
                 # Add to episodic memory
-                self.memory_search.episodic_memory.add_episode(f"{username}: {user_input}\nJenova: {response}", username)
+                self.memory_search.episodic_memory.add_episode(
+                    f"{username}: {user_input}\nJenova: {response}", username)
 
                 # Run scheduled cognitive tasks
-                tasks = self.scheduler.get_cognitive_tasks(self.turn_count, user_input, username)
+                tasks = self.scheduler.get_cognitive_tasks(
+                    self.turn_count, user_input, username)
                 for task_name, kwargs in tasks:
                     if hasattr(self, task_name):
                         method = getattr(self, task_name)
                         result = method(**kwargs)
                         if task_name == "proactively_verify_assumption" and result:
-                            self.ui_logger.info(f"JENOVA has a question for you: {result}")
-
+                            if self.ui_logger:
+                                self.ui_logger.info(
+                                    f"JENOVA has a question for you: {result}")
 
         return response
-
 
     def _plan(self, user_input: str, context: list[str], username: str) -> str:
         # Ensure all context items are strings before joining
         safe_context = [str(c) for c in context]
         context_str = "\n".join(f"- {c}" for c in safe_context)
-        
+
         # Load persona from config
         persona_config = self.config.get('persona', {})
         identity = persona_config.get('identity', {})
         directives = persona_config.get('directives', [])
-        
+
         creator_name = identity.get('creator', 'orpheus497')
         creator_alias = identity.get('creator_alias', 'The Architect')
         ai_name = identity.get('name', 'Jenova')
@@ -105,10 +117,10 @@ If you need to use a tool, specify the tool call in the format: `(tool: <tool_na
 {user_title} ({username}): "{user_input}"
 
 Plan:"""
-        
+
         with self.ui_logger.thinking_process("Formulating plan..."):
             plan = self.llm.generate(prompt, temperature=0.1)
-        
+
         self.file_logger.log_info(f"Generated Plan: {plan}")
         return plan
 
@@ -118,34 +130,39 @@ Plan:"""
             tool_calls = tool_call_pattern.findall(plan)
 
             if tool_calls:
-                structured_tool_results = []
-                tool_error_messages = []
-                for tool_name, args_str in tool_calls:
-                    try:
-                        args = dict(arg.split('=', 1) for arg in shlex.split(args_str))
-                        result = self.tool_handler.execute_tool(tool_name, args)
-                        if isinstance(result, dict):
-                            structured_tool_results.append(result)
-                        else:
-                            tool_error_messages.append(str(result)) # Ensure it's a string
-                    except Exception as e:
-                        tool_error_messages.append(f"Error executing tool {tool_name}: {e}")
-                
-                # Add tool error messages to context for LLM awareness
-                context.extend(tool_error_messages)
-                # Pass only structured results to RAG system for formatting
+                context, structured_tool_results = self._handle_tool_calls(
+                    tool_calls, context)
                 return self.rag_system.generate_response(user_input, username, self.history, plan, search_results=structured_tool_results)
 
             return self.rag_system.generate_response(user_input, username, self.history, plan)
 
+    def _handle_tool_calls(self, tool_calls: list, context: list) -> tuple[list, list]:
+        structured_tool_results = []
+        tool_error_messages = []
+        for tool_name, args_str in tool_calls:
+            try:
+                args = dict(arg.split('=', 1) for arg in shlex.split(args_str))
+                result = self.tool_handler.execute_tool(tool_name, args)
+                if isinstance(result, dict):
+                    structured_tool_results.append(result)
+                else:
+                    tool_error_messages.append(str(result))
+            except Exception as e:
+                tool_error_messages.append(
+                    f"Error executing tool {tool_name}: {e}")
+
+        context.extend(tool_error_messages)
+        return context, structured_tool_results
+
     def generate_insight_from_history(self, username: str):
         """Analyzes recent conversation history to generate and save a new, high-quality insight."""
-        self.ui_logger.info("Analyzing conversation history to generate a new insight...")
+        self.ui_logger.info(
+            "Analyzing conversation history to generate a new insight...")
         if len(self.history) < 2:
             return
 
         conversation_segment = "\n".join(self.history[-8:])
-        
+
         persona_config = self.config.get('persona', {})
         identity = persona_config.get('identity', {})
         creator_name = identity.get('creator', 'orpheus497')
@@ -165,19 +182,22 @@ Plan:"""
         """
         with self.ui_logger.thinking_process("Generating insight from recent conversation..."):
             insight_json_str = self.llm.generate(prompt, temperature=0.2)
-        
+
         try:
             data = json.loads(insight_json_str)
             topic = data.get('topic')
             insight = data.get('insight')
             if topic and insight:
-                self.insight_manager.save_insight(insight, username, topic=topic)
+                self.insight_manager.save_insight(
+                    insight, username, topic=topic)
         except (json.JSONDecodeError, ValueError):
-            self.ui_logger.system_message(f"Failed to decode insight from LLM response: {insight_json_str}")
+            self.ui_logger.system_message(
+                f"Failed to decode insight from LLM response: {insight_json_str}")
 
     def generate_assumption_from_history(self, username: str):
         """Analyzes recent conversation history to generate a new assumption about the user."""
-        self.ui_logger.info("Analyzing conversation history to generate a new assumption...")
+        self.ui_logger.info(
+            "Analyzing conversation history to generate a new assumption...")
         if len(self.history) < 4:
             return
 
@@ -208,14 +228,15 @@ Plan:"""
             if assumption:
                 self.assumption_manager.add_assumption(assumption, username)
         except (json.JSONDecodeError, ValueError):
-            self.ui_logger.system_message(f"Failed to decode assumption from LLM response: {assumption_json_str}")
+            self.ui_logger.system_message(
+                f"Failed to decode assumption from LLM response: {assumption_json_str}")
 
     def develop_insights_from_conversation(self, username: str) -> list[str]:
         """Command to develop insights from the full current conversation history."""
         messages = []
-        
+
         conversation_segment = "\n".join(self.history)
-        
+
         persona_config = self.config.get('persona', {})
         identity = persona_config.get('identity', {})
         creator_name = identity.get('creator', 'orpheus497')
@@ -234,17 +255,19 @@ Plan:"""
         [JSON_OUTPUT]
         """
         insights_json_str = self.llm.generate(prompt, temperature=0.3)
-        
+
         try:
             insights = json.loads(insights_json_str)
             for insight_data in insights:
                 topic = insight_data.get('topic')
                 insight = insight_data.get('insight')
                 if topic and insight:
-                    insight_id = self.insight_manager.save_insight(insight, username, topic=topic)
+                    insight_id = self.insight_manager.save_insight(
+                        insight, username, topic=topic)
                     messages.append(f"New insight node created: {insight_id}")
         except (json.JSONDecodeError, ValueError):
-            messages.append(f"Failed to decode insights from LLM response: {insights_json_str}")
+            messages.append(
+                f"Failed to decode insights from LLM response: {insights_json_str}")
         return messages
 
     def reflect_on_insights(self, username: str) -> list[str]:
@@ -254,7 +277,7 @@ Plan:"""
     def generate_meta_insight(self, username: str) -> list[str]:
         """Command to generate a new, meta-insight from existing insights."""
         messages = []
-        
+
         all_insights = self.insight_manager.get_all_insights(username)
         if not all_insights:
             messages.append("No existing insights to reflect on.")
@@ -262,8 +285,9 @@ Plan:"""
 
         self.file_logger.log_info(f"All insights: {all_insights}")
 
-        insights_str = "\n".join([f"- {i['topic']}: {i['content']}" for i in all_insights])
-        
+        insights_str = "\n".join(
+            [f"- {i['topic']}: {i['content']}" for i in all_insights])
+
         persona_config = self.config.get('persona', {})
         identity = persona_config.get('identity', {})
         creator_name = identity.get('creator', 'orpheus497')
@@ -282,28 +306,34 @@ Plan:"""
         self.file_logger.log_info(f"Meta-insight prompt: {prompt}")
 
         meta_insight_json_str = self.llm.generate(prompt, temperature=0.4)
-        
-        self.file_logger.log_info(f"Meta-insight response: {meta_insight_json_str}")
+
+        self.file_logger.log_info(
+            f"Meta-insight response: {meta_insight_json_str}")
 
         try:
             data = json.loads(meta_insight_json_str)
             topic = data.get('topic', 'meta')
             insight = data.get('insight')
             if insight:
-                self.insight_manager.save_insight(insight, username, topic=topic)
-                messages.append(f"New meta-insight generated under topic '{topic}': {insight}")
+                self.insight_manager.save_insight(
+                    insight, username, topic=topic)
+                messages.append(
+                    f"New meta-insight generated under topic '{topic}': {insight}")
             else:
-                messages.append("No new meta-insight could be generated from the existing insights.")
+                messages.append(
+                    "No new meta-insight could be generated from the existing insights.")
         except (json.JSONDecodeError, ValueError):
-            messages.append(f"Failed to decode meta-insight from LLM response: {meta_insight_json_str}")
+            messages.append(
+                f"Failed to decode meta-insight from LLM response: {meta_insight_json_str}")
         return messages
 
     def develop_insights_from_memory(self, username: str) -> list[str]:
         messages = []
         """Command to develop new insights or assumptions from a broad search of long-term memory."""
         messages.append("Developing new insights from long-term memory...")
-        
-        context = self.memory_search.search_all("general knowledge and past experiences", username)
+
+        context = self.memory_search.search_all(
+            "general knowledge and past experiences", username)
         if context is None:
             context = []
         # Ensure all context items are strings before joining to prevent TypeErrors
@@ -330,30 +360,36 @@ Plan:"""
         [JSON_OUTPUT]
         """
         insight_json_str = self.llm.generate(prompt, temperature=0.3)
-        
+
         try:
             data = json.loads(insight_json_str)
             if data.get('type') == 'insight':
                 topic = data.get('topic')
                 insight = data.get('content')
                 if topic and insight:
-                    insight_id = self.insight_manager.save_insight(insight, username, topic=topic)
+                    insight_id = self.insight_manager.save_insight(
+                        insight, username, topic=topic)
                     messages.append(f"New insight node created: {insight_id}")
             elif data.get('type') == 'assumption':
                 assumption = data.get('content')
                 if assumption:
-                    assumption_id = self.assumption_manager.add_assumption(assumption, username)
-                    if assumption_id != "Assumption already exists.": # Check if a new assumption was actually added
-                        messages.append(f"New assumption node created: {assumption_id}")
+                    assumption_id = self.assumption_manager.add_assumption(
+                        assumption, username)
+                    if assumption_id != "Assumption already exists.":  # Check if a new assumption was actually added
+                        messages.append(
+                            f"New assumption node created: {assumption_id}")
                     else:
-                        messages.append(assumption_id) # Append the "Assumption already exists." message
+                        # Append the "Assumption already exists." message
+                        messages.append(assumption_id)
         except (json.JSONDecodeError, ValueError):
-            messages.append(f"Failed to decode insight from LLM response: {insight_json_str}")
+            messages.append(
+                f"Failed to decode insight from LLM response: {insight_json_str}")
         return messages
 
     def proactively_verify_assumption(self, username: str):
         """Proactively verifies an unverified assumption with the user."""
-        assumption, question = self.assumption_manager.get_assumption_to_verify(username)
+        assumption, question = self.assumption_manager.get_assumption_to_verify(
+            username)
         if assumption and question:
             self.pending_assumption = assumption
             return question

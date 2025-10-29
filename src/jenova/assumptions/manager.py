@@ -1,14 +1,23 @@
-import os
+# The JENOVA Cognitive Architecture
+# Copyright (c) 2024, orpheus497. All rights reserved.
+#
+# The JENOVA Cognitive Architecture is licensed under the MIT License.
+# A copy of the license can be found in the LICENSE file in the root directory of this source tree.
+
 import json
+import os
 from datetime import datetime
+
 
 class AssumptionManager:
     """Manages the lifecycle of assumptions about the user."""
+
     def __init__(self, config, ui_logger, file_logger, user_data_root, cortex, llm):
         self.config = config
         self.ui_logger = ui_logger
         self.file_logger = file_logger
-        self.assumptions_file = os.path.join(user_data_root, 'assumptions.json')
+        self.assumptions_file = os.path.join(
+            user_data_root, 'assumptions.json')
         self.cortex = cortex
         self.llm = llm
         self.assumptions = self._load_assumptions()
@@ -20,7 +29,9 @@ class AssumptionManager:
                 with open(self.assumptions_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
             except (json.JSONDecodeError, OSError) as e:
-                self.file_logger.log_error(f"Error loading assumptions file: {e}")
+                if self.file_logger:
+                    self.file_logger.log_error(
+                        f"Error loading assumptions file: {e}")
                 return {"verified": [], "unverified": [], "true": [], "false": []}
         return {"verified": [], "unverified": [], "true": [], "false": []}
 
@@ -30,7 +41,9 @@ class AssumptionManager:
             with open(self.assumptions_file, 'w', encoding='utf-8') as f:
                 json.dump(self.assumptions, f, indent=4)
         except OSError as e:
-            self.file_logger.log_error(f"Error saving assumptions file: {e}")
+            if self.file_logger:
+                self.file_logger.log_error(
+                    f"Error saving assumptions file: {e}")
             pass
 
     def add_assumption(self, assumption_content: str, username: str, status: str = 'unverified', linked_to: list = None) -> str:
@@ -40,23 +53,26 @@ class AssumptionManager:
             if s in self.assumptions:
                 for existing_assumption in self.assumptions[s]:
                     if existing_assumption.get('content') == assumption_content and existing_assumption.get('username') == username:
-                        if s in ['true', 'false']:
-                            self.ui_logger.system_message(".. >> Assumption already exists and has been resolved.")
-                            return existing_assumption.get('cortex_id')
-                        else: # unverified
-                            self.ui_logger.system_message(".. >> Assumption already exists and is unverified.")
-                            return existing_assumption.get('cortex_id')
+                        if self.ui_logger:
+                            if s in ['true', 'false']:
+                                self.ui_logger.system_message(
+                                    ".. >> Assumption already exists and has been resolved.")
+                            else:  # unverified
+                                self.ui_logger.system_message(
+                                    ".. >> Assumption already exists and is unverified.")
+                        return existing_assumption.get('cortex_id')
 
         if status not in self.assumptions:
             status = 'unverified'
-        
+
         new_assumption = {
             "content": assumption_content,
             "username": username,
             "timestamp": datetime.now().isoformat()
         }
-        
-        node_id = self.cortex.add_node('assumption', assumption_content, username, linked_to=linked_to)
+
+        node_id = self.cortex.add_node(
+            'assumption', assumption_content, username, linked_to=linked_to)
         new_assumption['cortex_id'] = node_id
 
         self.assumptions[status].append(new_assumption)
@@ -75,18 +91,20 @@ class AssumptionManager:
             return None, None
 
         assumption_to_verify = unverified[0]
-        
+
         prompt = f'''You have an unverified assumption about the user '{username}'. Ask them a clear, direct question to confirm or deny this assumption. The user's response will determine if the assumption is true or false.
 
 Assumption: "{assumption_to_verify["content"]}"
 
 Your question to the user:'''
-        
+
         try:
             question = self.llm.generate(prompt, temperature=0.3)
             return assumption_to_verify, question
         except Exception as e:
-            self.file_logger.log_error(f"Error generating assumption verification question: {e}")
+            if self.file_logger:
+                self.file_logger.log_error(
+                    f"Error generating assumption verification question: {e}")
             return None, None
 
     def resolve_assumption(self, assumption, user_response: str, username: str):
@@ -97,11 +115,12 @@ Assumption: "{assumption["content"]}"
 User Response: "{user_response}"
 
 Result:'''
-        
+
         try:
             result = self.llm.generate(prompt, temperature=0.1).strip().lower()
         except Exception as e:
-            self.file_logger.log_error(f"Error resolving assumption: {e}")
+            if self.file_logger:
+                self.file_logger.log_error(f"Error resolving assumption: {e}")
             return
 
         if result == 'true':
@@ -113,16 +132,21 @@ Result:'''
                 linked_to_cortex_id.append(assumption['cortex_id'])
             else:
                 # If cortex_id is missing, create a new node for the assumption
-                node_id = self.cortex.add_node('assumption', assumption['content'], username)
+                node_id = self.cortex.add_node(
+                    'assumption', assumption['content'], username)
                 assumption['cortex_id'] = node_id
                 linked_to_cortex_id.append(node_id)
-            self.cortex.add_node('insight', assumption['content'], username, linked_to=linked_to_cortex_id)
-            self.ui_logger.system_message("Assumption confirmed and converted to insight.")
+            self.cortex.add_node(
+                'insight', assumption['content'], username, linked_to=linked_to_cortex_id)
+            if self.ui_logger:
+                self.ui_logger.system_message(
+                    "Assumption confirmed and converted to insight.")
         else:
             self.assumptions['false'].append(assumption)
             self.assumptions['verified'].append(assumption)
-            self.ui_logger.system_message("Assumption marked as false.")
-        
+            if self.ui_logger:
+                self.ui_logger.system_message("Assumption marked as false.")
+
         # Remove from unverified
         for i, a in enumerate(self.assumptions['unverified']):
             if a['content'] == assumption['content'] and a['username'] == username:
@@ -138,11 +162,16 @@ Result:'''
                     assumption['content'] = new_assumption_content
                     assumption['timestamp'] = datetime.now().isoformat()
                     if 'cortex_id' in assumption:
-                        self.cortex.update_node(assumption['cortex_id'], content=new_assumption_content)
+                        self.cortex.update_node(
+                            assumption['cortex_id'], content=new_assumption_content)
                     else:
-                        node_id = self.cortex.add_node('assumption', new_assumption_content, username)
+                        node_id = self.cortex.add_node(
+                            'assumption', new_assumption_content, username)
                         assumption['cortex_id'] = node_id
                     self._save_assumptions()
-                    self.ui_logger.info(f"Assumption updated: {old_assumption_content} -> {new_assumption_content}")
+                    if self.ui_logger:
+                        self.ui_logger.info(
+                            f"Assumption updated: {old_assumption_content} -> {new_assumption_content}")
                     return
-        self.ui_logger.system_message("Assumption not found.")
+        if self.ui_logger:
+            self.ui_logger.system_message("Assumption not found.")

@@ -1,4 +1,4 @@
-# Main Configuration for The JENOVA Cognitive Architecture - JCA v3.2
+# Main Configuration for The JENOVA Cognitive Architecture
 model:
   # Path to GGUF model file (optional - will auto-discover if not found)
   # System searches: /usr/local/share/models, then ./models
@@ -41,6 +41,33 @@ model:
   # Uses CPU to maximize VRAM availability for LLM
   # Shared across all memory systems for efficiency
   embedding_model: 'all-MiniLM-L6-v2'
+
+# Hardware detection and optimization settings
+hardware:
+  # Show detailed hardware detection info at startup
+  show_details: false
+
+  # Preferred compute device: 'auto', 'cuda', 'opencl', 'vulkan', 'metal', 'cpu'
+  # - auto: Automatically select best available device (NVIDIA > Intel Arc > AMD > Intel integrated > CPU)
+  # - cuda: Force NVIDIA GPU (CUDA backend)
+  # - opencl: Force OpenCL backend (AMD GPU/APU, Intel GPU)
+  # - vulkan: Force Vulkan backend (cross-platform GPU)
+  # - metal: Force Metal backend (Apple Silicon, Intel on macOS)
+  # - cpu: Force CPU-only mode
+  prefer_device: 'auto'
+
+  # Device index: which GPU to use if multiple are available (0 = first, 1 = second, etc.)
+  # Useful for multi-GPU systems or laptops with integrated + discrete GPUs
+  device_index: 0
+
+  # Memory management strategy (overrides auto-detection if set)
+  # - auto: Let system decide based on available RAM/SWAP
+  # - performance: Use mlock for RAM persistence (requires sufficient RAM)
+  # - balanced: Use mmap without mlock (allows swap usage)
+  # - swap_optimized: Optimize for systems that rely heavily on swap
+  # - minimal: Reduce memory usage (lower context, smaller batch)
+  memory_strategy: 'auto'
+
 memory:
   preload_memories: true
   episodic_db_path: "memory_db/episodic"
@@ -76,12 +103,17 @@ memory_search:
   procedural_n_results: 3
   insight_n_results: 5
 
-# Fine-tuning (DEPRECATED as of v3.2.0 - see finetune/DEPRECATED.md)
-# These settings are retained for backward compatibility but are not used
-finetuning:
-  training_file: "finetune_train.jsonl"
-  lora_output_dir: "./output/lora"
-  finetuned_model_output: "./output/models/jenova-finetuned"
-
 tools:
   file_sandbox_path: "~/jenova_files"
+  # Whitelist of safe commands for the execute_shell_command tool.
+  # Only commands listed here are allowed to be executed.
+  shell_command_whitelist:
+    - ls
+    - cat
+    - grep
+    - find
+    - echo
+    - date
+    - whoami
+    - pwd
+    - uname

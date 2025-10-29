@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [4.1.0] - 2025-10-29
+
+### Added
+- **Hardware Detection**: Implemented comprehensive hardware detection system in `utils/hardware_detector.py` supporting NVIDIA GPUs (CUDA), Intel GPUs (Iris Xe, UHD, Arc via OpenCL/Vulkan), AMD GPUs and APUs (via OpenCL/ROCm), Apple Silicon (via Metal), and ARM CPUs across Linux, macOS, Windows, and Android/Termux platforms
+- **Multi-GPU Support**: Added automatic detection and prioritization of multiple compute devices in hybrid systems (e.g., integrated + discrete GPU configurations)
+- **Intelligent Resource Allocation**: Implemented platform-specific memory management strategies (performance, balanced, swap-optimized, minimal) with automatic RAM and swap detection
+- **Hardware Configuration**: Added `hardware` section to `main_config.yaml` with device preference selection (`auto`, `cuda`, `opencl`, `vulkan`, `metal`, `cpu`), device index for multi-GPU systems, and memory strategy configuration
+- **Documentation**: Created comprehensive hardware support guide at `docs/HARDWARE_SUPPORT.md` covering all supported hardware types, configuration options, troubleshooting procedures, and platform-specific notes
+- **Security**: Implemented a strict, configurable whitelist for the `execute_shell_command` tool in `main_config.yaml` to prevent arbitrary command execution
+- **Robustness**: Added granular error handling to the application startup sequence in `main.py` to provide clear feedback on component failures
+- **Robustness**: Implemented retry logic with exponential backoff for LLM calls in `llm_interface.py` to handle transient API or model errors gracefully
+- **Intelligence**: Upgraded the `CognitiveScheduler` to be more dynamic, considering conversation velocity, content, and idle time to trigger cognitive functions more intelligently
+- **Intelligence**: Implemented an advanced context re-ranking step in `memory_search.py` using an LLM call to ensure the most relevant information is prioritized in the final prompt
+- **Robustness**: Added a data validation layer to all memory modules (`episodic.py`, `semantic.py`, `procedural.py`) to ensure data integrity before writing to the database
+- **Intelligence**: Implemented recursive text chunking in `cortex.py` to improve the processing of large and complex documents
+- **Code Quality**: Refactored the command handling logic in `ui/terminal.py` into a clean, dictionary-based command dispatcher, improving maintainability and extensibility
+- **Documentation**: Added a comprehensive "Credits and Acknowledgments" section to `README.md` to provide full attribution to all FOSS dependencies
+
+### Changed
+- **Code Quality**: Applied `autopep8` and `isort` for consistent code formatting and import ordering across the entire project
+- **Documentation**: Added module-level docstrings to all Python files where they were missing
+- **Attribution**: Added standardized creator attribution and license information to the header of all Python files
+- **Model Loading Strategy**: Reconfigured GPU offload to start with all layers (32) and reduce by 2 each attempt, maximizing GPU utilization for the main LLM on NVIDIA hardware
+- **Error Messages**: Added detailed error reporting for model loading failures with specific failure reasons (VRAM, CUDA errors, etc.)
+- **Environment Variables**: Updated to use `PYTORCH_ALLOC_CONF` instead of deprecated `PYTORCH_CUDA_ALLOC_CONF`
+- **Resource Management**: Embedding model explicitly kept on CPU to maximize NVIDIA GPU availability for main LLM, with clear user messaging
+- **Hardening**: Strengthened `install.sh` and `uninstall.sh` scripts with `set -euo pipefail` and more explicit user confirmations to ensure robust and safe execution
+- **Optimization**: Refined and optimized all cognitive prompts for planning, metadata extraction, and reflection to improve accuracy and performance
+- **Performance**: Optimized the Cortex reflection process for better performance on large cognitive graphs by batching LLM calls
+- **Intelligence**: Significantly enhanced `finetune/train.py` to extract knowledge from the complete cognitive graph, including `document_chunk` and `meta-insight` nodes, creating a more comprehensive training set
+- **Model Loading**: Integrated hardware detection system into `utils/model_loader.py` with automatic device selection, optimal configuration recommendations, and detailed hardware information display during startup
+
+### Fixed
+- **Startup Crash**: Fixed `AttributeError: 'LlamaModel' object has no attribute 'sampler'` during model loading fallback by implementing a monkey-patch for llama-cpp-python's cleanup method in `utils/model_loader.py`
+- **GPU Allocation**: Resolved VRAM allocation conflicts between PyTorch and llama-cpp-python by hiding CUDA from PyTorch during initialization, ensuring all NVIDIA VRAM is available for the main LLM
+- **Model Loading**: Fixed "out of memory" errors during GPU model loading by implementing aggressive garbage collection between loading attempts and reordering strategies to start with conservative layer counts
+- **Context Size**: Reduced context window for GPU strategies from 8192 to 4096 tokens to fit KV cache in 4GB VRAM alongside model layers
+- **CUDA Detection**: Implemented nvidia-smi-based GPU detection that doesn't trigger PyTorch CUDA initialization, preventing premature VRAM allocation
+- **Robustness**: Implemented additional checks for `ui_logger` and `file_logger` availability in various modules (`rag_system.py`, `insights/concerns.py`, `insights/manager.py`, `llm_interface.py`, `main.py`, `memory/episodic.py`, `memory/procedural.py`, `memory/semantic.py`, `tools.py`, `ui/terminal.py`, `utils/model_loader.py`, `assumptions/manager.py`) to prevent `NameError` exceptions
+- **Testing**: Updated `test.py` to correctly initialize `CognitiveEngine` by passing `llm` instead of `llm_interface`
+- **Security**: Audited and hardened the `FileTools` sandbox to be completely immune to path traversal attacks
+- **Robustness**: Made the `web_search` tool resilient to common `WebDriver` and network errors, preventing crashes
+
+### Removed
+- **Cleanup**: Removed the deprecated `finetuning` section from `main_config.yaml`, directing users to the `finetune/` directory workflow
+- **Cleanup**: Removed the deprecated and unused `reorganize_insights` method from `insights/concerns.py`
+- **Cleanup**: Deleted the entire `enhancement_plan/` directory and its contents as it contained development artifacts not relevant to the final product
+
 ## [4.0.0] - 2025-10-25
 
 ### Added
