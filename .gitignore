@@ -79,8 +79,14 @@ Thumbs.db
 /docs/*
 !/docs/.gitkeep
 
+# Development planning and status docs (for AI agent collaboration)
+.dev-docs/
+
 # Unnecessary vendored code
 /llama.cpp/
 
 # Reports
 pylint_report.txt
+
+# Old codebase (pre-Phase 7 remediation)
+/jenovaold/

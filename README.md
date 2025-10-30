@@ -286,9 +286,6 @@ JENOVA responds to a set of powerful commands that act as direct instructions fo
 /
 ├── .gitignore
 ├── CHANGELOG.md
-├── docs/
-│   ├── .gitkeep
-│   └── HARDWARE_SUPPORT.md
 ├── finetune/
 │   ├── README.md
 │   └── train.py
@@ -322,12 +319,28 @@ JENOVA responds to a set of powerful commands that act as direct instructions fo
 │       │   └── proactive_engine.py
 │       ├── docs/
 │       │   └── __init__.py
+│       ├── infrastructure/         
+│       │   ├── __init__.py
+│       │   ├── error_handler.py
+│       │   ├── timeout_manager.py
+│       │   ├── health_monitor.py
+│       │   ├── data_validator.py
+│       │   ├── file_manager.py
+│       │   └── metrics_collector.py
+│       ├── llm/                  
+│       │   ├── __init__.py
+│       │   ├── cuda_manager.py
+│       │   ├── model_manager.py
+│       │   ├── embedding_manager.py
+│       │   └── llm_interface.py
 │       ├── insights/
 │       │   ├── __init__.py
 │       │   ├── concerns.py
 │       │   └── manager.py
-│       ├── memory/
+│       ├── memory/                
 │       │   ├── __init__.py
+│       │   ├── base_memory.py      
+│       │   ├── memory_manager.py   
 │       │   ├── episodic.py
 │       │   ├── procedural.py
 │       │   └── semantic.py
@@ -447,11 +460,22 @@ The JENOVA Cognitive Architecture is made possible by the following exceptional 
     *   *License: MIT*
 *   **NumPy**: The fundamental package for scientific computing with Python, providing support for large, multi-dimensional arrays and matrices.
     *   *License: BSD-3-Clause*
-*   **Selenium**: A powerful suite of tools for automating web browsers, used by JENOVA's `web_search` tool for external information retrieval.
+*   **Pydantic** by Samuel Colvin: Data validation library using Python type annotations, used for comprehensive configuration validation and type-safe data models.
+    *   *License: MIT*
+*   **Tenacity**: General-purpose retry library, used for implementing timeout protection and resilient error handling.
     *   *License: Apache 2.0*
-*   **WebDriver Manager**: A library to automate the management of browser drivers (like geckodriver) required for Selenium.
-    *   *License: Apache 2.0*
+*   **psutil**: Cross-platform library for system and process monitoring, used for real-time CPU, memory, and GPU health monitoring.
+    *   *License: BSD-3-Clause*
+*   **filelock**: Platform-independent file locking, used for atomic file operations and preventing concurrent access corruption.
+    *   *License: Unlicense (Public Domain)
+
+### Optional Dependencies
+
 *   **Requests**: An elegant and simple HTTP library for Python, used for making web requests in various tools.
+    *   *License: Apache 2.0*
+*   **BeautifulSoup4**: HTML/XML parsing library for web scraping and content extraction.
+    *   *License: MIT*
+*   **Playwright**: Modern browser automation framework, alternative to Selenium for web interactions.
     *   *License: Apache 2.0*
 
 ### Architecture Design

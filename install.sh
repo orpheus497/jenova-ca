@@ -79,7 +79,7 @@ if command -v nvidia-smi &> /dev/null; then
         echo "       CUDA toolkit found: version $CUDA_VERSION"
         echo "       Building with CUDA acceleration..."
         
-        CMAKE_ARGS="-DGGML_CUDA=on" FORCE_CMAKE=1 pip install llama-cpp-python --no-cache-dir --force-reinstall --verbose || {
+        CMAKE_ARGS="-DLLAMA_CUDA=on" FORCE_CMAKE=1 pip install llama-cpp-python==0.2.90 --no-cache-dir --force-reinstall --verbose || {
             echo "[WARNING] CUDA build failed. This may be due to missing CUDA toolkit."
             echo "          Install with: sudo dnf install gcc-c++ cmake cuda-toolkit"
             echo "          Falling back to CPU-only version..."

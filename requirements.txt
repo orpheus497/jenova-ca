@@ -1,11 +1,35 @@
-llama-cpp-python
-torch
-chromadb
-sentence-transformers
-rich
-prompt-toolkit
-PyYAML
-numpy
-selenium
-webdriver-manager
-requests
+# The JENOVA Cognitive Architecture - Core Dependencies
+# Copyright (c) 2024, orpheus497. All rights reserved.
+# Licensed under the MIT License
+
+# Core LLM and Inference
+llama-cpp-python==0.2.90
+
+# PyTorch (CUDA 12.1 support) - Python 3.13 compatible
+torch==2.5.1
+# Note: Python 3.13 requires torch>=2.5.0
+
+# Vector Database and Embeddings
+chromadb==0.5.20
+sentence-transformers==3.3.1
+
+# Terminal UI
+rich==13.9.4
+prompt-toolkit==3.0.48
+
+# Configuration and Data Handling
+PyYAML==6.0.2
+pydantic==2.10.6
+pydantic-settings==2.7.0
+
+# Utilities
+numpy==1.26.4
+tenacity==9.0.0
+psutil==6.1.1
+filelock==3.16.1
+
+# Optional Dependencies (for advanced features)
+# Uncomment if needed:
+# requests==2.32.3          # HTTP requests for web tools
+# beautifulsoup4==4.12.3    # HTML parsing
+# playwright==1.49.1        # Modern web automation (better than Selenium)

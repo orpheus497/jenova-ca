@@ -22,6 +22,7 @@ from prompt_toolkit.styles import Style
 
 from jenova.cognitive_engine.engine import CognitiveEngine
 from jenova.ui.logger import UILogger
+from jenova.ui.health_display import HealthDisplay, CompactHealthDisplay
 
 BANNER = """
      ██╗███████╗███╗   ██╗ ██████╗ ██╗   ██╗ █████╗
@@ -33,9 +34,20 @@ BANNER = """
 ATTRIBUTION = "Designed and Developed by orpheus497 - https://github.com/orpheus497"
 
 class TerminalUI:
-    def __init__(self, cognitive_engine: CognitiveEngine, logger: UILogger):
+    def __init__(self, cognitive_engine: CognitiveEngine, logger: UILogger, health_monitor=None, metrics=None):
+        """
+        Initialize TerminalUI.
+
+        Args:
+            cognitive_engine: The cognitive engine instance
+            logger: UI logger instance
+            health_monitor: Optional health monitor (Phase 2)
+            metrics: Optional metrics collector (Phase 2)
+        """
         self.engine = cognitive_engine
         self.logger = logger
+        self.health_monitor = health_monitor
+        self.metrics = metrics
         self.username = getpass.getuser()
         history_path = os.path.join(
             self.engine.config['user_data_root'], ".jenova_history")
@@ -49,6 +61,10 @@ class TerminalUI:
         self.message_queue = self.logger.message_queue
         self.commands = self._register_commands()
 
+        # Phase 6: Health Display
+        self.health_display = HealthDisplay(health_monitor, metrics, self.logger.console) if health_monitor else None
+        self.compact_health = CompactHealthDisplay(health_monitor) if health_monitor else None
+
     def _register_commands(self):
         return {
             '/insight': self._run_command_in_thread(self.engine.develop_insights_from_conversation, needs_spinner=True),
@@ -60,6 +76,11 @@ class TerminalUI:
             '/develop_insight': self._develop_insight,
             '/learn_procedure': self._learn_procedure,
             '/help': self._show_help,
+            # Phase 6: Health and Metrics Commands
+            '/health': self._show_health,
+            '/metrics': self._show_metrics,
+            '/status': self._show_status,
+            '/cache': self._show_cache_stats,
         }
 
     def _spinner(self):
@@ -290,10 +311,85 @@ class TerminalUI:
         procedure_data = {"name": procedure_name, "steps": steps, "outcome": expected_outcome}
         self._run_command_in_thread(self.engine.learn_procedure, needs_spinner=True)((procedure_data, self.username))
 
+    # Phase 6: Health and Metrics Command Implementations
+
+    def _show_health(self, args):
+        """Display current system health status."""
+        if not self.health_display:
+            if self.logger:
+                self.logger.warning("Health monitoring not available (disabled or not initialized)")
+            return
+
+        try:
+            self.health_display.show_health()
+        except Exception as e:
+            if self.logger:
+                self.logger.error(f"Error displaying health: {e}")
+
+    def _show_metrics(self, args):
+        """Display performance metrics."""
+        if not self.metrics:
+            if self.logger:
+                self.logger.warning("Metrics collection not available (disabled or not initialized)")
+            return
+
+        try:
+            all_stats = self.metrics.get_all_stats()
+            if not all_stats:
+                if self.logger:
+                    self.logger.system_message("No metrics data available yet.")
+                return
+
+            # Convert stats to display format
+            metrics_data = {
+                operation: {
+                    'count': stats.count,
+                    'avg_time': stats.avg_time,
+                    'total_time': stats.total_time
+                }
+                for operation, stats in all_stats.items()
+            }
+
+            if self.logger:
+                self.logger.metrics_table(metrics_data)
+
+        except Exception as e:
+            if self.logger:
+                self.logger.error(f"Error displaying metrics: {e}")
+
+    def _show_status(self, args):
+        """Display complete system status (health + metrics + cognitive)."""
+        if not self.health_display:
+            if self.logger:
+                self.logger.warning("Status display not available (health monitor not initialized)")
+            return
+
+        try:
+            self.health_display.show_full_status()
+        except Exception as e:
+            if self.logger:
+                self.logger.error(f"Error displaying status: {e}")
+
+    def _show_cache_stats(self, args):
+        """Display RAG cache statistics."""
+        try:
+            # Try to get cache stats from RAG system
+            if hasattr(self.engine, 'rag_system') and hasattr(self.engine.rag_system, 'get_cache_stats'):
+                stats = self.engine.rag_system.get_cache_stats()
+                if self.logger:
+                    self.logger.cache_stats(stats)
+            else:
+                if self.logger:
+                    self.logger.warning("Cache statistics not available (RAG caching may be disabled)")
+        except Exception as e:
+            if self.logger:
+                self.logger.error(f"Error displaying cache stats: {e}")
+
     def _show_help(self, args):
         if self.logger:
             self.logger.system_message("JENOVA Available Commands:")
             self.logger.system_message("")
+            self.logger.system_message("=== Cognitive Commands ===")
             self.logger.system_message("/help              - Show this help message")
             self.logger.system_message("/insight           - Develop insights from conversation history")
             self.logger.system_message("/reflect           - Reflect on existing insights")
@@ -303,6 +399,12 @@ class TerminalUI:
             self.logger.system_message("/develop_insight   - Develop insight from docs or specific input")
             self.logger.system_message("/learn_procedure   - Learn a new procedure interactively")
             self.logger.system_message("/train             - Show fine-tuning data generation help")
+            self.logger.system_message("")
+            self.logger.system_message("=== System Monitoring (Phase 6) ===")
+            self.logger.system_message("/health            - Show system health (CPU, memory, GPU)")
+            self.logger.system_message("/metrics           - Show performance metrics")
+            self.logger.system_message("/status            - Show complete system status")
+            self.logger.system_message("/cache             - Show RAG cache statistics")
             self.logger.system_message("")
 
     def _show_train_help(self, args):

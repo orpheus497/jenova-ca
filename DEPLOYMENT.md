@@ -2,7 +2,7 @@
 
 This guide provides comprehensive deployment instructions for The JENOVA Cognitive Architecture across different environments and use cases.
 
-**Author:** Documentation generated for the JENOVA Cognitive Architecture, designed and developed by orpheus497.
+**Author:** Designed and developed by orpheus497.
 
 ---
 

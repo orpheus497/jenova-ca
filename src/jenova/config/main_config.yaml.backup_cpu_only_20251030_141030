@@ -11,10 +11,10 @@ model:
   threads: -1
 
   # GPU layers to offload
-  # PERFORMANCE OPTIMIZATION: 20 layers for better GPU utilization
-  # 7B model typically has ~32 layers, offloading 20 should be safe for 4GB VRAM
-  # Reduce to 12-16 if crashes occur, increase to -1 for all layers if stable
-  gpu_layers: 20
+  # SAFE DEFAULT for 4GB VRAM: 0 (CPU-only mode)
+  # For testing GPU: try 8, 16, or 20 layers
+  # For 8GB+ VRAM: try -1 (auto) or 32 (all layers)
+  gpu_layers: 0
 
   # Lock model in RAM to prevent swapping
   # SAFE DEFAULT: false (allows system to manage memory)
@@ -43,8 +43,7 @@ model:
   embedding_model: 'all-MiniLM-L6-v2'
 
   # Timeout for LLM generation (seconds)
-  # INCREASED for 4GB VRAM GPUs: at ~12 tok/s, 512 tokens takes ~43s
-  timeout_seconds: 240
+  timeout_seconds: 120
 
 # Hardware detection and optimization settings
 hardware:
@@ -52,9 +51,9 @@ hardware:
   show_details: false
 
   # Preferred compute device: 'auto', 'cuda', 'cpu'
-  # PERFORMANCE MODE: Using CUDA for GPU acceleration
-  # GTX 1650 Ti detected with 4GB VRAM
-  prefer_device: 'cuda'
+  # SAFE DEFAULT: 'cpu' (most reliable, no CUDA issues)
+  # For NVIDIA GPU: try 'cuda' after testing CPU mode works
+  prefer_device: 'cpu'
 
   # Memory management strategy
   # SAFE DEFAULT: 'balanced' (allows swap, no mlock)
@@ -93,15 +92,11 @@ scheduler:
   process_documents_interval: 15
 
 # Phase 5: Cognitive Engine Timeouts
-# INCREASED for 4GB VRAM GPUs (GTX 1650 Ti achieving ~12 tokens/second)
-# These values accommodate the full cognitive cycle with GPU acceleration
 cognitive_engine:
   # Timeout for LLM generation during normal operation (seconds)
-  # 512 tokens @ 12 tok/s = ~43s, adding 200% margin = 240s
-  llm_timeout: 240
+  llm_timeout: 120
   # Timeout for plan generation specifically (seconds)
-  # Planning typically generates ~100 tokens @ 12 tok/s = ~8s, with margin = 120s
-  planning_timeout: 120
+  planning_timeout: 60
 
 # Phase 5: RAG System Caching
 rag_system:
@@ -110,8 +105,7 @@ rag_system:
   # Maximum number of cached responses (LRU eviction)
   cache_size: 100
   # Timeout for response generation (seconds)
-  # INCREASED for 4GB VRAM GPUs: 240s to match llm_timeout
-  generation_timeout: 240
+  generation_timeout: 120
 
 # Phase 5: Enhanced Memory Search
 memory_search:
@@ -120,11 +114,10 @@ memory_search:
   procedural_n_results: 3
   insight_n_results: 5
   # Enable LLM-based re-ranking of search results (improves relevance but slower)
-  # DISABLED for 4GB VRAM GPUs to reduce cognitive cycle time
-  # Can be enabled on systems with 6GB+ VRAM achieving 25+ tokens/second
-  rerank_enabled: false
+  # Disable for faster search at the cost of relevance
+  rerank_enabled: true
   # Timeout for re-ranking operation (seconds)
-  rerank_timeout: 30
+  rerank_timeout: 15
 
 tools:
   file_sandbox_path: "~/jenova_files"

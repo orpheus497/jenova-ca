@@ -133,35 +133,65 @@ def main():
 
         # --- Language Models (Phase 3: New LLM Layer) ---
         # CRITICAL: Load LLM FIRST to claim GPU memory before PyTorch initializes CUDA
+        print("DEBUG: About to load AI model")
+        import sys
+        sys.stdout.flush()
         ui_logger.progress_message("Loading AI model", 40)
         try:
+            print("DEBUG: About to measure model_load_llm")
+            import sys
+            sys.stdout.flush()
             with metrics.measure('model_load_llm', {'gpu_layers': config['model']['gpu_layers']}):
                 # Use new ModelManager (Phase 3)
+                print("DEBUG: Creating ModelManager")
+                sys.stdout.flush()
                 model_manager = ModelManager(config, file_logger, ui_logger)
+                print("DEBUG: ModelManager created, loading model")
+                sys.stdout.flush()
                 llm = model_manager.load_model()
+                print("DEBUG: Model loaded")
+                sys.stdout.flush()
 
                 if not llm:
                     raise RuntimeError(
                         "LLM model could not be loaded. Check model path and integrity.")
 
+                print("DEBUG: Creating LLMInterface")
+                import sys
+                sys.stdout.flush()
                 # Use new LLMInterface (Phase 3)
                 llm_interface = LLMInterface(config, ui_logger, file_logger, llm)
+                print("DEBUG: LLMInterface created")
+                sys.stdout.flush()
 
             # Log model load stats (Phase 6: Enhanced startup info)
+            print("DEBUG: Getting model stats")
+            import sys
+            sys.stdout.flush()
             stats = metrics.get_stats('model_load_llm')
+            print(f"DEBUG: stats = {stats}")
+            sys.stdout.flush()
             model_info = model_manager.get_model_info()
+            print(f"DEBUG: model_info = {model_info}")
+            sys.stdout.flush()
             model_details = (
                 f"{model_info.get('model_name', 'unknown')} | "
                 f"ctx={model_info.get('context_size', 0)} | "
                 f"gpu_layers={model_info.get('gpu_layers', 0)}"
             )
+            print("DEBUG: About to call ui_logger.startup_info")
+            sys.stdout.flush()
             ui_logger.startup_info("LLM Model", stats.avg_time, model_details)
+            print("DEBUG: ui_logger.startup_info complete")
+            sys.stdout.flush()
             file_logger.log_info(
                 f"LLM loaded in {stats.avg_time:.2f}s - "
                 f"{model_info.get('model_name', 'unknown')} "
                 f"(ctx={model_info.get('context_size', 0)}, "
                 f"gpu_layers={model_info.get('gpu_layers', 0)})"
             )
+            print("DEBUG: Model loading section complete")
+            sys.stdout.flush()
         except (ModelLoadError, Exception) as e:
             error_handler.handle_error(e, "Model Loading", ErrorSeverity.CRITICAL)
             recommendation = error_handler.get_cuda_recommendation()
@@ -171,43 +201,78 @@ def main():
 
         # Load embedding model AFTER main LLM
         # Embedding model runs on CPU to preserve all GPU VRAM for main LLM
+        print("DEBUG: About to load embedding model")
+        import sys
+        sys.stdout.flush()
         ui_logger.progress_message("Loading embedding model", 55)
         try:
+            print("DEBUG: Entered embedding model try block")
+            sys.stdout.flush()
             with metrics.measure('model_load_embedding'):
                 # CRITICAL: Embedding model MUST use CPU only
                 # PyTorch was initialized with CUDA_VISIBLE_DEVICES='' so it cannot access GPU
                 # This preserves all 4096 MB of GPU VRAM for the main LLM
 
+                print("DEBUG: Creating EmbeddingManager")
+                import sys
+                sys.stdout.flush()
                 # Use new EmbeddingManager (Phase 3)
                 embedding_manager = EmbeddingManager(config, file_logger, ui_logger)
+                print("DEBUG: EmbeddingManager created, loading model")
+                sys.stdout.flush()
                 embedding_manager.load_model()
+                print("DEBUG: Embedding model load_model() complete")
+                sys.stdout.flush()
                 embedding_model = embedding_manager.embedding_model
+                print(f"DEBUG: embedding_model = {embedding_model}")
+                sys.stdout.flush()
 
                 if not embedding_model:
                     raise RuntimeError("Embedding model could not be loaded.")
 
+            print("DEBUG: Getting embedding stats")
+            sys.stdout.flush()
             stats = metrics.get_stats('model_load_embedding')
+            print(f"DEBUG: embedding stats = {stats}")
+            sys.stdout.flush()
             embed_info = embedding_manager.get_model_info()
+            print(f"DEBUG: embed_info = {embed_info}")
+            sys.stdout.flush()
             embed_details = (
                 f"{embed_info.get('model_name', 'unknown')} | "
                 f"device={embed_info.get('device', 'CPU').upper()} | "
                 f"dim={embed_info.get('dimension', 0)}"
             )
+            print("DEBUG: About to call ui_logger.startup_info for embedding")
+            sys.stdout.flush()
             ui_logger.startup_info("Embedding Model", stats.avg_time, embed_details)
+            print("DEBUG: Embedding ui_logger.startup_info complete")
+            sys.stdout.flush()
             file_logger.log_info(
                 f"Embedding model loaded: {embed_info.get('model_name', 'unknown')} "
                 f"on device: {embed_info.get('device', 'CPU')} in {stats.avg_time:.2f}s "
                 f"(dim={embed_info.get('dimension', 0)}) - GPU VRAM fully reserved for LLM"
             )
         except (EmbeddingLoadError, Exception) as e:
+            print(f"DEBUG: Embedding model error: {e}")
             traceback.print_exc()
+            import sys
+            sys.stdout.flush()
             error_handler.handle_error(e, "Embedding Model Loading", ErrorSeverity.CRITICAL)
             return 1
 
         # --- Memory Systems ---
+        print("DEBUG: About to initialize memory systems")
+        import sys
+        sys.stdout.flush()
         ui_logger.progress_message("Initializing memory systems", 70)
         try:
+            print("DEBUG: Entered memory systems try block")
+            sys.stdout.flush()
             with metrics.measure('memory_systems_init'):
+                print("DEBUG: Setting up memory paths")
+                import sys
+                sys.stdout.flush()
                 episodic_mem_path = os.path.join(
                     user_data_root, 'memory', 'episodic')
                 procedural_mem_path = os.path.join(
@@ -215,19 +280,35 @@ def main():
                 semantic_mem_path = os.path.join(
                     user_data_root, 'memory', 'semantic')
 
+                print("DEBUG: Creating SemanticMemory")
+                sys.stdout.flush()
                 try:
                     semantic_memory = SemanticMemory(
                         config, ui_logger, file_logger, semantic_mem_path, llm_interface, embedding_model)
+                    print("DEBUG: SemanticMemory created")
+                    sys.stdout.flush()
                 except Exception as e:
+                    print(f"DEBUG: SemanticMemory error: {e}")
                     traceback.print_exc()
+                    sys.stdout.flush()
                     raise
                 episodic_memory = EpisodicMemory(
                     config, ui_logger, file_logger, episodic_mem_path, llm_interface, embedding_model)
+                print("DEBUG: EpisodicMemory created")
+                sys.stdout.flush()
                 procedural_memory = ProceduralMemory(
                     config, ui_logger, file_logger, procedural_mem_path, llm_interface, embedding_model)
+                print("DEBUG: ProceduralMemory created")
+                sys.stdout.flush()
 
+            print("DEBUG: Getting memory systems stats")
+            sys.stdout.flush()
             stats = metrics.get_stats('memory_systems_init')
+            print("DEBUG: Calling ui_logger.startup_info for memory systems")
+            sys.stdout.flush()
             ui_logger.startup_info("Memory Systems", stats.avg_time, "Semantic, Episodic, Procedural")
+            print("DEBUG: Memory systems initialization complete")
+            sys.stdout.flush()
         except Exception as e:
             error_handler.handle_error(e, "Memory System Initialization", ErrorSeverity.CRITICAL)
             return 1
@@ -331,6 +412,9 @@ def main():
 
 
 if __name__ == "__main__":
+    print("DEBUG: About to call main()")
     import sys
+    sys.stdout.flush()
     result = main()
+    print(f"DEBUG: main() returned: {result}")
     sys.exit(result if result is not None else 0)
