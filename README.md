@@ -41,8 +41,6 @@ JENOVA implements comprehensive **LAN-based distributed computing**, enabling mu
 - **Privacy:** Memory sharing disabled by default, configurable trust boundaries
 - **Monitoring:** Comprehensive metrics for latency, bandwidth, and load distribution
 
-**See [`docs/DISTRIBUTED_MODE.md`](docs/DISTRIBUTED_MODE.md) for complete distributed computing setup and configuration.**
-
 ## 2. Architecture Overview: Core Design Principles
 
 ### 2.1. Stateful Cognitive Processing
@@ -75,13 +73,13 @@ JENOVA implements a stateful cognitive architecture that maintains persistent co
 
 The JENOVA Cognitive Architecture implements a production-ready framework with seven foundational layers:
 
-1. **Infrastructure Layer** (Phase 1-2): Error handling, timeout protection, health monitoring, data validation, file management, metrics collection
-2. **LLM Layer** (Phase 3): CUDA management, model lifecycle, embedding management, retry logic, timeout protection
-3. **Memory Layer** (Phase 4): Abstract base classes, unified memory manager, atomic operations, cross-memory search
-4. **Cognitive Engine** (Phase 5): RAG system with LRU caching, configurable re-ranking, comprehensive timeout coverage
-5. **UI Layer** (Phase 6): Health display, rich terminal interface, real-time metrics, comprehensive command system
-6. **Testing Layer** (Phase 7): 24 comprehensive tests across configuration, CUDA, memory, and error recovery
-7. **Distributed Layer** (Phase 8): gRPC services, peer management, federated operations, security infrastructure
+1. **Infrastructure Layer**: Error handling, timeout protection, health monitoring, data validation, file management, metrics collection
+2. **LLM Layer**: CUDA management, model lifecycle, embedding management, retry logic, timeout protection
+3. **Memory Layer**: Abstract base classes, unified memory manager, atomic operations, cross-memory search
+4. **Cognitive Engine**: RAG system with LRU caching, configurable re-ranking, comprehensive timeout coverage
+5. **UI Layer**: Health display, rich terminal interface, real-time metrics, comprehensive command system
+6. **Testing Layer**: 24 comprehensive tests across configuration, CUDA, memory, and error recovery
+7. **Distributed Layer**: gRPC services, peer management, federated operations, security infrastructure
 
 ### 2.3. The Cognitive Processing Cycle
 

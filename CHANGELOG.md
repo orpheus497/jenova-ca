@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Enhanced File & Code Operations** (Phases 13-17: CLI Enhancement)
+  - Advanced file editing with diff-based previews and multi-file support (`code_tools/file_editor.py`)
+  - AST-based code parsing and symbol extraction for Python (`code_tools/code_parser.py`)
+  - Code refactoring engine using rope library (`code_tools/refactoring_engine.py`)
+  - Syntax highlighting for terminal display using Pygments (`code_tools/syntax_highlighter.py`)
+  - Codebase structure mapping and analysis (`code_tools/codebase_mapper.py`)
+  - Interactive terminal support with PTY for commands like vim, git rebase -i (`code_tools/interactive_terminal.py`)
+
+- **Git Workflow Automation**
+  - Comprehensive Git operations wrapper using GitPython (`git_tools/git_interface.py`)
+  - Automatic commit message generation from diffs (`git_tools/commit_assistant.py`)
+  - Diff analysis and summarization (`git_tools/diff_analyzer.py`)
+  - Git hooks management for automation (`git_tools/hooks_manager.py`)
+  - Branch operations and intelligent naming (`git_tools/branch_manager.py`)
+
+- **Task Orchestration & Subagents**
+  - Multi-step task planning and decomposition (`orchestration/task_planner.py`)
+  - Subagent management for parallel execution (`orchestration/subagent_manager.py`)
+  - Task execution engine (`orchestration/execution_engine.py`)
+  - Conversation checkpoint save/resume (`orchestration/checkpoint_manager.py`)
+  - Background process management (`orchestration/background_tasks.py`)
+
+- **Automation & Custom Commands**
+  - Custom command system with Markdown templates (`automation/custom_commands.py`)
+  - Event-driven hooks system (`automation/hooks_system.py`)
+  - Template engine for command automation (`automation/template_engine.py`)
+  - Workflow library for common patterns (`automation/workflow_library.py`)
+
+- **Enhanced Context & Analysis**
+  - Context window optimization (`analysis/context_optimizer.py`)
+  - Code complexity metrics and quality analysis (`analysis/code_metrics.py`)
+  - Basic security vulnerability scanning (`analysis/security_scanner.py`)
+  - Natural language intent classification (`analysis/intent_classifier.py`)
+  - Command disambiguation system (`analysis/command_disambiguator.py`)
+
+- **New FOSS Dependencies** (All MIT/Apache/BSD licensed, $0 cost)
+  - gitpython==3.1.43 (BSD-3-Clause) - Git operations
+  - pygments==2.18.0 (BSD-2-Clause) - Syntax highlighting
+  - rope==1.13.0 (LGPL) - Python refactoring
+  - tree-sitter==0.21.3 (MIT) - Multi-language code parsing
+  - jsonschema==4.23.0 (MIT) - JSON schema validation
+  - radon==6.0.1 (MIT) - Code complexity metrics
+  - bandit==1.7.10 (Apache-2.0) - Security scanning
+
+### Changed
+- **Enhanced CLI Capabilities** - JENOVA now provides CLI capabilities matching Gemini CLI, GitHub Copilot CLI, and Claude Code while maintaining 100% FOSS compliance, zero cost, and complete local operation
+
+### Removed
+- **Documentation Cleanup** - Removed DEPLOYMENT.md and TESTING.md (redundant with README.md)
+
 ### Fixed
 - **Version Synchronization** - Aligned pyproject.toml version (5.0.0 → 5.1.1) with CHANGELOG
 - **Dependency Security Updates** - Updated networking dependencies for security patches and stability:
