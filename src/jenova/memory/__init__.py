@@ -24,6 +24,15 @@ from .procedural import ProceduralMemory
 from .base_memory import BaseMemory, MemoryError, MemoryInitError, MemoryOperationError
 from .memory_manager import MemoryManager
 
+# Phase 20: Advanced memory features
+from .compression_manager import (
+    CompressionManager,
+    CompressionTier,
+    compress_memory_entry,
+    decompress_memory_entry,
+)
+from .deduplication import DeduplicationEngine, ContentBlock
+
 __all__ = [
     # Original implementations
     "EpisodicMemory",
@@ -35,6 +44,13 @@ __all__ = [
     "MemoryInitError",
     "MemoryOperationError",
     "MemoryManager",
+    # Phase 20: Advanced features
+    "CompressionManager",
+    "CompressionTier",
+    "compress_memory_entry",
+    "decompress_memory_entry",
+    "DeduplicationEngine",
+    "ContentBlock",
 ]
 
 __version__ = "4.2.0"
