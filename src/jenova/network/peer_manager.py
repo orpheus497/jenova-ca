@@ -322,7 +322,9 @@ class PeerManager:
             if peer.response_times:
                 avg_time = sum(peer.response_times) / len(peer.response_times)
             else:
-                avg_time = 0  # No data yet, give it a chance
+                # Untested peers get infinity - they'll be tried if no tested peers available
+                # but won't be prioritized over peers with known good latency
+                avg_time = float('inf')
 
             if avg_time < best_time:
                 best_time = avg_time

@@ -142,15 +142,18 @@ tools:
     - uname
 
 # Phase 8: Distributed Computing & LAN Networking
+# Phase 9: Network mode enabled by default with graceful fallback to local-only
 network:
   # Enable distributed mode (requires zeroconf, grpcio)
-  enabled: false  # Set to true to enable distributed features
+  # Default: true - Automatically discovers peers on LAN
+  # Falls back gracefully to local-only if network initialization fails
+  enabled: true
 
-  # Operating mode: 'auto', 'server', 'client', 'standalone'
-  # - auto: Act as both server and client (recommended)
-  # - server: Only offer resources to peers (no consumption)
-  # - client: Only consume resources from peers (no offering)
-  # - standalone: Disable networking entirely (same as enabled: false)
+  # Operating mode: 'auto', 'local_only', 'distributed'
+  # - auto: Start distributed, fallback to local if no peers (recommended)
+  # - local_only: Disable networking, run standalone
+  # - distributed: Require peers, fail if none available
+  # Note: Network failures are non-critical and won't crash JENOVA
   mode: 'auto'
 
   # Service discovery configuration (mDNS/Zeroconf)

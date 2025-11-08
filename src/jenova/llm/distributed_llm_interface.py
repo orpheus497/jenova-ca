@@ -84,11 +84,12 @@ class DistributedLLMInterface:
         strategy_name = peer_selection.get('strategy', 'local_first')
         self.strategy = DistributionStrategy(strategy_name)
 
-        # Round-robin counter
+        # Round-robin counter (thread-safe)
         self.round_robin_counter = 0
         self.round_robin_lock = threading.Lock()
 
-        # Statistics
+        # Statistics (thread-safe)
+        self.stats_lock = threading.Lock()
         self.local_generations = 0
         self.distributed_generations = 0
         self.failed_generations = 0
@@ -168,7 +169,9 @@ class DistributedLLMInterface:
         if not self.local_llm:
             raise RuntimeError("Local LLM not available")
 
-        self.local_generations += 1
+        with self.stats_lock:
+            self.local_generations += 1
+
         return self.local_llm.generate(
             prompt=prompt,
             temperature=temperature,
@@ -213,7 +216,8 @@ class DistributedLLMInterface:
             )
 
             if result:
-                self.distributed_generations += 1
+                with self.stats_lock:
+                    self.distributed_generations += 1
 
                 # Record metrics
                 if self.network_metrics and peer_id:
@@ -230,11 +234,13 @@ class DistributedLLMInterface:
 
                 return result
             else:
-                self.failed_generations += 1
+                with self.stats_lock:
+                    self.failed_generations += 1
                 return None
 
         except Exception as e:
-            self.failed_generations += 1
+            with self.stats_lock:
+                self.failed_generations += 1
             self.file_logger.log_error(f"Distributed generation failed: {e}")
 
             # Record failure
@@ -430,9 +436,10 @@ class DistributedLLMInterface:
             # Add "local" as an option
             instances = ['local'] + available_peers
 
-            # Select next instance
-            selected_idx = self.round_robin_counter % len(instances)
-            self.round_robin_counter += 1
+            # Select next instance (thread-safe)
+            with self.round_robin_lock:
+                selected_idx = self.round_robin_counter % len(instances)
+                self.round_robin_counter += 1
             selected = instances[selected_idx]
 
         # Generate
@@ -449,24 +456,25 @@ class DistributedLLMInterface:
                 return self._generate_local(prompt, temperature, top_p, max_tokens)
 
     def get_stats(self) -> dict:
-        """Get generation statistics."""
-        total = self.local_generations + self.distributed_generations + self.failed_generations
-        return {
-            'local_generations': self.local_generations,
-            'distributed_generations': self.distributed_generations,
-            'failed_generations': self.failed_generations,
-            'total_generations': total,
-            'distributed_percentage': (
-                self.distributed_generations / total * 100
-                if total > 0 else 0.0
-            ),
-            'failure_rate': (
-                self.failed_generations / total * 100
-                if total > 0 else 0.0
-            ),
-            'strategy': self.strategy.value,
-            'network_enabled': self.network_enabled
-        }
+        """Get generation statistics (thread-safe)."""
+        with self.stats_lock:
+            total = self.local_generations + self.distributed_generations + self.failed_generations
+            return {
+                'local_generations': self.local_generations,
+                'distributed_generations': self.distributed_generations,
+                'failed_generations': self.failed_generations,
+                'total_generations': total,
+                'distributed_percentage': (
+                    self.distributed_generations / total * 100
+                    if total > 0 else 0.0
+                ),
+                'failure_rate': (
+                    self.failed_generations / total * 100
+                    if total > 0 else 0.0
+                ),
+                'strategy': self.strategy.value,
+                'network_enabled': self.network_enabled
+            }
 
     def close(self):
         """Close resources."""
