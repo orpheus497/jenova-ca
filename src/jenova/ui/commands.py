@@ -28,6 +28,12 @@ class CommandCategory(Enum):
     LEARNING = "learning"
     SETTINGS = "settings"
     HELP = "help"
+    # Phases 13-17: New categories
+    CODE = "code"
+    GIT = "git"
+    ANALYSIS = "analysis"
+    ORCHESTRATION = "orchestration"
+    AUTOMATION = "automation"
 
 
 class Command:
@@ -55,7 +61,7 @@ class Command:
 class CommandRegistry:
     """Registry for all available commands."""
 
-    def __init__(self, cognitive_engine, ui_logger, file_logger):
+    def __init__(self, cognitive_engine, ui_logger, file_logger, **kwargs):
         self.cognitive_engine = cognitive_engine
         self.ui_logger = ui_logger
         self.file_logger = file_logger
@@ -67,6 +73,20 @@ class CommandRegistry:
             user_profile=cognitive_engine.user_profile if hasattr(cognitive_engine, 'user_profile') else None,
             file_logger=file_logger
         )
+
+        # Phases 13-17: Store CLI enhancement modules
+        self.context_optimizer = kwargs.get('context_optimizer')
+        self.code_metrics = kwargs.get('code_metrics')
+        self.security_scanner = kwargs.get('security_scanner')
+        self.file_editor = kwargs.get('file_editor')
+        self.code_parser = kwargs.get('code_parser')
+        self.refactoring_engine = kwargs.get('refactoring_engine')
+        self.git_interface = kwargs.get('git_interface')
+        self.commit_assistant = kwargs.get('commit_assistant')
+        self.task_planner = kwargs.get('task_planner')
+        self.execution_engine = kwargs.get('execution_engine')
+        self.custom_command_manager = kwargs.get('custom_command_manager')
+        self.workflow_library = kwargs.get('workflow_library')
 
         self._register_default_commands()
 
@@ -161,6 +181,151 @@ class CommandRegistry:
                 "/help /network - Show help for specific command"
             ]
         ))
+
+        # Phases 13-17: Enhanced CLI Commands
+        self._register_phase13_17_commands()
+
+    def _register_phase13_17_commands(self):
+        """Register Phase 13-17 CLI enhancement commands."""
+
+        # Code editing commands
+        if self.file_editor:
+            self.register(Command(
+                name="edit",
+                description="Edit files with diff-based preview",
+                category=CommandCategory.CODE,
+                handler=self._cmd_edit,
+                usage="/edit <file> [--preview|--apply]",
+                examples=[
+                    "/edit main.py - Preview edits",
+                    "/edit main.py --apply - Apply edits",
+                    "/edit main.py --backup - Create backup before editing"
+                ]
+            ))
+
+        # Code analysis commands
+        if self.code_metrics:
+            self.register(Command(
+                name="analyze",
+                description="Analyze code quality and complexity",
+                category=CommandCategory.ANALYSIS,
+                handler=self._cmd_analyze,
+                usage="/analyze <file|directory>",
+                examples=[
+                    "/analyze main.py - Analyze single file",
+                    "/analyze src/ - Analyze directory",
+                    "/analyze . --report=json - JSON format report"
+                ]
+            ))
+
+        if self.security_scanner:
+            self.register(Command(
+                name="scan",
+                description="Scan code for security vulnerabilities",
+                category=CommandCategory.ANALYSIS,
+                handler=self._cmd_scan,
+                aliases=["security"],
+                usage="/scan <file|directory>",
+                examples=[
+                    "/scan main.py - Scan single file",
+                    "/scan src/ - Scan directory",
+                    "/scan . --severity=high - Show only high severity"
+                ]
+            ))
+
+        # Code parsing commands
+        if self.code_parser:
+            self.register(Command(
+                name="parse",
+                description="Parse and analyze code structure (AST)",
+                category=CommandCategory.CODE,
+                handler=self._cmd_parse,
+                usage="/parse <file>",
+                examples=[
+                    "/parse main.py - Show code structure",
+                    "/parse main.py --symbols - List all symbols",
+                    "/parse main.py --tree - Show AST tree"
+                ]
+            ))
+
+        # Code refactoring commands
+        if self.refactoring_engine:
+            self.register(Command(
+                name="refactor",
+                description="Refactor code (rename, extract, etc.)",
+                category=CommandCategory.CODE,
+                handler=self._cmd_refactor,
+                usage="/refactor <operation> <args>",
+                examples=[
+                    "/refactor rename old_name new_name",
+                    "/refactor extract-method function_name",
+                    "/refactor inline variable_name"
+                ]
+            ))
+
+        # Git commands
+        if self.git_interface:
+            self.register(Command(
+                name="git",
+                description="Git operations with AI assistance",
+                category=CommandCategory.GIT,
+                handler=self._cmd_git,
+                usage="/git <operation> [args]",
+                examples=[
+                    "/git status - Show git status",
+                    "/git commit - Auto-generate commit message",
+                    "/git diff - Show and analyze diff",
+                    "/git branch - List branches"
+                ]
+            ))
+
+        # Task orchestration commands
+        if self.task_planner and self.execution_engine:
+            self.register(Command(
+                name="task",
+                description="Plan and execute multi-step tasks",
+                category=CommandCategory.ORCHESTRATION,
+                handler=self._cmd_task,
+                usage="/task <plan|execute|status|cancel> [args]",
+                examples=[
+                    "/task plan 'refactor module X' - Create task plan",
+                    "/task execute <plan_id> - Execute planned task",
+                    "/task status - Show active tasks",
+                    "/task cancel <task_id> - Cancel running task"
+                ]
+            ))
+
+        # Workflow commands
+        if self.workflow_library:
+            self.register(Command(
+                name="workflow",
+                description="Execute predefined workflows",
+                category=CommandCategory.AUTOMATION,
+                handler=self._cmd_workflow,
+                usage="/workflow <name> [args]",
+                examples=[
+                    "/workflow code-review - Run code review workflow",
+                    "/workflow test - Run testing workflow",
+                    "/workflow deploy - Run deployment workflow",
+                    "/workflow list - List available workflows"
+                ]
+            ))
+
+        # Custom command management
+        if self.custom_command_manager:
+            self.register(Command(
+                name="command",
+                description="Manage custom commands",
+                category=CommandCategory.AUTOMATION,
+                handler=self._cmd_command,
+                usage="/command <create|list|execute|delete> [args]",
+                examples=[
+                    "/command list - List custom commands",
+                    "/command create my_cmd - Create new command",
+                    "/command execute my_cmd - Run custom command",
+                    "/command delete my_cmd - Delete command"
+                ]
+            ))
 
     def register(self, command: Command):
         """Register a command."""
@@ -625,6 +790,245 @@ Available subcommands:
             lines.append("")
 
         return "\n".join(lines)
+
+    # Phases 13-17: Enhanced CLI Command Handlers
+
+    def _cmd_edit(self, args: List[str]) -> str:
+        """Handle /edit command."""
+        if not self.file_editor:
+            return "File editor not available."
+
+        if not args:
+            return "Usage: /edit <file> [--preview|--apply|--backup]"
+
+        try:
+            file_path = args[0]
+            mode = args[1] if len(args) > 1 else "--preview"
+
+            result = self.file_editor.edit_file(file_path, mode=mode.lstrip('--'))
+            return f"Edit operation completed:\n{result}"
+        except Exception as e:
+            self.file_logger.log_error(f"Edit command error: {e}")
+            return f"Error editing file: {str(e)}"
+
+    def _cmd_analyze(self, args: List[str]) -> str:
+        """Handle /analyze command."""
+        if not self.code_metrics:
+            return "Code metrics analyzer not available."
+
+        if not args:
+            return "Usage: /analyze <file|directory> [--report=text|json]"
+
+        try:
+            target = args[0]
+            report_format = "text"
+            for arg in args[1:]:
+                if arg.startswith("--report="):
+                    report_format = arg.split("=")[1]
+
+            analysis = self.code_metrics.analyze(target, report_format=report_format)
+            return f"Code Analysis Results:\n{analysis}"
+        except Exception as e:
+            self.file_logger.log_error(f"Analyze command error: {e}")
+            return f"Error analyzing code: {str(e)}"
+
+    def _cmd_scan(self, args: List[str]) -> str:
+        """Handle /scan command."""
+        if not self.security_scanner:
+            return "Security scanner not available."
+
+        if not args:
+            return "Usage: /scan <file|directory> [--severity=low|medium|high]"
+
+        try:
+            target = args[0]
+            severity_filter = None
+            for arg in args[1:]:
+                if arg.startswith("--severity="):
+                    severity_filter = arg.split("=")[1]
+
+            scan_results = self.security_scanner.scan(target, severity_filter=severity_filter)
+            return f"Security Scan Results:\n{scan_results}"
+        except Exception as e:
+            self.file_logger.log_error(f"Scan command error: {e}")
+            return f"Error scanning code: {str(e)}"
+
+    def _cmd_parse(self, args: List[str]) -> str:
+        """Handle /parse command."""
+        if not self.code_parser:
+            return "Code parser not available."
+
+        if not args:
+            return "Usage: /parse <file> [--symbols|--tree]"
+
+        try:
+            file_path = args[0]
+            show_mode = "structure"
+            if len(args) > 1:
+                if args[1] == "--symbols":
+                    show_mode = "symbols"
+                elif args[1] == "--tree":
+                    show_mode = "tree"
+
+            parse_result = self.code_parser.parse(file_path, mode=show_mode)
+            return f"Code Structure:\n{parse_result}"
+        except Exception as e:
+            self.file_logger.log_error(f"Parse command error: {e}")
+            return f"Error parsing code: {str(e)}"
+
+    def _cmd_refactor(self, args: List[str]) -> str:
+        """Handle /refactor command."""
+        if not self.refactoring_engine:
+            return "Refactoring engine not available."
+
+        if len(args) < 2:
+            return "Usage: /refactor <operation> <args>\nOperations: rename, extract-method, inline"
+
+        try:
+            operation = args[0]
+            refactor_args = args[1:]
+
+            result = self.refactoring_engine.refactor(operation, refactor_args)
+            return f"Refactoring completed:\n{result}"
+        except Exception as e:
+            self.file_logger.log_error(f"Refactor command error: {e}")
+            return f"Error refactoring code: {str(e)}"
+
+    def _cmd_git(self, args: List[str]) -> str:
+        """Handle /git command."""
+        if not self.git_interface:
+            return "Git interface not available."
+
+        if not args:
+            return "Usage: /git <operation> [args]\nOperations: status, commit, diff, branch, log"
+
+        try:
+            operation = args[0]
+            git_args = args[1:]
+
+            if operation == "commit" and self.commit_assistant:
+                # Use AI to generate commit message
+                result = self.commit_assistant.auto_commit(git_args)
+            else:
+                result = self.git_interface.execute(operation, git_args)
+
+            return f"Git operation completed:\n{result}"
+        except Exception as e:
+            self.file_logger.log_error(f"Git command error: {e}")
+            return f"Error executing git operation: {str(e)}"
+
+    def _cmd_task(self, args: List[str]) -> str:
+        """Handle /task command."""
+        if not self.task_planner or not self.execution_engine:
+            return "Task orchestration not available."
+
+        if not args:
+            return "Usage: /task <plan|execute|status|cancel> [args]"
+
+        try:
+            subcommand = args[0]
+            task_args = args[1:]
+
+            if subcommand == "plan":
+                if not task_args:
+                    return "Usage: /task plan '<task description>'"
+                task_description = " ".join(task_args)
+                plan = self.task_planner.create_plan(task_description)
+                return f"Task plan created:\n{plan}"
+
+            elif subcommand == "execute":
+                if not task_args:
+                    return "Usage: /task execute <plan_id>"
+                plan_id = task_args[0]
+                result = self.execution_engine.execute_plan(plan_id)
+                return f"Task execution started:\n{result}"
+
+            elif subcommand == "status":
+                status = self.execution_engine.get_status()
+                return f"Task status:\n{status}"
+
+            elif subcommand == "cancel":
+                if not task_args:
+                    return "Usage: /task cancel <task_id>"
+                task_id = task_args[0]
+                result = self.execution_engine.cancel_task(task_id)
+                return f"Task cancelled:\n{result}"
+
+            else:
+                return f"Unknown task subcommand: {subcommand}"
+
+        except Exception as e:
+            self.file_logger.log_error(f"Task command error: {e}")
+            return f"Error in task operation: {str(e)}"
+
+    def _cmd_workflow(self, args: List[str]) -> str:
+        """Handle /workflow command."""
+        if not self.workflow_library:
+            return "Workflow library not available."
+
+        if not args:
+            return "Usage: /workflow <name|list> [args]"
+
+        try:
+            subcommand = args[0]
+
+            if subcommand == "list":
+                workflows = self.workflow_library.list_workflows()
+                return f"Available workflows:\n{workflows}"
+
+            else:
+                workflow_name = subcommand
+                workflow_args = args[1:]
+                result = self.workflow_library.execute_workflow(workflow_name, workflow_args)
+                return f"Workflow executed:\n{result}"
+
+        except Exception as e:
+            self.file_logger.log_error(f"Workflow command error: {e}")
+            return f"Error executing workflow: {str(e)}"
+
+    def _cmd_command(self, args: List[str]) -> str:
+        """Handle /command (custom command management)."""
+        if not self.custom_command_manager:
+            return "Custom command manager not available."
+
+        if not args:
+            return "Usage: /command <create|list|execute|delete> [args]"
+
+        try:
+            subcommand = args[0]
+
+            if subcommand == "list":
+                commands = self.custom_command_manager.list_commands()
+                return f"Custom commands:\n{commands}"
+
+            elif subcommand == "create":
+                if len(args) < 2:
+                    return "Usage: /command create <command_name>"
+                cmd_name = args[1]
+                result = self.custom_command_manager.create_command(cmd_name)
+                return f"Custom command created:\n{result}"
+
+            elif subcommand == "execute":
+                if len(args) < 2:
+                    return "Usage: /command execute <command_name>"
+                cmd_name = args[1]
+                cmd_args = args[2:]
+                result = self.custom_command_manager.execute_command(cmd_name, cmd_args)
+                return f"Command executed:\n{result}"
+
+            elif subcommand == "delete":
+                if len(args) < 2:
+                    return "Usage: /command delete <command_name>"
+                cmd_name = args[1]
+                result = self.custom_command_manager.delete_command(cmd_name)
+                return f"Command deleted:\n{result}"
+
+            else:
+                return f"Unknown command subcommand: {subcommand}"
+
+        except Exception as e:
+            self.file_logger.log_error(f"Custom command error: {e}")
+            return f"Error managing custom commands: {str(e)}"
 
     def _help_command(self, command: Command) -> str:
         """Show help for a specific command."""
