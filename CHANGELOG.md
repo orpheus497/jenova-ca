@@ -452,6 +452,118 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Extensible**: Easy to add emotions, keywords, or response strategies
 - **Privacy-Focused**: All processing local, no external emotion detection APIs
 
+- **Phase 28: Knowledge Graph Visualization** - Offline graph visualization and analysis
+
+#### Knowledge Graph Visualization
+
+- **Graph Exporter** (src/jenova/visualization/graph_exporter.py - 440 lines)
+  * Export cortex knowledge graph to multiple formats
+  * **Supported formats**:
+    - GraphML (XML-based, standard format for graph tools)
+    - DOT (Graphviz format with color-coded node types)
+    - JSON (node-link format with metadata)
+    - HTML (self-contained with embedded force-directed visualization)
+    - GEXF (Gephi-compatible format)
+  * **GraphExporter** class:
+    - `to_graphml()` - Export to GraphML XML format
+    - `to_dot()` - Export to Graphviz DOT format
+    - `to_json()` - Export to JSON with pretty-printing support
+    - `to_html()` - Self-contained HTML with interactive visualization
+    - `to_gexf()` - Export to GEXF format
+    - `export_subgraph()` - Export filtered subgraph
+    - `get_graph_stats()` - Graph statistics (nodes, edges, density, connectivity)
+  * **HTML visualization features**:
+    - Force-directed layout with physics simulation
+    - Interactive pan and zoom
+    - Node dragging
+    - Node click for details
+    - Color-coded by type (insight, concept, memory, goal)
+    - Edge labels with relationships
+    - 100% self-contained (no CDN, works offline)
+    - Pure JavaScript (no external libraries)
+
+- **Terminal Renderer** (src/jenova/visualization/terminal_renderer.py - 400 lines)
+  * ASCII art visualization for terminal display
+  * **TerminalRenderer** class:
+    - `render_tree()` - ASCII tree from root node with configurable depth
+    - `render_list()` - Formatted list with type grouping and edges
+    - `render_network()` - Grid-based network diagram with symbols
+    - `render_stats()` - Comprehensive statistics display
+    - `render_path()` - Show shortest path between nodes
+  * **Rendering features**:
+    - Tree view with Unicode box-drawing characters (├──, └──, │)
+    - List view grouped by node type with relationship arrows
+    - Network diagram using Bresenham's line algorithm
+    - Type symbols (I=Insight, C=Concept, M=Memory, G=Goal)
+    - Edge relationship labels
+    - Degree statistics and type distributions
+  * **Works in any terminal**: Pure ASCII, no special requirements
+
+- **Graph Analyzer** (src/jenova/visualization/graph_analyzer.py - 370 lines)
+  * Graph analysis using NetworkX algorithms (100% FOSS)
+  * **GraphAnalyzer** class:
+    - `compute_centrality()` - Betweenness, closeness, degree, PageRank, eigenvector
+    - `find_most_important_nodes()` - Top N by centrality metric
+    - `detect_communities()` - Louvain, label propagation, greedy modularity
+    - `find_all_paths()` - All simple paths between nodes
+    - `find_shortest_path()` - Shortest path with optional weighting
+    - `compute_clustering_coefficient()` - Node clustering coefficients
+    - `get_node_neighborhood()` - Nodes within radius
+    - `analyze_node_importance()` - Comprehensive importance metrics
+    - `find_bridges()` - Bridge edges (removal disconnects graph)
+    - `get_connected_components()` - Weakly connected components
+    - `compute_graph_metrics()` - Comprehensive graph-level metrics
+  * **Centrality metrics**:
+    - Betweenness: measures node importance in paths
+    - Closeness: measures average distance to all nodes
+    - Degree: measures direct connections
+    - PageRank: measures importance via link structure
+    - Eigenvector: measures influence based on connections
+  * **Community detection algorithms**:
+    - Louvain: modularity optimization (with fallback)
+    - Label propagation: fast community detection
+    - Greedy modularity: iterative modularity maximization
+
+- **Module Exports** (src/jenova/visualization/__init__.py - 45 lines)
+  * Clean API surface with all public classes
+  * Organized imports by component
+
+- **Comprehensive Test Suite** (tests/test_visualization.py - 420 lines)
+  * **TestGraphExporter** class (9 test methods):
+    - Initialization and graph setting
+    - GraphML, JSON, DOT, HTML, GEXF export
+    - Subgraph export
+    - Graph statistics
+  * **TestTerminalRenderer** class (8 test methods):
+    - Tree, list, network rendering
+    - Statistics and path rendering
+    - Nonexistent node handling
+  * **TestGraphAnalyzer** class (18 test methods):
+    - All centrality metrics
+    - Community detection algorithms
+    - Path finding (all paths, shortest path)
+    - Clustering coefficients
+    - Node neighborhoods
+    - Node importance analysis
+    - Bridge detection
+    - Connected components
+    - Comprehensive graph metrics
+  * **TestIntegration** class (2 integration tests):
+    - Complete export and analysis workflow
+    - Centrality and visualization pipeline
+
+#### Benefits
+
+- **100% Offline**: All visualization and analysis works without internet
+- **FOSS Only**: Uses NetworkX (BSD-3-Clause) for all graph algorithms
+- **Multiple Formats**: Export to industry-standard formats (GraphML, DOT, GEXF)
+- **Self-Contained HTML**: Interactive visualization with no external dependencies
+- **Terminal-Friendly**: ASCII art visualization works in any terminal
+- **Comprehensive Analysis**: Centrality, clustering, community detection
+- **Graph Insights**: Understand knowledge graph structure and key nodes
+- **Production-Ready**: Full test coverage, error handling, documentation
+- **Extensible**: Easy to add new export formats or analysis metrics
+
 - **Phase 24: Adaptive Context Window Management** - Intelligent context prioritization and compression
 
 #### Adaptive Context Window Management
