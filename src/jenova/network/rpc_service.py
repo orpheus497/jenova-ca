@@ -17,11 +17,17 @@ from typing import Optional
 
 import grpc
 
-# Note: These imports will be generated from proto file via grpc_tools
-# For now, we'll create placeholder classes that will be replaced when proto is compiled
+# Import generated protobuf modules
+try:
+    from jenova.network.proto import jenova_pb2
+    from jenova.network.proto import jenova_pb2_grpc
+except ImportError:
+    raise ImportError(
+        "Protocol Buffer modules not found. Run 'python build_proto.py' to compile protos."
+    )
 
 
-class JenovaRPCServicer:
+class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
     """
     gRPC service implementation for JENOVA distributed operations.
 
@@ -435,50 +441,98 @@ class JenovaRPCServicer:
         """
         return self._create_metrics_response()
 
-    # Helper methods to create response objects
-    # These will use actual protobuf classes once proto is compiled
+    # Helper methods to create response objects using real protobuf messages
 
     def _create_generate_response(self, **kwargs):
-        """Create GenerateResponse (placeholder)."""
-        # This will be replaced with actual protobuf message creation
-        return type('GenerateResponse', (), kwargs)()
+        """Create GenerateResponse using protobuf."""
+        return jenova_pb2.GenerateResponse(
+            text=kwargs.get('text', ''),
+            tokens_generated=kwargs.get('tokens_generated', 0),
+            generation_time_seconds=kwargs.get('generation_time_seconds', 0.0),
+            model_name=kwargs.get('model_name', ''),
+            request_id=kwargs.get('request_id', ''),
+            success=kwargs.get('success', False),
+            error_message=kwargs.get('error_message', '')
+        )
 
     def _create_stream_response(self, **kwargs):
-        """Create GenerateStreamResponse (placeholder)."""
-        return type('GenerateStreamResponse', (), kwargs)()
+        """Create GenerateStreamResponse using protobuf."""
+        return jenova_pb2.GenerateStreamResponse(
+            token=kwargs.get('token', ''),
+            is_final=kwargs.get('is_final', False),
+            request_id=kwargs.get('request_id', '')
+        )
 
     def _create_embed_response(self, **kwargs):
-        """Create EmbedResponse (placeholder)."""
-        return type('EmbedResponse', (), kwargs)()
+        """Create EmbedResponse using protobuf."""
+        return jenova_pb2.EmbedResponse(
+            embedding=kwargs.get('embedding', []),
+            dimension=kwargs.get('dimension', 0),
+            embedding_time_seconds=kwargs.get('embedding_time_seconds', 0.0),
+            request_id=kwargs.get('request_id', ''),
+            success=kwargs.get('success', False),
+            error_message=kwargs.get('error_message', '')
+        )
 
     def _create_embed_batch_response(self, **kwargs):
-        """Create EmbedBatchResponse (placeholder)."""
-        return type('EmbedBatchResponse', (), kwargs)()
+        """Create EmbedBatchResponse using protobuf."""
+        return jenova_pb2.EmbedBatchResponse(
+            embeddings=kwargs.get('embeddings', []),
+            total_time_seconds=kwargs.get('total_time_seconds', 0.0),
+            request_id=kwargs.get('request_id', ''),
+            success=kwargs.get('success', False),
+            error_message=kwargs.get('error_message', '')
+        )
 
     def _create_embedding_result(self, embedding, index):
-        """Create EmbeddingResult (placeholder)."""
-        return type('EmbeddingResult', (), {'embedding': embedding, 'index': index})()
+        """Create EmbeddingResult using protobuf."""
+        return jenova_pb2.EmbeddingResult(
+            embedding=embedding,
+            index=index
+        )
 
     def _create_memory_search_response(self, **kwargs):
-        """Create MemorySearchResponse (placeholder)."""
-        return type('MemorySearchResponse', (), kwargs)()
+        """Create MemorySearchResponse using protobuf."""
+        return jenova_pb2.MemorySearchResponse(
+            results=kwargs.get('results', []),
+            total_results=kwargs.get('total_results', 0),
+            search_time_seconds=kwargs.get('search_time_seconds', 0.0),
+            request_id=kwargs.get('request_id', ''),
+            success=kwargs.get('success', False),
+            error_message=kwargs.get('error_message', '')
+        )
 
     def _create_health_response(self, **kwargs):
-        """Create HealthCheckResponse (placeholder)."""
-        return type('HealthCheckResponse', (), kwargs)()
+        """Create HealthCheckResponse using protobuf."""
+        return jenova_pb2.HealthCheckResponse(
+            status=kwargs.get('status', 'unknown'),
+            cpu_percent=kwargs.get('cpu_percent', 0.0),
+            memory_percent=kwargs.get('memory_percent', 0.0),
+            gpu_memory_percent=kwargs.get('gpu_memory_percent', 0.0),
+            active_requests=kwargs.get('active_requests', 0),
+            total_requests_served=kwargs.get('total_requests_served', 0),
+            uptime_seconds=kwargs.get('uptime_seconds', 0.0)
+        )
 
     def _create_capabilities_response(self):
-        """Create CapabilitiesResponse (placeholder)."""
-        return type('CapabilitiesResponse', (), {})()
+        """Create CapabilitiesResponse using protobuf."""
+        return jenova_pb2.CapabilitiesResponse(
+            share_llm=self.share_llm,
+            share_embeddings=self.share_embeddings,
+            share_memory=self.share_memory,
+            max_concurrent_requests=self.max_concurrent,
+            supports_streaming=False,  # Not yet implemented
+            version='5.0.0'
+        )
 
     def _create_metrics_response(self):
-        """Create MetricsResponse (placeholder)."""
-        metrics = {
-            'total_requests': self.total_requests,
-            'successful_requests': self.successful_requests,
-            'failed_requests': self.failed_requests
-        }
-        return type('MetricsResponse', (), metrics)()
+        """Create MetricsResponse using protobuf."""
+        return jenova_pb2.MetricsResponse(
+            total_requests=self.total_requests,
+            successful_requests=self.successful_requests,
+            failed_requests=self.failed_requests,
+            uptime_seconds=time.time() - self.start_time
+        )
 
 
 class JenovaRPCServer:
@@ -530,9 +584,11 @@ class JenovaRPCServer:
                 futures.ThreadPoolExecutor(max_workers=self.max_workers)
             )
 
-            # Add servicer to server
-            # Note: This will use actual proto-generated code when available
-            # For now, we're creating a placeholder structure
+            # Add servicer to server using generated gRPC code
+            jenova_pb2_grpc.add_JenovaRPCServicer_to_server(
+                self.servicer,
+                self.server
+            )
 
             # Bind port
             if self.security_manager and self.security_manager.is_security_enabled():

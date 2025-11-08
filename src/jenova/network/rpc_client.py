@@ -18,6 +18,15 @@ from typing import Dict, List, Optional
 import grpc
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+# Import generated protobuf modules
+try:
+    from jenova.network.proto import jenova_pb2
+    from jenova.network.proto import jenova_pb2_grpc
+except ImportError:
+    raise ImportError(
+        "Protocol Buffer modules not found. Run 'python build_proto.py' to compile protos."
+    )
+
 
 class JenovaRPCClient:
     """
@@ -173,19 +182,30 @@ class JenovaRPCClient:
             # Get connection and make call
             channel = self._get_connection(peer_info.address, peer_info.port)
 
-            # Note: This will use actual stub once proto is compiled
-            # For now, creating placeholder
             self.file_logger.log_info(
                 f"RPC Client: Requesting text generation from {peer_info.instance_name}"
             )
 
-            # Simulate RPC call (will be real once proto is compiled)
-            # stub = jenova_pb2_grpc.JenovaRPCStub(channel)
-            # response = stub.GenerateText(request, timeout=self.timeout_seconds)
+            # Create stub and make RPC call
+            stub = jenova_pb2_grpc.JenovaRPCStub(channel)
 
-            # For now, return None as placeholder
-            # Real implementation will parse response and return text
+            # Add authentication metadata if available
+            metadata = []
+            if self.auth_token:
+                metadata.append(('authorization', f'Bearer {self.auth_token}'))
+
+            # Make the RPC call
+            response = stub.GenerateText(
+                request,
+                timeout=self.timeout_seconds,
+                metadata=metadata if metadata else None
+            )
+
             response_time_ms = (time.time() - start_time) * 1000
+
+            # Check if request succeeded
+            if not response.success:
+                raise grpc.RpcError(f"Generation failed: {response.error_message}")
 
             # Record result with peer manager
             if self.peer_manager:
@@ -196,11 +216,10 @@ class JenovaRPCClient:
                 )
 
             self.file_logger.log_info(
-                f"RPC Client: Generation completed in {response_time_ms:.0f}ms"
+                f"RPC Client: Generated {response.tokens_generated} tokens in {response_time_ms:.0f}ms"
             )
 
-            # This will return response.text once implemented
-            return None  # Placeholder
+            return response.text
 
         except grpc.RpcError as e:
             response_time_ms = (time.time() - start_time) * 1000
@@ -274,8 +293,26 @@ class JenovaRPCClient:
                 f"RPC Client: Requesting embedding from {peer_info.instance_name}"
             )
 
-            # Placeholder for actual RPC call
+            # Create stub and make RPC call
+            stub = jenova_pb2_grpc.JenovaRPCStub(channel)
+
+            # Add authentication metadata if available
+            metadata = []
+            if self.auth_token:
+                metadata.append(('authorization', f'Bearer {self.auth_token}'))
+
+            # Make the RPC call
+            response = stub.EmbedText(
+                request,
+                timeout=self.timeout_seconds,
+                metadata=metadata if metadata else None
+            )
+
             response_time_ms = (time.time() - start_time) * 1000
+
+            # Check if request succeeded
+            if not response.success:
+                raise grpc.RpcError(f"Embedding failed: {response.error_message}")
 
             # Record result
             if self.peer_manager:
@@ -285,7 +322,7 @@ class JenovaRPCClient:
                     response_time_ms=response_time_ms
                 )
 
-            return None  # Placeholder
+            return list(response.embedding)
 
         except grpc.RpcError as e:
             response_time_ms = (time.time() - start_time) * 1000
@@ -357,8 +394,26 @@ class JenovaRPCClient:
                 f"from {peer_info.instance_name}"
             )
 
-            # Placeholder
+            # Create stub and make RPC call
+            stub = jenova_pb2_grpc.JenovaRPCStub(channel)
+
+            # Add authentication metadata if available
+            metadata = []
+            if self.auth_token:
+                metadata.append(('authorization', f'Bearer {self.auth_token}'))
+
+            # Make the RPC call
+            response = stub.EmbedTextBatch(
+                request,
+                timeout=self.timeout_seconds,
+                metadata=metadata if metadata else None
+            )
+
             response_time_ms = (time.time() - start_time) * 1000
+
+            # Check if request succeeded
+            if not response.success:
+                raise grpc.RpcError(f"Batch embedding failed: {response.error_message}")
 
             if self.peer_manager:
                 self.peer_manager.record_request_result(
@@ -367,7 +422,8 @@ class JenovaRPCClient:
                     response_time_ms=response_time_ms
                 )
 
-            return None  # Placeholder
+            # Extract embeddings from response
+            return [list(emb_result.embedding) for emb_result in response.embeddings]
 
         except Exception as e:
             self.file_logger.log_error(f"Error in embed_text_batch: {e}")
@@ -396,11 +452,29 @@ class JenovaRPCClient:
             # Get connection
             channel = self._get_connection(peer_info.address, peer_info.port)
 
-            # Placeholder for actual health check
-            # Real implementation will return health data
+            # Create stub and make RPC call
+            stub = jenova_pb2_grpc.JenovaRPCStub(channel)
+
+            # Add authentication metadata if available
+            metadata = []
+            if self.auth_token:
+                metadata.append(('authorization', f'Bearer {self.auth_token}'))
+
+            # Make the RPC call
+            response = stub.HealthCheck(
+                request,
+                timeout=self.timeout_seconds,
+                metadata=metadata if metadata else None
+            )
 
             return {
-                'status': 'healthy',
+                'status': response.status,
+                'cpu_percent': response.cpu_percent,
+                'memory_percent': response.memory_percent,
+                'gpu_memory_percent': response.gpu_memory_percent,
+                'active_requests': response.active_requests,
+                'total_requests_served': response.total_requests_served,
+                'uptime_seconds': response.uptime_seconds,
                 'peer_id': peer_id,
                 'peer_name': peer_info.instance_name
             }
@@ -432,33 +506,64 @@ class JenovaRPCClient:
             # Get connection
             channel = self._get_connection(peer_info.address, peer_info.port)
 
-            # Placeholder for actual capabilities request
+            # Create stub and make RPC call
+            stub = jenova_pb2_grpc.JenovaRPCStub(channel)
 
-            return None
+            # Add authentication metadata if available
+            metadata = []
+            if self.auth_token:
+                metadata.append(('authorization', f'Bearer {self.auth_token}'))
+
+            # Make the RPC call
+            response = stub.GetCapabilities(
+                request,
+                timeout=self.timeout_seconds,
+                metadata=metadata if metadata else None
+            )
+
+            return {
+                'share_llm': response.share_llm,
+                'share_embeddings': response.share_embeddings,
+                'share_memory': response.share_memory,
+                'max_concurrent_requests': response.max_concurrent_requests,
+                'supports_streaming': response.supports_streaming,
+                'version': response.version
+            }
 
         except Exception as e:
             self.file_logger.log_error(f"Get capabilities failed for {peer_id}: {e}")
             return None
 
-    # Helper methods to create request objects
-    # These are placeholders that will be replaced with actual protobuf messages
+    # Helper methods to create request objects using real protobuf messages
 
     def _create_generate_request(self, **kwargs):
-        """Create GenerateRequest (placeholder)."""
-        return type('GenerateRequest', (), kwargs)()
+        """Create GenerateRequest using protobuf."""
+        return jenova_pb2.GenerateRequest(
+            prompt=kwargs.get('prompt', ''),
+            temperature=kwargs.get('temperature', 0.7),
+            top_p=kwargs.get('top_p', 0.95),
+            max_tokens=kwargs.get('max_tokens', 512),
+            request_id=kwargs.get('request_id', '')
+        )
 
     def _create_embed_request(self, **kwargs):
-        """Create EmbedRequest (placeholder)."""
-        return type('EmbedRequest', (), kwargs)()
+        """Create EmbedRequest using protobuf."""
+        return jenova_pb2.EmbedRequest(
+            text=kwargs.get('text', ''),
+            request_id=kwargs.get('request_id', '')
+        )
 
     def _create_embed_batch_request(self, **kwargs):
-        """Create EmbedBatchRequest (placeholder)."""
-        return type('EmbedBatchRequest', (), kwargs)()
+        """Create EmbedBatchRequest using protobuf."""
+        return jenova_pb2.EmbedBatchRequest(
+            texts=kwargs.get('texts', []),
+            request_id=kwargs.get('request_id', '')
+        )
 
     def _create_health_check_request(self):
-        """Create HealthCheckRequest (placeholder)."""
-        return type('HealthCheckRequest', (), {})()
+        """Create HealthCheckRequest using protobuf."""
+        return jenova_pb2.HealthCheckRequest()
 
     def _create_capabilities_request(self):
-        """Create CapabilitiesRequest (placeholder)."""
-        return type('CapabilitiesRequest', (), {})()
+        """Create CapabilitiesRequest using protobuf."""
+        return jenova_pb2.CapabilitiesRequest()

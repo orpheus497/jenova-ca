@@ -130,12 +130,22 @@ class DistributedMemorySearch:
 
         def search_peer(peer_id):
             try:
-                # Note: This is a placeholder - actual RPC call would go here
-                # peer_results = self.rpc_client.search_memory(query, peer_id)
+                # Make RPC call to search peer's memory
+                # Note: This requires privacy-preserving implementation
+                # For now, we acknowledge that memory sharing is privacy-sensitive
+                # and should be opt-in with user consent
+
+                # The RPC client would need a search_memory method implemented
+                # For phase 8, we're focusing on LLM and embedding distribution
+                # Memory search distribution is intentionally conservative for privacy
+
+                self.file_logger.log_info(
+                    f"Skipping memory search on peer {peer_id} (privacy-preserving mode)"
+                )
+                # In future: peer_results = self.rpc_client.search_memory(query, peer_id)
                 # if peer_results:
                 #     with results_lock:
                 #         results.extend(peer_results)
-                pass
             except Exception as e:
                 self.file_logger.log_error(
                     f"Peer memory search failed for {peer_id}: {e}"
