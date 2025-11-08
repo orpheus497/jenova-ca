@@ -93,6 +93,28 @@ class EpisodicMemory:
         emotion: str = None,
         timestamp: str = None,
     ):
+        """
+        Add an episode (conversation event) to episodic memory.
+
+        Stores a conversational episode with associated metadata including
+        entities, emotion, and timestamp. If metadata is not provided, the LLM
+        analyzes the summary to extract it.
+
+        Args:
+            summary: Summary text of the episode
+            username: Username associated with this episode
+            entities: Optional list of key entities (people, places, things)
+            emotion: Optional primary emotion (e.g., "happy", "confused")
+            timestamp: Optional ISO format timestamp (auto-generated if not provided)
+
+        Example:
+            >>> episodic.add_episode(
+            ...     "User asked about the weather in Paris",
+            ...     "user123",
+            ...     entities=["Paris", "weather"],
+            ...     emotion="curious"
+            ... )
+        """
         if not timestamp:
             timestamp = datetime.now().isoformat()
 
@@ -139,6 +161,30 @@ JSON Response:"""
     def recall_relevant_episodes(
         self, query: str, username: str, n_results: int = 3
     ) -> list[tuple[str, float]]:
+        """
+        Recall episodes relevant to a query from episodic memory.
+
+        Performs vector similarity search to find past conversation episodes
+        most relevant to the current query, filtered by username.
+
+        Args:
+            query: Search query string
+            username: Filter results to this username
+            n_results: Maximum number of episodes to return (default: 3)
+
+        Returns:
+            List of tuples containing (episode_summary, distance_score)
+            where lower distance indicates higher similarity
+
+        Example:
+            >>> results = episodic.recall_relevant_episodes(
+            ...     "weather discussion",
+            ...     "user123",
+            ...     n_results=5
+            ... )
+            >>> for episode, distance in results:
+            ...     print(f"Episode: {episode} (similarity: {1-distance:.2f})")
+        """
         if self.collection.count() == 0:
             return []
         n_results = min(n_results, self.collection.count())
