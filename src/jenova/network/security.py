@@ -13,7 +13,7 @@ channels for secure LAN networking.
 
 import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -23,6 +23,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
+
+from jenova.network.security_store import SecureCredentialStore
 
 
 class SecurityManager:
@@ -62,6 +64,9 @@ class SecurityManager:
         self.private_key_path = self.cert_dir / "jenova.key"
         self.certificate_path = self.cert_dir / "jenova.crt"
 
+        # Secure credential store for encrypted key management
+        self.credential_store = SecureCredentialStore(self.cert_dir, file_logger)
+
         # JWT secret (generated on first run)
         self.jwt_secret_path = self.cert_dir / "jwt_secret"
         self.jwt_secret = self._load_or_generate_jwt_secret()
@@ -71,6 +76,9 @@ class SecurityManager:
         self.security_enabled = security_config.get('enabled', True)
         self.require_auth = security_config.get('require_auth', True)
         self.cert_validity_days = 365
+
+        # Trusted peer certificates (for certificate pinning)
+        self.trusted_peers: dict = {}  # peer_id -> certificate_fingerprint
 
     def ensure_certificates(self, instance_name: str) -> Tuple[str, str]:
         """
@@ -111,16 +119,11 @@ class SecurityManager:
             backend=default_backend()
         )
 
-        # Write private key to file
-        with open(self.private_key_path, "wb") as f:
-            f.write(private_key.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.TraditionalOpenSSL,
-                encryption_algorithm=serialization.NoEncryption()
-            ))
-
-        # Set restrictive permissions on private key
-        os.chmod(self.private_key_path, 0o600)
+        # Save private key with encryption using secure credential store
+        self.credential_store.save_private_key(
+            private_key,
+            filename="jenova.key"
+        )
 
         # Generate certificate
         subject = issuer = x509.Name([
@@ -140,9 +143,9 @@ class SecurityManager:
         ).serial_number(
             x509.random_serial_number()
         ).not_valid_before(
-            datetime.utcnow()
+            datetime.now(timezone.utc)
         ).not_valid_after(
-            datetime.utcnow() + timedelta(days=self.cert_validity_days)
+            datetime.now(timezone.utc) + timedelta(days=self.cert_validity_days)
         ).add_extension(
             x509.SubjectAlternativeName([
                 x509.DNSName("localhost"),
@@ -255,7 +258,7 @@ class SecurityManager:
             cert = x509.load_pem_x509_certificate(cert_data, default_backend())
 
             # Check if certificate is expired
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             if now < cert.not_valid_before or now > cert.not_valid_after:
                 self.file_logger.log_warning(
                     f"Certificate expired or not yet valid: {cert_path}"
@@ -309,5 +312,97 @@ class SecurityManager:
                 self.private_key_path.exists() and
                 self.certificate_path.exists()
             ),
-            'cert_validity_days': self.cert_validity_days
+            'cert_validity_days': self.cert_validity_days,
+            'trusted_peers_count': len(self.trusted_peers)
         }
+
+    def get_certificate_fingerprint(self, cert_path: str) -> Optional[str]:
+        """
+        Get SHA256 fingerprint of a certificate.
+
+        Args:
+            cert_path: Path to certificate file
+
+        Returns:
+            Hex-encoded fingerprint or None on error
+        """
+        try:
+            with open(cert_path, 'rb') as f:
+                cert_data = f.read()
+
+            cert = x509.load_pem_x509_certificate(cert_data, default_backend())
+            fingerprint = cert.fingerprint(hashes.SHA256())
+            return fingerprint.hex()
+
+        except Exception as e:
+            self.file_logger.log_error(f"Failed to get certificate fingerprint: {e}")
+            return None
+
+    def pin_peer_certificate(self, peer_id: str, cert_path: str) -> bool:
+        """
+        Pin a peer's certificate for future validation (certificate pinning).
+
+        Args:
+            peer_id: Unique peer identifier
+            cert_path: Path to peer's certificate
+
+        Returns:
+            True if pinning succeeded, False otherwise
+        """
+        fingerprint = self.get_certificate_fingerprint(cert_path)
+        if fingerprint:
+            self.trusted_peers[peer_id] = fingerprint
+            self.file_logger.log_info(
+                f"Pinned certificate for peer {peer_id}: {fingerprint[:16]}..."
+            )
+            return True
+        return False
+
+    def validate_pinned_peer(self, peer_id: str, cert_path: str) -> bool:
+        """
+        Validate a peer's certificate against pinned fingerprint.
+
+        Args:
+            peer_id: Unique peer identifier
+            cert_path: Path to peer's certificate
+
+        Returns:
+            True if certificate matches pinned fingerprint, False otherwise
+        """
+        if peer_id not in self.trusted_peers:
+            self.file_logger.log_warning(
+                f"No pinned certificate for peer {peer_id}, trusting on first use"
+            )
+            # Trust on first use (TOFU)
+            return self.pin_peer_certificate(peer_id, cert_path)
+
+        current_fingerprint = self.get_certificate_fingerprint(cert_path)
+        if current_fingerprint is None:
+            return False
+
+        pinned_fingerprint = self.trusted_peers[peer_id]
+        if current_fingerprint == pinned_fingerprint:
+            return True
+        else:
+            self.file_logger.log_error(
+                f"Certificate fingerprint mismatch for peer {peer_id}! "
+                f"Expected {pinned_fingerprint[:16]}..., "
+                f"got {current_fingerprint[:16]}..."
+            )
+            return False
+
+    def unpin_peer_certificate(self, peer_id: str):
+        """
+        Remove pinned certificate for a peer.
+
+        Args:
+            peer_id: Unique peer identifier
+        """
+        if peer_id in self.trusted_peers:
+            del self.trusted_peers[peer_id]
+            self.file_logger.log_info(f"Unpinned certificate for peer {peer_id}")
+
+    def close(self):
+        """Clean up security resources."""
+        # Clear password cache on shutdown
+        self.credential_store.clear_password_cache()
