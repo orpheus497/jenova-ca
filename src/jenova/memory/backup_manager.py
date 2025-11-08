@@ -22,6 +22,13 @@ Features:
 - Automatic rotation: Configurable retention policy
 - Compression: gzip or lz4 for space efficiency
 
+Phase 20 Enhancements:
+- Fixed path traversal vulnerabilities in backup operations
+- Added size limits on backup loading (max 500MB)
+- Comprehensive path validation and sanitization
+- Enhanced error handling with specific exceptions
+- Type hints for all public methods
+
 This addresses the need for data portability, disaster recovery, and knowledge sharing.
 """
 
@@ -34,6 +41,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 import msgpack
+import re
+
+# Phase 20: Import safe JSON parser
+from jenova.utils.json_parser import (
+    load_json_safe,
+    save_json_safe,
+    JSONParseError,
+    JSONSecurityError
+)
+
+# Security limits (Phase 20)
+MAX_BACKUP_SIZE = 500 * 1024 * 1024  # 500MB max backup size
+MAX_BACKUP_NAME_LENGTH = 100  # Prevent excessively long names
 
 class BackupManager:
     """
@@ -72,6 +92,68 @@ class BackupManager:
         self.max_backups = backup_config.get("max_backups", 10)
         self.compression = backup_config.get("compression", "gzip")  # gzip or none
         self.format = backup_config.get("format", "json")  # json or msgpack
+
+    def _validate_backup_name(self, backup_name: str) -> str:
+        """
+        Validate and sanitize backup name to prevent path traversal.
+
+        Phase 20: Security validation to prevent directory traversal attacks.
+
+        Args:
+            backup_name: Proposed backup name
+
+        Returns:
+            Sanitized backup name
+
+        Raises:
+            ValueError: If backup name is invalid or dangerous
+        """
+        if not backup_name:
+            raise ValueError("Backup name cannot be empty")
+
+        if len(backup_name) > MAX_BACKUP_NAME_LENGTH:
+            raise ValueError(f"Backup name too long (max {MAX_BACKUP_NAME_LENGTH} characters)")
+
+        # Remove any path separators to prevent traversal
+        if "/" in backup_name or "\\" in backup_name or ".." in backup_name:
+            raise ValueError("Backup name cannot contain path separators or '..'")
+
+        # Allow only alphanumeric, underscore, hyphen, and dot
+        if not re.match(r'^[a-zA-Z0-9_\-\.]+$', backup_name):
+            raise ValueError("Backup name contains invalid characters")
+
+        return backup_name
+
+    def _validate_backup_path(self, backup_path: str) -> Path:
+        """
+        Validate backup path to prevent path traversal attacks.
+
+        Phase 20: Security validation to ensure path is within backup directory.
+
+        Args:
+            backup_path: Path to validate
+
+        Returns:
+            Validated Path object
+
+        Raises:
+            ValueError: If path is invalid or outside backup directory
+        """
+        try:
+            # Convert to Path and resolve to absolute path
+            path = Path(backup_path).resolve()
+            backup_dir_resolved = Path(self.backup_dir).resolve()
+
+            # Ensure path is within backup directory
+            if not str(path).startswith(str(backup_dir_resolved)):
+                raise ValueError(
+                    f"Backup path '{path}' is outside backup directory '{backup_dir_resolved}'"
+                )
+
+            return path
+
+        except Exception as e:
+            raise ValueError(f"Invalid backup path: {e}")
 
     def create_full_backup(
         self,
@@ -430,7 +512,25 @@ class BackupManager:
             json.dump(profile_data, f, indent=2)
 
     def _save_backup(self, backup_name: str, backup_data: Dict[str, Any]) -> str:
-        """Save backup to file."""
+        """
+        Save backup to file.
+
+        Phase 20: Added path validation and size limits.
+
+        Args:
+            backup_name: Name for backup file
+            backup_data: Data to save
+
+        Returns:
+            Path to saved backup
+
+        Raises:
+            ValueError: If backup name is invalid
+            JSONSecurityError: If backup size exceeds limit
+        """
+        # Phase 20: Validate backup name to prevent path traversal
+        validated_name = self._validate_backup_name(backup_name)
+
         # Serialize based on format
         if self.format == "msgpack":
             serialized = msgpack.packb(backup_data)
@@ -439,33 +539,74 @@ class BackupManager:
             serialized = json.dumps(backup_data, indent=2).encode('utf-8')
             extension = ".json"
 
+        # Phase 20: Check size before saving
+        if len(serialized) > MAX_BACKUP_SIZE:
+            raise JSONSecurityError(
+                f"Backup size ({len(serialized)} bytes) exceeds maximum ({MAX_BACKUP_SIZE} bytes)"
+            )
+
         # Compress if enabled
         if self.compression == "gzip":
-            backup_path = os.path.join(self.backup_dir, f"{backup_name}{extension}.gz")
+            backup_path = os.path.join(self.backup_dir, f"{validated_name}{extension}.gz")
             with gzip.open(backup_path, "wb") as f:
                 f.write(serialized)
         else:
-            backup_path = os.path.join(self.backup_dir, f"{backup_name}{extension}")
+            backup_path = os.path.join(self.backup_dir, f"{validated_name}{extension}")
             with open(backup_path, "wb") as f:
                 f.write(serialized)
 
         return backup_path
 
     def _load_backup(self, backup_path: str) -> Dict[str, Any]:
-        """Load backup from file."""
+        """
+        Load backup from file.
+
+        Phase 20: Added path validation and size limits.
+
+        Args:
+            backup_path: Path to backup file
+
+        Returns:
+            Loaded backup data
+
+        Raises:
+            ValueError: If path is invalid or outside backup directory
+            JSONSecurityError: If backup exceeds size limit
+            FileNotFoundError: If backup file doesn't exist
+        """
+        # Phase 20: Validate path to prevent directory traversal
+        validated_path = self._validate_backup_path(backup_path)
+
+        # Phase 20: Check file size before loading
+        file_size = validated_path.stat().st_size
+        if file_size > MAX_BACKUP_SIZE:
+            raise JSONSecurityError(
+                f"Backup file size ({file_size} bytes) exceeds maximum ({MAX_BACKUP_SIZE} bytes)"
+            )
+
         # Decompress if gzip
-        if backup_path.endswith(".gz"):
-            with gzip.open(backup_path, "rb") as f:
+        if str(validated_path).endswith(".gz"):
+            with gzip.open(validated_path, "rb") as f:
                 data = f.read()
         else:
-            with open(backup_path, "rb") as f:
+            with open(validated_path, "rb") as f:
                 data = f.read()
 
+        # Phase 20: Double-check decompressed size
+        if len(data) > MAX_BACKUP_SIZE:
+            raise JSONSecurityError(
+                f"Decompressed backup size ({len(data)} bytes) exceeds maximum ({MAX_BACKUP_SIZE} bytes)"
+            )
+
         # Deserialize based on format
-        if backup_path.endswith(".msgpack") or backup_path.endswith(".msgpack.gz"):
+        if str(validated_path).endswith(".msgpack") or str(validated_path).endswith(".msgpack.gz"):
             return msgpack.unpackb(data)
         else:
-            return json.loads(data.decode('utf-8'))
+            # Phase 20: Use safe JSON parser
+            try:
+                return json.loads(data.decode('utf-8'))
+            except json.JSONDecodeError as e:
+                raise JSONParseError(f"Failed to parse backup JSON: {e}")
 
     def _calculate_checksum(self, data: Any) -> str:
         """Calculate SHA256 checksum of data."""

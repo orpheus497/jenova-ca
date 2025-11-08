@@ -3,19 +3,28 @@ JENOVA Cognitive Architecture - Background Task Manager Module
 Copyright (c) 2024, orpheus497. All rights reserved.
 Licensed under the MIT License
 
-This module provides background task management using psutil for process monitoring.
+This module provides background task management with comprehensive thread safety,
+process monitoring, and resource tracking.
+
+Phase 20 Enhancements:
+- Fixed race conditions with proper locking on all shared state
+- Thread-safe task registry using threading.RLock
+- Atomic operations for task state transitions
+- Safe concurrent access to task output streams
+- Enhanced error handling and resource cleanup
+- Complete type hints for all functions and methods
 """
 
 import logging
 import subprocess
 import threading
 import time
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Any, Callable
+from typing import Dict, List, Optional, Any, Callable, Deque
 import psutil
-
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +41,12 @@ class TaskStatus(Enum):
 
 @dataclass
 class BackgroundTask:
-    """Represents a background task."""
+    """
+    Represents a background task.
+
+    Thread-safety: All access to this class should be protected by
+    BackgroundTaskManager._lock.
+    """
 
     task_id: int
     command: List[str]
@@ -41,34 +55,80 @@ class BackgroundTask:
     start_time: datetime = field(default_factory=datetime.now)
     end_time: Optional[datetime] = None
     exit_code: Optional[int] = None
-    stdout: List[str] = field(default_factory=list)
-    stderr: List[str] = field(default_factory=list)
+    stdout: Deque[str] = field(default_factory=deque)
+    stderr: Deque[str] = field(default_factory=deque)
     metadata: Dict[str, Any] = field(default_factory=dict)
+    _lock: threading.RLock = field(default_factory=threading.RLock, init=False, repr=False)
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert task to dictionary."""
-        return {
-            "task_id": self.task_id,
-            "command": " ".join(self.command),
-            "status": self.status.value,
-            "start_time": self.start_time.isoformat(),
-            "end_time": self.end_time.isoformat() if self.end_time else None,
-            "exit_code": self.exit_code,
-            "pid": self.process.pid if self.process else None,
-            "metadata": self.metadata,
-        }
+        """
+        Convert task to dictionary.
+
+        Thread-safe: Creates snapshot of current state.
+        """
+        with self._lock:
+            return {
+                "task_id": self.task_id,
+                "command": " ".join(self.command),
+                "status": self.status.value,
+                "start_time": self.start_time.isoformat(),
+                "end_time": self.end_time.isoformat() if self.end_time else None,
+                "exit_code": self.exit_code,
+                "pid": self.process.pid if self.process else None,
+                "metadata": self.metadata.copy(),
+                "stdout_lines": len(self.stdout),
+                "stderr_lines": len(self.stderr),
+            }
+
+    def append_stdout(self, line: str, max_lines: int) -> None:
+        """
+        Append line to stdout with size limit.
+
+        Thread-safe: Protected by task lock.
+        """
+        with self._lock:
+            self.stdout.append(line)
+            while len(self.stdout) > max_lines:
+                self.stdout.popleft()
+
+    def append_stderr(self, line: str, max_lines: int) -> None:
+        """
+        Append line to stderr with size limit.
+
+        Thread-safe: Protected by task lock.
+        """
+        with self._lock:
+            self.stderr.append(line)
+            while len(self.stderr) > max_lines:
+                self.stderr.popleft()
+
+    def get_output_copy(self) -> Dict[str, List[str]]:
+        """
+        Get copy of stdout and stderr.
+
+        Thread-safe: Creates snapshot.
+        """
+        with self._lock:
+            return {
+                "stdout": list(self.stdout),
+                "stderr": list(self.stderr)
+            }
 
 
 class BackgroundTaskManager:
     """
     Manages background tasks with process monitoring using psutil.
 
+    Thread-safety: All public methods are thread-safe. Internal state
+    is protected by self._lock.
+
     Features:
     - Start and monitor background processes
-    - Capture stdout/stderr
+    - Capture stdout/stderr with size limits
     - Process resource monitoring (CPU, memory)
-    - Graceful termination
+    - Graceful termination with timeout
     - Automatic cleanup
+    - Thread-safe concurrent access
     """
 
     def __init__(self, max_output_lines: int = 1000):
@@ -78,11 +138,11 @@ class BackgroundTaskManager:
         Args:
             max_output_lines: Maximum lines of output to keep per task
         """
-        self.tasks: Dict[int, BackgroundTask] = {}
-        self.max_output_lines = max_output_lines
+        self._tasks: Dict[int, BackgroundTask] = {}
+        self._max_output_lines = max_output_lines
         self._next_task_id = 0
-        self._lock = threading.Lock()
-        self._monitor_thread = None
+        self._lock = threading.RLock()  # Reentrant lock for nested access
+        self._monitor_thread: Optional[threading.Thread] = None
         self._monitoring = False
 
     def start(
@@ -94,6 +154,8 @@ class BackgroundTaskManager:
     ) -> int:
         """
         Start a background task.
+
+        Thread-safe: Can be called from multiple threads.
 
         Args:
             command: Command and arguments as list
@@ -107,14 +169,20 @@ class BackgroundTaskManager:
         Raises:
             RuntimeError: If task failed to start
         """
+        # Allocate task ID under lock
         with self._lock:
             task_id = self._next_task_id
             self._next_task_id += 1
 
-        task = BackgroundTask(task_id=task_id, command=command, metadata=metadata or {})
+        # Create task object
+        task = BackgroundTask(
+            task_id=task_id,
+            command=command,
+            metadata=metadata or {}
+        )
 
         try:
-            # Start process
+            # Start process (outside lock - I/O operation)
             process = subprocess.Popen(
                 command,
                 stdout=subprocess.PIPE,
@@ -125,59 +193,81 @@ class BackgroundTaskManager:
                 bufsize=1,
             )
 
-            task.process = process
-            task.status = TaskStatus.RUNNING
+            # Update task state under lock
+            with task._lock:
+                task.process = process
+                task.status = TaskStatus.RUNNING
 
+            # Register task under lock
             with self._lock:
-                self.tasks[task_id] = task
+                self._tasks[task_id] = task
 
             logger.info(
                 f"Started background task {task_id}: {' '.join(command)} (PID: {process.pid})"
             )
 
-            # Start monitoring if not already running
+            # Ensure monitoring is running
             self._ensure_monitoring()
 
             return task_id
 
         except Exception as e:
-            task.status = TaskStatus.FAILED
-            task.end_time = datetime.now()
+            with task._lock:
+                task.status = TaskStatus.FAILED
+                task.end_time = datetime.now()
             logger.error(f"Failed to start task {task_id}: {e}")
             raise RuntimeError(f"Failed to start task: {e}")
 
     def _ensure_monitoring(self) -> None:
-        """Ensure the monitoring thread is running."""
-        if not self._monitoring:
-            self._monitoring = True
-            self._monitor_thread = threading.Thread(
-                target=self._monitor_tasks, daemon=True
-            )
-            self._monitor_thread.start()
-            logger.debug("Started task monitoring thread")
+        """
+        Ensure the monitoring thread is running.
+
+        Thread-safe: Protected by manager lock.
+        """
+        with self._lock:
+            if not self._monitoring:
+                self._monitoring = True
+                self._monitor_thread = threading.Thread(
+                    target=self._monitor_tasks,
+                    daemon=True,
+                    name="BackgroundTaskMonitor"
+                )
+                self._monitor_thread.start()
+                logger.debug("Started task monitoring thread")
 
     def _monitor_tasks(self) -> None:
-        """Monitor running tasks and collect output."""
-        while self._monitoring:
-            tasks_to_check = list(self.tasks.values())
+        """
+        Monitor running tasks and collect output.
 
-            for task in tasks_to_check:
-                if task.status != TaskStatus.RUNNING or not task.process:
-                    continue
+        Runs in separate thread. Uses proper locking for all shared state access.
+        """
+        while self._monitoring:
+            # Get snapshot of tasks to check
+            with self._lock:
+                tasks_snapshot = list(self._tasks.values())
+
+            # Check each task (outside lock to avoid blocking)
+            for task in tasks_snapshot:
+                # Skip if not running
+                with task._lock:
+                    if task.status != TaskStatus.RUNNING or not task.process:
+                        continue
+                    process = task.process  # Capture reference
 
                 try:
                     # Check if process is still running
-                    poll_result = task.process.poll()
+                    poll_result = process.poll()
 
                     if poll_result is not None:
-                        # Process has ended
-                        task.status = (
-                            TaskStatus.COMPLETED
-                            if poll_result == 0
-                            else TaskStatus.FAILED
-                        )
-                        task.exit_code = poll_result
-                        task.end_time = datetime.now()
+                        # Process has ended - update state under lock
+                        with task._lock:
+                            task.status = (
+                                TaskStatus.COMPLETED
+                                if poll_result == 0
+                                else TaskStatus.FAILED
+                            )
+                            task.exit_code = poll_result
+                            task.end_time = datetime.now()
 
                         # Collect remaining output
                         self._collect_output(task)
@@ -192,44 +282,48 @@ class BackgroundTaskManager:
                 except Exception as e:
                     logger.error(f"Error monitoring task {task.task_id}: {e}")
 
+            # Sleep to avoid busy-waiting
             time.sleep(0.1)  # Check every 100ms
 
     def _collect_output(self, task: BackgroundTask) -> None:
-        """Collect output from a task."""
-        if not task.process:
-            return
+        """
+        Collect output from a task.
 
-        # Read stdout
+        Thread-safe: Uses task lock for output access.
+
+        Args:
+            task: Task to collect output from
+        """
+        with task._lock:
+            if not task.process:
+                return
+            process = task.process
+
+        # Read stdout (outside lock - I/O operation)
         try:
             while True:
-                line = task.process.stdout.readline()
+                line = process.stdout.readline()
                 if not line:
                     break
-                task.stdout.append(line.rstrip())
-
-                # Limit output size
-                if len(task.stdout) > self.max_output_lines:
-                    task.stdout.pop(0)
+                task.append_stdout(line.rstrip(), self._max_output_lines)
         except Exception:
-            pass
+            pass  # Process may have terminated
 
-        # Read stderr
+        # Read stderr (outside lock - I/O operation)
         try:
             while True:
-                line = task.process.stderr.readline()
+                line = process.stderr.readline()
                 if not line:
                     break
-                task.stderr.append(line.rstrip())
-
-                # Limit output size
-                if len(task.stderr) > self.max_output_lines:
-                    task.stderr.pop(0)
+                task.append_stderr(line.rstrip(), self._max_output_lines)
         except Exception:
-            pass
+            pass  # Process may have terminated
 
     def stop(self, task_id: int, timeout: float = 5.0) -> bool:
         """
         Stop a running task gracefully.
+
+        Thread-safe: Can be called from multiple threads.
 
         Args:
             task_id: Task ID to stop
@@ -238,35 +332,50 @@ class BackgroundTaskManager:
         Returns:
             True if task was stopped, False otherwise
         """
-        task = self.tasks.get(task_id)
-        if not task or task.status != TaskStatus.RUNNING:
-            return False
+        # Get task under lock
+        with self._lock:
+            task = self._tasks.get(task_id)
+            if not task:
+                return False
 
-        if not task.process:
-            return False
+        # Check status and get process under task lock
+        with task._lock:
+            if task.status != TaskStatus.RUNNING or not task.process:
+                return False
+            process = task.process
+            pid = process.pid
 
+        # Terminate outside locks (I/O operation)
         try:
-            # Try graceful termination first
-            logger.info(f"Terminating task {task_id} (PID: {task.process.pid})")
-            task.process.terminate()
+            logger.info(f"Terminating task {task_id} (PID: {pid})")
+            process.terminate()
 
             try:
-                task.process.wait(timeout=timeout)
-                task.status = TaskStatus.TERMINATED
-                task.end_time = datetime.now()
-                task.exit_code = task.process.returncode
+                process.wait(timeout=timeout)
+
+                # Update state under lock
+                with task._lock:
+                    task.status = TaskStatus.TERMINATED
+                    task.end_time = datetime.now()
+                    task.exit_code = process.returncode
+
                 logger.info(f"Task {task_id} terminated gracefully")
                 return True
+
             except subprocess.TimeoutExpired:
                 # Force kill
                 logger.warning(
                     f"Task {task_id} did not terminate gracefully, forcing kill"
                 )
-                task.process.kill()
-                task.process.wait()
-                task.status = TaskStatus.TERMINATED
-                task.end_time = datetime.now()
-                task.exit_code = task.process.returncode
+                process.kill()
+                process.wait()
+
+                # Update state under lock
+                with task._lock:
+                    task.status = TaskStatus.TERMINATED
+                    task.end_time = datetime.now()
+                    task.exit_code = process.returncode
+
                 return True
 
         except Exception as e:
@@ -277,30 +386,46 @@ class BackgroundTaskManager:
         """
         Get status of a task.
 
+        Thread-safe: Returns snapshot of status.
+
         Args:
             task_id: Task ID
 
         Returns:
             TaskStatus or None if not found
         """
-        task = self.tasks.get(task_id)
-        return task.status if task else None
+        with self._lock:
+            task = self._tasks.get(task_id)
+            if not task:
+                return None
 
-    def get_task(self, task_id: int) -> Optional[BackgroundTask]:
+        with task._lock:
+            return task.status
+
+    def get_task(self, task_id: int) -> Optional[Dict[str, Any]]:
         """
         Get a task by ID.
+
+        Thread-safe: Returns snapshot of task state.
 
         Args:
             task_id: Task ID
 
         Returns:
-            BackgroundTask or None if not found
+            Task dictionary or None if not found
         """
-        return self.tasks.get(task_id)
+        with self._lock:
+            task = self._tasks.get(task_id)
+            if not task:
+                return None
+
+        return task.to_dict()
 
     def get_output(self, task_id: int) -> Optional[Dict[str, List[str]]]:
         """
         Get stdout and stderr of a task.
+
+        Thread-safe: Returns snapshot of output.
 
         Args:
             task_id: Task ID
@@ -308,15 +433,18 @@ class BackgroundTaskManager:
         Returns:
             Dictionary with 'stdout' and 'stderr' keys, or None
         """
-        task = self.tasks.get(task_id)
-        if not task:
-            return None
+        with self._lock:
+            task = self._tasks.get(task_id)
+            if not task:
+                return None
 
-        return {"stdout": task.stdout.copy(), "stderr": task.stderr.copy()}
+        return task.get_output_copy()
 
     def get_resource_usage(self, task_id: int) -> Optional[Dict[str, Any]]:
         """
         Get resource usage of a running task using psutil.
+
+        Thread-safe: Safe to call concurrently.
 
         Args:
             task_id: Task ID
@@ -324,12 +452,20 @@ class BackgroundTaskManager:
         Returns:
             Dictionary with CPU and memory usage, or None
         """
-        task = self.tasks.get(task_id)
-        if not task or not task.process or task.status != TaskStatus.RUNNING:
-            return None
+        # Get task and process under lock
+        with self._lock:
+            task = self._tasks.get(task_id)
+            if not task:
+                return None
 
+        with task._lock:
+            if task.status != TaskStatus.RUNNING or not task.process:
+                return None
+            pid = task.process.pid
+
+        # Get resource usage outside lock (I/O operation)
         try:
-            process = psutil.Process(task.process.pid)
+            process = psutil.Process(pid)
 
             return {
                 "cpu_percent": process.cpu_percent(interval=0.1),
@@ -350,23 +486,31 @@ class BackgroundTaskManager:
         """
         List all tasks.
 
+        Thread-safe: Returns snapshot of tasks.
+
         Args:
             status_filter: Optional status to filter by
 
         Returns:
             List of task dictionaries
         """
-        tasks = []
+        # Get snapshot of tasks under lock
+        with self._lock:
+            tasks_snapshot = list(self._tasks.values())
 
-        for task in self.tasks.values():
+        # Build result list
+        result = []
+        for task in tasks_snapshot:
             if status_filter is None or task.status == status_filter:
-                tasks.append(task.to_dict())
+                result.append(task.to_dict())
 
-        return tasks
+        return result
 
     def cleanup_completed(self) -> int:
         """
         Remove completed tasks from memory.
+
+        Thread-safe: Safe to call concurrently.
 
         Returns:
             Number of tasks removed
@@ -374,20 +518,28 @@ class BackgroundTaskManager:
         with self._lock:
             tasks_to_remove = [
                 task_id
-                for task_id, task in self.tasks.items()
-                if task.status
-                in (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.TERMINATED)
+                for task_id, task in self._tasks.items()
+                if task.status in (
+                    TaskStatus.COMPLETED,
+                    TaskStatus.FAILED,
+                    TaskStatus.TERMINATED
+                )
             ]
 
             for task_id in tasks_to_remove:
-                del self.tasks[task_id]
+                del self._tasks[task_id]
 
-            logger.info(f"Cleaned up {len(tasks_to_remove)} completed tasks")
-            return len(tasks_to_remove)
+            count = len(tasks_to_remove)
+            if count > 0:
+                logger.info(f"Cleaned up {count} completed tasks")
+
+            return count
 
     def stop_all(self, timeout: float = 5.0) -> int:
         """
         Stop all running tasks.
+
+        Thread-safe: Safe to call concurrently.
 
         Args:
             timeout: Timeout for each task
@@ -395,27 +547,39 @@ class BackgroundTaskManager:
         Returns:
             Number of tasks stopped
         """
-        running_tasks = [
-            task_id
-            for task_id, task in self.tasks.items()
-            if task.status == TaskStatus.RUNNING
-        ]
+        # Get snapshot of running tasks
+        with self._lock:
+            running_tasks = [
+                task_id
+                for task_id, task in self._tasks.items()
+                if task.status == TaskStatus.RUNNING
+            ]
 
+        # Stop each task
         count = 0
         for task_id in running_tasks:
             if self.stop(task_id, timeout=timeout):
                 count += 1
 
-        logger.info(f"Stopped {count} running tasks")
+        if count > 0:
+            logger.info(f"Stopped {count} running tasks")
+
         return count
 
     def shutdown(self) -> None:
-        """Shutdown the task manager and stop all tasks."""
+        """
+        Shutdown the task manager and stop all tasks.
+
+        Thread-safe: Safe to call from any thread.
+        """
         logger.info("Shutting down BackgroundTaskManager")
 
-        # Stop monitoring
-        self._monitoring = False
-        if self._monitor_thread:
+        # Stop monitoring thread
+        with self._lock:
+            self._monitoring = False
+
+        # Wait for monitor thread
+        if self._monitor_thread and self._monitor_thread.is_alive():
             self._monitor_thread.join(timeout=2.0)
 
         # Stop all tasks

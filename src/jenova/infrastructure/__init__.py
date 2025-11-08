@@ -35,6 +35,16 @@ from jenova.infrastructure.data_validator import (
 )
 from jenova.infrastructure.file_manager import FileManager
 from jenova.infrastructure.metrics_collector import MetricsCollector, MetricStats
+from jenova.infrastructure.circuit_breaker import (
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    CircuitBreakerError,
+    CircuitBreakerMetrics,
+    CircuitBreakerRegistry,
+    CircuitState,
+    circuit_breaker,
+    get_registry,
+)
 
 __all__ = [
     # Error handling
@@ -69,4 +79,13 @@ __all__ = [
     # Metrics
     "MetricsCollector",
     "MetricStats",
+    # Circuit Breaker (Phase 20)
+    "CircuitBreaker",
+    "CircuitBreakerConfig",
+    "CircuitBreakerError",
+    "CircuitBreakerMetrics",
+    "CircuitBreakerRegistry",
+    "CircuitState",
+    "circuit_breaker",
+    "get_registry",
 ]

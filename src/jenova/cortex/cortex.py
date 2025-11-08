@@ -4,17 +4,34 @@
 # The JENOVA Cognitive Architecture is licensed under the MIT License.
 # A copy of the license can be found in the LICENSE file in the root directory of this source tree.
 
+"""
+Cortex - Cognitive Graph Management for JENOVA.
+
+Phase 20 Enhancements:
+- Fixed JSON DoS vulnerabilities using safe JSON parser
+- Added None checks on graph operations
+- Enhanced error handling with specific exceptions
+- Type hints added for critical methods
+"""
+
 import json
 import os
 import uuid
 from dataclasses import asdict
 from datetime import datetime
-from typing import List, Dict, Set, Tuple
+from typing import List, Dict, Set, Tuple, Optional
 from collections import defaultdict
 
 import networkx as nx
 
 from jenova.cortex.graph_components import CognitiveLink, CognitiveNode
+from jenova.utils.json_parser import (
+    load_json_safe,
+    save_json_safe,
+    parse_json_safe,
+    JSONParseError,
+    JSONSecurityError
+)
 
 
 class Cortex:
@@ -40,39 +57,111 @@ class Cortex:
         )
         self.processed_docs = self._load_processed_docs()
 
-    def _load_graph(self):
-        """Loads the cognitive graph from a file."""
+    def _load_graph(self) -> Dict:
+        """
+        Loads the cognitive graph from a file.
+
+        Phase 20: Uses safe JSON loading with size limits to prevent DoS attacks.
+
+        Returns:
+            Dictionary with 'nodes' and 'links' keys
+        """
         if os.path.exists(self.graph_file):
             try:
-                with open(self.graph_file, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    nodes = {
-                        node_id: CognitiveNode(**node_data)
-                        for node_id, node_data in data.get("nodes", {}).items()
-                    }
-                    links = [
-                        CognitiveLink(**link_data)
-                        for link_data in data.get("links", [])
-                    ]
-                    return {"nodes": nodes, "links": links}
-            except (json.JSONDecodeError, TypeError) as e:
+                # Use safe JSON loader with 50MB limit for graph files
+                data = load_json_safe(
+                    self.graph_file,
+                    max_size=50 * 1024 * 1024  # 50MB limit for cognitive graphs
+                )
+
+                # Validate data structure
+                if not isinstance(data, dict):
+                    raise TypeError("Graph file must contain a JSON object")
+
+                nodes = {}
+                for node_id, node_data in data.get("nodes", {}).items():
+                    if not isinstance(node_data, dict):
+                        self.file_logger.log_warning(
+                            f"Skipping invalid node data for {node_id}"
+                        )
+                        continue
+                    try:
+                        nodes[node_id] = CognitiveNode(**node_data)
+                    except (TypeError, ValueError) as e:
+                        self.file_logger.log_warning(
+                            f"Skipping invalid node {node_id}: {e}"
+                        )
+
+                links = []
+                for link_data in data.get("links", []):
+                    if not isinstance(link_data, dict):
+                        continue
+                    try:
+                        links.append(CognitiveLink(**link_data))
+                    except (TypeError, ValueError) as e:
+                        self.file_logger.log_warning(
+                            f"Skipping invalid link: {e}"
+                        )
+
+                return {"nodes": nodes, "links": links}
+
+            except (JSONParseError, JSONSecurityError) as e:
+                self.file_logger.log_error(
+                    f"Security error loading cognitive graph: {e}. Creating a new one."
+                )
+                return {"nodes": {}, "links": []}
+            except (TypeError, KeyError) as e:
                 self.file_logger.log_error(
                     f"Error loading cognitive graph: {e}. Creating a new one."
                 )
                 return {"nodes": {}, "links": []}
+
         return {"nodes": {}, "links": []}
 
-    def _save_graph(self):
-        """Saves the cognitive graph to a file."""
-        with open(self.graph_file, "w", encoding="utf-8") as f:
+    def _save_graph(self) -> None:
+        """
+        Saves the cognitive graph to a file.
+
+        Phase 20: Uses safe JSON saving with size validation.
+
+        Raises:
+            JSONSecurityError: If serialized graph exceeds size limit
+        """
+        try:
+            # Safely access graph with None check
+            if self.graph is None:
+                self.file_logger.log_error("Cannot save: graph is None")
+                return
+
             data = {
                 "nodes": {
                     node_id: asdict(node)
-                    for node_id, node in self.graph["nodes"].items()
+                    for node_id, node in self.graph.get("nodes", {}).items()
+                    if node is not None
                 },
-                "links": [asdict(link) for link in self.graph["links"]],
+                "links": [
+                    asdict(link)
+                    for link in self.graph.get("links", [])
+                    if link is not None
+                ],
             }
-            json.dump(data, f, indent=4)
+
+            # Use safe JSON saver with 50MB limit
+            save_json_safe(
+                data,
+                self.graph_file,
+                indent=4,
+                max_size=50 * 1024 * 1024  # 50MB limit
+            )
+
+        except JSONSecurityError as e:
+            self.file_logger.log_error(
+                f"Graph too large to save: {e}. Consider pruning old nodes."
+            )
+            raise
+        except Exception as e:
+            self.file_logger.log_error(f"Error saving cognitive graph: {e}")
+            raise
 
     def add_node(
         self,
@@ -92,17 +181,29 @@ Text: "{content[:500]}" # Truncate for performance
 JSON:"""
         emotion_str = self.llm.generate(prompt=emotion_prompt, temperature=0.2)
         try:
+            # Use safe JSON parsing with size limit (Phase 20)
             emotion_str_clean = emotion_str.strip()
             if "{" in emotion_str_clean:
                 json_start = emotion_str_clean.index("{")
                 json_end = emotion_str_clean.rindex("}") + 1
                 emotion_str_clean = emotion_str_clean[json_start:json_end]
-            emotions = json.loads(emotion_str_clean)
-        except (json.JSONDecodeError, ValueError):
+
+            # Parse with safety limits (max 1KB for emotion JSON)
+            emotions = parse_json_safe(
+                emotion_str_clean,
+                max_size=1024,  # 1KB limit for emotion JSON
+                max_depth=10
+            )
+
+            # Validate structure
+            if not isinstance(emotions, dict):
+                emotions = {}
+
+        except (JSONParseError, JSONSecurityError, ValueError):
             emotions = {}
             if self.file_logger:
                 self.file_logger.log_warning(
-                    f"Failed to decode emotion JSON: {emotion_str}"
+                    f"Failed to decode emotion JSON: {emotion_str[:100]}"
                 )
 
         new_node_metadata = {"emotions": emotions, "centrality": 0}
@@ -117,6 +218,11 @@ JSON:"""
             metadata=new_node_metadata,
         )
 
+        # Phase 20: Add None checks before graph access
+        if self.graph is None or "nodes" not in self.graph:
+            self.file_logger.log_error("Cannot add node: graph not initialized")
+            return node_id
+
         self.graph["nodes"][node_id] = new_node
 
         if linked_to:
@@ -129,22 +235,66 @@ JSON:"""
             self.ui_logger.info(f"New {node_type} node created: {node_id}")
         return node_id
 
-    def add_link(self, source_id: str, target_id: str, relationship: str):
-        """Adds a directed link between two nodes in the graph."""
+    def add_link(self, source_id: str, target_id: str, relationship: str) -> None:
+        """
+        Adds a directed link between two nodes in the graph.
+
+        Phase 20: Added None checks and type hints.
+
+        Args:
+            source_id: Source node ID
+            target_id: Target node ID
+            relationship: Relationship type
+        """
+        # Phase 20: Add None checks
+        if self.graph is None or "links" not in self.graph:
+            self.file_logger.log_error("Cannot add link: graph not initialized")
+            return
+
         new_link = CognitiveLink(
             source_id=source_id, target_id=target_id, relationship=relationship
         )
         self.graph["links"].append(new_link)
         self._save_graph()
 
-    def get_node(self, node_id: str) -> CognitiveNode | None:
+    def get_node(self, node_id: str) -> Optional[CognitiveNode]:
+        """
+        Get a node by ID.
+
+        Phase 20: Added None checks and type hints.
+
+        Args:
+            node_id: Node ID to retrieve
+
+        Returns:
+            CognitiveNode if found, None otherwise
+        """
+        if self.graph is None or "nodes" not in self.graph:
+            return None
         return self.graph["nodes"].get(node_id)
 
     def get_all_nodes_by_type(
-        self, node_type: str, user: str = None
-    ) -> list[CognitiveNode]:
+        self, node_type: str, user: Optional[str] = None
+    ) -> List[CognitiveNode]:
+        """
+        Get all nodes of a specific type.
+
+        Phase 20: Added None checks and type hints.
+
+        Args:
+            node_type: Type of nodes to retrieve
+            user: Optional user filter
+
+        Returns:
+            List of matching nodes
+        """
+        if self.graph is None or "nodes" not in self.graph:
+            return []
+
         nodes = []
         for node in self.graph["nodes"].values():
+            if node is None:
+                continue
             if node.node_type == node_type:
                 if user and node.user == user:
                     nodes.append(node)
@@ -152,7 +302,22 @@ JSON:"""
                     nodes.append(node)
         return nodes
 
-    def update_node(self, node_id: str, content: str = None, linked_to: list = None):
+    def update_node(
+        self,
+        node_id: str,
+        content: Optional[str] = None,
+        linked_to: Optional[list] = None
+    ) -> None:
+        """
+        Update a node's content and/or links.
+
+        Phase 20: Added None checks and type hints.
+
+        Args:
+            node_id: ID of node to update
+            content: New content (optional)
+            linked_to: New links (optional)
+        """
         node = self.get_node(node_id)
         if not node:
             return
@@ -162,15 +327,22 @@ JSON:"""
             node.timestamp = datetime.now().isoformat()
 
         if linked_to:
+            # Phase 20: Add None check before accessing links
+            if self.graph is None or "links" not in self.graph or "nodes" not in self.graph:
+                self.file_logger.log_error("Cannot update links: graph not initialized")
+                return
+
             self.graph["links"] = [
-                link for link in self.graph["links"] if link.source_id != node_id
+                link for link in self.graph["links"]
+                if link is not None and link.source_id != node_id
             ]
             for target_id in linked_to:
                 if target_id in self.graph["nodes"]:
                     self.add_link(node_id, target_id, "related_to")
 
         self._save_graph()
-        self.ui_logger.info(f"Node {node_id} updated.")
+        if self.ui_logger:
+            self.ui_logger.info(f"Node {node_id} updated.")
 
     def reflect(self, user: str) -> list[str]:
         messages = [f"Initiating deep reflection for user '{user}'..."]
