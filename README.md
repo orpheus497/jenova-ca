@@ -220,9 +220,14 @@ JENOVA uses a local virtualenv-based installation that keeps dependencies isolat
 
 ### 4.1. Prerequisites
 
-*   A Linux-based operating system (tested on Fedora)
-*   `git`, `python3`, and `python3-venv` installed
-*   For GPU acceleration: NVIDIA GPU with CUDA toolkit installed
+**Platform Support:** Unix-only systems
+*   **Linux** (desktop/server) - Tested on Fedora, Ubuntu, Debian, Arch
+*   **macOS** - Intel and Apple Silicon (M1/M2/M3/M4)
+*   **Termux** - Android smartphones/tablets and iOS (via Termux/iSH)
+
+**System Requirements:**
+*   `git`, `python3` (3.10+), and `python3-venv` installed
+*   For GPU acceleration: NVIDIA GPU with CUDA toolkit installed (Linux only)
 
 ### 4.2. Installation Steps
 
@@ -233,15 +238,24 @@ JENOVA uses a local virtualenv-based installation that keeps dependencies isolat
     ```
 
 2.  **Run the Installation Script:**
+
+    **For Linux/macOS:**
     Execute the script as a regular user (no sudo required). It creates a Python virtualenv and installs all dependencies:
     ```bash
     ./install.sh
     ```
-    
-    The script will:
-    - Create a virtualenv in `./venv/`
+
+    **For Termux (Android/iOS):**
+    Use the Termux-specific installation script:
+    ```bash
+    chmod +x install-termux.sh
+    ./install-termux.sh
+    ```
+
+    The installation script will:
+    - Create a virtualenv in `./venv/` (Linux/macOS) or install globally (Termux)
     - Install Python dependencies
-    - Build llama-cpp-python (with CUDA if GPU detected)
+    - Build llama-cpp-python (with CUDA if GPU detected on Linux)
     - Create the `models/` directory
     - Display instructions for next steps
 
@@ -296,15 +310,15 @@ JENOVA's configuration is in `src/jenova/config/main_config.yaml`. Key settings:
 
 ### 4.4. Hardware Detection and GPU Acceleration
 
-JENOVA includes comprehensive hardware detection supporting multiple GPU types and platforms:
+JENOVA includes comprehensive hardware detection supporting multiple GPU types on Unix platforms:
 
-**Supported Hardware:**
-- **NVIDIA GPUs** (GeForce, RTX, Quadro) via CUDA
-- **Intel GPUs** (Iris Xe, UHD, Arc) via OpenCL/Vulkan
-- **AMD GPUs and APUs** (Radeon, Ryzen with graphics) via OpenCL/ROCm
-- **Apple Silicon** (M1/M2/M3/M4) via Metal
-- **ARM CPUs** (including Android/Termux support)
-- **Multi-GPU systems** (automatic detection and prioritization)
+**Supported Hardware (Unix-only):**
+- **NVIDIA GPUs** (GeForce, RTX, Quadro) via CUDA on Linux
+- **Intel GPUs** (Iris Xe, UHD, Arc) via OpenCL/Vulkan on Linux/macOS
+- **AMD GPUs and APUs** (Radeon, Ryzen with graphics) via OpenCL/ROCm on Linux
+- **Apple Silicon** (M1/M2/M3/M4) via Metal on macOS
+- **ARM CPUs** (Android/iOS via Termux - CPU-only)
+- **Multi-GPU systems** (automatic detection and prioritization on Linux/macOS)
 
 The system automatically detects available hardware and configures optimal settings for your specific hardware tier.
 

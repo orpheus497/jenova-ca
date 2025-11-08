@@ -2,20 +2,45 @@
 # JENOVA AI Local Installation Script
 # This script creates a Python virtualenv and installs JENOVA AI locally.
 # Run without sudo/root privileges.
+#
+# Platform: Linux (desktop/server) and macOS
+# For Termux (Android/iOS): Use install-termux.sh
 
 set -euo pipefail
-
-echo "======================================================================"
-echo "        JENOVA AI - Local Installation (Virtualenv)"
-echo "======================================================================"
-echo
 
 # Color codes for better readability
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
+
+# Detect Termux environment and redirect
+if [ -n "${TERMUX_VERSION:-}" ] || [ -d "${PREFIX:-}" ] || command -v pkg &> /dev/null 2>&1; then
+    echo "======================================================================"
+    echo -e "${YELLOW}   ⚠  Termux Environment Detected${NC}"
+    echo "======================================================================"
+    echo
+    echo -e "${BLUE}This installation script is for Linux desktop/server and macOS.${NC}"
+    echo -e "${GREEN}For Termux (Android/iOS), please use the Termux-specific installer:${NC}"
+    echo
+    echo -e "${CYAN}  chmod +x install-termux.sh${NC}"
+    echo -e "${CYAN}  ./install-termux.sh${NC}"
+    echo
+    echo -e "${YELLOW}The Termux installer includes:${NC}"
+    echo "  • ARM-specific llama-cpp-python compilation"
+    echo "  • pkg package manager integration"
+    echo "  • Mobile-optimized model recommendations"
+    echo "  • Termux storage setup"
+    echo
+    exit 1
+fi
+
+echo "======================================================================"
+echo "        JENOVA AI - Local Installation (Virtualenv)"
+echo "======================================================================"
+echo
 
 # Helper functions
 print_error() {
