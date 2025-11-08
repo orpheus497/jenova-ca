@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class HookTiming(Enum):
     """When a hook should be executed."""
+
     PRE = "pre"
     POST = "post"
     ON_ERROR = "on_error"
@@ -47,7 +48,7 @@ class HookResult:
             "result": str(self.result) if self.result is not None else None,
             "error": str(self.error) if self.error else None,
             "execution_time": self.execution_time,
-            "timestamp": self.timestamp.isoformat()
+            "timestamp": self.timestamp.isoformat(),
         }
 
 
@@ -89,11 +90,7 @@ class HooksSystem:
             history_limit: Maximum number of history entries to keep
         """
         self.hooks: Dict[str, Dict[HookTiming, List[Hook]]] = defaultdict(
-            lambda: {
-                HookTiming.PRE: [],
-                HookTiming.POST: [],
-                HookTiming.ON_ERROR: []
-            }
+            lambda: {HookTiming.PRE: [], HookTiming.POST: [], HookTiming.ON_ERROR: []}
         )
         self.enable_history = enable_history
         self.history_limit = history_limit
@@ -106,7 +103,7 @@ class HooksSystem:
         callback: Callable,
         timing: HookTiming = HookTiming.POST,
         priority: int = 0,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Register a hook for an event.
@@ -130,7 +127,7 @@ class HooksSystem:
             timing=timing,
             callback=callback,
             priority=priority,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         # Add to appropriate list and sort by priority
@@ -164,7 +161,7 @@ class HooksSystem:
         event: str,
         timing: HookTiming = HookTiming.POST,
         context: Optional[Dict[str, Any]] = None,
-        stop_on_error: bool = False
+        stop_on_error: bool = False,
     ) -> List[HookResult]:
         """
         Trigger hooks for an event.
@@ -199,7 +196,9 @@ class HooksSystem:
             results.append(result)
 
             if not result.success and stop_on_error:
-                logger.warning(f"Stopping hook execution due to error in {hook.hook_id}")
+                logger.warning(
+                    f"Stopping hook execution due to error in {hook.hook_id}"
+                )
                 break
 
         # Add to history
@@ -224,10 +223,7 @@ class HooksSystem:
 
         start_time = time.time()
         result = HookResult(
-            hook_id=hook.hook_id,
-            event=hook.event,
-            timing=hook.timing,
-            success=False
+            hook_id=hook.hook_id, event=hook.event, timing=hook.timing, success=False
         )
 
         try:
@@ -286,9 +282,7 @@ class HooksSystem:
         return False
 
     def list_hooks(
-        self,
-        event: Optional[str] = None,
-        timing: Optional[HookTiming] = None
+        self, event: Optional[str] = None, timing: Optional[HookTiming] = None
     ) -> List[Dict[str, Any]]:
         """
         List registered hooks.
@@ -312,14 +306,16 @@ class HooksSystem:
 
             for tm in timings_to_check:
                 for hook in self.hooks[evt].get(tm, []):
-                    hooks_list.append({
-                        "hook_id": hook.hook_id,
-                        "event": hook.event,
-                        "timing": hook.timing.value,
-                        "priority": hook.priority,
-                        "enabled": hook.enabled,
-                        "metadata": hook.metadata
-                    })
+                    hooks_list.append(
+                        {
+                            "hook_id": hook.hook_id,
+                            "event": hook.event,
+                            "timing": hook.timing.value,
+                            "priority": hook.priority,
+                            "enabled": hook.enabled,
+                            "metadata": hook.metadata,
+                        }
+                    )
 
         return hooks_list
 
@@ -343,7 +339,7 @@ class HooksSystem:
                             "timing": hook.timing.value,
                             "priority": hook.priority,
                             "enabled": hook.enabled,
-                            "metadata": hook.metadata
+                            "metadata": hook.metadata,
                         }
         return None
 
@@ -384,9 +380,7 @@ class HooksSystem:
         return count
 
     def get_history(
-        self,
-        event: Optional[str] = None,
-        limit: Optional[int] = None
+        self, event: Optional[str] = None, limit: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """
         Get execution history.
@@ -416,7 +410,7 @@ class HooksSystem:
     def _trim_history(self) -> None:
         """Trim history to limit."""
         if len(self.execution_history) > self.history_limit:
-            self.execution_history = self.execution_history[-self.history_limit:]
+            self.execution_history = self.execution_history[-self.history_limit :]
 
     def get_statistics(self) -> Dict[str, Any]:
         """
@@ -451,5 +445,9 @@ class HooksSystem:
             "total_executions": total_executions,
             "successful_executions": successful_executions,
             "failed_executions": failed_executions,
-            "success_rate": (successful_executions / total_executions * 100) if total_executions > 0 else 0
+            "success_rate": (
+                (successful_executions / total_executions * 100)
+                if total_executions > 0
+                else 0
+            ),
         }

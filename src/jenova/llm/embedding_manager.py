@@ -21,6 +21,7 @@ from jenova.infrastructure.timeout_manager import timeout, TimeoutError
 
 class EmbeddingLoadError(Exception):
     """Raised when embedding model loading fails."""
+
     pass
 
 
@@ -52,12 +53,12 @@ class EmbeddingManager:
             Model name/path for sentence-transformers
         """
         # Check if user specified a model
-        embedding_config = self.config.get('embedding', {})
-        if 'model_name' in embedding_config:
-            return embedding_config['model_name']
+        embedding_config = self.config.get("embedding", {})
+        if "model_name" in embedding_config:
+            return embedding_config["model_name"]
 
         # Default to a reliable, lightweight model
-        return 'all-MiniLM-L6-v2'  # 384 dimensions, 80MB, fast
+        return "all-MiniLM-L6-v2"  # 384 dimensions, 80MB, fast
 
     def determine_device(self) -> str:
         """
@@ -72,7 +73,7 @@ class EmbeddingManager:
         """
         # ALWAYS use CPU for embeddings to preserve GPU memory for main LLM
         # This is documented in main_config.yaml and is intentional
-        return 'cpu'
+        return "cpu"
 
         # Original logic kept for reference but disabled:
         # hardware_config = self.config.get('hardware', {})
@@ -93,12 +94,13 @@ class EmbeddingManager:
         # Check for Apple Silicon
         try:
             import torch
+
             if torch.backends.mps.is_available():
-                return 'mps'
+                return "mps"
         except (ImportError, AttributeError):
             pass
 
-        return 'cpu'
+        return "cpu"
 
     def load_model(self):
         """
@@ -130,12 +132,16 @@ class EmbeddingManager:
             self._device = device
 
             if self.ui_logger:
-                self.ui_logger.info(f"Loading embedding model: {model_name} on {device}...")
+                self.ui_logger.info(
+                    f"Loading embedding model: {model_name} on {device}..."
+                )
 
             # Load with timeout (2 minutes for first download)
             try:
                 with timeout(120, "Embedding model loading timed out"):
-                    self.embedding_model = SentenceTransformer(model_name, device=device)
+                    self.embedding_model = SentenceTransformer(
+                        model_name, device=device
+                    )
             except TimeoutError as e:
                 raise EmbeddingLoadError(
                     f"{e}\n\n"
@@ -179,7 +185,9 @@ class EmbeddingManager:
             ValueError: If texts is empty
         """
         if self.embedding_model is None:
-            raise EmbeddingLoadError("Embedding model not loaded. Call load_model() first.")
+            raise EmbeddingLoadError(
+                "Embedding model not loaded. Call load_model() first."
+            )
 
         if not texts:
             raise ValueError("Cannot embed empty text list")
@@ -188,14 +196,14 @@ class EmbeddingManager:
             # Generate embeddings with timeout (30s per batch)
             embeddings = []
             for i in range(0, len(texts), batch_size):
-                batch = texts[i:i + batch_size]
+                batch = texts[i : i + batch_size]
 
                 try:
-                    with timeout(30, f"Embedding batch {i // batch_size + 1} timed out"):
+                    with timeout(
+                        30, f"Embedding batch {i // batch_size + 1} timed out"
+                    ):
                         batch_embeddings = self.embedding_model.encode(
-                            batch,
-                            convert_to_numpy=True,
-                            show_progress_bar=False
+                            batch, convert_to_numpy=True, show_progress_bar=False
                         )
                         embeddings.extend(batch_embeddings.tolist())
                 except TimeoutError:
@@ -249,7 +257,9 @@ class EmbeddingManager:
 
         return self.embedding_model.get_sentence_embedding_dimension()
 
-    def compute_similarity(self, embedding1: List[float], embedding2: List[float]) -> float:
+    def compute_similarity(
+        self, embedding1: List[float], embedding2: List[float]
+    ) -> float:
         """
         Compute cosine similarity between two embeddings.
 
@@ -286,12 +296,14 @@ class EmbeddingManager:
 
                 # Force garbage collection
                 import gc
+
                 gc.collect()
 
                 # Clear CUDA cache if used
-                if self._device == 'cuda':
+                if self._device == "cuda":
                     try:
                         import torch
+
                         torch.cuda.empty_cache()
                     except Exception as e:
                         # Unable to clear CUDA cache, not critical
@@ -314,7 +326,7 @@ class EmbeddingManager:
             "status": "loaded",
             "model_name": self._model_name,
             "device": self._device,
-            "dimension": self.get_embedding_dimension() if self.is_loaded() else None
+            "dimension": self.get_embedding_dimension() if self.is_loaded() else None,
         }
 
     def __del__(self):

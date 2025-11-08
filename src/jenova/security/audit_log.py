@@ -23,6 +23,7 @@ from pathlib import Path
 
 try:
     import structlog
+
     HAS_STRUCTLOG = True
 except ImportError:
     HAS_STRUCTLOG = False
@@ -30,6 +31,7 @@ except ImportError:
 
 class SecurityEventType(Enum):
     """Types of security events."""
+
     # Authentication
     AUTH_SUCCESS = "auth_success"
     AUTH_FAILURE = "auth_failure"
@@ -131,9 +133,7 @@ class AuditLogger:
         # Set up file handler if specified
         if self.log_file:
             handler = logging.FileHandler(self.log_file)
-            handler.setFormatter(
-                logging.Formatter('%(asctime)s - %(message)s')
-            )
+            handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s"))
             if not self.use_structlog:
                 self.logger.addHandler(handler)
 
@@ -151,7 +151,7 @@ class AuditLogger:
                 "security_event",
                 event_type=event.event_type.value,
                 username=event.username,
-                **event.details
+                **event.details,
             )
         else:
             # JSON logging for standard logger
@@ -170,10 +170,7 @@ class AuditLogger:
         self.log_event(event)
 
     def log_auth_failure(
-        self,
-        username: str,
-        reason: str,
-        ip_address: Optional[str] = None
+        self, username: str, reason: str, ip_address: Optional[str] = None
     ) -> None:
         """Log failed authentication attempt."""
         event = SecurityEvent(
@@ -274,10 +271,11 @@ class AuditLogger:
         new_value: Any,
     ) -> None:
         """Log configuration change."""
+
         # Sanitize sensitive values
         def sanitize(value):
             if isinstance(value, str) and any(
-                k in setting.lower() for k in ['password', 'secret', 'token', 'key']
+                k in setting.lower() for k in ["password", "secret", "token", "key"]
             ):
                 return "***REDACTED***"
             return value

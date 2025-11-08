@@ -17,6 +17,12 @@ from jenova.analysis.security_scanner import SecurityScanner
 from jenova.analysis.intent_classifier import IntentClassifier
 from jenova.analysis.command_disambiguator import CommandDisambiguator
 
-__all__ = ['ContextOptimizer', 'CodeMetrics', 'SecurityScanner', 'IntentClassifier', 'CommandDisambiguator']
+__all__ = [
+    "ContextOptimizer",
+    "CodeMetrics",
+    "SecurityScanner",
+    "IntentClassifier",
+    "CommandDisambiguator",
+]
 
-__version__ = '5.2.0'
+__version__ = "5.2.0"

@@ -4,8 +4,7 @@
 # The JENOVA Cognitive Architecture is licensed under the MIT License.
 # A copy of the license can be found in the LICENSE file in the root directory of this source tree.
 
-"""This module is responsible for managing the episodic memory of the JENOVA Cognitive Architecture.
-"""
+"""This module is responsible for managing the episodic memory of the JENOVA Cognitive Architecture."""
 
 import json
 import os
@@ -30,78 +29,94 @@ class EpisodicMemory:
 
         client = chromadb.PersistentClient(path=self.db_path)
         self.embedding_function = CustomEmbeddingFunction(
-            model=embedding_model, model_name=config['model']['embedding_model'])
+            model=embedding_model, model_name=config["model"]["embedding_model"]
+        )
 
         try:
             self.collection = client.get_or_create_collection(
-                name="episodic_episodes", embedding_function=self.embedding_function)
+                name="episodic_episodes", embedding_function=self.embedding_function
+            )
         except ValueError as e:
             if "Embedding function conflict" in str(e):
                 if self.ui_logger:
                     self.ui_logger.system_message(
-                        "Embedding function conflict detected in episodic memory. Recreating collection and migrating data...")
+                        "Embedding function conflict detected in episodic memory. Recreating collection and migrating data..."
+                    )
                 if self.file_logger:
                     self.file_logger.log_warning(
-                        "Embedding function conflict detected. Recreating collection 'episodic_episodes' and migrating data.")
+                        "Embedding function conflict detected. Recreating collection 'episodic_episodes' and migrating data."
+                    )
 
                 try:
-                    old_collection = client.get_collection(
-                        name="episodic_episodes")
-                    data = old_collection.get(
-                        include=["documents", "metadatas"])
+                    old_collection = client.get_collection(name="episodic_episodes")
+                    data = old_collection.get(include=["documents", "metadatas"])
 
                     client.delete_collection(name="episodic_episodes")
                     self.collection = client.get_or_create_collection(
-                        name="episodic_episodes", embedding_function=self.embedding_function)
+                        name="episodic_episodes",
+                        embedding_function=self.embedding_function,
+                    )
 
-                    if data['ids']:
+                    if data["ids"]:
                         self.collection.add(
-                            ids=data['ids'],
-                            documents=data['documents'],
-                            metadatas=data['metadatas']
+                            ids=data["ids"],
+                            documents=data["documents"],
+                            metadatas=data["metadatas"],
                         )
                     if self.ui_logger:
                         self.ui_logger.system_message(
-                            "Episodic memory data migration successful.")
+                            "Episodic memory data migration successful."
+                        )
                     if self.file_logger:
                         self.file_logger.log_info(
-                            "Episodic memory data migration to new collection successful.")
+                            "Episodic memory data migration to new collection successful."
+                        )
 
                 except Exception as migration_error:
                     if self.file_logger:
                         self.file_logger.log_error(
-                            f"Error during episodic memory data migration: {migration_error}")
+                            f"Error during episodic memory data migration: {migration_error}"
+                        )
                     if self.ui_logger:
                         self.ui_logger.system_message(
-                            "Warning: Failed to migrate episodic memory data during collection recreation.")
+                            "Warning: Failed to migrate episodic memory data during collection recreation."
+                        )
 
             else:
                 raise e
 
-    def add_episode(self, summary: str, username: str, entities: list = None, emotion: str = None, timestamp: str = None):
+    def add_episode(
+        self,
+        summary: str,
+        username: str,
+        entities: list = None,
+        emotion: str = None,
+        timestamp: str = None,
+    ):
         if not timestamp:
             timestamp = datetime.now().isoformat()
 
         if not entities or not emotion:
-            prompt = f'''Analyze the following summary and extract the key entities (people, places, things) and the primary emotion. Respond with a JSON object containing "entities" (a list of strings) and "emotion" (a single string).
+            prompt = f"""Analyze the following summary and extract the key entities (people, places, things) and the primary emotion. Respond with a JSON object containing "entities" (a list of strings) and "emotion" (a single string).
 
 Ensure your response is a single, valid JSON object and nothing else.
 
 Summary: "{summary}"
 
-JSON Response:'''
+JSON Response:"""
             try:
                 response_str = self.llm.generate(prompt, temperature=0.2)
                 response_data = extract_json(response_str)
-                entities = response_data.get('entities', [])
-                emotion = response_data.get('emotion')
+                entities = response_data.get("entities", [])
+                emotion = response_data.get("emotion")
             except (json.JSONDecodeError, KeyError, ValueError):
                 entities = None
                 emotion = None
             except Exception as e:
                 if self.file_logger:
                     self.file_logger.log_error(
-                        f"Error during episode metadata extraction: {e}")
+                        f"Error during episode metadata extraction: {e}"
+                    )
                 entities = None
                 emotion = None
 
@@ -110,31 +125,31 @@ JSON Response:'''
             # ChromaDB metadata values must be strings, numbers, or booleans
             "entities": json.dumps(entities),
             "emotion": emotion,
-            "timestamp": timestamp
+            "timestamp": timestamp,
         }
 
         # Sanitize metadata to remove None values before passing to ChromaDB
         metadata = sanitize_metadata(metadata)
 
         doc_id = f"ep_{uuid.uuid4()}"
-        self.collection.add(ids=[doc_id], documents=[
-                            summary], metadatas=[metadata])
+        self.collection.add(ids=[doc_id], documents=[summary], metadatas=[metadata])
         if self.file_logger:
-            self.file_logger.log_info(
-                f"Added episode {doc_id} to episodic memory.")
+            self.file_logger.log_info(f"Added episode {doc_id} to episodic memory.")
 
-    def recall_relevant_episodes(self, query: str, username: str, n_results: int = 3) -> list[tuple[str, float]]:
+    def recall_relevant_episodes(
+        self, query: str, username: str, n_results: int = 3
+    ) -> list[tuple[str, float]]:
         if self.collection.count() == 0:
             return []
         n_results = min(n_results, self.collection.count())
         try:
             results = self.collection.query(
-                query_texts=[query], n_results=n_results, where={"username": username})
-            if not results['documents']:
+                query_texts=[query], n_results=n_results, where={"username": username}
+            )
+            if not results["documents"]:
                 return []
-            return list(zip(results['documents'][0], results['distances'][0]))
+            return list(zip(results["documents"][0], results["distances"][0]))
         except Exception as e:
             if self.file_logger:
-                self.file_logger.log_error(
-                    f"Error during episodic memory recall: {e}")
+                self.file_logger.log_error(f"Error during episodic memory recall: {e}")
             return []

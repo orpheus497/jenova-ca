@@ -20,12 +20,12 @@ from jenova.ui.logger import UILogger
 from jenova.ui.terminal import TerminalUI
 from jenova.ui.health_display import HealthDisplay, CompactHealthDisplay
 
-__version__ = '4.2.0'
-__phase__ = 'Phase 6: UI and Main Entry Enhancements'
+__version__ = "4.2.0"
+__phase__ = "Phase 6: UI and Main Entry Enhancements"
 
 __all__ = [
-    'UILogger',
-    'TerminalUI',
-    'HealthDisplay',
-    'CompactHealthDisplay',
+    "UILogger",
+    "TerminalUI",
+    "HealthDisplay",
+    "CompactHealthDisplay",
 ]

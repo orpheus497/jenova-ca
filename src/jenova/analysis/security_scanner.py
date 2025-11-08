@@ -19,6 +19,7 @@ try:
     import bandit
     from bandit.core import manager as bandit_manager
     from bandit.core import config as bandit_config
+
     BANDIT_AVAILABLE = True
 except ImportError:
     BANDIT_AVAILABLE = False
@@ -54,7 +55,7 @@ class SecurityIssue:
             "line_range": self.line_range,
             "code": self.code,
             "filename": self.filename,
-            "more_info": self.more_info
+            "more_info": self.more_info,
         }
 
 
@@ -69,7 +70,9 @@ class ScanResult:
 
     def get_by_severity(self, severity: str) -> List[SecurityIssue]:
         """Filter issues by severity level."""
-        return [issue for issue in self.issues if issue.severity.upper() == severity.upper()]
+        return [
+            issue for issue in self.issues if issue.severity.upper() == severity.upper()
+        ]
 
     def get_high_severity(self) -> List[SecurityIssue]:
         """Get high severity issues."""
@@ -94,8 +97,8 @@ class ScanResult:
                 "total_issues": len(self.issues),
                 "high_severity": len(self.get_high_severity()),
                 "medium_severity": len(self.get_medium_severity()),
-                "low_severity": len(self.get_low_severity())
-            }
+                "low_severity": len(self.get_low_severity()),
+            },
         }
 
 
@@ -112,7 +115,9 @@ class SecurityScanner:
     - And many more security issues
     """
 
-    def __init__(self, config_file: Optional[str] = None, profile: Optional[str] = None):
+    def __init__(
+        self, config_file: Optional[str] = None, profile: Optional[str] = None
+    ):
         """
         Initialize the security scanner.
 
@@ -127,7 +132,9 @@ class SecurityScanner:
     def _validate_bandit(self) -> None:
         """Validate that Bandit is available."""
         if not BANDIT_AVAILABLE:
-            logger.warning("Bandit library not available. Security scanning will be limited.")
+            logger.warning(
+                "Bandit library not available. Security scanning will be limited."
+            )
 
     def scan(self, file_path: str) -> List[SecurityIssue]:
         """
@@ -146,7 +153,7 @@ class SecurityScanner:
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found: {file_path}")
 
-        if not file_path.endswith('.py'):
+        if not file_path.endswith(".py"):
             raise ValueError(f"Not a Python file: {file_path}")
 
         result = self.scan_files([file_path])
@@ -187,15 +194,17 @@ class SecurityScanner:
                     line_range=issue.linerange,
                     code=issue.get_code(show_linenos=False),
                     filename=issue.fname,
-                    more_info=issue.more_info or ""
+                    more_info=issue.more_info or "",
                 )
                 result.issues.append(security_issue)
 
             # Get metrics
             metrics = b_mgr.metrics
             result.files_scanned = len(file_paths)
-            result.lines_scanned = sum(metrics.get_metrics(None).get(fname, {}).get('loc', 0)
-                                      for fname in file_paths)
+            result.lines_scanned = sum(
+                metrics.get_metrics(None).get(fname, {}).get("loc", 0)
+                for fname in file_paths
+            )
 
         except Exception as e:
             logger.error(f"Error during Bandit scan: {e}")
@@ -203,8 +212,12 @@ class SecurityScanner:
 
         return result
 
-    def scan_directory(self, directory: str, recursive: bool = True,
-                      exclude_patterns: Optional[List[str]] = None) -> ScanResult:
+    def scan_directory(
+        self,
+        directory: str,
+        recursive: bool = True,
+        exclude_patterns: Optional[List[str]] = None,
+    ) -> ScanResult:
         """
         Scan all Python files in a directory.
 
@@ -240,7 +253,7 @@ class SecurityScanner:
             List of SecurityIssue objects found
         """
         # Write code to temporary file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(code)
             temp_path = f.name
 
@@ -257,7 +270,9 @@ class SecurityScanner:
             except Exception:
                 pass
 
-    def _create_bandit_manager(self, file_paths: List[str]) -> 'bandit_manager.BanditManager':
+    def _create_bandit_manager(
+        self, file_paths: List[str]
+    ) -> "bandit_manager.BanditManager":
         """Create and configure a Bandit manager instance."""
         # Create config
         if self.config_file and os.path.exists(self.config_file):
@@ -266,18 +281,22 @@ class SecurityScanner:
             b_conf = bandit_config.BanditConfig()
 
         # Create manager
-        b_mgr = bandit_manager.BanditManager(b_conf, 'file', profile=self.profile)
+        b_mgr = bandit_manager.BanditManager(b_conf, "file", profile=self.profile)
 
         return b_mgr
 
-    def _find_python_files(self, directory: str, recursive: bool = True,
-                          exclude_patterns: Optional[List[str]] = None) -> List[str]:
+    def _find_python_files(
+        self,
+        directory: str,
+        recursive: bool = True,
+        exclude_patterns: Optional[List[str]] = None,
+    ) -> List[str]:
         """Find all Python files in a directory."""
         exclude_patterns = exclude_patterns or []
         python_files = []
 
         path = Path(directory)
-        pattern = '**/*.py' if recursive else '*.py'
+        pattern = "**/*.py" if recursive else "*.py"
 
         for file_path in path.glob(pattern):
             # Skip excluded patterns
@@ -285,7 +304,7 @@ class SecurityScanner:
                 continue
 
             # Skip __pycache__ and .tox directories
-            if '__pycache__' in file_path.parts or '.tox' in file_path.parts:
+            if "__pycache__" in file_path.parts or ".tox" in file_path.parts:
                 continue
 
             python_files.append(str(file_path))
@@ -301,7 +320,7 @@ class SecurityScanner:
 
         for file_path in file_paths:
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     code = f.read()
 
                 issues = self._basic_security_analysis(code, file_path)
@@ -341,71 +360,108 @@ class SecurityScanner:
                 if isinstance(node.func, ast.Name):
                     func_name = node.func.id
 
-                    if func_name in ('eval', 'exec'):
-                        issues.append(SecurityIssue(
-                            severity="HIGH",
-                            confidence="HIGH",
-                            issue_text=f"Use of {func_name}() is dangerous and can lead to code injection",
-                            test_id="B001",
-                            test_name=f"dangerous_{func_name}",
-                            line_number=node.lineno,
-                            line_range=[node.lineno, node.lineno],
-                            code=lines[node.lineno - 1] if node.lineno <= len(lines) else "",
-                            filename=filename,
-                            more_info="Avoid using eval() or exec() with untrusted input"
-                        ))
+                    if func_name in ("eval", "exec"):
+                        issues.append(
+                            SecurityIssue(
+                                severity="HIGH",
+                                confidence="HIGH",
+                                issue_text=f"Use of {func_name}() is dangerous and can lead to code injection",
+                                test_id="B001",
+                                test_name=f"dangerous_{func_name}",
+                                line_number=node.lineno,
+                                line_range=[node.lineno, node.lineno],
+                                code=(
+                                    lines[node.lineno - 1]
+                                    if node.lineno <= len(lines)
+                                    else ""
+                                ),
+                                filename=filename,
+                                more_info="Avoid using eval() or exec() with untrusted input",
+                            )
+                        )
 
-                    elif func_name == 'compile':
-                        issues.append(SecurityIssue(
-                            severity="MEDIUM",
-                            confidence="MEDIUM",
-                            issue_text="Use of compile() can be dangerous with untrusted input",
-                            test_id="B002",
-                            test_name="dangerous_compile",
-                            line_number=node.lineno,
-                            line_range=[node.lineno, node.lineno],
-                            code=lines[node.lineno - 1] if node.lineno <= len(lines) else "",
-                            filename=filename,
-                            more_info="Ensure input to compile() is trusted"
-                        ))
+                    elif func_name == "compile":
+                        issues.append(
+                            SecurityIssue(
+                                severity="MEDIUM",
+                                confidence="MEDIUM",
+                                issue_text="Use of compile() can be dangerous with untrusted input",
+                                test_id="B002",
+                                test_name="dangerous_compile",
+                                line_number=node.lineno,
+                                line_range=[node.lineno, node.lineno],
+                                code=(
+                                    lines[node.lineno - 1]
+                                    if node.lineno <= len(lines)
+                                    else ""
+                                ),
+                                filename=filename,
+                                more_info="Ensure input to compile() is trusted",
+                            )
+                        )
 
                 # Check for pickle usage
                 elif isinstance(node.func, ast.Attribute):
-                    if node.func.attr in ('loads', 'load') and isinstance(node.func.value, ast.Name):
-                        if node.func.value.id == 'pickle':
-                            issues.append(SecurityIssue(
-                                severity="HIGH",
-                                confidence="HIGH",
-                                issue_text="Use of pickle.loads/load can execute arbitrary code",
-                                test_id="B003",
-                                test_name="pickle_usage",
-                                line_number=node.lineno,
-                                line_range=[node.lineno, node.lineno],
-                                code=lines[node.lineno - 1] if node.lineno <= len(lines) else "",
-                                filename=filename,
-                                more_info="Pickle can execute arbitrary code during deserialization"
-                            ))
+                    if node.func.attr in ("loads", "load") and isinstance(
+                        node.func.value, ast.Name
+                    ):
+                        if node.func.value.id == "pickle":
+                            issues.append(
+                                SecurityIssue(
+                                    severity="HIGH",
+                                    confidence="HIGH",
+                                    issue_text="Use of pickle.loads/load can execute arbitrary code",
+                                    test_id="B003",
+                                    test_name="pickle_usage",
+                                    line_number=node.lineno,
+                                    line_range=[node.lineno, node.lineno],
+                                    code=(
+                                        lines[node.lineno - 1]
+                                        if node.lineno <= len(lines)
+                                        else ""
+                                    ),
+                                    filename=filename,
+                                    more_info="Pickle can execute arbitrary code during deserialization",
+                                )
+                            )
 
             # Check for hardcoded passwords
             if isinstance(node, ast.Assign):
                 for target in node.targets:
                     if isinstance(target, ast.Name):
                         var_name = target.id.lower()
-                        if any(keyword in var_name for keyword in ['password', 'passwd', 'pwd', 'secret', 'token']):
-                            if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                        if any(
+                            keyword in var_name
+                            for keyword in [
+                                "password",
+                                "passwd",
+                                "pwd",
+                                "secret",
+                                "token",
+                            ]
+                        ):
+                            if isinstance(node.value, ast.Constant) and isinstance(
+                                node.value.value, str
+                            ):
                                 if node.value.value:  # Non-empty string
-                                    issues.append(SecurityIssue(
-                                        severity="MEDIUM",
-                                        confidence="LOW",
-                                        issue_text=f"Possible hardcoded {var_name}",
-                                        test_id="B004",
-                                        test_name="hardcoded_password",
-                                        line_number=node.lineno,
-                                        line_range=[node.lineno, node.lineno],
-                                        code=lines[node.lineno - 1] if node.lineno <= len(lines) else "",
-                                        filename=filename,
-                                        more_info="Store secrets in environment variables or secure vaults"
-                                    ))
+                                    issues.append(
+                                        SecurityIssue(
+                                            severity="MEDIUM",
+                                            confidence="LOW",
+                                            issue_text=f"Possible hardcoded {var_name}",
+                                            test_id="B004",
+                                            test_name="hardcoded_password",
+                                            line_number=node.lineno,
+                                            line_range=[node.lineno, node.lineno],
+                                            code=(
+                                                lines[node.lineno - 1]
+                                                if node.lineno <= len(lines)
+                                                else ""
+                                            ),
+                                            filename=filename,
+                                            more_info="Store secrets in environment variables or secure vaults",
+                                        )
+                                    )
 
         return issues
 
@@ -433,7 +489,7 @@ class SecurityScanner:
             lines.append(f"Total issues: {len(result.issues)}")
             lines.append("")
 
-            summary = result.to_dict()['summary']
+            summary = result.to_dict()["summary"]
             lines.append(f"High severity:   {summary['high_severity']}")
             lines.append(f"Medium severity: {summary['medium_severity']}")
             lines.append(f"Low severity:    {summary['low_severity']}")
@@ -450,7 +506,9 @@ class SecurityScanner:
                 lines.append("-" * 80)
 
                 for i, issue in enumerate(result.issues, 1):
-                    lines.append(f"\n{i}. [{issue.severity}/{issue.confidence}] {issue.test_name}")
+                    lines.append(
+                        f"\n{i}. [{issue.severity}/{issue.confidence}] {issue.test_name}"
+                    )
                     lines.append(f"   File: {issue.filename}:{issue.line_number}")
                     lines.append(f"   Issue: {issue.issue_text}")
                     if issue.code:
@@ -465,46 +523,57 @@ class SecurityScanner:
 
         elif format == "html":
             # Simple HTML report
-            html = ['<!DOCTYPE html>', '<html>', '<head>',
-                   '<title>JENOVA Security Scan Report</title>',
-                   '<style>',
-                   'body { font-family: Arial, sans-serif; margin: 20px; }',
-                   '.high { color: red; }',
-                   '.medium { color: orange; }',
-                   '.low { color: blue; }',
-                   'table { border-collapse: collapse; width: 100%; }',
-                   'th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }',
-                   'th { background-color: #4CAF50; color: white; }',
-                   '</style>',
-                   '</head>', '<body>',
-                   '<h1>JENOVA Security Scan Report</h1>']
+            html = [
+                "<!DOCTYPE html>",
+                "<html>",
+                "<head>",
+                "<title>JENOVA Security Scan Report</title>",
+                "<style>",
+                "body { font-family: Arial, sans-serif; margin: 20px; }",
+                ".high { color: red; }",
+                ".medium { color: orange; }",
+                ".low { color: blue; }",
+                "table { border-collapse: collapse; width: 100%; }",
+                "th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }",
+                "th { background-color: #4CAF50; color: white; }",
+                "</style>",
+                "</head>",
+                "<body>",
+                "<h1>JENOVA Security Scan Report</h1>",
+            ]
 
-            summary = result.to_dict()['summary']
-            html.append(f'<p>Files scanned: {result.files_scanned}</p>')
-            html.append(f'<p>Lines scanned: {result.lines_scanned}</p>')
-            html.append(f'<p>Total issues: {len(result.issues)}</p>')
-            html.append(f'<p class="high">High severity: {summary["high_severity"]}</p>')
-            html.append(f'<p class="medium">Medium severity: {summary["medium_severity"]}</p>')
+            summary = result.to_dict()["summary"]
+            html.append(f"<p>Files scanned: {result.files_scanned}</p>")
+            html.append(f"<p>Lines scanned: {result.lines_scanned}</p>")
+            html.append(f"<p>Total issues: {len(result.issues)}</p>")
+            html.append(
+                f'<p class="high">High severity: {summary["high_severity"]}</p>'
+            )
+            html.append(
+                f'<p class="medium">Medium severity: {summary["medium_severity"]}</p>'
+            )
             html.append(f'<p class="low">Low severity: {summary["low_severity"]}</p>')
 
             if result.issues:
-                html.append('<h2>Issues</h2>')
-                html.append('<table>')
-                html.append('<tr><th>Severity</th><th>File</th><th>Line</th><th>Issue</th></tr>')
+                html.append("<h2>Issues</h2>")
+                html.append("<table>")
+                html.append(
+                    "<tr><th>Severity</th><th>File</th><th>Line</th><th>Issue</th></tr>"
+                )
 
                 for issue in result.issues:
                     severity_class = issue.severity.lower()
                     html.append(f'<tr class="{severity_class}">')
-                    html.append(f'<td>{issue.severity}</td>')
-                    html.append(f'<td>{issue.filename}</td>')
-                    html.append(f'<td>{issue.line_number}</td>')
-                    html.append(f'<td>{issue.issue_text}</td>')
-                    html.append('</tr>')
+                    html.append(f"<td>{issue.severity}</td>")
+                    html.append(f"<td>{issue.filename}</td>")
+                    html.append(f"<td>{issue.line_number}</td>")
+                    html.append(f"<td>{issue.issue_text}</td>")
+                    html.append("</tr>")
 
-                html.append('</table>')
+                html.append("</table>")
 
-            html.append('</body></html>')
-            return '\n'.join(html)
+            html.append("</body></html>")
+            return "\n".join(html)
 
         else:
             raise ValueError(f"Unknown format: {format}")

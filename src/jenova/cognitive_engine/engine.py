@@ -28,7 +28,19 @@ from jenova.infrastructure.error_handler import ErrorHandler, ErrorSeverity
 class CognitiveEngine:
     """The Enhanced Cognitive Engine with Phase 1-4 infrastructure integration."""
 
-    def __init__(self, llm, memory_search, insight_manager, assumption_manager, config, ui_logger, file_logger, cortex, rag_system, tool_handler):
+    def __init__(
+        self,
+        llm,
+        memory_search,
+        insight_manager,
+        assumption_manager,
+        config,
+        ui_logger,
+        file_logger,
+        cortex,
+        rag_system,
+        tool_handler,
+    ):
         self.llm = llm
         self.memory_search = memory_search
         self.insight_manager = insight_manager
@@ -39,7 +51,9 @@ class CognitiveEngine:
         self.cortex = cortex
         self.proactive_engine = ProactiveEngine(cortex, llm, ui_logger)
         self.rag_system = rag_system
-        self.scheduler = CognitiveScheduler(config, cortex, insight_manager, file_logger)
+        self.scheduler = CognitiveScheduler(
+            config, cortex, insight_manager, file_logger
+        )
         self.tool_handler = tool_handler
         self.history = []
         self.turn_count = 0
@@ -101,8 +115,10 @@ class CognitiveEngine:
         self.workflow_library = None
 
         # Configuration
-        self.llm_timeout = config.get('cognitive_engine', {}).get('llm_timeout', 120)
-        self.planning_timeout = config.get('cognitive_engine', {}).get('planning_timeout', 60)
+        self.llm_timeout = config.get("cognitive_engine", {}).get("llm_timeout", 120)
+        self.planning_timeout = config.get("cognitive_engine", {}).get(
+            "planning_timeout", 60
+        )
 
     def set_infrastructure(self, health_monitor=None, metrics=None, error_handler=None):
         """Set Phase 2 infrastructure components for enhanced monitoring."""
@@ -112,9 +128,17 @@ class CognitiveEngine:
         if error_handler:
             self.error_handler = error_handler
         if self.file_logger and metrics:
-            self.file_logger.log_info("Infrastructure components integrated into cognitive engine")
+            self.file_logger.log_info(
+                "Infrastructure components integrated into cognitive engine"
+            )
 
-    def set_network_layer(self, distributed_llm=None, distributed_memory=None, peer_manager=None, network_metrics=None):
+    def set_network_layer(
+        self,
+        distributed_llm=None,
+        distributed_memory=None,
+        peer_manager=None,
+        network_metrics=None,
+    ):
         """Set Phase 8 network layer components for distributed computing."""
         self.distributed_llm = distributed_llm
         self.distributed_memory = distributed_memory
@@ -129,7 +153,9 @@ class CognitiveEngine:
                     f"distributed_memory={'enabled' if distributed_memory else 'disabled'})"
                 )
             else:
-                self.file_logger.log_info("Network layer components available but not enabled")
+                self.file_logger.log_info(
+                    "Network layer components available but not enabled"
+                )
 
     def set_user_profile(self, user_profile_manager=None, user_profile=None):
         """Set Phase 10 user profiling components for personalization."""
@@ -138,7 +164,9 @@ class CognitiveEngine:
 
         # Initialize personalization engine if profile is available
         if user_profile:
-            self.personalization_engine = PersonalizationEngine(user_profile, self.file_logger)
+            self.personalization_engine = PersonalizationEngine(
+                user_profile, self.file_logger
+            )
 
         if self.file_logger and user_profile:
             self.file_logger.log_info(
@@ -150,7 +178,9 @@ class CognitiveEngine:
         self.learning_engine = learning_engine
 
         if self.file_logger:
-            self.file_logger.log_info("Learning engine integrated into cognitive engine")
+            self.file_logger.log_info(
+                "Learning engine integrated into cognitive engine"
+            )
 
     def set_cli_enhancements(self, **kwargs):
         """Set Phases 13-17 enhanced CLI capabilities.
@@ -163,47 +193,52 @@ class CognitiveEngine:
         - Automation: custom_command_manager, hooks_system, template_engine, workflow_library
         """
         # Analysis Module
-        self.context_optimizer = kwargs.get('context_optimizer')
-        self.code_metrics = kwargs.get('code_metrics')
-        self.security_scanner = kwargs.get('security_scanner')
-        self.intent_classifier = kwargs.get('intent_classifier')
-        self.command_disambiguator = kwargs.get('command_disambiguator')
+        self.context_optimizer = kwargs.get("context_optimizer")
+        self.code_metrics = kwargs.get("code_metrics")
+        self.security_scanner = kwargs.get("security_scanner")
+        self.intent_classifier = kwargs.get("intent_classifier")
+        self.command_disambiguator = kwargs.get("command_disambiguator")
 
         # Code Tools Module
-        self.file_editor = kwargs.get('file_editor')
-        self.code_parser = kwargs.get('code_parser')
-        self.refactoring_engine = kwargs.get('refactoring_engine')
-        self.syntax_highlighter = kwargs.get('syntax_highlighter')
-        self.codebase_mapper = kwargs.get('codebase_mapper')
-        self.interactive_terminal = kwargs.get('interactive_terminal')
+        self.file_editor = kwargs.get("file_editor")
+        self.code_parser = kwargs.get("code_parser")
+        self.refactoring_engine = kwargs.get("refactoring_engine")
+        self.syntax_highlighter = kwargs.get("syntax_highlighter")
+        self.codebase_mapper = kwargs.get("codebase_mapper")
+        self.interactive_terminal = kwargs.get("interactive_terminal")
 
         # Git Tools Module
-        self.git_interface = kwargs.get('git_interface')
-        self.commit_assistant = kwargs.get('commit_assistant')
-        self.diff_analyzer = kwargs.get('diff_analyzer')
-        self.hooks_manager = kwargs.get('hooks_manager')
-        self.branch_manager = kwargs.get('branch_manager')
+        self.git_interface = kwargs.get("git_interface")
+        self.commit_assistant = kwargs.get("commit_assistant")
+        self.diff_analyzer = kwargs.get("diff_analyzer")
+        self.hooks_manager = kwargs.get("hooks_manager")
+        self.branch_manager = kwargs.get("branch_manager")
 
         # Orchestration Module
-        self.task_planner = kwargs.get('task_planner')
-        self.subagent_manager = kwargs.get('subagent_manager')
-        self.execution_engine = kwargs.get('execution_engine')
-        self.checkpoint_manager = kwargs.get('checkpoint_manager')
-        self.background_task_manager = kwargs.get('background_task_manager')
+        self.task_planner = kwargs.get("task_planner")
+        self.subagent_manager = kwargs.get("subagent_manager")
+        self.execution_engine = kwargs.get("execution_engine")
+        self.checkpoint_manager = kwargs.get("checkpoint_manager")
+        self.background_task_manager = kwargs.get("background_task_manager")
 
         # Automation Module
-        self.custom_command_manager = kwargs.get('custom_command_manager')
-        self.hooks_system = kwargs.get('hooks_system')
-        self.template_engine = kwargs.get('template_engine')
-        self.workflow_library = kwargs.get('workflow_library')
+        self.custom_command_manager = kwargs.get("custom_command_manager")
+        self.hooks_system = kwargs.get("hooks_system")
+        self.template_engine = kwargs.get("template_engine")
+        self.workflow_library = kwargs.get("workflow_library")
 
         if self.file_logger:
             enabled_modules = []
-            if self.context_optimizer: enabled_modules.append("Analysis")
-            if self.file_editor: enabled_modules.append("Code Tools")
-            if self.git_interface: enabled_modules.append("Git Tools")
-            if self.task_planner: enabled_modules.append("Orchestration")
-            if self.custom_command_manager: enabled_modules.append("Automation")
+            if self.context_optimizer:
+                enabled_modules.append("Analysis")
+            if self.file_editor:
+                enabled_modules.append("Code Tools")
+            if self.git_interface:
+                enabled_modules.append("Git Tools")
+            if self.task_planner:
+                enabled_modules.append("Orchestration")
+            if self.custom_command_manager:
+                enabled_modules.append("Automation")
 
             if enabled_modules:
                 self.file_logger.log_info(
@@ -218,17 +253,20 @@ class CognitiveEngine:
             # Measure cognitive cycle performance
             measure_context = None
             if self.metrics:
-                measure_context = self.metrics.measure('cognitive_cycle')
+                measure_context = self.metrics.measure("cognitive_cycle")
                 measure_context.__enter__()
 
             try:
                 self.file_logger.log_info(
-                    f"New query received from {username}: {user_input}")
+                    f"New query received from {username}: {user_input}"
+                )
                 self.turn_count += 1
 
                 # Phase 10: Record user interaction in profile
                 if self.user_profile:
-                    interaction_type = "command" if user_input.startswith('/') else "query"
+                    interaction_type = (
+                        "command" if user_input.startswith("/") else "query"
+                    )
                     self.user_profile.record_interaction(user_input, interaction_type)
 
                 # Phase 11: Semantic analysis for enhanced understanding
@@ -246,7 +284,11 @@ class CognitiveEngine:
 
                 # Retrieve, Plan, Execute with timeout protection
                 # Use expanded query for better retrieval
-                search_query = semantic_analysis.expanded_query if semantic_analysis.expanded_query else user_input
+                search_query = (
+                    semantic_analysis.expanded_query
+                    if semantic_analysis.expanded_query
+                    else user_input
+                )
                 try:
                     with timeout(30):  # 30s timeout for memory retrieval
                         context = self.memory_search.search_all(search_query, username)
@@ -261,42 +303,58 @@ class CognitiveEngine:
 
                 plan = self._plan(user_input, context, username)
                 if not plan:
-                    plan = f"I will formulate a response to the user's query: {user_input}"
+                    plan = (
+                        f"I will formulate a response to the user's query: {user_input}"
+                    )
 
                 response = self._execute(user_input, context, plan, username)
 
                 # Only add to history if it's not a command
-                if not user_input.startswith('/'):
+                if not user_input.startswith("/"):
                     self.history.append(f"{username}: {user_input}")
                     self.history.append(f"Jenova: {response}")
                     if len(self.history) > self.MAX_HISTORY_TURNS * 2:
-                        self.history = self.history[-(self.MAX_HISTORY_TURNS * 2):]
+                        self.history = self.history[-(self.MAX_HISTORY_TURNS * 2) :]
 
                     # Add to episodic memory with error handling
                     try:
                         with timeout(10):  # 10s timeout for memory write
                             self.memory_search.episodic_memory.add_episode(
-                                f"{username}: {user_input}\nJenova: {response}", username)
+                                f"{username}: {user_input}\nJenova: {response}",
+                                username,
+                            )
                     except TimeoutError:
-                        self._log_error("Episodic memory write timeout", "memory_write_timeout")
+                        self._log_error(
+                            "Episodic memory write timeout", "memory_write_timeout"
+                        )
                     except Exception as e:
-                        self._log_error(f"Episodic memory write error: {e}", "memory_write_error")
+                        self._log_error(
+                            f"Episodic memory write error: {e}", "memory_write_error"
+                        )
 
                     # Run scheduled cognitive tasks with error handling
                     try:
                         tasks = self.scheduler.get_cognitive_tasks(
-                            self.turn_count, user_input, username)
+                            self.turn_count, user_input, username
+                        )
                         for task_name, kwargs in tasks:
                             if hasattr(self, task_name):
                                 method = getattr(self, task_name)
                                 try:
                                     result = method(**kwargs)
-                                    if task_name == "proactively_verify_assumption" and result:
+                                    if (
+                                        task_name == "proactively_verify_assumption"
+                                        and result
+                                    ):
                                         if self.ui_logger:
                                             self.ui_logger.info(
-                                                f"JENOVA has a question for you: {result}")
+                                                f"JENOVA has a question for you: {result}"
+                                            )
                                 except Exception as e:
-                                    self._log_error(f"Cognitive task '{task_name}' failed: {e}", "task_failure")
+                                    self._log_error(
+                                        f"Cognitive task '{task_name}' failed: {e}",
+                                        "task_failure",
+                                    )
                     except Exception as e:
                         self._log_error(f"Scheduler error: {e}", "scheduler_error")
 
@@ -311,16 +369,20 @@ class CognitiveEngine:
                 # Phase 10: Personalize response before returning
                 if self.personalization_engine:
                     context = {
-                        'semantic_analysis': semantic_analysis,
-                        'turn_count': self.turn_count,
-                        'user_input': user_input
+                        "semantic_analysis": semantic_analysis,
+                        "turn_count": self.turn_count,
+                        "user_input": user_input,
                     }
-                    response = self.personalization_engine.adapt_response(response, context)
+                    response = self.personalization_engine.adapt_response(
+                        response, context
+                    )
 
                 return response
 
             except Exception as e:
-                self._log_error(f"Critical error in cognitive cycle: {e}", "critical_error")
+                self._log_error(
+                    f"Critical error in cognitive cycle: {e}", "critical_error"
+                )
                 return "I apologize, but I encountered an error processing your request. Please try again."
 
             finally:
@@ -335,13 +397,13 @@ class CognitiveEngine:
         context_str = "\n".join(f"- {c}" for c in safe_context)
 
         # Load persona from config
-        persona_config = self.config.get('persona', {})
-        identity = persona_config.get('identity', {})
-        directives = persona_config.get('directives', [])
+        persona_config = self.config.get("persona", {})
+        identity = persona_config.get("identity", {})
+        directives = persona_config.get("directives", [])
 
-        creator_name = identity.get('creator', 'orpheus497')
-        creator_alias = identity.get('creator_alias', 'The Architect')
-        ai_name = identity.get('name', 'Jenova')
+        creator_name = identity.get("creator", "orpheus497")
+        creator_alias = identity.get("creator_alias", "The Architect")
+        ai_name = identity.get("name", "Jenova")
 
         # Check if the current user is the creator
         user_title = "User"
@@ -381,7 +443,9 @@ Plan:"""
                 self._log_error(f"Planning error: {e}", "planning_error")
                 return f"Provide a direct response to: {user_input}"
 
-    def _execute(self, user_input: str, context: list[str], plan: str, username: str) -> str:
+    def _execute(
+        self, user_input: str, context: list[str], plan: str, username: str
+    ) -> str:
         """Execute the plan with timeout protection."""
         with self.ui_logger.thinking_process("Executing plan..."):
             tool_call_pattern = re.compile(r"\(tool:\s*(\w+),\s*(.*?)\)")
@@ -389,10 +453,19 @@ Plan:"""
 
             if tool_calls:
                 context, structured_tool_results = self._handle_tool_calls(
-                    tool_calls, context)
-                return self.rag_system.generate_response(user_input, username, self.history, plan, search_results=structured_tool_results)
+                    tool_calls, context
+                )
+                return self.rag_system.generate_response(
+                    user_input,
+                    username,
+                    self.history,
+                    plan,
+                    search_results=structured_tool_results,
+                )
 
-            return self.rag_system.generate_response(user_input, username, self.history, plan)
+            return self.rag_system.generate_response(
+                user_input, username, self.history, plan
+            )
 
     def _handle_tool_calls(self, tool_calls: list, context: list) -> tuple[list, list]:
         """Handle tool calls with error recovery."""
@@ -401,7 +474,7 @@ Plan:"""
         for tool_name, args_str in tool_calls:
             try:
                 with timeout(30):  # 30s timeout per tool
-                    args = dict(arg.split('=', 1) for arg in shlex.split(args_str))
+                    args = dict(arg.split("=", 1) for arg in shlex.split(args_str))
                     result = self.tool_handler.execute_tool(tool_name, args)
                     if isinstance(result, dict):
                         structured_tool_results.append(result)
@@ -410,8 +483,7 @@ Plan:"""
             except TimeoutError:
                 tool_error_messages.append(f"Tool {tool_name} timed out")
             except Exception as e:
-                tool_error_messages.append(
-                    f"Error executing tool {tool_name}: {e}")
+                tool_error_messages.append(f"Error executing tool {tool_name}: {e}")
 
         context.extend(tool_error_messages)
         return context, structured_tool_results
@@ -419,17 +491,18 @@ Plan:"""
     def generate_insight_from_history(self, username: str):
         """Analyzes recent conversation history to generate and save a new, high-quality insight."""
         self.ui_logger.info(
-            "Analyzing conversation history to generate a new insight...")
+            "Analyzing conversation history to generate a new insight..."
+        )
         if len(self.history) < 2:
             return
 
         conversation_segment = "\n".join(self.history[-8:])
 
-        persona_config = self.config.get('persona', {})
-        identity = persona_config.get('identity', {})
-        creator_name = identity.get('creator', 'orpheus497')
-        creator_alias = identity.get('creator_alias', 'The Architect')
-        ai_name = identity.get('name', 'Jenova')
+        persona_config = self.config.get("persona", {})
+        identity = persona_config.get("identity", {})
+        creator_name = identity.get("creator", "orpheus497")
+        creator_alias = identity.get("creator_alias", "The Architect")
+        ai_name = identity.get("name", "Jenova")
         user_title = creator_alias if username == creator_name else "User"
 
         prompt = f"""
@@ -442,16 +515,19 @@ Plan:"""
 
         [JSON_OUTPUT]
         """
-        with self.ui_logger.thinking_process("Generating insight from recent conversation..."):
+        with self.ui_logger.thinking_process(
+            "Generating insight from recent conversation..."
+        ):
             try:
                 with timeout(self.llm_timeout):
                     insight_json_str = self.llm.generate(prompt, temperature=0.2)
                     data = json.loads(insight_json_str)
-                    topic = data.get('topic')
-                    insight = data.get('insight')
+                    topic = data.get("topic")
+                    insight = data.get("insight")
                     if topic and insight:
                         self.insight_manager.save_insight(
-                            insight, username, topic=topic)
+                            insight, username, topic=topic
+                        )
             except TimeoutError:
                 self._log_error("Insight generation timeout", "insight_timeout")
             except (json.JSONDecodeError, ValueError) as e:
@@ -462,17 +538,18 @@ Plan:"""
     def generate_assumption_from_history(self, username: str):
         """Analyzes recent conversation history to generate a new assumption about the user."""
         self.ui_logger.info(
-            "Analyzing conversation history to generate a new assumption...")
+            "Analyzing conversation history to generate a new assumption..."
+        )
         if len(self.history) < 4:
             return
 
         conversation_segment = "\n".join(self.history[-8:])
 
-        persona_config = self.config.get('persona', {})
-        identity = persona_config.get('identity', {})
-        creator_name = identity.get('creator', 'orpheus497')
-        creator_alias = identity.get('creator_alias', 'The Architect')
-        ai_name = identity.get('name', 'Jenova')
+        persona_config = self.config.get("persona", {})
+        identity = persona_config.get("identity", {})
+        creator_name = identity.get("creator", "orpheus497")
+        creator_alias = identity.get("creator_alias", "The Architect")
+        ai_name = identity.get("name", "Jenova")
         user_title = creator_alias if username == creator_name else "User"
 
         prompt = f"""You are {ai_name}. You are analyzing a conversation with {user_title} ({username}). Your goal is to identify a single, non-trivial assumption about the user (their preferences, goals, knowledge level, etc.) that is implied but not explicitly stated. This assumption will be verified later.
@@ -489,13 +566,15 @@ Plan:"""
                 with timeout(self.llm_timeout):
                     assumption_json_str = self.llm.generate(prompt, temperature=0.3)
                     assumption_data = json.loads(assumption_json_str)
-                    assumption = assumption_data.get('assumption')
+                    assumption = assumption_data.get("assumption")
                     if assumption:
                         self.assumption_manager.add_assumption(assumption, username)
             except TimeoutError:
                 self._log_error("Assumption generation timeout", "assumption_timeout")
             except (json.JSONDecodeError, ValueError) as e:
-                self._log_error(f"Assumption decode error: {e}", "assumption_decode_error")
+                self._log_error(
+                    f"Assumption decode error: {e}", "assumption_decode_error"
+                )
             except Exception as e:
                 self._log_error(f"Assumption generation error: {e}", "assumption_error")
 
@@ -505,11 +584,11 @@ Plan:"""
 
         conversation_segment = "\n".join(self.history)
 
-        persona_config = self.config.get('persona', {})
-        identity = persona_config.get('identity', {})
-        creator_name = identity.get('creator', 'orpheus497')
-        creator_alias = identity.get('creator_alias', 'The Architect')
-        ai_name = identity.get('name', 'Jenova')
+        persona_config = self.config.get("persona", {})
+        identity = persona_config.get("identity", {})
+        creator_name = identity.get("creator", "orpheus497")
+        creator_alias = identity.get("creator_alias", "The Architect")
+        ai_name = identity.get("name", "Jenova")
         user_title = creator_alias if username == creator_name else "User"
 
         prompt = f"""
@@ -527,11 +606,12 @@ Plan:"""
                 insights_json_str = self.llm.generate(prompt, temperature=0.3)
                 insights = json.loads(insights_json_str)
                 for insight_data in insights:
-                    topic = insight_data.get('topic')
-                    insight = insight_data.get('insight')
+                    topic = insight_data.get("topic")
+                    insight = insight_data.get("insight")
                     if topic and insight:
                         insight_id = self.insight_manager.save_insight(
-                            insight, username, topic=topic)
+                            insight, username, topic=topic
+                        )
                         messages.append(f"New insight node created: {insight_id}")
         except TimeoutError:
             messages.append("Insight development timed out. Please try again.")
@@ -568,13 +648,14 @@ Plan:"""
             self.file_logger.log_info(f"All insights: {all_insights}")
 
             insights_str = "\n".join(
-                [f"- {i['topic']}: {i['content']}" for i in all_insights])
+                [f"- {i['topic']}: {i['content']}" for i in all_insights]
+            )
 
-            persona_config = self.config.get('persona', {})
-            identity = persona_config.get('identity', {})
-            creator_name = identity.get('creator', 'orpheus497')
-            creator_alias = identity.get('creator_alias', 'The Architect')
-            ai_name = identity.get('name', 'Jenova')
+            persona_config = self.config.get("persona", {})
+            identity = persona_config.get("identity", {})
+            creator_name = identity.get("creator", "orpheus497")
+            creator_alias = identity.get("creator_alias", "The Architect")
+            ai_name = identity.get("name", "Jenova")
             user_title = creator_alias if username == creator_name else "User"
 
             prompt = f"""
@@ -590,19 +671,21 @@ Plan:"""
             with timeout(self.llm_timeout):
                 meta_insight_json_str = self.llm.generate(prompt, temperature=0.4)
                 self.file_logger.log_info(
-                    f"Meta-insight response: {meta_insight_json_str}")
+                    f"Meta-insight response: {meta_insight_json_str}"
+                )
 
                 data = json.loads(meta_insight_json_str)
-                topic = data.get('topic', 'meta')
-                insight = data.get('insight')
+                topic = data.get("topic", "meta")
+                insight = data.get("insight")
                 if insight:
-                    self.insight_manager.save_insight(
-                        insight, username, topic=topic)
+                    self.insight_manager.save_insight(insight, username, topic=topic)
                     messages.append(
-                        f"New meta-insight generated under topic '{topic}': {insight}")
+                        f"New meta-insight generated under topic '{topic}': {insight}"
+                    )
                 else:
                     messages.append(
-                        "No new meta-insight could be generated from the existing insights.")
+                        "No new meta-insight could be generated from the existing insights."
+                    )
         except TimeoutError:
             messages.append("Meta-insight generation timed out. Please try again.")
         except (json.JSONDecodeError, ValueError) as e:
@@ -621,18 +704,19 @@ Plan:"""
         try:
             with timeout(30):  # 30s for memory search
                 context = self.memory_search.search_all(
-                    "general knowledge and past experiences", username)
+                    "general knowledge and past experiences", username
+                )
             if context is None:
                 context = []
             # Ensure all context items are strings before joining to prevent TypeErrors
             safe_context = [str(c) for c in context]
             context_str = "\n".join(f"- {c}" for c in safe_context)
 
-            persona_config = self.config.get('persona', {})
-            identity = persona_config.get('identity', {})
-            creator_name = identity.get('creator', 'orpheus497')
-            creator_alias = identity.get('creator_alias', 'The Architect')
-            ai_name = identity.get('name', 'Jenova')
+            persona_config = self.config.get("persona", {})
+            identity = persona_config.get("identity", {})
+            creator_name = identity.get("creator", "orpheus497")
+            creator_alias = identity.get("creator_alias", "The Architect")
+            ai_name = identity.get("name", "Jenova")
             user_title = creator_alias if username == creator_name else "User"
 
             prompt = f"""
@@ -651,21 +735,24 @@ Plan:"""
             with timeout(self.llm_timeout):
                 insight_json_str = self.llm.generate(prompt, temperature=0.3)
                 data = json.loads(insight_json_str)
-                if data.get('type') == 'insight':
-                    topic = data.get('topic')
-                    insight = data.get('content')
+                if data.get("type") == "insight":
+                    topic = data.get("topic")
+                    insight = data.get("content")
                     if topic and insight:
                         insight_id = self.insight_manager.save_insight(
-                            insight, username, topic=topic)
+                            insight, username, topic=topic
+                        )
                         messages.append(f"New insight node created: {insight_id}")
-                elif data.get('type') == 'assumption':
-                    assumption = data.get('content')
+                elif data.get("type") == "assumption":
+                    assumption = data.get("content")
                     if assumption:
                         assumption_id = self.assumption_manager.add_assumption(
-                            assumption, username)
+                            assumption, username
+                        )
                         if assumption_id != "Assumption already exists.":
                             messages.append(
-                                f"New assumption node created: {assumption_id}")
+                                f"New assumption node created: {assumption_id}"
+                            )
                         else:
                             messages.append(assumption_id)
         except TimeoutError:
@@ -682,7 +769,8 @@ Plan:"""
         """Proactively verifies an unverified assumption with the user."""
         try:
             assumption, question = self.assumption_manager.get_assumption_to_verify(
-                username)
+                username
+            )
             if assumption and question:
                 self.pending_assumption = assumption
                 return question
@@ -702,9 +790,9 @@ Plan:"""
     def learn_procedure(self, procedure_data: dict, username: str) -> list[str]:
         """Command to learn a new procedure interactively."""
         messages = []
-        procedure_name = procedure_data.get('name')
-        steps = procedure_data.get('steps', [])
-        outcome = procedure_data.get('outcome')
+        procedure_name = procedure_data.get("name")
+        steps = procedure_data.get("steps", [])
+        outcome = procedure_data.get("outcome")
 
         if not procedure_name or not steps or not outcome:
             messages.append("Error: Incomplete procedure data provided.")
@@ -732,7 +820,7 @@ Context:"""
                 username=username,
                 goal=outcome,
                 steps=steps,
-                context=context
+                context=context,
             )
             messages.append(f"Procedure '{procedure_name}' learned successfully.")
         except TimeoutError:
@@ -749,7 +837,7 @@ Context:"""
             self.error_handler.log_error(
                 Exception(message),
                 context={"error_type": error_type, "component": "cognitive_engine"},
-                severity=ErrorSeverity.ERROR
+                severity=ErrorSeverity.ERROR,
             )
         elif self.file_logger:
             self.file_logger.log_error(f"[{error_type}] {message}")

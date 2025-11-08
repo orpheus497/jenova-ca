@@ -51,13 +51,17 @@ class HealthDisplay:
         Returns:
             Rich Table with health information
         """
-        table = Table(title="System Health", show_header=True, header_style="bold magenta")
+        table = Table(
+            title="System Health", show_header=True, header_style="bold magenta"
+        )
         table.add_column("Component", style="cyan", no_wrap=True)
         table.add_column("Status", style="green")
         table.add_column("Details", style="white")
 
         if not self.health_monitor:
-            table.add_row("Health Monitor", "Not Available", "No health monitor configured")
+            table.add_row(
+                "Health Monitor", "Not Available", "No health monitor configured"
+            )
             return table
 
         try:
@@ -65,40 +69,52 @@ class HealthDisplay:
 
             # Overall status
             status_color = {
-                'healthy': 'green',
-                'warning': 'yellow',
-                'critical': 'red'
-            }.get(health.status.value, 'white')
+                "healthy": "green",
+                "warning": "yellow",
+                "critical": "red",
+            }.get(health.status.value, "white")
 
             table.add_row(
                 "Overall",
                 f"[{status_color}]{health.status.value.upper()}[/{status_color}]",
-                f"Updated {int(time.time() - self.last_update)}s ago"
+                f"Updated {int(time.time() - self.last_update)}s ago",
             )
 
             # CPU
-            cpu_color = 'green' if health.cpu_percent < 70 else 'yellow' if health.cpu_percent < 90 else 'red'
+            cpu_color = (
+                "green"
+                if health.cpu_percent < 70
+                else "yellow" if health.cpu_percent < 90 else "red"
+            )
             table.add_row(
                 "CPU",
                 f"[{cpu_color}]{health.cpu_percent:.1f}%[/{cpu_color}]",
-                f"{health.cpu_count} cores"
+                f"{health.cpu_count} cores",
             )
 
             # Memory
-            mem_color = 'green' if health.memory_percent < 70 else 'yellow' if health.memory_percent < 90 else 'red'
+            mem_color = (
+                "green"
+                if health.memory_percent < 70
+                else "yellow" if health.memory_percent < 90 else "red"
+            )
             table.add_row(
                 "Memory",
                 f"[{mem_color}]{health.memory_percent:.1f}%[/{mem_color}]",
-                f"{health.memory_available_gb:.1f}GB free / {health.memory_total_gb:.1f}GB total"
+                f"{health.memory_available_gb:.1f}GB free / {health.memory_total_gb:.1f}GB total",
             )
 
             # GPU (if available)
             if health.gpu_available:
-                gpu_color = 'green' if health.gpu_memory_percent < 70 else 'yellow' if health.gpu_memory_percent < 90 else 'red'
+                gpu_color = (
+                    "green"
+                    if health.gpu_memory_percent < 70
+                    else "yellow" if health.gpu_memory_percent < 90 else "red"
+                )
                 table.add_row(
                     "GPU",
                     f"[{gpu_color}]{health.gpu_memory_percent:.1f}%[/{gpu_color}]",
-                    f"{health.gpu_name} - {health.gpu_memory_used_mb:.0f}MB / {health.gpu_memory_total_mb:.0f}MB"
+                    f"{health.gpu_name} - {health.gpu_memory_used_mb:.0f}MB / {health.gpu_memory_total_mb:.0f}MB",
                 )
 
         except Exception as e:
@@ -113,14 +129,18 @@ class HealthDisplay:
         Returns:
             Rich Table with metrics information
         """
-        table = Table(title="Performance Metrics", show_header=True, header_style="bold magenta")
+        table = Table(
+            title="Performance Metrics", show_header=True, header_style="bold magenta"
+        )
         table.add_column("Operation", style="cyan", no_wrap=True)
         table.add_column("Count", justify="right", style="white")
         table.add_column("Avg Time", justify="right", style="yellow")
         table.add_column("Total Time", justify="right", style="white")
 
         if not self.metrics:
-            table.add_row("Metrics", "Not Available", "", "No metrics collector configured")
+            table.add_row(
+                "Metrics", "Not Available", "", "No metrics collector configured"
+            )
             return table
 
         try:
@@ -132,9 +152,7 @@ class HealthDisplay:
 
             # Sort by total time descending
             sorted_stats = sorted(
-                all_stats.items(),
-                key=lambda x: x[1].total_time,
-                reverse=True
+                all_stats.items(), key=lambda x: x[1].total_time, reverse=True
             )
 
             for operation, stats in sorted_stats[:10]:  # Top 10
@@ -142,7 +160,7 @@ class HealthDisplay:
                     operation,
                     str(stats.count),
                     f"{stats.avg_time:.2f}s",
-                    f"{stats.total_time:.2f}s"
+                    f"{stats.total_time:.2f}s",
                 )
 
         except Exception as e:
@@ -164,16 +182,23 @@ class HealthDisplay:
             try:
                 # Try to get cache stats from RAG system if available
                 cache_info = "Cache stats not available"
-                content.append(Text("RAG System: ", style="bold cyan") + Text(cache_info))
+                content.append(
+                    Text("RAG System: ", style="bold cyan") + Text(cache_info)
+                )
             except Exception as e:
                 # RAG cache stats not available, skip display
                 pass
 
         # Check for scheduler status
-        content.append(Text("Scheduler: ", style="bold cyan") + Text("Active", style="green"))
+        content.append(
+            Text("Scheduler: ", style="bold cyan") + Text("Active", style="green")
+        )
 
         # Memory search config
-        content.append(Text("Memory Search: ", style="bold cyan") + Text("Operational", style="green"))
+        content.append(
+            Text("Memory Search: ", style="bold cyan")
+            + Text("Operational", style="green")
+        )
 
         if not content:
             content.append(Text("No cognitive engine status available", style="yellow"))
@@ -183,7 +208,7 @@ class HealthDisplay:
             panel_content,
             title="Cognitive Engine Status",
             border_style="cyan",
-            padding=(1, 2)
+            padding=(1, 2),
         )
 
     def create_full_display(self) -> Panel:
@@ -207,7 +232,7 @@ class HealthDisplay:
             display,
             title="JENOVA System Monitor",
             border_style="bold magenta",
-            padding=(1, 2)
+            padding=(1, 2),
         )
 
     def show_health(self):
@@ -238,12 +263,17 @@ class HealthDisplay:
         Returns:
             Rich Live context manager
         """
+
         def generate_display():
             while True:
                 yield self.create_full_display()
                 time.sleep(refresh_rate)
 
-        return Live(generate_display(), console=self.console, refresh_per_second=1/refresh_rate)
+        return Live(
+            generate_display(),
+            console=self.console,
+            refresh_per_second=1 / refresh_rate,
+        )
 
     def get_status_summary(self) -> dict:
         """
@@ -252,45 +282,41 @@ class HealthDisplay:
         Returns:
             dict: Status summary with health and metrics
         """
-        summary = {
-            'health': {},
-            'metrics': {},
-            'timestamp': time.time()
-        }
+        summary = {"health": {}, "metrics": {}, "timestamp": time.time()}
 
         if self.health_monitor:
             try:
                 health = self.health_monitor.get_health_snapshot()
-                summary['health'] = {
-                    'status': health.status.value,
-                    'cpu_percent': health.cpu_percent,
-                    'memory_percent': health.memory_percent,
-                    'memory_available_gb': health.memory_available_gb,
-                    'gpu_available': health.gpu_available,
-                    'warnings': health.warnings
+                summary["health"] = {
+                    "status": health.status.value,
+                    "cpu_percent": health.cpu_percent,
+                    "memory_percent": health.memory_percent,
+                    "memory_available_gb": health.memory_available_gb,
+                    "gpu_available": health.gpu_available,
+                    "warnings": health.warnings,
                 }
                 if health.gpu_available:
-                    summary['health']['gpu'] = {
-                        'name': health.gpu_name,
-                        'memory_percent': health.gpu_memory_percent,
-                        'memory_used_mb': health.gpu_memory_used_mb
+                    summary["health"]["gpu"] = {
+                        "name": health.gpu_name,
+                        "memory_percent": health.gpu_memory_percent,
+                        "memory_used_mb": health.gpu_memory_used_mb,
                     }
             except Exception as e:
-                summary['health']['error'] = str(e)
+                summary["health"]["error"] = str(e)
 
         if self.metrics:
             try:
                 all_stats = self.metrics.get_all_stats()
-                summary['metrics'] = {
+                summary["metrics"] = {
                     operation: {
-                        'count': stats.count,
-                        'avg_time': stats.avg_time,
-                        'total_time': stats.total_time
+                        "count": stats.count,
+                        "avg_time": stats.avg_time,
+                        "total_time": stats.total_time,
                     }
                     for operation, stats in all_stats.items()
                 }
             except Exception as e:
-                summary['metrics']['error'] = str(e)
+                summary["metrics"]["error"] = str(e)
 
         return summary
 
@@ -317,21 +343,19 @@ class CompactHealthDisplay:
             health = self.health_monitor.get_health_snapshot()
 
             status_color = {
-                'healthy': 'green',
-                'warning': 'yellow',
-                'critical': 'red'
-            }.get(health.status.value, 'white')
+                "healthy": "green",
+                "warning": "yellow",
+                "critical": "red",
+            }.get(health.status.value, "white")
 
-            status_icon = {
-                'healthy': '●',
-                'warning': '◐',
-                'critical': '○'
-            }.get(health.status.value, '?')
+            status_icon = {"healthy": "●", "warning": "◐", "critical": "○"}.get(
+                health.status.value, "?"
+            )
 
             parts = [
                 f"[{status_color}]{status_icon}[/{status_color}]",
                 f"CPU {health.cpu_percent:.0f}%",
-                f"MEM {health.memory_percent:.0f}%"
+                f"MEM {health.memory_percent:.0f}%",
             ]
 
             if health.gpu_available:

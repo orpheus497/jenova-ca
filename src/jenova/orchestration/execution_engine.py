@@ -12,7 +12,12 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional, Any, Callable
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -20,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 class ExecutionStatus(Enum):
     """Status of execution."""
+
     NOT_STARTED = "not_started"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -60,7 +66,7 @@ class ExecutionResult:
             "end_time": self.end_time.isoformat() if self.end_time else None,
             "duration": self.duration(),
             "retry_count": self.retry_count,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
 
@@ -96,7 +102,7 @@ class ExecutionEngine:
         *args,
         task_id: Optional[str] = None,
         retryable_exceptions: Optional[List[type]] = None,
-        **kwargs
+        **kwargs,
     ) -> ExecutionResult:
         """
         Execute a task with error handling.
@@ -117,7 +123,7 @@ class ExecutionEngine:
         result = ExecutionResult(
             task_id=task_id,
             status=ExecutionStatus.NOT_STARTED,
-            start_time=datetime.now()
+            start_time=datetime.now(),
         )
 
         self.running_tasks[task_id] = result
@@ -135,11 +141,7 @@ class ExecutionEngine:
             # Execute with or without retry
             if self.enable_retry and retryable_exceptions:
                 output = self._execute_with_retry(
-                    task_callable,
-                    args,
-                    kwargs,
-                    retryable_exceptions,
-                    result
+                    task_callable, args, kwargs, retryable_exceptions, result
                 )
             else:
                 output = task_callable(*args, **kwargs)
@@ -148,7 +150,9 @@ class ExecutionEngine:
             result.status = ExecutionStatus.COMPLETED
             result.end_time = datetime.now()
 
-            logger.info(f"Task {task_id} completed successfully in {result.duration():.2f}s")
+            logger.info(
+                f"Task {task_id} completed successfully in {result.duration():.2f}s"
+            )
 
         except Exception as e:
             result.error = e
@@ -173,7 +177,7 @@ class ExecutionEngine:
         args: tuple,
         kwargs: Dict[str, Any],
         retryable_exceptions: List[type],
-        result: ExecutionResult
+        result: ExecutionResult,
     ) -> Any:
         """
         Execute task with automatic retry.
@@ -188,16 +192,19 @@ class ExecutionEngine:
         Returns:
             Task result
         """
+
         @retry(
             stop=stop_after_attempt(self.max_retries),
             wait=wait_exponential(multiplier=1, min=2, max=10),
             retry=retry_if_exception_type(tuple(retryable_exceptions)),
-            reraise=True
+            reraise=True,
         )
         def _retry_wrapper():
             result.retry_count += 1
             if result.retry_count > 1:
-                logger.info(f"Retry attempt {result.retry_count} for task {result.task_id}")
+                logger.info(
+                    f"Retry attempt {result.retry_count} for task {result.task_id}"
+                )
             return task_callable(*args, **kwargs)
 
         return _retry_wrapper()
@@ -238,7 +245,7 @@ class ExecutionEngine:
                         results[task_id] = ExecutionResult(
                             task_id=task_id,
                             status=ExecutionStatus.FAILED,
-                            error=Exception(f"Dependency {dep_id} failed")
+                            error=Exception(f"Dependency {dep_id} failed"),
                         )
                         continue
 
@@ -247,7 +254,9 @@ class ExecutionEngine:
             results[task_id] = result
 
             # Stop on failure if required
-            if result.status == ExecutionStatus.FAILED and plan.get("stop_on_failure", True):
+            if result.status == ExecutionStatus.FAILED and plan.get(
+                "stop_on_failure", True
+            ):
                 logger.error(f"Stopping plan execution due to failure in {task_id}")
                 break
 
@@ -327,9 +336,15 @@ class ExecutionEngine:
             Dictionary with execution statistics
         """
         total = len(self.execution_history)
-        completed = sum(1 for r in self.execution_history if r.status == ExecutionStatus.COMPLETED)
-        failed = sum(1 for r in self.execution_history if r.status == ExecutionStatus.FAILED)
-        cancelled = sum(1 for r in self.execution_history if r.status == ExecutionStatus.CANCELLED)
+        completed = sum(
+            1 for r in self.execution_history if r.status == ExecutionStatus.COMPLETED
+        )
+        failed = sum(
+            1 for r in self.execution_history if r.status == ExecutionStatus.FAILED
+        )
+        cancelled = sum(
+            1 for r in self.execution_history if r.status == ExecutionStatus.CANCELLED
+        )
 
         return {
             "total_executions": total,
@@ -338,7 +353,7 @@ class ExecutionEngine:
             "cancelled": cancelled,
             "running": len(self.running_tasks),
             "success_rate": (completed / total * 100) if total > 0 else 0,
-            "is_paused": self._paused
+            "is_paused": self._paused,
         }
 
     def clear_history(self) -> None:
@@ -352,4 +367,6 @@ class ExecutionEngine:
 
     def get_completed_tasks(self) -> List[ExecutionResult]:
         """Get all completed task results."""
-        return [r for r in self.execution_history if r.status == ExecutionStatus.COMPLETED]
+        return [
+            r for r in self.execution_history if r.status == ExecutionStatus.COMPLETED
+        ]

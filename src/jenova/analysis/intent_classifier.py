@@ -87,7 +87,7 @@ class Intent:
             "confidence": self.confidence,
             "text": self.text,
             "entities": self.entities,
-            "secondary_intents": [(i.value, c) for i, c in self.secondary_intents]
+            "secondary_intents": [(i.value, c) for i, c in self.secondary_intents],
         }
 
 
@@ -115,171 +115,165 @@ class IntentClassifier:
         return {
             # Code operations
             IntentType.CODE_ANALYSIS: [
-                r'\b(analyz|inspect|examine|review|check)\s+.*\b(code|function|class|module)',
-                r'\b(complexity|metrics|quality)\b',
-                r'\bcode\s+(quality|metrics|analysis)',
-                r'\banalyze\s+.*\.py',
+                r"\b(analyz|inspect|examine|review|check)\s+.*\b(code|function|class|module)",
+                r"\b(complexity|metrics|quality)\b",
+                r"\bcode\s+(quality|metrics|analysis)",
+                r"\banalyze\s+.*\.py",
             ],
             IntentType.CODE_REFACTOR: [
-                r'\b(refactor|restructure|reorganize|improve|optimize)\s+.*\b(code|function|class)',
-                r'\bclean\s+up\s+.*code',
-                r'\bextract\s+(method|function|class)',
-                r'\brename\s+(variable|function|class|method)',
+                r"\b(refactor|restructure|reorganize|improve|optimize)\s+.*\b(code|function|class)",
+                r"\bclean\s+up\s+.*code",
+                r"\bextract\s+(method|function|class)",
+                r"\brename\s+(variable|function|class|method)",
             ],
             IntentType.CODE_REVIEW: [
-                r'\b(review|critique)\s+.*\b(code|pr|pull\s+request|changes)',
-                r'\bcode\s+review',
-                r'\breview\s+pull\s+request',
+                r"\b(review|critique)\s+.*\b(code|pr|pull\s+request|changes)",
+                r"\bcode\s+review",
+                r"\breview\s+pull\s+request",
             ],
             IntentType.CODE_GENERATION: [
-                r'\b(create|generate|write|implement|add)\s+.*\b(function|class|module|script|code)',
-                r'\bscaffold\s+.*',
-                r'\bgenerate\s+.*code',
-                r'\bcreate\s+.*\.py',
+                r"\b(create|generate|write|implement|add)\s+.*\b(function|class|module|script|code)",
+                r"\bscaffold\s+.*",
+                r"\bgenerate\s+.*code",
+                r"\bcreate\s+.*\.py",
             ],
             IntentType.CODE_EXPLANATION: [
-                r'\b(explain|describe|what\s+(does|is))\s+.*\b(code|function|class)',
-                r'\bhow\s+does\s+.*\bwork',
-                r'\bwhat.*this.*do',
+                r"\b(explain|describe|what\s+(does|is))\s+.*\b(code|function|class)",
+                r"\bhow\s+does\s+.*\bwork",
+                r"\bwhat.*this.*do",
             ],
             IntentType.CODE_DEBUG: [
-                r'\b(debug|fix|solve|troubleshoot)\s+.*\b(error|bug|issue|problem)',
-                r'\bwhy.*not\s+working',
-                r'\berror\s+in\s+.*',
-                r'\bexception\s+in\s+.*',
+                r"\b(debug|fix|solve|troubleshoot)\s+.*\b(error|bug|issue|problem)",
+                r"\bwhy.*not\s+working",
+                r"\berror\s+in\s+.*",
+                r"\bexception\s+in\s+.*",
             ],
-
             # Git operations
             IntentType.GIT_COMMIT: [
-                r'\b(commit|save)\s+.*\b(changes|files)',
-                r'\bgit\s+commit',
-                r'\bmake\s+.*commit',
+                r"\b(commit|save)\s+.*\b(changes|files)",
+                r"\bgit\s+commit",
+                r"\bmake\s+.*commit",
             ],
             IntentType.GIT_BRANCH: [
-                r'\b(create|switch|checkout|delete)\s+.*\b(branch)',
-                r'\bgit\s+(branch|checkout)',
-                r'\bnew\s+branch',
+                r"\b(create|switch|checkout|delete)\s+.*\b(branch)",
+                r"\bgit\s+(branch|checkout)",
+                r"\bnew\s+branch",
             ],
             IntentType.GIT_MERGE: [
-                r'\b(merge|combine)\s+.*\b(branch|changes)',
-                r'\bgit\s+merge',
+                r"\b(merge|combine)\s+.*\b(branch|changes)",
+                r"\bgit\s+merge",
             ],
             IntentType.GIT_REBASE: [
-                r'\brebase\s+.*',
-                r'\bgit\s+rebase',
+                r"\brebase\s+.*",
+                r"\bgit\s+rebase",
             ],
             IntentType.GIT_STATUS: [
-                r'\bgit\s+status',
-                r'\b(show|check)\s+.*\b(status|changes)',
-                r'\bwhat.*changed',
+                r"\bgit\s+status",
+                r"\b(show|check)\s+.*\b(status|changes)",
+                r"\bwhat.*changed",
             ],
             IntentType.GIT_DIFF: [
-                r'\bgit\s+diff',
-                r'\b(show|display)\s+.*\b(diff|difference|changes)',
-                r'\bcompare\s+.*',
+                r"\bgit\s+diff",
+                r"\b(show|display)\s+.*\b(diff|difference|changes)",
+                r"\bcompare\s+.*",
             ],
             IntentType.GIT_LOG: [
-                r'\bgit\s+(log|history)',
-                r'\b(show|view)\s+.*\b(history|commits|log)',
-                r'\bcommit\s+history',
+                r"\bgit\s+(log|history)",
+                r"\b(show|view)\s+.*\b(history|commits|log)",
+                r"\bcommit\s+history",
             ],
-
             # File operations
             IntentType.FILE_READ: [
-                r'\b(read|show|display|cat|view|open)\s+.*\b(file|\.py|\.txt|\.md)',
-                r'\bshow\s+me\s+.*',
-                r'\bwhat.*in\s+.*file',
+                r"\b(read|show|display|cat|view|open)\s+.*\b(file|\.py|\.txt|\.md)",
+                r"\bshow\s+me\s+.*",
+                r"\bwhat.*in\s+.*file",
             ],
             IntentType.FILE_WRITE: [
-                r'\b(write|save|create)\s+.*\b(to\s+)?file',
-                r'\bsave\s+.*to\s+.*',
+                r"\b(write|save|create)\s+.*\b(to\s+)?file",
+                r"\bsave\s+.*to\s+.*",
             ],
             IntentType.FILE_EDIT: [
-                r'\b(edit|modify|update|change)\s+.*\b(file|\.py|\.txt)',
-                r'\bupdate\s+.*file',
-                r'\bmodify\s+.*in\s+.*',
+                r"\b(edit|modify|update|change)\s+.*\b(file|\.py|\.txt)",
+                r"\bupdate\s+.*file",
+                r"\bmodify\s+.*in\s+.*",
             ],
             IntentType.FILE_DELETE: [
-                r'\b(delete|remove|rm)\s+.*\b(file|\.py|\.txt)',
-                r'\bremove\s+.*file',
+                r"\b(delete|remove|rm)\s+.*\b(file|\.py|\.txt)",
+                r"\bremove\s+.*file",
             ],
             IntentType.FILE_SEARCH: [
-                r'\b(find|search|locate|grep)\s+.*\b(file|files|in)',
-                r'\bsearch\s+for\s+.*',
-                r'\bwhere\s+is\s+.*',
+                r"\b(find|search|locate|grep)\s+.*\b(file|files|in)",
+                r"\bsearch\s+for\s+.*",
+                r"\bwhere\s+is\s+.*",
             ],
             IntentType.FILE_CREATE: [
-                r'\b(create|make|new)\s+.*\b(file|directory|folder)',
-                r'\bmkdir\s+.*',
-                r'\btouch\s+.*',
+                r"\b(create|make|new)\s+.*\b(file|directory|folder)",
+                r"\bmkdir\s+.*",
+                r"\btouch\s+.*",
             ],
-
             # Project operations
             IntentType.PROJECT_BUILD: [
-                r'\b(build|compile|make)\s+.*\b(project|code|app)',
-                r'\brun\s+(build|make)',
-                r'\bnpm\s+run\s+build',
-                r'\bmake\s+build',
+                r"\b(build|compile|make)\s+.*\b(project|code|app)",
+                r"\brun\s+(build|make)",
+                r"\bnpm\s+run\s+build",
+                r"\bmake\s+build",
             ],
             IntentType.PROJECT_TEST: [
-                r'\b(test|run\s+tests|execute\s+tests)',
-                r'\bpytest\s+.*',
-                r'\bunittest\s+.*',
-                r'\bnpm\s+test',
+                r"\b(test|run\s+tests|execute\s+tests)",
+                r"\bpytest\s+.*",
+                r"\bunittest\s+.*",
+                r"\bnpm\s+test",
             ],
             IntentType.PROJECT_DEPLOY: [
-                r'\b(deploy|publish|release)\s+.*',
-                r'\bpush\s+to\s+(production|staging)',
+                r"\b(deploy|publish|release)\s+.*",
+                r"\bpush\s+to\s+(production|staging)",
             ],
             IntentType.PROJECT_SETUP: [
-                r'\b(setup|initialize|init)\s+.*\b(project|repo|repository)',
-                r'\bgit\s+init',
-                r'\bnpm\s+init',
+                r"\b(setup|initialize|init)\s+.*\b(project|repo|repository)",
+                r"\bgit\s+init",
+                r"\bnpm\s+init",
             ],
             IntentType.PROJECT_ANALYZE: [
-                r'\b(analyze|audit|scan)\s+.*\b(project|codebase|repo)',
-                r'\bproject\s+(analysis|audit)',
+                r"\b(analyze|audit|scan)\s+.*\b(project|codebase|repo)",
+                r"\bproject\s+(analysis|audit)",
             ],
-
             # Documentation
             IntentType.DOC_GENERATE: [
-                r'\b(generate|create|write)\s+.*\b(docs|documentation|readme)',
-                r'\bdocument\s+.*',
+                r"\b(generate|create|write)\s+.*\b(docs|documentation|readme)",
+                r"\bdocument\s+.*",
             ],
             IntentType.DOC_EXPLAIN: [
-                r'\bexplain\s+.*\b(feature|api|usage)',
-                r'\bhow\s+to\s+use\s+.*',
+                r"\bexplain\s+.*\b(feature|api|usage)",
+                r"\bhow\s+to\s+use\s+.*",
             ],
             IntentType.DOC_UPDATE: [
-                r'\b(update|modify|fix)\s+.*\b(docs|documentation|readme)',
+                r"\b(update|modify|fix)\s+.*\b(docs|documentation|readme)",
             ],
-
             # System operations
             IntentType.SYSTEM_COMMAND: [
-                r'\b(run|execute)\s+.*\b(command|script)',
-                r'^\s*[\w/]+\s+.*',  # Command-like syntax
+                r"\b(run|execute)\s+.*\b(command|script)",
+                r"^\s*[\w/]+\s+.*",  # Command-like syntax
             ],
             IntentType.SYSTEM_INSTALL: [
-                r'\b(install|setup|add)\s+.*\b(package|dependency|library)',
-                r'\bpip\s+install\s+.*',
-                r'\bnpm\s+install\s+.*',
+                r"\b(install|setup|add)\s+.*\b(package|dependency|library)",
+                r"\bpip\s+install\s+.*",
+                r"\bnpm\s+install\s+.*",
             ],
             IntentType.SYSTEM_CONFIG: [
-                r'\b(configure|config|setup)\s+.*',
-                r'\bsettings\s+.*',
+                r"\b(configure|config|setup)\s+.*",
+                r"\bsettings\s+.*",
             ],
-
             # Conversational
             IntentType.QUESTION: [
-                r'^\s*(what|why|how|when|where|who|can|could|would|should)',
-                r'\?\s*$',
+                r"^\s*(what|why|how|when|where|who|can|could|would|should)",
+                r"\?\s*$",
             ],
             IntentType.GREETING: [
-                r'\b(hello|hi|hey|greetings|good\s+(morning|afternoon|evening))',
+                r"\b(hello|hi|hey|greetings|good\s+(morning|afternoon|evening))",
             ],
             IntentType.HELP: [
-                r'\b(help|assist|support)\b',
-                r'\bhow\s+do\s+i\s+.*',
+                r"\b(help|assist|support)\b",
+                r"\bhow\s+do\s+i\s+.*",
             ],
         }
 
@@ -291,23 +285,26 @@ class IntentClassifier:
             Dictionary of entity types to their (name, pattern) tuples
         """
         return {
-            'file_path': [
-                ('path', r'(?:^|\s)((?:\.{0,2}/)?[\w/.-]+\.[\w]+)(?:\s|$)'),
-                ('path', r'(?:^|\s)([\w/.-]+/[\w/.-]+)(?:\s|$)'),
+            "file_path": [
+                ("path", r"(?:^|\s)((?:\.{0,2}/)?[\w/.-]+\.[\w]+)(?:\s|$)"),
+                ("path", r"(?:^|\s)([\w/.-]+/[\w/.-]+)(?:\s|$)"),
             ],
-            'git_ref': [
-                ('branch', r'\bbranch\s+(\w+[\w/-]*)'),
-                ('commit', r'\bcommit\s+([0-9a-f]{7,40})'),
-                ('tag', r'\btag\s+([\w.-]+)'),
+            "git_ref": [
+                ("branch", r"\bbranch\s+(\w+[\w/-]*)"),
+                ("commit", r"\bcommit\s+([0-9a-f]{7,40})"),
+                ("tag", r"\btag\s+([\w.-]+)"),
             ],
-            'code_entity': [
-                ('function', r'\bfunction\s+(\w+)'),
-                ('class', r'\bclass\s+(\w+)'),
-                ('method', r'\bmethod\s+(\w+)'),
-                ('variable', r'\bvariable\s+(\w+)'),
+            "code_entity": [
+                ("function", r"\bfunction\s+(\w+)"),
+                ("class", r"\bclass\s+(\w+)"),
+                ("method", r"\bmethod\s+(\w+)"),
+                ("variable", r"\bvariable\s+(\w+)"),
             ],
-            'language': [
-                ('language', r'\b(python|javascript|java|cpp|c\+\+|rust|go|typescript|ruby)\b'),
+            "language": [
+                (
+                    "language",
+                    r"\b(python|javascript|java|cpp|c\+\+|rust|go|typescript|ruby)\b",
+                ),
             ],
         }
 
@@ -322,11 +319,7 @@ class IntentClassifier:
             Intent object with classification results
         """
         if not text or not text.strip():
-            return Intent(
-                intent_type=IntentType.GENERAL,
-                confidence=1.0,
-                text=text
-            )
+            return Intent(intent_type=IntentType.GENERAL, confidence=1.0, text=text)
 
         text_lower = text.lower().strip()
 
@@ -342,7 +335,8 @@ class IntentClassifier:
 
         # Get secondary intents
         secondary_intents = [
-            (intent, score) for intent, score in scores.items()
+            (intent, score)
+            for intent, score in scores.items()
             if intent != primary_intent and score > 0.3
         ]
         secondary_intents.sort(key=lambda x: x[1], reverse=True)
@@ -355,7 +349,7 @@ class IntentClassifier:
             confidence=confidence,
             text=text,
             entities=entities,
-            secondary_intents=secondary_intents[:3]  # Top 3 secondary
+            secondary_intents=secondary_intents[:3],  # Top 3 secondary
         )
 
     def _score_intents(self, text: str) -> Dict[IntentType, float]:
@@ -381,7 +375,9 @@ class IntentClassifier:
                         if self._has_exact_keywords(text, pattern):
                             scores[intent_type] += 0.2
                 except re.error as e:
-                    logger.warning(f"Invalid regex pattern for {intent_type}: {pattern} - {e}")
+                    logger.warning(
+                        f"Invalid regex pattern for {intent_type}: {pattern} - {e}"
+                    )
 
         # Normalize scores to 0-1 range
         if scores:
@@ -394,7 +390,7 @@ class IntentClassifier:
     def _has_exact_keywords(self, text: str, pattern: str) -> bool:
         """Check if text contains exact keywords from pattern."""
         # Extract simple words from pattern (ignoring regex syntax)
-        keywords = re.findall(r'\b([a-z]{3,})\b', pattern.lower())
+        keywords = re.findall(r"\b([a-z]{3,})\b", pattern.lower())
         return any(keyword in text for keyword in keywords)
 
     def _extract_entities(self, text: str) -> Dict[str, Any]:
@@ -422,12 +418,12 @@ class IntentClassifier:
         # Also extract quoted strings as potential entities
         quoted_strings = re.findall(r'["\']([^"\']+)["\']', text)
         if quoted_strings:
-            entities['quoted_strings'] = quoted_strings
+            entities["quoted_strings"] = quoted_strings
 
         # Extract file extensions
-        extensions = re.findall(r'\.([a-z]{2,4})\b', text.lower())
+        extensions = re.findall(r"\.([a-z]{2,4})\b", text.lower())
         if extensions:
-            entities['file_extensions'] = list(set(extensions))
+            entities["file_extensions"] = list(set(extensions))
 
         return entities
 
@@ -458,7 +454,7 @@ class IntentClassifier:
         if intent_type in self.patterns:
             for pattern in self.patterns[intent_type]:
                 # Extract simple words from pattern
-                words = re.findall(r'\b([a-z]{3,})\b', pattern.lower())
+                words = re.findall(r"\b([a-z]{3,})\b", pattern.lower())
                 keywords.update(words)
 
         return keywords
@@ -500,7 +496,9 @@ class IntentClassifier:
             return True
         return False
 
-    def get_similar_intents(self, intent_type: IntentType, threshold: float = 0.5) -> List[IntentType]:
+    def get_similar_intents(
+        self, intent_type: IntentType, threshold: float = 0.5
+    ) -> List[IntentType]:
         """
         Get intent types that are similar to the given intent.
 

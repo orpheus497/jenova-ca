@@ -31,7 +31,7 @@ class DistributedMemorySearch:
         local_memory_search,
         rpc_client=None,
         peer_manager=None,
-        network_metrics=None
+        network_metrics=None,
     ):
         """
         Initialize distributed memory search.
@@ -52,10 +52,10 @@ class DistributedMemorySearch:
         self.network_metrics = network_metrics
 
         # Configuration
-        network_config = config.get('network', {})
-        self.network_enabled = network_config.get('enabled', False)
-        resource_sharing = network_config.get('resource_sharing', {})
-        self.share_memory = resource_sharing.get('share_memory', False)
+        network_config = config.get("network", {})
+        self.network_enabled = network_config.get("enabled", False)
+        resource_sharing = network_config.get("resource_sharing", {})
+        self.share_memory = resource_sharing.get("share_memory", False)
 
         self.file_logger.log_info(
             f"Distributed memory search initialized "
@@ -64,10 +64,7 @@ class DistributedMemorySearch:
         )
 
     def search_all(
-        self,
-        query: str,
-        username: str,
-        include_distributed: bool = False
+        self, query: str, username: str, include_distributed: bool = False
     ) -> List[str]:
         """
         Search memories locally and optionally across peers.
@@ -94,7 +91,7 @@ class DistributedMemorySearch:
         all_results = local_results + peer_results
 
         # Re-rank if enabled (using local re-ranking logic)
-        if self.config.get('memory_search', {}).get('rerank_enabled', False):
+        if self.config.get("memory_search", {}).get("rerank_enabled", False):
             # Use local memory search's re-ranking
             return all_results  # Simplified: would apply re-ranking here
 
@@ -115,9 +112,11 @@ class DistributedMemorySearch:
 
         # Get peers that share memory
         available_peers = [
-            p for p in self.peer_manager.get_all_peers()
-            if p.status.value == 'connected' and
-            p.capabilities and p.capabilities.share_memory
+            p
+            for p in self.peer_manager.get_all_peers()
+            if p.status.value == "connected"
+            and p.capabilities
+            and p.capabilities.share_memory
         ]
 
         if not available_peers:
@@ -154,8 +153,7 @@ class DistributedMemorySearch:
         # Start search threads
         for peer in available_peers[:5]:  # Limit to 5 peers max
             thread = threading.Thread(
-                target=search_peer,
-                args=(peer.peer_info.instance_id,)
+                target=search_peer, args=(peer.peer_info.instance_id,)
             )
             thread.start()
             threads.append(thread)

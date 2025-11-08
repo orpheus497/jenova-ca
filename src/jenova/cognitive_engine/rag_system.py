@@ -64,7 +64,7 @@ class LRUCache:
             "capacity": self.capacity,
             "hits": self.hits,
             "misses": self.misses,
-            "hit_rate": f"{hit_rate:.1f}%"
+            "hit_rate": f"{hit_rate:.1f}%",
         }
 
 
@@ -81,16 +81,17 @@ class RAGSystem:
         self.file_logger = memory_search.file_logger
 
         # Initialize response cache
-        cache_config = config.get('rag_system', {})
-        cache_size = cache_config.get('cache_size', 100)
-        self.cache_enabled = cache_config.get('cache_enabled', True)
+        cache_config = config.get("rag_system", {})
+        cache_size = cache_config.get("cache_size", 100)
+        self.cache_enabled = cache_config.get("cache_enabled", True)
         self.response_cache = LRUCache(capacity=cache_size)
-        self.generation_timeout = cache_config.get('generation_timeout', 120)
+        self.generation_timeout = cache_config.get("generation_timeout", 120)
 
         if self.file_logger:
             self.file_logger.log_info(
                 f"RAG System initialized with cache_enabled={self.cache_enabled}, "
-                f"cache_size={cache_size}, generation_timeout={self.generation_timeout}s")
+                f"cache_size={cache_size}, generation_timeout={self.generation_timeout}s"
+            )
 
     def _generate_cache_key(self, query: str, username: str, plan: str) -> str:
         """
@@ -121,8 +122,14 @@ class RAGSystem:
             search_results_formatted += f"Summary: {res.get('summary', 'N/A')}\n\n"
         return search_results_formatted
 
-    def generate_response(self, query: str, username: str, history: list[str],
-                          plan: str, search_results: list[dict] | None = None) -> str:
+    def generate_response(
+        self,
+        query: str,
+        username: str,
+        history: list[str],
+        plan: str,
+        search_results: list[dict] | None = None,
+    ) -> str:
         """
         Generates a response using the RAG process with caching.
 
@@ -142,8 +149,7 @@ class RAGSystem:
             cached_response = self.response_cache.get(cache_key)
             if cached_response:
                 if self.file_logger:
-                    self.file_logger.log_info(
-                        f"Cache hit for query: {query[:50]}...")
+                    self.file_logger.log_info(f"Cache hit for query: {query[:50]}...")
                 return cached_response
 
         try:
@@ -167,8 +173,8 @@ class RAGSystem:
             context_str = "\n".join(f"- {c}" for c in safe_context)
             history_str = "\n".join(history)
 
-            persona = self.config.get('persona', {})
-            identity = persona.get('identity', {})
+            persona = self.config.get("persona", {})
+            identity = persona.get("identity", {})
 
             search_results_formatted = self._format_search_results(search_results)
 
@@ -225,17 +231,16 @@ User ({username}): \"{query}\"\n\n{identity.get('name', 'Jenova')}:"""
                 self.response_cache.put(cache_key, response)
                 if self.file_logger:
                     self.file_logger.log_info(
-                        f"Cached response for query: {query[:50]}...")
+                        f"Cached response for query: {query[:50]}..."
+                    )
 
             return response
 
         except Exception as e:
             if self.ui_logger:
-                self.ui_logger.system_message(
-                    f"Error during response generation: {e}")
+                self.ui_logger.system_message(f"Error during response generation: {e}")
             if self.file_logger:
-                self.file_logger.log_error(
-                    f"Error during response generation: {e}")
+                self.file_logger.log_error(f"Error during response generation: {e}")
             return "I'm sorry, I'm having trouble generating a response right now. Please try again later."
 
     def clear_cache(self):

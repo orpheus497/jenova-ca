@@ -49,7 +49,7 @@ class MemoryManager:
         health_monitor: Optional[HealthMonitor] = None,
         metrics: Optional[MetricsCollector] = None,
         ui_logger=None,
-        file_logger=None
+        file_logger=None,
     ):
         """
         Initialize memory manager.
@@ -71,12 +71,7 @@ class MemoryManager:
         self.ui_logger = ui_logger
         self.file_logger = file_logger
 
-    def add_to_episodic(
-        self,
-        summary: str,
-        username: str,
-        **kwargs
-    ) -> Optional[str]:
+    def add_to_episodic(self, summary: str, username: str, **kwargs) -> Optional[str]:
         """
         Add episode to episodic memory.
 
@@ -94,19 +89,18 @@ class MemoryManager:
             return None
 
         try:
-            with self.metrics.measure('memory_episodic_add') if self.metrics else nullcontext():
+            with (
+                self.metrics.measure("memory_episodic_add")
+                if self.metrics
+                else nullcontext()
+            ):
                 return self.episodic.add_episode(summary, username, **kwargs)
         except Exception as e:
             if self.file_logger:
                 self.file_logger.log_error(f"Failed to add to episodic memory: {e}")
             return None
 
-    def add_to_semantic(
-        self,
-        fact: str,
-        username: str,
-        **kwargs
-    ) -> Optional[str]:
+    def add_to_semantic(self, fact: str, username: str, **kwargs) -> Optional[str]:
         """
         Add fact to semantic memory.
 
@@ -124,7 +118,11 @@ class MemoryManager:
             return None
 
         try:
-            with self.metrics.measure('memory_semantic_add') if self.metrics else nullcontext():
+            with (
+                self.metrics.measure("memory_semantic_add")
+                if self.metrics
+                else nullcontext()
+            ):
                 return self.semantic.add_fact(fact, username, **kwargs)
         except Exception as e:
             if self.file_logger:
@@ -132,10 +130,7 @@ class MemoryManager:
             return None
 
     def add_to_procedural(
-        self,
-        procedure: str,
-        username: str,
-        **kwargs
+        self, procedure: str, username: str, **kwargs
     ) -> Optional[str]:
         """
         Add procedure to procedural memory.
@@ -154,7 +149,11 @@ class MemoryManager:
             return None
 
         try:
-            with self.metrics.measure('memory_procedural_add') if self.metrics else nullcontext():
+            with (
+                self.metrics.measure("memory_procedural_add")
+                if self.metrics
+                else nullcontext()
+            ):
                 return self.procedural.add_procedure(procedure, username, **kwargs)
         except Exception as e:
             if self.file_logger:
@@ -163,10 +162,7 @@ class MemoryManager:
 
     @with_timeout(60)
     def search_all(
-        self,
-        query: str,
-        username: str,
-        n_results_per_memory: int = 3
+        self, query: str, username: str, n_results_per_memory: int = 3
     ) -> Dict[str, List[Tuple[str, float]]]:
         """
         Search across all memory types.
@@ -184,38 +180,50 @@ class MemoryManager:
         # Search episodic
         if self.episodic:
             try:
-                with self.metrics.measure('memory_episodic_search') if self.metrics else nullcontext():
-                    results['episodic'] = self.episodic.recall_relevant_episodes(
+                with (
+                    self.metrics.measure("memory_episodic_search")
+                    if self.metrics
+                    else nullcontext()
+                ):
+                    results["episodic"] = self.episodic.recall_relevant_episodes(
                         query, username, n_results_per_memory
                     )
             except Exception as e:
                 if self.file_logger:
                     self.file_logger.log_error(f"Episodic search failed: {e}")
-                results['episodic'] = []
+                results["episodic"] = []
 
         # Search semantic
         if self.semantic:
             try:
-                with self.metrics.measure('memory_semantic_search') if self.metrics else nullcontext():
-                    results['semantic'] = self.semantic.search_collection(
+                with (
+                    self.metrics.measure("memory_semantic_search")
+                    if self.metrics
+                    else nullcontext()
+                ):
+                    results["semantic"] = self.semantic.search_collection(
                         query, username, n_results_per_memory
                     )
             except Exception as e:
                 if self.file_logger:
                     self.file_logger.log_error(f"Semantic search failed: {e}")
-                results['semantic'] = []
+                results["semantic"] = []
 
         # Search procedural
         if self.procedural:
             try:
-                with self.metrics.measure('memory_procedural_search') if self.metrics else nullcontext():
-                    results['procedural'] = self.procedural.search(
+                with (
+                    self.metrics.measure("memory_procedural_search")
+                    if self.metrics
+                    else nullcontext()
+                ):
+                    results["procedural"] = self.procedural.search(
                         query, username, n_results_per_memory
                     )
             except Exception as e:
                 if self.file_logger:
                     self.file_logger.log_error(f"Procedural search failed: {e}")
-                results['procedural'] = []
+                results["procedural"] = []
 
         if self.file_logger:
             total_results = sum(len(r) for r in results.values())
@@ -239,30 +247,42 @@ class MemoryManager:
 
         if self.episodic:
             try:
-                stats['episodic'] = {
-                    'count': self.episodic.collection.count() if hasattr(self.episodic, 'collection') else 0,
-                    'status': 'available'
+                stats["episodic"] = {
+                    "count": (
+                        self.episodic.collection.count()
+                        if hasattr(self.episodic, "collection")
+                        else 0
+                    ),
+                    "status": "available",
                 }
             except Exception as e:
-                stats['episodic'] = {'count': 0, 'status': 'error', 'error': str(e)}
+                stats["episodic"] = {"count": 0, "status": "error", "error": str(e)}
 
         if self.semantic:
             try:
-                stats['semantic'] = {
-                    'count': self.semantic.collection.count() if hasattr(self.semantic, 'collection') else 0,
-                    'status': 'available'
+                stats["semantic"] = {
+                    "count": (
+                        self.semantic.collection.count()
+                        if hasattr(self.semantic, "collection")
+                        else 0
+                    ),
+                    "status": "available",
                 }
             except Exception as e:
-                stats['semantic'] = {'count': 0, 'status': 'error', 'error': str(e)}
+                stats["semantic"] = {"count": 0, "status": "error", "error": str(e)}
 
         if self.procedural:
             try:
-                stats['procedural'] = {
-                    'count': self.procedural.collection.count() if hasattr(self.procedural, 'collection') else 0,
-                    'status': 'available'
+                stats["procedural"] = {
+                    "count": (
+                        self.procedural.collection.count()
+                        if hasattr(self.procedural, "collection")
+                        else 0
+                    ),
+                    "status": "available",
                 }
             except Exception as e:
-                stats['procedural'] = {'count': 0, 'status': 'error', 'error': str(e)}
+                stats["procedural"] = {"count": 0, "status": "error", "error": str(e)}
 
         return stats
 
@@ -273,34 +293,33 @@ class MemoryManager:
         Returns:
             Health status dictionary
         """
-        health = {
-            'overall_status': 'healthy',
-            'memory_systems': {}
-        }
+        health = {"overall_status": "healthy", "memory_systems": {}}
 
         # Check each memory system
         if self.episodic:
-            if hasattr(self.episodic, 'get_health_status'):
-                health['memory_systems']['episodic'] = self.episodic.get_health_status()
+            if hasattr(self.episodic, "get_health_status"):
+                health["memory_systems"]["episodic"] = self.episodic.get_health_status()
             else:
-                health['memory_systems']['episodic'] = {'status': 'available'}
+                health["memory_systems"]["episodic"] = {"status": "available"}
 
         if self.semantic:
-            if hasattr(self.semantic, 'get_health_status'):
-                health['memory_systems']['semantic'] = self.semantic.get_health_status()
+            if hasattr(self.semantic, "get_health_status"):
+                health["memory_systems"]["semantic"] = self.semantic.get_health_status()
             else:
-                health['memory_systems']['semantic'] = {'status': 'available'}
+                health["memory_systems"]["semantic"] = {"status": "available"}
 
         if self.procedural:
-            if hasattr(self.procedural, 'get_health_status'):
-                health['memory_systems']['procedural'] = self.procedural.get_health_status()
+            if hasattr(self.procedural, "get_health_status"):
+                health["memory_systems"][
+                    "procedural"
+                ] = self.procedural.get_health_status()
             else:
-                health['memory_systems']['procedural'] = {'status': 'available'}
+                health["memory_systems"]["procedural"] = {"status": "available"}
 
         # Determine overall status
-        for memory_name, memory_health in health['memory_systems'].items():
-            if memory_health.get('status') == 'unhealthy':
-                health['overall_status'] = 'degraded'
+        for memory_name, memory_health in health["memory_systems"].items():
+            if memory_health.get("status") == "unhealthy":
+                health["overall_status"] = "degraded"
                 break
 
         return health
@@ -329,31 +348,49 @@ class MemoryManager:
 
         if self.episodic:
             try:
-                total += self.episodic.collection.count() if hasattr(self.episodic, 'collection') else 0
+                total += (
+                    self.episodic.collection.count()
+                    if hasattr(self.episodic, "collection")
+                    else 0
+                )
             except Exception as e:
                 if self.file_logger:
-                    self.file_logger.log_warning(f"Failed to count episodic memory entries: {e}")
+                    self.file_logger.log_warning(
+                        f"Failed to count episodic memory entries: {e}"
+                    )
 
         if self.semantic:
             try:
-                total += self.semantic.collection.count() if hasattr(self.semantic, 'collection') else 0
+                total += (
+                    self.semantic.collection.count()
+                    if hasattr(self.semantic, "collection")
+                    else 0
+                )
             except Exception as e:
                 if self.file_logger:
-                    self.file_logger.log_warning(f"Failed to count semantic memory entries: {e}")
+                    self.file_logger.log_warning(
+                        f"Failed to count semantic memory entries: {e}"
+                    )
 
         if self.procedural:
             try:
-                total += self.procedural.collection.count() if hasattr(self.procedural, 'collection') else 0
+                total += (
+                    self.procedural.collection.count()
+                    if hasattr(self.procedural, "collection")
+                    else 0
+                )
             except Exception as e:
                 if self.file_logger:
-                    self.file_logger.log_warning(f"Failed to count procedural memory entries: {e}")
+                    self.file_logger.log_warning(
+                        f"Failed to count procedural memory entries: {e}"
+                    )
 
         return total
 
     def is_healthy(self) -> bool:
         """Check if all memory systems are healthy."""
         health = self.get_health_status()
-        return health['overall_status'] in ['healthy', 'degraded']
+        return health["overall_status"] in ["healthy", "degraded"]
 
     def get_summary(self) -> str:
         """Get a human-readable summary of memory status."""
@@ -364,12 +401,12 @@ class MemoryManager:
             "Memory Systems Summary:",
             f"  Overall Status: {health['overall_status'].upper()}",
             f"  Total Entries: {self.get_total_count()}",
-            ""
+            "",
         ]
 
         for memory_type, memory_stats in stats.items():
-            status = memory_stats.get('status', 'unknown')
-            count = memory_stats.get('count', 0)
+            status = memory_stats.get("status", "unknown")
+            count = memory_stats.get("count", 0)
             lines.append(f"  {memory_type.title()}: {count} entries ({status})")
 
         return "\n".join(lines)

@@ -52,7 +52,7 @@ class PromptSanitizer:
     ]
 
     # Characters that need escaping in prompts
-    DANGEROUS_CHARS = ['<', '>', '{', '}', '$', '`']
+    DANGEROUS_CHARS = ["<", ">", "{", "}", "$", "`"]
 
     # Maximum input length to prevent resource exhaustion
     MAX_INPUT_LENGTH = 50000  # ~50KB
@@ -73,8 +73,7 @@ class PromptSanitizer:
             "Task: Generate a helpful, accurate response based on the context and plan."
         ),
         "analyze": Template(
-            "Analyze the following content:\n\n$content\n\n"
-            "Task: $task"
+            "Analyze the following content:\n\n$content\n\n" "Task: $task"
         ),
     }
 
@@ -158,18 +157,14 @@ class PromptSanitizer:
                 sanitized = sanitized.replace(char, f"\\{char}")
 
         # Remove null bytes (can cause issues with C-based LLM backends)
-        sanitized = sanitized.replace('\x00', '')
+        sanitized = sanitized.replace("\x00", "")
 
         # Normalize whitespace (prevent whitespace-based obfuscation)
-        sanitized = ' '.join(sanitized.split())
+        sanitized = " ".join(sanitized.split())
 
         return sanitized
 
-    def build_safe_prompt(
-        self,
-        template_name: str,
-        **kwargs: Any
-    ) -> str:
+    def build_safe_prompt(self, template_name: str, **kwargs: Any) -> str:
         """
         Build a safe prompt using templates to prevent manipulation.
 
@@ -197,9 +192,9 @@ class PromptSanitizer:
             if isinstance(value, str):
                 # Don't reject context/plan - they're from trusted sources
                 # But still remove null bytes
-                sanitized_kwargs[key] = value.replace('\x00', '')
+                sanitized_kwargs[key] = value.replace("\x00", "")
             else:
-                sanitized_kwargs[key] = str(value).replace('\x00', '')
+                sanitized_kwargs[key] = str(value).replace("\x00", "")
 
         try:
             return template.substitute(**sanitized_kwargs)
@@ -226,9 +221,7 @@ class PromptSanitizer:
             return llm_output
 
         if not isinstance(llm_output, str):
-            raise TypeError(
-                f"Expected string output, got {type(llm_output).__name__}"
-            )
+            raise TypeError(f"Expected string output, got {type(llm_output).__name__}")
 
         # Check for signs of successful jailbreak
         jailbreak_indicators = [
@@ -304,10 +297,10 @@ class PromptSanitizer:
         risk_score = min(risk_score, 1.0)
 
         return {
-            'has_risk': risk_score > 0.3,
-            'risk_score': risk_score,
-            'matched_patterns': matched_patterns[:5],  # First 5 only
-            'dangerous_chars': dangerous_chars,
+            "has_risk": risk_score > 0.3,
+            "risk_score": risk_score,
+            "matched_patterns": matched_patterns[:5],  # First 5 only
+            "dangerous_chars": dangerous_chars,
         }
 
 

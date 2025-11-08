@@ -31,16 +31,19 @@ from jenova.utils.embedding import CustomEmbeddingFunction
 
 class MemoryError(Exception):
     """Base exception for memory operations."""
+
     pass
 
 
 class MemoryInitError(MemoryError):
     """Raised when memory initialization fails."""
+
     pass
 
 
 class MemoryOperationError(MemoryError):
     """Raised when memory operation fails."""
+
     pass
 
 
@@ -67,7 +70,7 @@ class BaseMemory(ABC):
         embedding_model,
         collection_name: str,
         file_manager: Optional[FileManager] = None,
-        metrics: Optional[Any] = None
+        metrics: Optional[Any] = None,
     ):
         """
         Initialize base memory system.
@@ -106,8 +109,7 @@ class BaseMemory(ABC):
 
             # Create embedding function
             self.embedding_function = CustomEmbeddingFunction(
-                model=embedding_model,
-                model_name=config['model']['embedding_model']
+                model=embedding_model, model_name=config["model"]["embedding_model"]
             )
 
             # Initialize collection with migration support
@@ -134,7 +136,9 @@ class BaseMemory(ABC):
                 # but log through file manager
                 os.makedirs(self.db_path, exist_ok=True)
                 if self.file_logger:
-                    self.file_logger.log_info(f"Database directory ensured: {self.db_path}")
+                    self.file_logger.log_info(
+                        f"Database directory ensured: {self.db_path}"
+                    )
             except Exception as e:
                 raise MemoryInitError(f"Failed to create database directory: {e}")
         else:
@@ -154,8 +158,7 @@ class BaseMemory(ABC):
         try:
             # Try to get or create collection
             collection = self.client.get_or_create_collection(
-                name=self.collection_name,
-                embedding_function=self.embedding_function
+                name=self.collection_name, embedding_function=self.embedding_function
             )
             return collection
 
@@ -198,16 +201,15 @@ class BaseMemory(ABC):
 
             # Create new collection
             new_collection = self.client.get_or_create_collection(
-                name=self.collection_name,
-                embedding_function=self.embedding_function
+                name=self.collection_name, embedding_function=self.embedding_function
             )
 
             # Migrate data if exists
-            if data['ids']:
+            if data["ids"]:
                 new_collection.add(
-                    ids=data['ids'],
-                    documents=data['documents'],
-                    metadatas=data['metadatas']
+                    ids=data["ids"],
+                    documents=data["documents"],
+                    metadatas=data["metadatas"],
                 )
 
                 if self.ui_logger:
@@ -236,10 +238,7 @@ class BaseMemory(ABC):
 
     @with_timeout(30)
     def add_entry(
-        self,
-        document: str,
-        metadata: Dict[str, Any],
-        entry_id: Optional[str] = None
+        self, document: str, metadata: Dict[str, Any], entry_id: Optional[str] = None
     ) -> str:
         """
         Add entry to memory with timeout protection.
@@ -258,18 +257,18 @@ class BaseMemory(ABC):
         try:
             # Validate and sanitize metadata
             from jenova.utils.data_sanitizer import sanitize_metadata
+
             metadata = sanitize_metadata(metadata)
 
             # Generate ID if not provided
             if not entry_id:
                 import uuid
+
                 entry_id = f"{self.collection_name}_{uuid.uuid4()}"
 
             # Add to collection
             self.collection.add(
-                ids=[entry_id],
-                documents=[document],
-                metadatas=[metadata]
+                ids=[entry_id], documents=[document], metadatas=[metadata]
             )
 
             if self.file_logger:
@@ -280,8 +279,7 @@ class BaseMemory(ABC):
             # Track metrics if available
             if self.metrics:
                 self.metrics.record_operation(
-                    f"{self.collection_name}_add",
-                    success=True
+                    f"{self.collection_name}_add", success=True
                 )
 
             return entry_id
@@ -293,8 +291,7 @@ class BaseMemory(ABC):
 
             if self.metrics:
                 self.metrics.record_operation(
-                    f"{self.collection_name}_add",
-                    success=False
+                    f"{self.collection_name}_add", success=False
                 )
 
             raise MemoryOperationError(error_msg) from e
@@ -304,7 +301,7 @@ class BaseMemory(ABC):
         self,
         query_text: str,
         n_results: int = 3,
-        where: Optional[Dict[str, Any]] = None
+        where: Optional[Dict[str, Any]] = None,
     ) -> List[Tuple[str, float]]:
         """
         Query memory with timeout protection.
@@ -330,19 +327,14 @@ class BaseMemory(ABC):
 
             # Perform query
             results = self.collection.query(
-                query_texts=[query_text],
-                n_results=n_results,
-                where=where
+                query_texts=[query_text], n_results=n_results, where=where
             )
 
             # Extract results
-            if not results['documents']:
+            if not results["documents"]:
                 return []
 
-            matched = list(zip(
-                results['documents'][0],
-                results['distances'][0]
-            ))
+            matched = list(zip(results["documents"][0], results["distances"][0]))
 
             if self.file_logger:
                 self.file_logger.log_info(
@@ -354,7 +346,7 @@ class BaseMemory(ABC):
                 self.metrics.record_operation(
                     f"{self.collection_name}_query",
                     success=True,
-                    metadata={'results': len(matched)}
+                    metadata={"results": len(matched)},
                 )
 
             return matched
@@ -366,8 +358,7 @@ class BaseMemory(ABC):
 
             if self.metrics:
                 self.metrics.record_operation(
-                    f"{self.collection_name}_query",
-                    success=False
+                    f"{self.collection_name}_query", success=False
                 )
 
             # Don't raise for query failures, return empty
@@ -393,7 +384,7 @@ class BaseMemory(ABC):
                 "status": "healthy",
                 "count": count,
                 "collection_exists": self.collection is not None,
-                "client_connected": self.client is not None
+                "client_connected": self.client is not None,
             }
         except Exception as e:
             return {
@@ -402,7 +393,7 @@ class BaseMemory(ABC):
                 "error": str(e),
                 "count": 0,
                 "collection_exists": False,
-                "client_connected": False
+                "client_connected": False,
             }
 
     @abstractmethod

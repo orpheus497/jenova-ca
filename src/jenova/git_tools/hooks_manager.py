@@ -6,12 +6,13 @@
 
 import os
 
+
 class HooksManager:
     """Manage pre-commit and post-commit hooks."""
 
     def __init__(self, repo_path: str, ui_logger=None, file_logger=None):
         self.repo_path = repo_path
-        self.hooks_dir = os.path.join(repo_path, '.git', 'hooks')
+        self.hooks_dir = os.path.join(repo_path, ".git", "hooks")
         self.ui_logger = ui_logger
         self.file_logger = file_logger
 
@@ -20,8 +21,8 @@ class HooksManager:
         hook_path = os.path.join(self.hooks_dir, hook_name)
 
         try:
-            with open(hook_path, 'w') as f:
-                f.write('#!/bin/sh\n')
+            with open(hook_path, "w") as f:
+                f.write("#!/bin/sh\n")
                 f.write(script)
 
             os.chmod(hook_path, 0o755)

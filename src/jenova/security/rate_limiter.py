@@ -27,6 +27,7 @@ class TokenBucket:
     Tokens are added at a fixed rate. Each operation consumes one token.
     If no tokens available, operation is rate-limited.
     """
+
     capacity: int  # Maximum tokens
     refill_rate: float  # Tokens added per second
     tokens: float  # Current tokens
@@ -125,7 +126,9 @@ class RateLimiter:
 
             if operation not in self.buckets[user]:
                 cap = capacity if capacity is not None else self.default_capacity
-                rate = refill_rate if refill_rate is not None else self.default_refill_rate
+                rate = (
+                    refill_rate if refill_rate is not None else self.default_refill_rate
+                )
 
                 self.buckets[user][operation] = TokenBucket(
                     capacity=cap,
@@ -229,10 +232,10 @@ class RateLimiter:
                 bucket.consume(0)
 
                 stats[operation] = {
-                    'tokens': bucket.tokens,
-                    'capacity': bucket.capacity,
-                    'refill_rate': bucket.refill_rate,
-                    'utilization': 1.0 - (bucket.tokens / bucket.capacity),
+                    "tokens": bucket.tokens,
+                    "capacity": bucket.capacity,
+                    "refill_rate": bucket.refill_rate,
+                    "utilization": 1.0 - (bucket.tokens / bucket.capacity),
                 }
 
             return stats

@@ -42,8 +42,9 @@ class InteractiveTerminal:
         self.active_processes = {}
         self.process_counter = 0
 
-    def run_interactive(self, command: List[str], cwd: Optional[str] = None,
-                       env: Optional[dict] = None) -> int:
+    def run_interactive(
+        self, command: List[str], cwd: Optional[str] = None, env: Optional[dict] = None
+    ) -> int:
         """
         Run interactive command with PTY support.
 
@@ -77,7 +78,7 @@ class InteractiveTerminal:
                     stdout=slave,
                     stderr=slave,
                     cwd=cwd,
-                    env=env or os.environ.copy()
+                    env=env or os.environ.copy(),
                 )
 
                 os.close(slave)
@@ -162,8 +163,9 @@ class InteractiveTerminal:
                     self.file_logger.log_error(f"Error in PTY I/O loop: {e}")
                 break
 
-    def run_command(self, command: List[str], cwd: Optional[str] = None,
-                   env: Optional[dict] = None) -> int:
+    def run_command(
+        self, command: List[str], cwd: Optional[str] = None, env: Optional[dict] = None
+    ) -> int:
         """
         Run command without PTY (fallback).
 
@@ -183,12 +185,12 @@ class InteractiveTerminal:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
-                bufsize=1
+                bufsize=1,
             )
 
             # Stream output
             for line in process.stdout:
-                print(line, end='')
+                print(line, end="")
 
             exit_code = process.wait()
             return exit_code
@@ -198,9 +200,13 @@ class InteractiveTerminal:
                 self.file_logger.log_error(f"Error running command: {e}")
             return 1
 
-    def run_background(self, command: List[str], cwd: Optional[str] = None,
-                      env: Optional[dict] = None,
-                      output_callback: Optional[Callable[[str], None]] = None) -> int:
+    def run_background(
+        self,
+        command: List[str],
+        cwd: Optional[str] = None,
+        env: Optional[dict] = None,
+        output_callback: Optional[Callable[[str], None]] = None,
+    ) -> int:
         """
         Run command in background and return process ID.
 
@@ -224,20 +230,20 @@ class InteractiveTerminal:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
-                bufsize=1
+                bufsize=1,
             )
 
             # Store process
             self.active_processes[process_id] = {
-                'process': process,
-                'command': command,
-                'output': []
+                "process": process,
+                "command": command,
+                "output": [],
             }
 
             # Start output monitoring thread
             def monitor_output():
                 for line in process.stdout:
-                    self.active_processes[process_id]['output'].append(line)
+                    self.active_processes[process_id]["output"].append(line)
                     if output_callback:
                         output_callback(line)
 
@@ -245,7 +251,9 @@ class InteractiveTerminal:
             thread.start()
 
             if self.file_logger:
-                self.file_logger.log_info(f"Started background process {process_id}: {' '.join(command)}")
+                self.file_logger.log_info(
+                    f"Started background process {process_id}: {' '.join(command)}"
+                )
 
             return process_id
 
@@ -268,17 +276,19 @@ class InteractiveTerminal:
             return None
 
         proc_info = self.active_processes[process_id]
-        process = proc_info['process']
+        process = proc_info["process"]
 
         return {
-            'id': process_id,
-            'command': ' '.join(proc_info['command']),
-            'running': process.poll() is None,
-            'exit_code': process.poll(),
-            'output_lines': len(proc_info['output'])
+            "id": process_id,
+            "command": " ".join(proc_info["command"]),
+            "running": process.poll() is None,
+            "exit_code": process.poll(),
+            "output_lines": len(proc_info["output"]),
         }
 
-    def get_process_output(self, process_id: int, last_n: Optional[int] = None) -> Optional[List[str]]:
+    def get_process_output(
+        self, process_id: int, last_n: Optional[int] = None
+    ) -> Optional[List[str]]:
         """
         Get output from background process.
 
@@ -292,7 +302,7 @@ class InteractiveTerminal:
         if process_id not in self.active_processes:
             return None
 
-        output = self.active_processes[process_id]['output']
+        output = self.active_processes[process_id]["output"]
 
         if last_n:
             return output[-last_n:]
@@ -313,7 +323,7 @@ class InteractiveTerminal:
             return False
 
         try:
-            process = self.active_processes[process_id]['process']
+            process = self.active_processes[process_id]["process"]
             process.terminate()
 
             # Wait for termination

@@ -21,6 +21,7 @@ import psutil
 
 class HealthStatus(Enum):
     """System health status levels."""
+
     HEALTHY = "healthy"
     WARNING = "warning"
     CRITICAL = "critical"
@@ -30,6 +31,7 @@ class HealthStatus(Enum):
 @dataclass
 class SystemHealth:
     """System health snapshot."""
+
     cpu_percent: float
     memory_percent: float
     memory_available_gb: float
@@ -56,7 +58,7 @@ class HealthMonitor:
         self.ui_logger = ui_logger
         self.file_logger = file_logger
         self.has_gpu = self._check_gpu_available()
-        
+
         # Thresholds
         self.cpu_warning_threshold = 80.0
         self.cpu_critical_threshold = 95.0
@@ -69,16 +71,18 @@ class HealthMonitor:
         """Check if GPU is available via nvidia-smi."""
         try:
             result = subprocess.run(
-                ['nvidia-smi', '--query-gpu=name', '--format=csv,noheader'],
+                ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
                 capture_output=True,
                 text=True,
-                timeout=2
+                timeout=2,
             )
             return result.returncode == 0 and result.stdout.strip()
         except (FileNotFoundError, subprocess.TimeoutExpired):
             return False
 
-    def _get_gpu_stats(self) -> tuple[Optional[float], Optional[int], Optional[int], Optional[int]]:
+    def _get_gpu_stats(
+        self,
+    ) -> tuple[Optional[float], Optional[int], Optional[int], Optional[int]]:
         """
         Get GPU statistics.
 
@@ -90,15 +94,18 @@ class HealthMonitor:
 
         try:
             result = subprocess.run(
-                ['nvidia-smi', '--query-gpu=utilization.gpu,memory.used,memory.total,memory.free',
-                 '--format=csv,noheader,nounits'],
+                [
+                    "nvidia-smi",
+                    "--query-gpu=utilization.gpu,memory.used,memory.total,memory.free",
+                    "--format=csv,noheader,nounits",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=2
+                timeout=2,
             )
-            
+
             if result.returncode == 0 and result.stdout.strip():
-                parts = result.stdout.strip().split(',')
+                parts = result.stdout.strip().split(",")
                 if len(parts) >= 4:
                     gpu_util = float(parts[0].strip())
                     mem_used = int(parts[1].strip())
@@ -118,21 +125,21 @@ class HealthMonitor:
             SystemHealth object with current status
         """
         warnings = []
-        
+
         # CPU
         cpu_percent = psutil.cpu_percent(interval=0.1)
-        
+
         # Memory
         memory = psutil.virtual_memory()
         memory_percent = memory.percent
-        memory_available_gb = memory.available / (1024 ** 3)
-        
+        memory_available_gb = memory.available / (1024**3)
+
         # GPU
         gpu_percent, gpu_mem_used, gpu_mem_total, gpu_mem_free = self._get_gpu_stats()
-        
+
         # Determine status based on thresholds
         status = HealthStatus.HEALTHY
-        
+
         # Check CPU
         if cpu_percent >= self.cpu_critical_threshold:
             status = HealthStatus.CRITICAL
@@ -141,7 +148,7 @@ class HealthMonitor:
             if status == HealthStatus.HEALTHY:
                 status = HealthStatus.WARNING
             warnings.append(f"CPU high: {cpu_percent:.1f}%")
-        
+
         # Check Memory
         if memory_percent >= self.memory_critical_threshold:
             status = HealthStatus.CRITICAL
@@ -150,7 +157,7 @@ class HealthMonitor:
             if status == HealthStatus.HEALTHY:
                 status = HealthStatus.WARNING
             warnings.append(f"Memory high: {memory_percent:.1f}%")
-        
+
         # Check GPU Memory
         if gpu_mem_total and gpu_mem_used:
             gpu_mem_percent = (gpu_mem_used / gpu_mem_total) * 100
@@ -161,7 +168,7 @@ class HealthMonitor:
                 if status == HealthStatus.HEALTHY:
                     status = HealthStatus.WARNING
                 warnings.append(f"GPU memory high: {gpu_mem_percent:.1f}%")
-        
+
         return SystemHealth(
             cpu_percent=cpu_percent,
             memory_percent=memory_percent,
@@ -172,7 +179,7 @@ class HealthMonitor:
             gpu_memory_free_mb=gpu_mem_free,
             status=status,
             warnings=warnings,
-            timestamp=time.time()
+            timestamp=time.time(),
         )
 
     def check_health(self) -> tuple[HealthStatus, list[str]]:
@@ -198,20 +205,22 @@ class HealthMonitor:
     def log_health_snapshot(self):
         """Log current health snapshot to loggers."""
         snapshot = self.get_health_snapshot()
-        
+
         msg = (
             f"System Health: {snapshot.status.value.upper()} | "
             f"CPU: {snapshot.cpu_percent:.1f}% | "
             f"Memory: {snapshot.memory_percent:.1f}% ({snapshot.memory_available_gb:.1f}GB free)"
         )
-        
+
         if snapshot.gpu_memory_total:
-            gpu_mem_percent = (snapshot.gpu_memory_used_mb / snapshot.gpu_memory_total_mb) * 100
+            gpu_mem_percent = (
+                snapshot.gpu_memory_used_mb / snapshot.gpu_memory_total_mb
+            ) * 100
             msg += f" | GPU Memory: {gpu_mem_percent:.1f}% ({snapshot.gpu_memory_free_mb}MB free)"
-        
+
         if self.file_logger:
             self.file_logger.log_info(msg)
-        
+
         # Log warnings
         if snapshot.warnings:
             for warning in snapshot.warnings:
@@ -220,10 +229,12 @@ class HealthMonitor:
                 if self.file_logger:
                     self.file_logger.log_warning(warning)
 
-    def wait_for_resources(self, 
-                          min_memory_gb: float = 1.0,
-                          max_wait_seconds: float = 30.0,
-                          check_interval: float = 1.0) -> bool:
+    def wait_for_resources(
+        self,
+        min_memory_gb: float = 1.0,
+        max_wait_seconds: float = 30.0,
+        check_interval: float = 1.0,
+    ) -> bool:
         """
         Wait for sufficient resources to become available.
 
@@ -236,19 +247,19 @@ class HealthMonitor:
             True if resources became available, False if timeout
         """
         start_time = time.time()
-        
+
         while (time.time() - start_time) < max_wait_seconds:
             snapshot = self.get_health_snapshot()
-            
+
             if snapshot.memory_available_gb >= min_memory_gb:
                 if self.file_logger:
                     self.file_logger.log_info(
                         f"Resources available: {snapshot.memory_available_gb:.1f}GB free"
                     )
                 return True
-            
+
             time.sleep(check_interval)
-        
+
         if self.file_logger:
             self.file_logger.log_warning(
                 f"Timeout waiting for {min_memory_gb}GB free memory after {max_wait_seconds}s"
@@ -267,22 +278,25 @@ class HealthMonitor:
 
         try:
             result = subprocess.run(
-                ['nvidia-smi', '--query-gpu=name,driver_version,memory.total,memory.free,temperature.gpu',
-                 '--format=csv,noheader,nounits'],
+                [
+                    "nvidia-smi",
+                    "--query-gpu=name,driver_version,memory.total,memory.free,temperature.gpu",
+                    "--format=csv,noheader,nounits",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=2
+                timeout=2,
             )
-            
+
             if result.returncode == 0 and result.stdout.strip():
-                parts = result.stdout.strip().split(',')
+                parts = result.stdout.strip().split(",")
                 if len(parts) >= 5:
                     return {
-                        'name': parts[0].strip(),
-                        'driver_version': parts[1].strip(),
-                        'memory_total_mb': int(parts[2].strip()),
-                        'memory_free_mb': int(parts[3].strip()),
-                        'temperature_c': int(parts[4].strip())
+                        "name": parts[0].strip(),
+                        "driver_version": parts[1].strip(),
+                        "memory_total_mb": int(parts[2].strip()),
+                        "memory_free_mb": int(parts[3].strip()),
+                        "temperature_c": int(parts[4].strip()),
                     }
         except (FileNotFoundError, subprocess.TimeoutExpired, ValueError):
             pass
@@ -307,21 +321,29 @@ class HealthMonitor:
             f"Memory Usage: {snapshot.memory_percent:.1f}%",
             f"Memory Available: {snapshot.memory_available_gb:.2f} GB",
         ]
-        
+
         if snapshot.gpu_memory_total:
-            gpu_mem_percent = (snapshot.gpu_memory_used_mb / snapshot.gpu_memory_total_mb) * 100
-            lines.extend([
-                "",
-                f"GPU Utilization: {snapshot.gpu_percent:.1f}%" if snapshot.gpu_percent else "GPU Utilization: N/A",
-                f"GPU Memory Used: {snapshot.gpu_memory_used_mb} MB / {snapshot.gpu_memory_total_mb} MB ({gpu_mem_percent:.1f}%)",
-                f"GPU Memory Free: {snapshot.gpu_memory_free_mb} MB"
-            ])
+            gpu_mem_percent = (
+                snapshot.gpu_memory_used_mb / snapshot.gpu_memory_total_mb
+            ) * 100
+            lines.extend(
+                [
+                    "",
+                    (
+                        f"GPU Utilization: {snapshot.gpu_percent:.1f}%"
+                        if snapshot.gpu_percent
+                        else "GPU Utilization: N/A"
+                    ),
+                    f"GPU Memory Used: {snapshot.gpu_memory_used_mb} MB / {snapshot.gpu_memory_total_mb} MB ({gpu_mem_percent:.1f}%)",
+                    f"GPU Memory Free: {snapshot.gpu_memory_free_mb} MB",
+                ]
+            )
         else:
             lines.append("\nGPU: Not detected or unavailable")
-        
+
         if snapshot.warnings:
             lines.append("\nWarnings:")
             for warning in snapshot.warnings:
                 lines.append(f"  - {warning}")
-        
+
         return "\n".join(lines)

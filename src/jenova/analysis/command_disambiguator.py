@@ -36,7 +36,7 @@ class CommandCandidate:
             "command": self.command,
             "score": self.score,
             "reason": self.reason,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
 
@@ -67,10 +67,7 @@ class CommandDisambiguator:
         self.command_frequency: Dict[str, int] = {}
 
     def disambiguate(
-        self,
-        command: str,
-        options: List[str],
-        context: Optional[Dict[str, Any]] = None
+        self, command: str, options: List[str], context: Optional[Dict[str, Any]] = None
     ) -> str:
         """
         Disambiguate an ambiguous command by finding the best match.
@@ -98,14 +95,13 @@ class CommandDisambiguator:
 
         # Return best candidate
         best = candidates[0]
-        logger.info(f"Disambiguated '{command}' -> '{best.command}' (score: {best.score:.2f})")
+        logger.info(
+            f"Disambiguated '{command}' -> '{best.command}' (score: {best.score:.2f})"
+        )
         return best.command
 
     def get_candidates(
-        self,
-        command: str,
-        options: List[str],
-        context: Optional[Dict[str, Any]] = None
+        self, command: str, options: List[str], context: Optional[Dict[str, Any]] = None
     ) -> List[CommandCandidate]:
         """
         Get all candidate matches sorted by relevance score.
@@ -125,24 +121,23 @@ class CommandDisambiguator:
             score, reason = self._calculate_similarity(command, option, context)
 
             if score >= self.threshold:
-                candidates.append(CommandCandidate(
-                    command=option,
-                    score=score,
-                    reason=reason,
-                    metadata={"original_score": score}
-                ))
+                candidates.append(
+                    CommandCandidate(
+                        command=option,
+                        score=score,
+                        reason=reason,
+                        metadata={"original_score": score},
+                    )
+                )
 
         # Sort by score (descending)
         candidates.sort()
 
         # Limit to max suggestions
-        return candidates[:self.max_suggestions]
+        return candidates[: self.max_suggestions]
 
     def _calculate_similarity(
-        self,
-        command: str,
-        option: str,
-        context: Dict[str, Any]
+        self, command: str, option: str, context: Dict[str, Any]
     ) -> Tuple[float, str]:
         """
         Calculate similarity score between command and option.
@@ -248,7 +243,7 @@ class CommandDisambiguator:
         if len(option_words) < 2:
             return 0.0
 
-        acronym = ''.join(word[0] for word in option_words if word)
+        acronym = "".join(word[0] for word in option_words if word)
 
         # Check if command matches the acronym
         if command == acronym:
@@ -304,10 +299,7 @@ class CommandDisambiguator:
         return overlap / total if total > 0 else 0.0
 
     def _context_similarity(
-        self,
-        command: str,
-        option: str,
-        context: Dict[str, Any]
+        self, command: str, option: str, context: Dict[str, Any]
     ) -> float:
         """
         Calculate similarity based on context information.
@@ -320,20 +312,27 @@ class CommandDisambiguator:
         score = 0.0
 
         # Category matching
-        if 'category' in context and 'category' in context.get('option_metadata', {}).get(option, {}):
-            if context['category'] == context['option_metadata'][option]['category']:
+        if "category" in context and "category" in context.get(
+            "option_metadata", {}
+        ).get(option, {}):
+            if context["category"] == context["option_metadata"][option]["category"]:
                 score += 0.3
 
         # Recent commands boost
-        if 'recent_commands' in context and option in context['recent_commands']:
+        if "recent_commands" in context and option in context["recent_commands"]:
             # More recent = higher score
-            recency_index = context['recent_commands'].index(option)
-            recency_score = 1.0 - (recency_index / len(context['recent_commands']))
+            recency_index = context["recent_commands"].index(option)
+            recency_score = 1.0 - (recency_index / len(context["recent_commands"]))
             score += recency_score * 0.2
 
         # Environment matching
-        if 'environment' in context and 'environments' in context.get('option_metadata', {}).get(option, {}):
-            if context['environment'] in context['option_metadata'][option]['environments']:
+        if "environment" in context and "environments" in context.get(
+            "option_metadata", {}
+        ).get(option, {}):
+            if (
+                context["environment"]
+                in context["option_metadata"][option]["environments"]
+            ):
                 score += 0.2
 
         return min(1.0, score)
@@ -357,13 +356,12 @@ class CommandDisambiguator:
             # Decrease frequency for removed commands
             for cmd in removed:
                 if cmd in self.command_frequency:
-                    self.command_frequency[cmd] = max(0, self.command_frequency[cmd] - 1)
+                    self.command_frequency[cmd] = max(
+                        0, self.command_frequency[cmd] - 1
+                    )
 
     def get_suggestions_with_scores(
-        self,
-        command: str,
-        options: List[str],
-        context: Optional[Dict[str, Any]] = None
+        self, command: str, options: List[str], context: Optional[Dict[str, Any]] = None
     ) -> List[CommandCandidate]:
         """
         Get command suggestions with detailed scoring information.
@@ -380,7 +378,9 @@ class CommandDisambiguator:
         """
         return self.get_candidates(command, options, context)
 
-    def explain_match(self, command: str, option: str, context: Optional[Dict[str, Any]] = None) -> str:
+    def explain_match(
+        self, command: str, option: str, context: Optional[Dict[str, Any]] = None
+    ) -> str:
         """
         Explain why a particular option matches a command.
 
@@ -395,10 +395,7 @@ class CommandDisambiguator:
         context = context or {}
         score, reason = self._calculate_similarity(command, option, context)
 
-        explanation_parts = [
-            f"Match score: {score:.2%}",
-            f"Reasons: {reason}"
-        ]
+        explanation_parts = [f"Match score: {score:.2%}", f"Reasons: {reason}"]
 
         # Add specific details
         command_lower = command.lower()
@@ -414,7 +411,7 @@ class CommandDisambiguator:
         # Check acronym
         option_words = option_lower.split()
         if len(option_words) > 1:
-            acronym = ''.join(word[0] for word in option_words if word)
+            acronym = "".join(word[0] for word in option_words if word)
             if command_lower == acronym:
                 explanation_parts.append(f"'{command}' matches acronym of '{option}'")
 
@@ -461,9 +458,7 @@ class CommandDisambiguator:
             List of (command, frequency) tuples sorted by frequency
         """
         sorted_commands = sorted(
-            self.command_frequency.items(),
-            key=lambda x: x[1],
-            reverse=True
+            self.command_frequency.items(), key=lambda x: x[1], reverse=True
         )
         return sorted_commands[:n]
 
@@ -471,7 +466,7 @@ class CommandDisambiguator:
         self,
         query: str,
         candidates: List[str],
-        key_func: Optional[Callable[[str], str]] = None
+        key_func: Optional[Callable[[str], str]] = None,
     ) -> List[str]:
         """
         Perform fuzzy search on a list of candidates.
@@ -507,7 +502,7 @@ class CommandDisambiguator:
         command: str,
         options: List[str],
         context: Optional[Dict[str, Any]] = None,
-        auto_select_threshold: float = 0.9
+        auto_select_threshold: float = 0.9,
     ) -> Optional[str]:
         """
         Interactively disambiguate a command.
@@ -532,9 +527,13 @@ class CommandDisambiguator:
         best_candidate = candidates[0]
 
         if best_candidate.score >= auto_select_threshold:
-            logger.info(f"Auto-selected '{best_candidate.command}' with score {best_candidate.score:.2f}")
+            logger.info(
+                f"Auto-selected '{best_candidate.command}' with score {best_candidate.score:.2f}"
+            )
             return best_candidate.command
 
-        logger.info(f"Best candidate '{best_candidate.command}' has score {best_candidate.score:.2f}, "
-                   f"below auto-select threshold {auto_select_threshold}")
+        logger.info(
+            f"Best candidate '{best_candidate.command}' has score {best_candidate.score:.2f}, "
+            f"below auto-select threshold {auto_select_threshold}"
+        )
         return None

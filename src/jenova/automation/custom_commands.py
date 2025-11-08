@@ -39,7 +39,7 @@ class CustomCommand:
             "metadata": self.metadata,
             "created_at": self.created_at.isoformat(),
             "modified_at": self.modified_at.isoformat(),
-            "content_length": len(self.content)
+            "content_length": len(self.content),
         }
 
 
@@ -89,7 +89,7 @@ class CustomCommandManager:
         command_path = self.commands_dir / f"{name}.md"
         if command_path.exists():
             try:
-                with open(command_path, 'r', encoding='utf-8') as f:
+                with open(command_path, "r", encoding="utf-8") as f:
                     content = f.read()
 
                 # Parse and cache
@@ -121,7 +121,7 @@ class CustomCommandManager:
         actual_content = content
 
         # Check for YAML frontmatter (---...---)
-        frontmatter_pattern = r'^---\s*\n(.*?)\n---\s*\n(.*)$'
+        frontmatter_pattern = r"^---\s*\n(.*?)\n---\s*\n(.*)$"
         match = re.match(frontmatter_pattern, content, re.DOTALL)
 
         if match:
@@ -129,13 +129,13 @@ class CustomCommandManager:
             actual_content = match.group(2)
 
             # Parse simple YAML-like frontmatter
-            for line in frontmatter_text.split('\n'):
-                if ':' in line:
-                    key, value = line.split(':', 1)
+            for line in frontmatter_text.split("\n"):
+                if ":" in line:
+                    key, value = line.split(":", 1)
                     key = key.strip()
                     value = value.strip()
 
-                    if key.lower() == 'description':
+                    if key.lower() == "description":
                         description = value
                     else:
                         metadata[key] = value
@@ -148,7 +148,7 @@ class CustomCommandManager:
             content=actual_content,
             description=description,
             variables=variables,
-            metadata=metadata
+            metadata=metadata,
         )
 
     def _extract_variables(self, content: str) -> List[str]:
@@ -161,7 +161,7 @@ class CustomCommandManager:
         Returns:
             List of variable names
         """
-        pattern = r'\{\{(\w+)\}\}'
+        pattern = r"\{\{(\w+)\}\}"
         matches = re.findall(pattern, content)
         return list(set(matches))  # Unique variables
 
@@ -178,7 +178,7 @@ class CustomCommandManager:
         for command_file in self.commands_dir.glob("*.md"):
             name = command_file.stem
             try:
-                with open(command_file, 'r', encoding='utf-8') as f:
+                with open(command_file, "r", encoding="utf-8") as f:
                     content = f.read()
 
                 command = self._parse_command_file(name, content)
@@ -217,7 +217,7 @@ class CustomCommandManager:
         name: str,
         content: str,
         description: str = "",
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
         Create a new custom command.
@@ -247,7 +247,7 @@ class CustomCommandManager:
 
             # Write to file
             command_path = self.commands_dir / f"{name}.md"
-            with open(command_path, 'w', encoding='utf-8') as f:
+            with open(command_path, "w", encoding="utf-8") as f:
                 f.write(full_content)
 
             # Parse and cache
@@ -266,7 +266,7 @@ class CustomCommandManager:
         name: str,
         content: Optional[str] = None,
         description: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
         Update an existing command.
@@ -319,7 +319,7 @@ class CustomCommandManager:
             full_content = "\n".join(frontmatter_lines) + command.content
 
             command_path = self.commands_dir / f"{command.name}.md"
-            with open(command_path, 'w', encoding='utf-8') as f:
+            with open(command_path, "w", encoding="utf-8") as f:
                 f.write(full_content)
 
             logger.info(f"Wrote command file: {command.name}")
@@ -368,8 +368,10 @@ class CustomCommandManager:
         results = []
 
         for command in self.commands.values():
-            if (query_lower in command.name.lower() or
-                query_lower in command.description.lower()):
+            if (
+                query_lower in command.name.lower()
+                or query_lower in command.description.lower()
+            ):
                 results.append(command.to_dict())
 
         return results
@@ -386,10 +388,7 @@ class CustomCommandManager:
         """
         command = self.commands.get(name)
         if not command:
-            return {
-                "valid": False,
-                "errors": [f"Command not found: {name}"]
-            }
+            return {"valid": False, "errors": [f"Command not found: {name}"]}
 
         errors = []
         warnings = []
@@ -406,12 +405,12 @@ class CustomCommandManager:
 
         # Check for invalid variable names
         for var in command.variables:
-            if not re.match(r'^\w+$', var):
+            if not re.match(r"^\w+$", var):
                 warnings.append(f"Invalid variable name: {var}")
 
         return {
             "valid": len(errors) == 0,
             "errors": errors,
             "warnings": warnings,
-            "variables": command.variables
+            "variables": command.variables,
         }

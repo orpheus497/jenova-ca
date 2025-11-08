@@ -47,6 +47,7 @@ class RefactoringEngine:
         if self.rope_project is None:
             try:
                 from rope.base.project import Project
+
                 self.rope_project = Project(self.project_root)
             except ImportError:
                 if self.file_logger:
@@ -58,7 +59,9 @@ class RefactoringEngine:
                 return False
         return True
 
-    def rename_symbol(self, file_path: str, offset: int, new_name: str) -> Optional[str]:
+    def rename_symbol(
+        self, file_path: str, offset: int, new_name: str
+    ) -> Optional[str]:
         """
         Rename symbol at given offset.
 
@@ -90,8 +93,9 @@ class RefactoringEngine:
                 self.file_logger.log_error(f"Error renaming symbol: {e}")
             return f"Error: {e}"
 
-    def extract_method(self, file_path: str, start_offset: int, end_offset: int,
-                      method_name: str) -> Optional[str]:
+    def extract_method(
+        self, file_path: str, start_offset: int, end_offset: int, method_name: str
+    ) -> Optional[str]:
         """
         Extract selected code into new method.
 
@@ -171,6 +175,7 @@ class RefactoringEngine:
             # Use isort for import organization
             try:
                 import isort
+
                 result = isort.file(file_path)
                 if result:
                     return f"Organized imports in {file_path}"
@@ -178,7 +183,7 @@ class RefactoringEngine:
 
             except ImportError:
                 # Fallback to basic sorting
-                with open(file_path, 'r') as f:
+                with open(file_path, "r") as f:
                     lines = f.readlines()
 
                 import_lines = []
@@ -186,10 +191,10 @@ class RefactoringEngine:
                 in_imports = False
 
                 for line in lines:
-                    if line.startswith('import ') or line.startswith('from '):
+                    if line.startswith("import ") or line.startswith("from "):
                         import_lines.append(line)
                         in_imports = True
-                    elif in_imports and line.strip() == '':
+                    elif in_imports and line.strip() == "":
                         other_lines.append(line)
                         in_imports = False
                     elif not in_imports:
@@ -197,7 +202,7 @@ class RefactoringEngine:
 
                 import_lines.sort()
 
-                with open(file_path, 'w') as f:
+                with open(file_path, "w") as f:
                     f.writelines(import_lines)
                     f.writelines(other_lines)
 
@@ -208,7 +213,7 @@ class RefactoringEngine:
                 self.file_logger.log_error(f"Error organizing imports: {e}")
             return f"Error: {e}"
 
-    def format_file(self, file_path: str, style: str = 'pep8') -> Optional[str]:
+    def format_file(self, file_path: str, style: str = "pep8") -> Optional[str]:
         """
         Format file according to style guide.
 
@@ -220,16 +225,19 @@ class RefactoringEngine:
             Success message or None if error
         """
         try:
-            if style == 'black':
+            if style == "black":
                 try:
                     import black
+
                     mode = black.Mode()
-                    with open(file_path, 'r') as f:
+                    with open(file_path, "r") as f:
                         source = f.read()
 
-                    formatted = black.format_file_contents(source, fast=False, mode=mode)
+                    formatted = black.format_file_contents(
+                        source, fast=False, mode=mode
+                    )
 
-                    with open(file_path, 'w') as f:
+                    with open(file_path, "w") as f:
                         f.write(formatted)
 
                     return f"Formatted {file_path} with black"
@@ -240,14 +248,15 @@ class RefactoringEngine:
             else:  # pep8/autopep8
                 try:
                     import autopep8
-                    options = {'aggressive': 1}
 
-                    with open(file_path, 'r') as f:
+                    options = {"aggressive": 1}
+
+                    with open(file_path, "r") as f:
                         source = f.read()
 
                     formatted = autopep8.fix_code(source, options=options)
 
-                    with open(file_path, 'w') as f:
+                    with open(file_path, "w") as f:
                         f.write(formatted)
 
                     return f"Formatted {file_path} with autopep8"
@@ -274,16 +283,14 @@ class RefactoringEngine:
         usages = []
 
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 lines = f.readlines()
 
             for i, line in enumerate(lines, 1):
                 if symbol_name in line:
-                    usages.append({
-                        'file': file_path,
-                        'line': i,
-                        'content': line.strip()
-                    })
+                    usages.append(
+                        {"file": file_path, "line": i, "content": line.strip()}
+                    )
 
         except Exception as e:
             if self.file_logger:

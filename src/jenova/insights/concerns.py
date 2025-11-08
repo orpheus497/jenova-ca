@@ -4,8 +4,7 @@
 # The JENOVA Cognitive Architecture is licensed under the MIT License.
 # A copy of the license can be found in the LICENSE file in the root directory of this source tree.
 
-"""This module is responsible for managing the lifecycle of concerns.
-"""
+"""This module is responsible for managing the lifecycle of concerns."""
 
 import json
 import os
@@ -19,7 +18,7 @@ class ConcernManager:
         self.ui_logger = ui_logger
         self.file_logger = file_logger
         self.insights_root = insights_root
-        self.concerns_file = os.path.join(self.insights_root, 'concerns.json')
+        self.concerns_file = os.path.join(self.insights_root, "concerns.json")
         self.concerns = self._load_concerns()
         self.llm = llm
 
@@ -27,19 +26,18 @@ class ConcernManager:
         """Loads the concerns from the concerns.json file."""
         if os.path.exists(self.concerns_file):
             try:
-                with open(self.concerns_file, 'r', encoding='utf-8') as f:
+                with open(self.concerns_file, "r", encoding="utf-8") as f:
                     return json.load(f)
             except (json.JSONDecodeError, OSError) as e:
                 if self.file_logger:
-                    self.file_logger.log_error(
-                        f"Error loading concerns file: {e}")
+                    self.file_logger.log_error(f"Error loading concerns file: {e}")
                 return {}
         return {}
 
     def _save_concerns(self):
         """Saves the concerns to the concerns.json file."""
         try:
-            with open(self.concerns_file, 'w', encoding='utf-8') as f:
+            with open(self.concerns_file, "w", encoding="utf-8") as f:
                 json.dump(self.concerns, f, indent=4)
         except OSError as e:
             if self.file_logger:
@@ -49,7 +47,9 @@ class ConcernManager:
         """Returns a list of all existing concern topics."""
         return list(self.concerns.keys())
 
-    def find_or_create_concern(self, insight_content: str, existing_topics: list) -> str:
+    def find_or_create_concern(
+        self, insight_content: str, existing_topics: list
+    ) -> str:
         """Uses an LLM to find the most relevant concern for an insight, or creates a new one."""
         try:
             if not existing_topics:
@@ -64,7 +64,9 @@ Existing Topics:
 Insight: "{insight_content}"
 
 Relevant Topic:"""
-            prompt = prompt_template.format(existing_topics_str=existing_topics_str, insight_content=insight_content)
+            prompt = prompt_template.format(
+                existing_topics_str=existing_topics_str, insight_content=insight_content
+            )
             chosen_topic = self.llm.generate(prompt, temperature=0.2).strip()
 
             if chosen_topic.lower() != "new" and chosen_topic in existing_topics:
@@ -72,8 +74,7 @@ Relevant Topic:"""
             else:
                 return self._create_new_concern(insight_content)
         except Exception as e:
-            self.file_logger.log_error(
-                f"Error finding or creating concern: {e}")
+            self.file_logger.log_error(f"Error finding or creating concern: {e}")
             # Fallback to creating a new concern
             return self._create_new_concern(insight_content)
 
@@ -86,11 +87,14 @@ Insight: "{insight_content}"
 Topic:"""
         prompt = prompt_template.format(insight_content=insight_content)
         try:
-            new_topic = self.llm.generate(
-                prompt, temperature=0.3).strip().replace(' ', '_')
+            new_topic = (
+                self.llm.generate(prompt, temperature=0.3).strip().replace(" ", "_")
+            )
             if new_topic not in self.concerns:
                 self.concerns[new_topic] = {
-                    "description": insight_content, "related_concerns": []}
+                    "description": insight_content,
+                    "related_concerns": [],
+                }
                 self._save_concerns()
             return new_topic
         except Exception as e:

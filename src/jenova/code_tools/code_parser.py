@@ -20,6 +20,7 @@ from pathlib import Path
 @dataclass
 class Symbol:
     """Represents a code symbol (class, function, variable)."""
+
     name: str
     type: str  # 'class', 'function', 'method', 'variable', 'import'
     line: int
@@ -36,6 +37,7 @@ class Symbol:
 @dataclass
 class CodeStructure:
     """Represents the structure of a code file."""
+
     file_path: str
     symbols: List[Symbol]
     imports: List[str]
@@ -79,22 +81,22 @@ class CodeParser:
             CodeStructure or None if error
         """
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 source = f.read()
 
             tree = ast.parse(source, filename=file_path)
 
             symbols = self._extract_symbols(tree)
             imports = self._extract_imports(tree)
-            classes = [s.name for s in symbols if s.type == 'class']
-            functions = [s.name for s in symbols if s.type == 'function']
+            classes = [s.name for s in symbols if s.type == "class"]
+            functions = [s.name for s in symbols if s.type == "function"]
 
             return CodeStructure(
                 file_path=file_path,
                 symbols=symbols,
                 imports=imports,
                 classes=classes,
-                functions=functions
+                functions=functions,
             )
 
         except SyntaxError as e:
@@ -130,7 +132,11 @@ class CodeParser:
 
             elif isinstance(node, ast.FunctionDef):
                 # Top-level functions only (methods handled above)
-                if not any(isinstance(p, ast.ClassDef) for p in ast.walk(tree) if hasattr(p, 'body') and node in getattr(p, 'body', [])):
+                if not any(
+                    isinstance(p, ast.ClassDef)
+                    for p in ast.walk(tree)
+                    if hasattr(p, "body") and node in getattr(p, "body", [])
+                ):
                     symbols.append(self._parse_function(node))
 
         return symbols
@@ -150,16 +156,18 @@ class CodeParser:
 
         return Symbol(
             name=node.name,
-            type='class',
+            type="class",
             line=node.lineno,
             col=node.col_offset,
             end_line=node.end_lineno or node.lineno,
             end_col=node.end_col_offset or node.col_offset,
             docstring=docstring,
-            decorators=decorators
+            decorators=decorators,
         )
 
-    def _parse_function(self, node: ast.FunctionDef, parent: Optional[str] = None) -> Symbol:
+    def _parse_function(
+        self, node: ast.FunctionDef, parent: Optional[str] = None
+    ) -> Symbol:
         """
         Parse function/method definition.
 
@@ -188,7 +196,7 @@ class CodeParser:
 
         return Symbol(
             name=node.name,
-            type='method' if parent else 'function',
+            type="method" if parent else "function",
             line=node.lineno,
             col=node.col_offset,
             end_line=node.end_lineno or node.lineno,
@@ -197,7 +205,7 @@ class CodeParser:
             parent=parent,
             parameters=parameters,
             return_annotation=return_annotation,
-            decorators=decorators
+            decorators=decorators,
         )
 
     def _get_decorator_name(self, decorator: ast.expr) -> str:
@@ -235,13 +243,15 @@ class CodeParser:
                     imports.append(alias.name)
 
             elif isinstance(node, ast.ImportFrom):
-                module = node.module or ''
+                module = node.module or ""
                 for alias in node.names:
                     imports.append(f"{module}.{alias.name}" if module else alias.name)
 
         return imports
 
-    def find_symbol(self, structure: CodeStructure, symbol_name: str) -> Optional[Symbol]:
+    def find_symbol(
+        self, structure: CodeStructure, symbol_name: str
+    ) -> Optional[Symbol]:
         """
         Find symbol by name in code structure.
 
@@ -257,7 +267,9 @@ class CodeParser:
                 return symbol
         return None
 
-    def find_definition(self, file_path: str, symbol_name: str) -> Optional[Tuple[int, int]]:
+    def find_definition(
+        self, file_path: str, symbol_name: str
+    ) -> Optional[Tuple[int, int]]:
         """
         Find definition location of symbol.
 
@@ -310,7 +322,7 @@ class CodeParser:
             Dictionary mapping function names to list of called functions
         """
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 source = f.read()
 
             tree = ast.parse(source, filename=file_path)
@@ -333,7 +345,9 @@ class CodeParser:
 
         except Exception as e:
             if self.file_logger:
-                self.file_logger.log_error(f"Error extracting calls from {file_path}: {e}")
+                self.file_logger.log_error(
+                    f"Error extracting calls from {file_path}: {e}"
+                )
             return {}
 
     def get_dependencies(self, file_path: str) -> Set[str]:
@@ -353,7 +367,7 @@ class CodeParser:
         dependencies = set()
         for imp in structure.imports:
             # Get top-level module name
-            module = imp.split('.')[0]
+            module = imp.split(".")[0]
             dependencies.add(module)
 
         return dependencies

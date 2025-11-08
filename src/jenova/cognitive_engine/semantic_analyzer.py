@@ -24,6 +24,7 @@ from collections import defaultdict
 
 class QueryIntent(Enum):
     """Types of query intents."""
+
     QUESTION = "question"  # Seeking information
     COMMAND = "command"  # Executing an action
     STATEMENT = "statement"  # Sharing information
@@ -36,6 +37,7 @@ class QueryIntent(Enum):
 
 class Sentiment(Enum):
     """Sentiment classification."""
+
     POSITIVE = "positive"
     NEGATIVE = "negative"
     NEUTRAL = "neutral"
@@ -45,6 +47,7 @@ class Sentiment(Enum):
 @dataclass
 class Entity:
     """Represents a recognized entity."""
+
     text: str
     entity_type: str  # person, place, concept, tech, time, etc.
     start_pos: int
@@ -55,6 +58,7 @@ class Entity:
 @dataclass
 class SemanticAnalysis:
     """Complete semantic analysis of a query."""
+
     original_query: str
     intent: QueryIntent
     confidence: float
@@ -86,54 +90,184 @@ class SemanticAnalyzer:
 
         # Intent detection patterns
         self.question_words = {
-            'what', 'when', 'where', 'who', 'whom', 'whose', 'which',
-            'why', 'how', 'can', 'could', 'would', 'should', 'is', 'are',
-            'do', 'does', 'did', 'has', 'have', 'had'
+            "what",
+            "when",
+            "where",
+            "who",
+            "whom",
+            "whose",
+            "which",
+            "why",
+            "how",
+            "can",
+            "could",
+            "would",
+            "should",
+            "is",
+            "are",
+            "do",
+            "does",
+            "did",
+            "has",
+            "have",
+            "had",
         }
 
         self.command_words = {
-            'show', 'tell', 'explain', 'describe', 'define', 'list',
-            'give', 'provide', 'create', 'make', 'generate', 'write',
-            'calculate', 'compute', 'find', 'search', 'analyze'
+            "show",
+            "tell",
+            "explain",
+            "describe",
+            "define",
+            "list",
+            "give",
+            "provide",
+            "create",
+            "make",
+            "generate",
+            "write",
+            "calculate",
+            "compute",
+            "find",
+            "search",
+            "analyze",
         }
 
         self.greeting_words = {
-            'hello', 'hi', 'hey', 'greetings', 'good morning',
-            'good afternoon', 'good evening', 'bye', 'goodbye',
-            'see you', 'thanks', 'thank you'
+            "hello",
+            "hi",
+            "hey",
+            "greetings",
+            "good morning",
+            "good afternoon",
+            "good evening",
+            "bye",
+            "goodbye",
+            "see you",
+            "thanks",
+            "thank you",
         }
 
         # Entity type patterns
         self.tech_terms = {
-            'ai', 'ml', 'algorithm', 'data', 'model', 'neural',
-            'network', 'deep learning', 'machine learning',
-            'api', 'database', 'framework', 'library', 'code',
-            'python', 'javascript', 'java', 'c++', 'rust'
+            "ai",
+            "ml",
+            "algorithm",
+            "data",
+            "model",
+            "neural",
+            "network",
+            "deep learning",
+            "machine learning",
+            "api",
+            "database",
+            "framework",
+            "library",
+            "code",
+            "python",
+            "javascript",
+            "java",
+            "c++",
+            "rust",
         }
 
         # Sentiment indicators
         self.positive_words = {
-            'good', 'great', 'excellent', 'awesome', 'perfect',
-            'amazing', 'wonderful', 'fantastic', 'love', 'like',
-            'best', 'better', 'nice', 'helpful', 'useful'
+            "good",
+            "great",
+            "excellent",
+            "awesome",
+            "perfect",
+            "amazing",
+            "wonderful",
+            "fantastic",
+            "love",
+            "like",
+            "best",
+            "better",
+            "nice",
+            "helpful",
+            "useful",
         }
 
         self.negative_words = {
-            'bad', 'terrible', 'awful', 'horrible', 'poor',
-            'worst', 'worse', 'hate', 'dislike', 'wrong',
-            'error', 'problem', 'issue', 'fail', 'failed'
+            "bad",
+            "terrible",
+            "awful",
+            "horrible",
+            "poor",
+            "worst",
+            "worse",
+            "hate",
+            "dislike",
+            "wrong",
+            "error",
+            "problem",
+            "issue",
+            "fail",
+            "failed",
         }
 
         # Stopwords for keyword extraction
         self.stopwords = {
-            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at',
-            'to', 'for', 'of', 'with', 'by', 'from', 'as', 'is',
-            'was', 'are', 'were', 'been', 'be', 'have', 'has', 'had',
-            'do', 'does', 'did', 'will', 'would', 'should', 'could',
-            'may', 'might', 'can', 'this', 'that', 'these', 'those',
-            'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him',
-            'her', 'us', 'them', 'my', 'your', 'his', 'her', 'its',
-            'our', 'their'
+            "the",
+            "a",
+            "an",
+            "and",
+            "or",
+            "but",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "with",
+            "by",
+            "from",
+            "as",
+            "is",
+            "was",
+            "are",
+            "were",
+            "been",
+            "be",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "will",
+            "would",
+            "should",
+            "could",
+            "may",
+            "might",
+            "can",
+            "this",
+            "that",
+            "these",
+            "those",
+            "i",
+            "you",
+            "he",
+            "she",
+            "it",
+            "we",
+            "they",
+            "me",
+            "him",
+            "her",
+            "us",
+            "them",
+            "my",
+            "your",
+            "his",
+            "her",
+            "its",
+            "our",
+            "their",
         }
 
     def analyze(self, query: str) -> SemanticAnalysis:
@@ -182,16 +316,18 @@ class SemanticAnalyzer:
             sentiment=sentiment,
             topics=topics,
             dependencies=[],  # Would use dependency parser in full implementation
-            rhetorical_elements=rhetorical
+            rhetorical_elements=rhetorical,
         )
 
     def _tokenize(self, text: str) -> List[str]:
         """Simple tokenization."""
         # Remove punctuation except for important cases
-        text = re.sub(r'[^\w\s\-\']', ' ', text)
+        text = re.sub(r"[^\w\s\-\']", " ", text)
         return [w for w in text.split() if w]
 
-    def _classify_intent(self, query: str, words: List[str]) -> Tuple[QueryIntent, float]:
+    def _classify_intent(
+        self, query: str, words: List[str]
+    ) -> Tuple[QueryIntent, float]:
         """
         Classify the intent of the query.
 
@@ -202,7 +338,7 @@ class SemanticAnalyzer:
         first_words = words[:3] if len(words) >= 3 else words
 
         # Check for commands (starts with /)
-        if query.startswith('/'):
+        if query.startswith("/"):
             return QueryIntent.COMMAND, 1.0
 
         # Check for greetings
@@ -211,7 +347,7 @@ class SemanticAnalyzer:
                 return QueryIntent.GREETING, 0.9
 
         # Check for questions
-        if query.endswith('?'):
+        if query.endswith("?"):
             return QueryIntent.QUESTION, 0.95
 
         # Check for question words at start
@@ -221,17 +357,17 @@ class SemanticAnalyzer:
         # Check for command/request verbs
         if first_words and first_words[0] in self.command_words:
             # Distinguish between command and request
-            if any(word in words for word in ['please', 'could you', 'would you']):
+            if any(word in words for word in ["please", "could you", "would you"]):
                 return QueryIntent.REQUEST, 0.8
             return QueryIntent.COMMAND, 0.8
 
         # Check for feedback indicators
-        feedback_indicators = ['think', 'believe', 'seems', 'appears', 'looks like']
+        feedback_indicators = ["think", "believe", "seems", "appears", "looks like"]
         if any(ind in query_lower for ind in feedback_indicators):
             return QueryIntent.FEEDBACK, 0.7
 
         # Check for clarification
-        clarification_words = {'mean', 'clarify', 'explain again', 'what do you'}
+        clarification_words = {"mean", "clarify", "explain again", "what do you"}
         if any(word in query_lower for word in clarification_words):
             return QueryIntent.CLARIFICATION, 0.75
 
@@ -252,55 +388,63 @@ class SemanticAnalyzer:
         for term in self.tech_terms:
             if term in query_lower:
                 start = query_lower.find(term)
-                entities.append(Entity(
-                    text=term,
-                    entity_type="technology",
-                    start_pos=start,
-                    end_pos=start + len(term),
-                    confidence=0.8
-                ))
+                entities.append(
+                    Entity(
+                        text=term,
+                        entity_type="technology",
+                        start_pos=start,
+                        end_pos=start + len(term),
+                        confidence=0.8,
+                    )
+                )
 
         # Capitalized words (potential proper nouns)
-        capitalized_pattern = r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b'
+        capitalized_pattern = r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b"
         for match in re.finditer(capitalized_pattern, query):
             text = match.group()
             # Skip if it's at the start of the sentence (might just be capitalization)
             if match.start() > 0:
-                entities.append(Entity(
-                    text=text,
-                    entity_type="proper_noun",
-                    start_pos=match.start(),
-                    end_pos=match.end(),
-                    confidence=0.6
-                ))
+                entities.append(
+                    Entity(
+                        text=text,
+                        entity_type="proper_noun",
+                        start_pos=match.start(),
+                        end_pos=match.end(),
+                        confidence=0.6,
+                    )
+                )
 
         # Numbers
-        number_pattern = r'\b\d+(?:\.\d+)?\b'
+        number_pattern = r"\b\d+(?:\.\d+)?\b"
         for match in re.finditer(number_pattern, query):
-            entities.append(Entity(
-                text=match.group(),
-                entity_type="number",
-                start_pos=match.start(),
-                end_pos=match.end(),
-                confidence=1.0
-            ))
+            entities.append(
+                Entity(
+                    text=match.group(),
+                    entity_type="number",
+                    start_pos=match.start(),
+                    end_pos=match.end(),
+                    confidence=1.0,
+                )
+            )
 
         # Time expressions
         time_patterns = [
-            r'\b(?:yesterday|today|tomorrow|tonight)\b',
-            r'\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b',
-            r'\b\d{1,2}:\d{2}\s*(?:am|pm)?\b',
-            r'\b\d{4}-\d{2}-\d{2}\b'
+            r"\b(?:yesterday|today|tomorrow|tonight)\b",
+            r"\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
+            r"\b\d{1,2}:\d{2}\s*(?:am|pm)?\b",
+            r"\b\d{4}-\d{2}-\d{2}\b",
         ]
         for pattern in time_patterns:
             for match in re.finditer(pattern, query_lower):
-                entities.append(Entity(
-                    text=match.group(),
-                    entity_type="time",
-                    start_pos=match.start(),
-                    end_pos=match.end(),
-                    confidence=0.9
-                ))
+                entities.append(
+                    Entity(
+                        text=match.group(),
+                        entity_type="time",
+                        start_pos=match.start(),
+                        end_pos=match.end(),
+                        confidence=0.9,
+                    )
+                )
 
         return entities
 
@@ -319,7 +463,9 @@ class SemanticAnalyzer:
         keywords = [w for w in words if w not in self.stopwords and len(w) > 2]
 
         # Add entity text as high-priority keywords
-        entity_keywords = [e.text.lower() for e in entities if e.entity_type != "number"]
+        entity_keywords = [
+            e.text.lower() for e in entities if e.entity_type != "number"
+        ]
         keywords.extend(entity_keywords)
 
         # Remove duplicates while preserving order
@@ -335,7 +481,9 @@ class SemanticAnalyzer:
 
         return unique_keywords[:10]  # Top 10 keywords
 
-    def _expand_query(self, query: str, keywords: List[str], entities: List[Entity]) -> str:
+    def _expand_query(
+        self, query: str, keywords: List[str], entities: List[Entity]
+    ) -> str:
         """
         Expand the query with synonyms and related terms.
 
@@ -401,27 +549,27 @@ class SemanticAnalyzer:
 
         # Topics from entity types
         entity_types = {e.entity_type for e in entities}
-        if 'technology' in entity_types:
-            topics.add('technology')
-        if 'time' in entity_types:
-            topics.add('temporal')
+        if "technology" in entity_types:
+            topics.add("technology")
+        if "time" in entity_types:
+            topics.add("temporal")
 
         # Topics from keywords
-        tech_keywords = {'code', 'program', 'software', 'algorithm', 'data'}
+        tech_keywords = {"code", "program", "software", "algorithm", "data"}
         if any(kw in keywords for kw in tech_keywords):
-            topics.add('programming')
+            topics.add("programming")
 
-        science_keywords = {'theory', 'research', 'study', 'experiment'}
+        science_keywords = {"theory", "research", "study", "experiment"}
         if any(kw in keywords for kw in science_keywords):
-            topics.add('science')
+            topics.add("science")
 
-        business_keywords = {'market', 'business', 'company', 'revenue'}
+        business_keywords = {"market", "business", "company", "revenue"}
         if any(kw in keywords for kw in business_keywords):
-            topics.add('business')
+            topics.add("business")
 
         # If no topics identified, use "general"
         if not topics:
-            topics.add('general')
+            topics.add("general")
 
         return list(topics)
 
@@ -437,33 +585,33 @@ class SemanticAnalyzer:
             Dictionary of rhetorical elements
         """
         rhetorical = {
-            'length': len(words),
-            'complexity': 'simple',
-            'formality': 'casual',
-            'specificity': 'general'
+            "length": len(words),
+            "complexity": "simple",
+            "formality": "casual",
+            "specificity": "general",
         }
 
         # Complexity based on length and structure
         if len(words) > 20:
-            rhetorical['complexity'] = 'complex'
+            rhetorical["complexity"] = "complex"
         elif len(words) > 10:
-            rhetorical['complexity'] = 'moderate'
+            rhetorical["complexity"] = "moderate"
 
         # Formality based on language choices
-        formal_indicators = {'please', 'kindly', 'would', 'could', 'may', 'might'}
+        formal_indicators = {"please", "kindly", "would", "could", "may", "might"}
         if any(word in words for word in formal_indicators):
-            rhetorical['formality'] = 'formal'
+            rhetorical["formality"] = "formal"
 
         # Specificity based on entities and numbers
-        if query.count('AND') > 0 or query.count('OR') > 0:
-            rhetorical['specificity'] = 'very specific'
+        if query.count("AND") > 0 or query.count("OR") > 0:
+            rhetorical["specificity"] = "very specific"
         elif len(words) > 15:
-            rhetorical['specificity'] = 'specific'
+            rhetorical["specificity"] = "specific"
 
         # Detect questions within statements
-        question_marks = query.count('?')
+        question_marks = query.count("?")
         if question_marks > 1:
-            rhetorical['multi_part'] = True
-            rhetorical['question_count'] = question_marks
+            rhetorical["multi_part"] = True
+            rhetorical["question_count"] = question_marks
 
         return rhetorical

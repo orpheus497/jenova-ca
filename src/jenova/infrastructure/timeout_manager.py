@@ -28,18 +28,19 @@ TimeoutStrategy = Literal["signal", "thread", "auto"]
 
 class TimeoutError(Exception):
     """Raised when an operation times out."""
+
     pass
 
 
 # Determine if we're on a Unix-like system that supports signals
-_IS_UNIX = platform.system() in ('Linux', 'Darwin', 'FreeBSD', 'OpenBSD')
+_IS_UNIX = platform.system() in ("Linux", "Darwin", "FreeBSD", "OpenBSD")
 
 
 @contextmanager
 def timeout(
     seconds: int = 30,
     error_message: str = "Operation timed out",
-    strategy: TimeoutStrategy = "auto"
+    strategy: TimeoutStrategy = "auto",
 ):
     """
     Context manager for timing out operations with multiple strategies.
@@ -98,7 +99,9 @@ def timeout(
     """
     # Validate strategy
     if strategy not in ("signal", "thread", "auto"):
-        raise ValueError(f"Invalid timeout strategy: {strategy}. Must be 'signal', 'thread', or 'auto'")
+        raise ValueError(
+            f"Invalid timeout strategy: {strategy}. Must be 'signal', 'thread', or 'auto'"
+        )
 
     # Determine actual strategy to use
     actual_strategy = _resolve_strategy(strategy)
@@ -130,7 +133,9 @@ def _resolve_strategy(strategy: TimeoutStrategy) -> Literal["signal", "thread"]:
     if strategy == "signal":
         # Validate that signal strategy is available
         if not _IS_UNIX:
-            raise ValueError("Signal-based timeout is only available on Unix/Linux systems")
+            raise ValueError(
+                "Signal-based timeout is only available on Unix/Linux systems"
+            )
         if threading.current_thread() != threading.main_thread():
             raise ValueError("Signal-based timeout only works in the main thread")
         return "signal"
@@ -156,6 +161,7 @@ def _signal_timeout(seconds: int, error_message: str):
     Raises:
         TimeoutError: If operation exceeds timeout duration
     """
+
     def _timeout_handler(signum, frame):
         raise TimeoutError(error_message)
 
@@ -206,7 +212,9 @@ def _thread_timeout(seconds: int, error_message: str):
         # Note: This is a "soft" timeout - the operation may have run longer
         # than the specified duration before this check occurs
         if timeout_occurred.is_set():
-            raise TimeoutError(f"{error_message} (soft timeout - operation completed but exceeded {seconds}s)")
+            raise TimeoutError(
+                f"{error_message} (soft timeout - operation completed but exceeded {seconds}s)"
+            )
     finally:
         # Cancel the timer if it hasn't fired yet
         timer.cancel()
@@ -237,17 +245,20 @@ def with_timeout(timeout_seconds: int = 30, strategy: TimeoutStrategy = "auto"):
     Returns:
         Decorated function that raises TimeoutError on timeout
     """
+
     def decorator(func: Callable) -> Callable:
         def wrapper(*args, **kwargs) -> Any:
             with timeout(
                 timeout_seconds,
                 f"{func.__name__} timed out after {timeout_seconds}s",
-                strategy=strategy
+                strategy=strategy,
             ):
                 return func(*args, **kwargs)
+
         wrapper.__name__ = func.__name__
         wrapper.__doc__ = func.__doc__
         return wrapper
+
     return decorator
 
 
@@ -285,5 +296,5 @@ def get_timeout_info() -> dict[str, Any]:
         "platform": platform.system(),
         "signal_available": _IS_UNIX and is_main_thread,
         "main_thread": is_main_thread,
-        "recommended_strategy": "signal" if (_IS_UNIX and is_main_thread) else "thread"
+        "recommended_strategy": "signal" if (_IS_UNIX and is_main_thread) else "thread",
     }

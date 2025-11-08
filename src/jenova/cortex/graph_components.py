@@ -1,4 +1,3 @@
-
 # The JENOVA Cognitive Architecture
 # Copyright (c) 2024, orpheus497. All rights reserved.
 #
@@ -13,6 +12,7 @@ from datetime import datetime
 @dataclass
 class CognitiveNode:
     """Represents a single node in the cognitive graph."""
+
     node_type: str  # e.g., 'insight', 'memory', 'assumption', 'meta-insight'
     content: str
     user: str
@@ -24,6 +24,7 @@ class CognitiveNode:
 @dataclass
 class CognitiveLink:
     """Represents a directed link between two nodes in the cognitive graph."""
+
     source_id: str
     target_id: str
     relationship: str  # e.g., 'elaborates_on', 'conflicts_with', 'created_from'

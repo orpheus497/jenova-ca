@@ -24,28 +24,27 @@ from jenova.llm.cuda_manager import CUDAManager, CUDAInfo
 from jenova.llm.model_manager import ModelManager, ModelLoadError
 from jenova.llm.embedding_manager import EmbeddingManager, EmbeddingLoadError
 from jenova.llm.llm_interface import LLMInterface
-from jenova.llm.distributed_llm_interface import DistributedLLMInterface, DistributionStrategy
+from jenova.llm.distributed_llm_interface import (
+    DistributedLLMInterface,
+    DistributionStrategy,
+)
 
 __all__ = [
     # CUDA Management
-    'CUDAManager',
-    'CUDAInfo',
-
+    "CUDAManager",
+    "CUDAInfo",
     # Model Management
-    'ModelManager',
-    'ModelLoadError',
-
+    "ModelManager",
+    "ModelLoadError",
     # Embedding Management
-    'EmbeddingManager',
-    'EmbeddingLoadError',
-
+    "EmbeddingManager",
+    "EmbeddingLoadError",
     # LLM Interface
-    'LLMInterface',
-
+    "LLMInterface",
     # Distributed LLM (Phase 8)
-    'DistributedLLMInterface',
-    'DistributionStrategy',
+    "DistributedLLMInterface",
+    "DistributionStrategy",
 ]
 
-__version__ = '5.0.0'
-__phase__ = 'Phase 8: Distributed Computing & LAN Networking'
+__version__ = "5.0.0"
+__phase__ = "Phase 8: Distributed Computing & LAN Networking"

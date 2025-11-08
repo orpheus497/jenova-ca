@@ -13,11 +13,14 @@ class BuildProtoCommand(build_py):
         # Check if grpcio-tools is available (needed for proto compilation)
         try:
             import grpc_tools
+
             print("Compiling Protocol Buffers...")
             result = subprocess.run([sys.executable, "build_proto.py"], cwd=".")
             if result.returncode != 0:
                 print("WARNING: Protocol Buffer compilation failed.")
-                print("         Proto files will be compiled on first import if needed.")
+                print(
+                    "         Proto files will be compiled on first import if needed."
+                )
                 print("         This is not a fatal error for installation.")
             else:
                 print("✓ Protocol Buffers compiled successfully")
@@ -38,11 +41,14 @@ class DevelopProtoCommand(develop):
         # Check if grpcio-tools is available (needed for proto compilation)
         try:
             import grpc_tools
+
             print("Compiling Protocol Buffers for development...")
             result = subprocess.run([sys.executable, "build_proto.py"], cwd=".")
             if result.returncode != 0:
                 print("WARNING: Protocol Buffer compilation failed.")
-                print("         Proto files will be compiled on first import if needed.")
+                print(
+                    "         Proto files will be compiled on first import if needed."
+                )
                 print("         This is not a fatal error for installation.")
             else:
                 print("✓ Protocol Buffers compiled successfully")
@@ -60,7 +66,7 @@ class DevelopProtoCommand(develop):
 # Custom commands are added to automatically compile Protocol Buffers
 setup(
     cmdclass={
-        'build_py': BuildProtoCommand,
-        'develop': DevelopProtoCommand,
+        "build_py": BuildProtoCommand,
+        "develop": DevelopProtoCommand,
     }
 )

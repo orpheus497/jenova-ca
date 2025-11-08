@@ -71,7 +71,7 @@ class SecureCredentialStore:
             # Load existing password hash
             if prompt:
                 password = getpass.getpass("Enter JENOVA security password: ")
-                password_bytes = password.encode('utf-8')
+                password_bytes = password.encode("utf-8")
 
                 # Verify password
                 stored_hash = password_file.read_bytes()
@@ -101,7 +101,7 @@ class SecureCredentialStore:
                 if password != confirm:
                     raise ValueError("Passwords do not match")
 
-                password_bytes = password.encode('utf-8')
+                password_bytes = password.encode("utf-8")
             else:
                 # Generate random password for non-interactive setup
                 password_bytes = self._get_default_password()
@@ -135,11 +135,12 @@ class SecureCredentialStore:
         else:
             # Fallback to hostname
             import socket
+
             machine_id = socket.gethostname()
 
         # Combine with a constant salt
         salt = b"JENOVA-DEFAULT-PASSWORD-SALT-V1"
-        combined = f"{machine_id}:{salt.decode('utf-8')}".encode('utf-8')
+        combined = f"{machine_id}:{salt.decode('utf-8')}".encode("utf-8")
 
         # Hash to create password
         return hashlib.sha256(combined).digest()
@@ -157,9 +158,7 @@ class SecureCredentialStore:
         return hashlib.sha256(password).digest()
 
     def derive_encryption_key(
-        self,
-        password: Optional[bytes] = None,
-        salt: Optional[bytes] = None
+        self, password: Optional[bytes] = None, salt: Optional[bytes] = None
     ) -> Tuple[bytes, bytes]:
         """
         Derive encryption key from password using Scrypt.
@@ -181,10 +180,10 @@ class SecureCredentialStore:
         kdf = Scrypt(
             salt=salt,
             length=32,  # 256-bit key
-            n=2**14,    # CPU/memory cost (16384)
-            r=8,        # Block size
-            p=1,        # Parallelization
-            backend=default_backend()
+            n=2**14,  # CPU/memory cost (16384)
+            r=8,  # Block size
+            p=1,  # Parallelization
+            backend=default_backend(),
         )
 
         key = kdf.derive(password)
@@ -206,10 +205,7 @@ class SecureCredentialStore:
         return serialization.BestAvailableEncryption(password)
 
     def save_private_key(
-        self,
-        private_key,
-        filename: str,
-        password: Optional[bytes] = None
+        self, private_key, filename: str, password: Optional[bytes] = None
     ):
         """
         Save private key with encryption.
@@ -226,7 +222,7 @@ class SecureCredentialStore:
         pem = private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=encryption
+            encryption_algorithm=encryption,
         )
 
         filepath.write_bytes(pem)
@@ -234,11 +230,7 @@ class SecureCredentialStore:
 
         self.file_logger.log_info(f"Saved encrypted private key to {filepath}")
 
-    def load_private_key(
-        self,
-        filename: str,
-        password: Optional[bytes] = None
-    ):
+    def load_private_key(self, filename: str, password: Optional[bytes] = None):
         """
         Load encrypted private key.
 
@@ -260,9 +252,7 @@ class SecureCredentialStore:
         pem = filepath.read_bytes()
 
         private_key = serialization.load_pem_private_key(
-            pem,
-            password=password,
-            backend=default_backend()
+            pem, password=password, backend=default_backend()
         )
 
         self.file_logger.log_info(f"Loaded encrypted private key from {filepath}")
@@ -272,6 +262,6 @@ class SecureCredentialStore:
         """Clear cached master password from memory."""
         if self._password_cache is not None:
             # Overwrite memory before deleting
-            self._password_cache = b'\x00' * len(self._password_cache)
+            self._password_cache = b"\x00" * len(self._password_cache)
             self._password_cache = None
             self.file_logger.log_info("Cleared password cache")

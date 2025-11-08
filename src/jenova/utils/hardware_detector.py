@@ -28,6 +28,7 @@ from typing import Dict, List, Optional, Tuple
 
 class HardwareType(Enum):
     """Types of compute hardware."""
+
     NVIDIA_GPU = "nvidia_gpu"
     AMD_GPU = "amd_gpu"
     AMD_APU = "amd_apu"
@@ -41,6 +42,7 @@ class HardwareType(Enum):
 
 class Platform(Enum):
     """Operating system platforms."""
+
     LINUX = "linux"
     MACOS = "macos"
     WINDOWS = "windows"
@@ -51,6 +53,7 @@ class Platform(Enum):
 @dataclass
 class ComputeDevice:
     """Information about a compute device."""
+
     device_type: HardwareType
     name: str
     memory_mb: Optional[int] = None
@@ -68,6 +71,7 @@ class ComputeDevice:
 @dataclass
 class SystemResources:
     """Overall system resource information."""
+
     platform: Platform
     architecture: str  # x86_64, aarch64, arm64, etc.
     cpu_name: str
@@ -109,7 +113,7 @@ class HardwareDetector:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                timeout=timeout
+                timeout=timeout,
             )
             if result.returncode == 0:
                 return result.stdout.strip()
@@ -122,17 +126,19 @@ class HardwareDetector:
         devices = []
 
         # Try nvidia-smi
-        output = self._run_command([
-            'nvidia-smi',
-            '--query-gpu=name,memory.total,memory.free,index',
-            '--format=csv,noheader,nounits'
-        ])
+        output = self._run_command(
+            [
+                "nvidia-smi",
+                "--query-gpu=name,memory.total,memory.free,index",
+                "--format=csv,noheader,nounits",
+            ]
+        )
 
         if output:
-            for line in output.split('\n'):
+            for line in output.split("\n"):
                 if line.strip():
                     try:
-                        parts = [p.strip() for p in line.split(',')]
+                        parts = [p.strip() for p in line.split(",")]
                         if len(parts) >= 4:
                             device = ComputeDevice(
                                 device_type=HardwareType.NVIDIA_GPU,
@@ -144,7 +150,7 @@ class HardwareDetector:
                                 supports_opencl=True,
                                 supports_vulkan=True,
                                 device_id=parts[3],
-                                priority=100  # High priority for CUDA support
+                                priority=100,  # High priority for CUDA support
                             )
                             devices.append(device)
                     except (ValueError, IndexError):
@@ -158,60 +164,87 @@ class HardwareDetector:
 
         if self.platform == Platform.LINUX:
             # Try rocm-smi for discrete AMD GPUs
-            output = self._run_command(['rocm-smi', '--showmeminfo', 'vram'])
+            output = self._run_command(["rocm-smi", "--showmeminfo", "vram"])
             if output:
                 # Parse rocm-smi output
                 # This is a simplified parser - real implementation would be more robust
-                gpu_match = re.search(r'GPU\[(\d+)\]', output)
+                gpu_match = re.search(r"GPU\[(\d+)\]", output)
                 if gpu_match:
                     # Get GPU name from lspci
-                    lspci_output = self._run_command(['lspci'])
+                    lspci_output = self._run_command(["lspci"])
                     if lspci_output:
-                        for line in lspci_output.split('\n'):
-                            if 'VGA' in line and 'AMD' in line.upper() or 'ATI' in line.upper():
-                                name = line.split(':', 1)[1].strip() if ':' in line else 'AMD GPU'
+                        for line in lspci_output.split("\n"):
+                            if (
+                                "VGA" in line
+                                and "AMD" in line.upper()
+                                or "ATI" in line.upper()
+                            ):
+                                name = (
+                                    line.split(":", 1)[1].strip()
+                                    if ":" in line
+                                    else "AMD GPU"
+                                )
                                 device = ComputeDevice(
                                     device_type=HardwareType.AMD_GPU,
                                     name=name,
                                     is_integrated=False,
                                     supports_opencl=True,
                                     supports_vulkan=True,
-                                    priority=90
+                                    priority=90,
                                 )
                                 devices.append(device)
 
             # Detect AMD APUs (integrated graphics)
-            lspci_output = self._run_command(['lspci'])
+            lspci_output = self._run_command(["lspci"])
             if lspci_output:
-                for line in lspci_output.split('\n'):
-                    if 'VGA' in line or 'Display' in line:
+                for line in lspci_output.split("\n"):
+                    if "VGA" in line or "Display" in line:
                         line_upper = line.upper()
-                        if any(apu in line_upper for apu in ['RENOIR', 'CEZANNE', 'BARCELO', 'REMBRANDT', 'PHOENIX', 'PICASSO', 'RAVEN']):
-                            name = line.split(':', 1)[1].strip() if ':' in line else 'AMD APU'
+                        if any(
+                            apu in line_upper
+                            for apu in [
+                                "RENOIR",
+                                "CEZANNE",
+                                "BARCELO",
+                                "REMBRANDT",
+                                "PHOENIX",
+                                "PICASSO",
+                                "RAVEN",
+                            ]
+                        ):
+                            name = (
+                                line.split(":", 1)[1].strip()
+                                if ":" in line
+                                else "AMD APU"
+                            )
                             device = ComputeDevice(
                                 device_type=HardwareType.AMD_APU,
                                 name=name,
                                 is_integrated=True,
                                 supports_opencl=True,
                                 supports_vulkan=True,
-                                priority=70
+                                priority=70,
                             )
                             devices.append(device)
 
         elif self.platform == Platform.WINDOWS:
             # Use wmic on Windows
-            output = self._run_command(['wmic', 'path', 'win32_VideoController', 'get', 'name'])
+            output = self._run_command(
+                ["wmic", "path", "win32_VideoController", "get", "name"]
+            )
             if output:
-                for line in output.split('\n'):
-                    if 'AMD' in line.upper() or 'ATI' in line.upper():
-                        is_apu = any(apu in line.upper() for apu in ['RYZEN', 'APU'])
+                for line in output.split("\n"):
+                    if "AMD" in line.upper() or "ATI" in line.upper():
+                        is_apu = any(apu in line.upper() for apu in ["RYZEN", "APU"])
                         device = ComputeDevice(
-                            device_type=HardwareType.AMD_APU if is_apu else HardwareType.AMD_GPU,
+                            device_type=(
+                                HardwareType.AMD_APU if is_apu else HardwareType.AMD_GPU
+                            ),
                             name=line.strip(),
                             is_integrated=is_apu,
                             supports_opencl=True,
                             supports_vulkan=True,
-                            priority=70 if is_apu else 90
+                            priority=70 if is_apu else 90,
                         )
                         devices.append(device)
 
@@ -223,29 +256,40 @@ class HardwareDetector:
 
         if self.platform == Platform.LINUX:
             # Check for Intel GPUs via lspci
-            lspci_output = self._run_command(['lspci'])
+            lspci_output = self._run_command(["lspci"])
             if lspci_output:
-                for line in lspci_output.split('\n'):
+                for line in lspci_output.split("\n"):
                     line_upper = line.upper()
-                    if ('VGA' in line_upper or 'DISPLAY' in line_upper or '3D' in line_upper or 'GRAPHICS' in line_upper) and 'INTEL' in line_upper:
+                    if (
+                        "VGA" in line_upper
+                        or "DISPLAY" in line_upper
+                        or "3D" in line_upper
+                        or "GRAPHICS" in line_upper
+                    ) and "INTEL" in line_upper:
                         # Extract the GPU name
                         # Format: "0000:00:02.0 VGA compatible controller: Intel Corporation ..."
                         # Find the part after "controller:" or "Controller:"
-                        name = 'Intel GPU'
-                        controller_match = re.search(r'(?:controller|Controller):\s*(.+)', line)
+                        name = "Intel GPU"
+                        controller_match = re.search(
+                            r"(?:controller|Controller):\s*(.+)", line
+                        )
                         if controller_match:
                             name = controller_match.group(1).strip()
-                        elif ' ' in line:
+                        elif " " in line:
                             # Fallback: get everything after the first space-separated section
                             parts = line.split(None, 1)
                             if len(parts) > 1:
                                 name = parts[1]
 
                         # Determine if it's discrete (Arc) or integrated
-                        is_arc = 'ARC' in line_upper
+                        is_arc = "ARC" in line_upper
                         is_integrated = not is_arc
 
-                        device_type = HardwareType.INTEL_GPU if is_arc else HardwareType.INTEL_INTEGRATED
+                        device_type = (
+                            HardwareType.INTEL_GPU
+                            if is_arc
+                            else HardwareType.INTEL_INTEGRATED
+                        )
 
                         # Try to get memory info from /sys
                         memory_mb = None
@@ -253,10 +297,10 @@ class HardwareDetector:
                             # Intel integrated graphics share system RAM
                             # We'll estimate based on system RAM
                             if is_integrated:
-                                meminfo = self._run_command(['cat', '/proc/meminfo'])
+                                meminfo = self._run_command(["cat", "/proc/meminfo"])
                                 if meminfo:
-                                    for mem_line in meminfo.split('\n'):
-                                        if mem_line.startswith('MemTotal:'):
+                                    for mem_line in meminfo.split("\n"):
+                                        if mem_line.startswith("MemTotal:"):
                                             total_kb = int(mem_line.split()[1])
                                             # Allocate ~1/8 of system RAM for integrated GPU
                                             memory_mb = (total_kb // 1024) // 8
@@ -271,42 +315,53 @@ class HardwareDetector:
                             is_integrated=is_integrated,
                             supports_opencl=True,
                             supports_vulkan=True,
-                            priority=80 if is_arc else 60
+                            priority=80 if is_arc else 60,
                         )
                         devices.append(device)
 
         elif self.platform == Platform.WINDOWS:
-            output = self._run_command(['wmic', 'path', 'win32_VideoController', 'get', 'name'])
+            output = self._run_command(
+                ["wmic", "path", "win32_VideoController", "get", "name"]
+            )
             if output:
-                for line in output.split('\n'):
-                    if 'INTEL' in line.upper() and ('IRIS' in line.upper() or 'UHD' in line.upper() or 'ARC' in line.upper() or 'HD' in line.upper()):
-                        is_arc = 'ARC' in line.upper()
+                for line in output.split("\n"):
+                    if "INTEL" in line.upper() and (
+                        "IRIS" in line.upper()
+                        or "UHD" in line.upper()
+                        or "ARC" in line.upper()
+                        or "HD" in line.upper()
+                    ):
+                        is_arc = "ARC" in line.upper()
                         device = ComputeDevice(
-                            device_type=HardwareType.INTEL_GPU if is_arc else HardwareType.INTEL_INTEGRATED,
+                            device_type=(
+                                HardwareType.INTEL_GPU
+                                if is_arc
+                                else HardwareType.INTEL_INTEGRATED
+                            ),
                             name=line.strip(),
                             is_integrated=not is_arc,
                             supports_opencl=True,
                             supports_vulkan=True,
-                            priority=80 if is_arc else 60
+                            priority=80 if is_arc else 60,
                         )
                         devices.append(device)
 
         elif self.platform == Platform.MACOS:
             # Intel Macs might have Iris or UHD graphics
-            output = self._run_command(['system_profiler', 'SPDisplaysDataType'])
+            output = self._run_command(["system_profiler", "SPDisplaysDataType"])
             if output:
-                if 'Intel' in output:
+                if "Intel" in output:
                     # Extract Intel GPU name
-                    for line in output.split('\n'):
-                        if 'Chipset Model:' in line and 'Intel' in line:
-                            name = line.split(':', 1)[1].strip()
+                    for line in output.split("\n"):
+                        if "Chipset Model:" in line and "Intel" in line:
+                            name = line.split(":", 1)[1].strip()
                             device = ComputeDevice(
                                 device_type=HardwareType.INTEL_INTEGRATED,
                                 name=name,
                                 is_integrated=True,
                                 supports_metal=True,
                                 supports_opencl=True,
-                                priority=60
+                                priority=60,
                             )
                             devices.append(device)
 
@@ -316,16 +371,19 @@ class HardwareDetector:
         """Detect Apple Silicon (M1, M2, M3, etc.)."""
         devices = []
 
-        if self.platform == Platform.MACOS and self.architecture in ['arm64', 'aarch64']:
+        if self.platform == Platform.MACOS and self.architecture in [
+            "arm64",
+            "aarch64",
+        ]:
             # Check for Apple Silicon
-            output = self._run_command(['sysctl', '-n', 'machdep.cpu.brand_string'])
-            if output and 'Apple' in output:
+            output = self._run_command(["sysctl", "-n", "machdep.cpu.brand_string"])
+            if output and "Apple" in output:
                 # Get GPU core count
                 gpu_cores = None
-                sysinfo = self._run_command(['system_profiler', 'SPDisplaysDataType'])
+                sysinfo = self._run_command(["system_profiler", "SPDisplaysDataType"])
                 if sysinfo:
                     # Try to extract GPU core count
-                    match = re.search(r'Total Number of Cores:\s*(\d+)', sysinfo)
+                    match = re.search(r"Total Number of Cores:\s*(\d+)", sysinfo)
                     if match:
                         gpu_cores = int(match.group(1))
 
@@ -335,7 +393,7 @@ class HardwareDetector:
                     is_integrated=True,
                     supports_metal=True,
                     compute_units=gpu_cores,
-                    priority=95  # Apple Silicon is very efficient
+                    priority=95,  # Apple Silicon is very efficient
                 )
                 devices.append(device)
 
@@ -350,10 +408,10 @@ class HardwareDetector:
         try:
             if self.platform == Platform.LINUX or self.platform == Platform.ANDROID:
                 # Get CPU name
-                with open('/proc/cpuinfo', 'r') as f:
+                with open("/proc/cpuinfo", "r") as f:
                     for line in f:
-                        if line.startswith('model name'):
-                            cpu_name = line.split(':', 1)[1].strip()
+                        if line.startswith("model name"):
+                            cpu_name = line.split(":", 1)[1].strip()
                             break
 
                 # Get core counts
@@ -362,38 +420,45 @@ class HardwareDetector:
                 physical_cores = logical_cores // 2 if logical_cores > 1 else 1
 
                 # Try to get actual physical core count
-                output = self._run_command(['lscpu'])
+                output = self._run_command(["lscpu"])
                 if output:
-                    for line in output.split('\n'):
-                        if 'Core(s) per socket:' in line:
+                    for line in output.split("\n"):
+                        if "Core(s) per socket:" in line:
                             try:
-                                cores_per_socket = int(line.split(':')[1].strip())
+                                cores_per_socket = int(line.split(":")[1].strip())
                                 sockets = 1
-                                for l2 in output.split('\n'):
-                                    if 'Socket(s):' in l2:
-                                        sockets = int(l2.split(':')[1].strip())
+                                for l2 in output.split("\n"):
+                                    if "Socket(s):" in l2:
+                                        sockets = int(l2.split(":")[1].strip())
                                         break
                                 physical_cores = cores_per_socket * sockets
                             except ValueError:
                                 pass
 
             elif self.platform == Platform.MACOS:
-                cpu_name = self._run_command(['sysctl', '-n', 'machdep.cpu.brand_string']) or "Unknown CPU"
-                physical_cores = int(self._run_command(['sysctl', '-n', 'hw.physicalcpu']) or '1')
-                logical_cores = int(self._run_command(['sysctl', '-n', 'hw.logicalcpu']) or '1')
+                cpu_name = (
+                    self._run_command(["sysctl", "-n", "machdep.cpu.brand_string"])
+                    or "Unknown CPU"
+                )
+                physical_cores = int(
+                    self._run_command(["sysctl", "-n", "hw.physicalcpu"]) or "1"
+                )
+                logical_cores = int(
+                    self._run_command(["sysctl", "-n", "hw.logicalcpu"]) or "1"
+                )
 
             elif self.platform == Platform.WINDOWS:
-                output = self._run_command(['wmic', 'cpu', 'get', 'name'])
+                output = self._run_command(["wmic", "cpu", "get", "name"])
                 if output:
-                    lines = output.split('\n')
+                    lines = output.split("\n")
                     if len(lines) > 1:
                         cpu_name = lines[1].strip()
 
                 logical_cores = os.cpu_count() or 1
-                output = self._run_command(['wmic', 'cpu', 'get', 'NumberOfCores'])
+                output = self._run_command(["wmic", "cpu", "get", "NumberOfCores"])
                 if output:
                     try:
-                        physical_cores = int(output.split('\n')[1].strip())
+                        physical_cores = int(output.split("\n")[1].strip())
                     except (ValueError, IndexError):
                         physical_cores = logical_cores // 2
 
@@ -414,74 +479,82 @@ class HardwareDetector:
 
         try:
             if self.platform == Platform.LINUX or self.platform == Platform.ANDROID:
-                with open('/proc/meminfo', 'r') as f:
+                with open("/proc/meminfo", "r") as f:
                     meminfo = f.read()
-                    for line in meminfo.split('\n'):
-                        if line.startswith('MemTotal:'):
+                    for line in meminfo.split("\n"):
+                        if line.startswith("MemTotal:"):
                             ram_total_mb = int(line.split()[1]) // 1024
-                        elif line.startswith('MemAvailable:'):
+                        elif line.startswith("MemAvailable:"):
                             ram_available_mb = int(line.split()[1]) // 1024
-                        elif line.startswith('SwapTotal:'):
+                        elif line.startswith("SwapTotal:"):
                             swap_total_mb = int(line.split()[1]) // 1024
-                        elif line.startswith('SwapFree:'):
+                        elif line.startswith("SwapFree:"):
                             swap_free_mb = int(line.split()[1]) // 1024
 
             elif self.platform == Platform.MACOS:
                 # RAM
-                output = self._run_command(['sysctl', '-n', 'hw.memsize'])
+                output = self._run_command(["sysctl", "-n", "hw.memsize"])
                 if output:
                     ram_total_mb = int(output) // (1024 * 1024)
 
                 # Available memory (approximate)
-                vm_stat = self._run_command(['vm_stat'])
+                vm_stat = self._run_command(["vm_stat"])
                 if vm_stat:
                     # Parse vm_stat for free and inactive memory
                     free_pages = 0
-                    for line in vm_stat.split('\n'):
-                        if 'Pages free:' in line:
-                            free_pages += int(line.split(':')[1].strip().rstrip('.'))
-                        elif 'Pages inactive:' in line:
-                            free_pages += int(line.split(':')[1].strip().rstrip('.'))
+                    for line in vm_stat.split("\n"):
+                        if "Pages free:" in line:
+                            free_pages += int(line.split(":")[1].strip().rstrip("."))
+                        elif "Pages inactive:" in line:
+                            free_pages += int(line.split(":")[1].strip().rstrip("."))
 
                     # macOS page size is typically 4KB
                     ram_available_mb = (free_pages * 4096) // (1024 * 1024)
 
                 # Swap info
-                output = self._run_command(['sysctl', '-n', 'vm.swapusage'])
+                output = self._run_command(["sysctl", "-n", "vm.swapusage"])
                 if output:
                     # Parse: "total = X.XXM  used = X.XXM  free = X.XXM"
-                    match = re.search(r'total = ([\d.]+)([MG])', output)
+                    match = re.search(r"total = ([\d.]+)([MG])", output)
                     if match:
                         val = float(match.group(1))
-                        swap_total_mb = int(val * 1024) if match.group(2) == 'G' else int(val)
+                        swap_total_mb = (
+                            int(val * 1024) if match.group(2) == "G" else int(val)
+                        )
 
-                    match = re.search(r'free = ([\d.]+)([MG])', output)
+                    match = re.search(r"free = ([\d.]+)([MG])", output)
                     if match:
                         val = float(match.group(1))
-                        swap_free_mb = int(val * 1024) if match.group(2) == 'G' else int(val)
+                        swap_free_mb = (
+                            int(val * 1024) if match.group(2) == "G" else int(val)
+                        )
 
             elif self.platform == Platform.WINDOWS:
                 # Total RAM
-                output = self._run_command(['wmic', 'OS', 'get', 'TotalVisibleMemorySize'])
+                output = self._run_command(
+                    ["wmic", "OS", "get", "TotalVisibleMemorySize"]
+                )
                 if output:
                     try:
-                        ram_total_mb = int(output.split('\n')[1].strip()) // 1024
+                        ram_total_mb = int(output.split("\n")[1].strip()) // 1024
                     except (ValueError, IndexError):
                         pass
 
                 # Free RAM
-                output = self._run_command(['wmic', 'OS', 'get', 'FreePhysicalMemory'])
+                output = self._run_command(["wmic", "OS", "get", "FreePhysicalMemory"])
                 if output:
                     try:
-                        ram_available_mb = int(output.split('\n')[1].strip()) // 1024
+                        ram_available_mb = int(output.split("\n")[1].strip()) // 1024
                     except (ValueError, IndexError):
                         pass
 
                 # Swap/Page file
-                output = self._run_command(['wmic', 'pagefile', 'get', 'AllocatedBaseSize'])
+                output = self._run_command(
+                    ["wmic", "pagefile", "get", "AllocatedBaseSize"]
+                )
                 if output:
                     try:
-                        swap_total_mb = int(output.split('\n')[1].strip())
+                        swap_total_mb = int(output.split("\n")[1].strip())
                     except (ValueError, IndexError):
                         pass
 
@@ -514,7 +587,9 @@ class HardwareDetector:
         cpu_name, physical_cores, logical_cores = self._detect_cpu()
 
         # Memory info
-        ram_total_mb, ram_available_mb, swap_total_mb, swap_free_mb = self._detect_memory()
+        ram_total_mb, ram_available_mb, swap_total_mb, swap_free_mb = (
+            self._detect_memory()
+        )
 
         return SystemResources(
             platform=self.platform,
@@ -526,11 +601,15 @@ class HardwareDetector:
             ram_available_mb=ram_available_mb,
             swap_total_mb=swap_total_mb,
             swap_free_mb=swap_free_mb,
-            compute_devices=compute_devices
+            compute_devices=compute_devices,
         )
 
-    def get_optimal_configuration(self, resources: SystemResources, model_size_mb: int = 4000,
-                                  context_size: int = 8192) -> Dict:
+    def get_optimal_configuration(
+        self,
+        resources: SystemResources,
+        model_size_mb: int = 4000,
+        context_size: int = 8192,
+    ) -> Dict:
         """
         Calculate optimal configuration based on detected hardware.
 
@@ -543,17 +622,17 @@ class HardwareDetector:
             Dictionary with optimal configuration
         """
         config = {
-            'device': 'cpu',
-            'gpu_layers': 0,
-            'threads': resources.cpu_cores_physical,
-            'use_mlock': False,
-            'use_mmap': True,
-            'low_vram': False,
-            'n_batch': 512,
-            'offload_kqv': True,
-            'recommended_context': context_size,
-            'memory_strategy': 'balanced',
-            'backend': 'cpu'
+            "device": "cpu",
+            "gpu_layers": 0,
+            "threads": resources.cpu_cores_physical,
+            "use_mlock": False,
+            "use_mmap": True,
+            "low_vram": False,
+            "n_batch": 512,
+            "offload_kqv": True,
+            "recommended_context": context_size,
+            "memory_strategy": "balanced",
+            "backend": "cpu",
         }
 
         # Determine best compute device
@@ -561,63 +640,70 @@ class HardwareDetector:
             best_device = resources.compute_devices[0]
 
             if best_device.device_type == HardwareType.NVIDIA_GPU:
-                config['device'] = 'cuda'
-                config['backend'] = 'cuda'
-                config['gpu_layers'] = self._calculate_gpu_layers_nvidia(
+                config["device"] = "cuda"
+                config["backend"] = "cuda"
+                config["gpu_layers"] = self._calculate_gpu_layers_nvidia(
                     best_device, model_size_mb, context_size
                 )
 
-            elif best_device.device_type in [HardwareType.AMD_GPU, HardwareType.AMD_APU]:
-                config['device'] = 'opencl'
-                config['backend'] = 'opencl'
-                config['gpu_layers'] = self._calculate_gpu_layers_amd(
+            elif best_device.device_type in [
+                HardwareType.AMD_GPU,
+                HardwareType.AMD_APU,
+            ]:
+                config["device"] = "opencl"
+                config["backend"] = "opencl"
+                config["gpu_layers"] = self._calculate_gpu_layers_amd(
                     best_device, model_size_mb, context_size, resources.ram_available_mb
                 )
 
-            elif best_device.device_type in [HardwareType.INTEL_GPU, HardwareType.INTEL_INTEGRATED]:
-                config['device'] = 'opencl'
-                config['backend'] = 'opencl'
-                config['gpu_layers'] = self._calculate_gpu_layers_intel(
+            elif best_device.device_type in [
+                HardwareType.INTEL_GPU,
+                HardwareType.INTEL_INTEGRATED,
+            ]:
+                config["device"] = "opencl"
+                config["backend"] = "opencl"
+                config["gpu_layers"] = self._calculate_gpu_layers_intel(
                     best_device, model_size_mb, context_size, resources.ram_available_mb
                 )
                 # Intel integrated benefits from lower batch size
-                config['n_batch'] = 256
+                config["n_batch"] = 256
 
             elif best_device.device_type == HardwareType.APPLE_SILICON:
-                config['device'] = 'metal'
-                config['backend'] = 'metal'
-                config['gpu_layers'] = -1  # Apple Silicon uses unified memory
-                config['use_mmap'] = True
+                config["device"] = "metal"
+                config["backend"] = "metal"
+                config["gpu_layers"] = -1  # Apple Silicon uses unified memory
+                config["use_mmap"] = True
 
         # Memory management strategy
         total_required_mb = model_size_mb + self._estimate_kv_cache_mb(context_size)
 
         if resources.ram_available_mb >= total_required_mb * 1.5:
             # Plenty of RAM - use mlock for performance
-            config['use_mlock'] = True
-            config['memory_strategy'] = 'performance'
+            config["use_mlock"] = True
+            config["memory_strategy"] = "performance"
         elif resources.ram_available_mb >= total_required_mb:
             # Enough RAM - use mmap without mlock
-            config['use_mlock'] = False
-            config['memory_strategy'] = 'balanced'
+            config["use_mlock"] = False
+            config["memory_strategy"] = "balanced"
         elif resources.ram_available_mb + resources.swap_free_mb >= total_required_mb:
             # Need swap - optimize for swap usage
-            config['use_mlock'] = False
-            config['use_mmap'] = True
-            config['memory_strategy'] = 'swap_optimized'
+            config["use_mlock"] = False
+            config["use_mmap"] = True
+            config["memory_strategy"] = "swap_optimized"
             # Reduce context size to fit better
-            config['recommended_context'] = min(context_size, 4096)
+            config["recommended_context"] = min(context_size, 4096)
         else:
             # Very tight on memory
-            config['use_mlock'] = False
-            config['memory_strategy'] = 'minimal'
-            config['recommended_context'] = 2048
-            config['n_batch'] = 256
+            config["use_mlock"] = False
+            config["memory_strategy"] = "minimal"
+            config["recommended_context"] = 2048
+            config["n_batch"] = 256
 
         return config
 
-    def _calculate_gpu_layers_nvidia(self, device: ComputeDevice, model_size_mb: int,
-                                     context_size: int) -> int:
+    def _calculate_gpu_layers_nvidia(
+        self, device: ComputeDevice, model_size_mb: int, context_size: int
+    ) -> int:
         """Calculate optimal GPU layers for NVIDIA GPUs."""
         if not device.memory_free_mb:
             return 0
@@ -639,8 +725,13 @@ class HardwareDetector:
 
         return min(max_layers, 32)
 
-    def _calculate_gpu_layers_amd(self, device: ComputeDevice, model_size_mb: int,
-                                  context_size: int, system_ram_mb: int) -> int:
+    def _calculate_gpu_layers_amd(
+        self,
+        device: ComputeDevice,
+        model_size_mb: int,
+        context_size: int,
+        system_ram_mb: int,
+    ) -> int:
         """Calculate optimal GPU layers for AMD GPUs/APUs."""
         if device.is_integrated:
             # APU shares system RAM
@@ -669,8 +760,13 @@ class HardwareDetector:
 
         return min(max_layers, 32)
 
-    def _calculate_gpu_layers_intel(self, device: ComputeDevice, model_size_mb: int,
-                                    context_size: int, system_ram_mb: int) -> int:
+    def _calculate_gpu_layers_intel(
+        self,
+        device: ComputeDevice,
+        model_size_mb: int,
+        context_size: int,
+        system_ram_mb: int,
+    ) -> int:
         """Calculate optimal GPU layers for Intel GPUs."""
         # Intel integrated GPUs share system RAM
         if device.is_integrated:
@@ -699,7 +795,7 @@ class HardwareDetector:
         # Intel integrated benefits from partial offload
         # Iris Xe can handle more than older UHD
         if device.is_integrated:
-            if 'IRIS' in device.name.upper() or 'XE' in device.name.upper():
+            if "IRIS" in device.name.upper() or "XE" in device.name.upper():
                 max_layers = min(max_layers, 12)
             else:
                 max_layers = min(max_layers, 8)
@@ -734,7 +830,9 @@ def print_system_info(resources: SystemResources):
             print(f"     Integrated: {device.is_integrated}")
             if device.memory_mb:
                 if device.memory_free_mb:
-                    print(f"     Memory: {device.memory_free_mb}/{device.memory_mb} MB free")
+                    print(
+                        f"     Memory: {device.memory_free_mb}/{device.memory_mb} MB free"
+                    )
                 else:
                     print(f"     Memory: {device.memory_mb} MB")
             print(f"     Backends: ", end="")
@@ -792,8 +890,8 @@ def recommend_gpu_layers(vram_mb: int = None, model_size_gb: float = 7.0) -> int
         # Auto-detect VRAM using HardwareDetector
         try:
             detector = HardwareDetector()
-            if detector.gpu_devices and 'vram_mb' in detector.gpu_devices[0]:
-                vram_mb = detector.gpu_devices[0]['vram_mb']
+            if detector.gpu_devices and "vram_mb" in detector.gpu_devices[0]:
+                vram_mb = detector.gpu_devices[0]["vram_mb"]
             else:
                 # No GPU detected or VRAM info unavailable
                 return 0
