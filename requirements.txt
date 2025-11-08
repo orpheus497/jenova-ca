@@ -3,30 +3,32 @@
 # Licensed under the MIT License
 
 # Core LLM and Inference
-llama-cpp-python==0.2.90
+# Version range allows flexibility while preventing breaking changes
+# For CUDA support: CMAKE_ARGS="-DGGML_CUDA=on" pip install llama-cpp-python --no-cache-dir
+llama-cpp-python>=0.3.0,<0.4.0
 
-# PyTorch (CUDA 12.1 support) - Python 3.13 compatible
-torch==2.5.1
-# Note: Python 3.13 requires torch>=2.5.0
+# PyTorch (CUDA 12.1+ support) - Python 3.10-3.13 compatible
+# Note: torch>=2.5.1 required for Python 3.13 support
+torch>=2.5.1
 
 # Vector Database and Embeddings
-chromadb==0.5.20
-sentence-transformers==3.3.1
+chromadb>=0.5.20
+sentence-transformers>=3.3.0
 
 # Terminal UI
-rich==13.9.4
-prompt-toolkit==3.0.48
+rich>=13.9.0
+prompt-toolkit>=3.0.48
 
 # Configuration and Data Handling
-PyYAML==6.0.2
-pydantic==2.10.6
-pydantic-settings==2.7.0
+PyYAML>=6.0.2
+pydantic>=2.10.0
+pydantic-settings>=2.7.0
 
 # Utilities
-numpy==1.26.4
-tenacity==9.0.0
-psutil==6.1.1
-filelock==3.16.1
+numpy>=1.26.4
+tenacity>=9.0.0
+psutil>=6.1.0
+filelock>=3.16.0
 
 # Optional Dependencies (for advanced features)
 # Install via: pip install jenova-ai[web] or jenova-ai[browser] or jenova-ai[all]
@@ -37,20 +39,20 @@ filelock==3.16.1
 
 # Phase 8: Distributed Computing & LAN Networking (FOSS)
 # Updated 2025-11-08 for security patches and stability improvements
-zeroconf==0.140.0         # mDNS service discovery (MIT License)
-grpcio==1.69.0           # gRPC framework (Apache 2.0 License)
-grpcio-tools==1.69.0     # Protocol Buffer compiler (Apache 2.0 License)
-protobuf==4.25.2         # Protocol Buffers (BSD License)
-PyJWT==2.10.1            # JWT tokens (MIT License)
+zeroconf>=0.140.0         # mDNS service discovery (MIT License)
+grpcio>=1.69.0           # gRPC framework (Apache 2.0 License)
+grpcio-tools>=1.69.0     # Protocol Buffer compiler (Apache 2.0 License)
+protobuf>=4.25.2         # Protocol Buffers (BSD License)
+PyJWT>=2.10.0            # JWT tokens (MIT License)
 
 # Phases 13-17: Enhanced CLI Capabilities (FOSS)
 # Code Operations and Analysis
-gitpython==3.1.43        # Git operations (BSD-3-Clause License)
-pygments==2.18.0         # Syntax highlighting (BSD-2-Clause License)
-rope==1.13.0             # Python refactoring library (LGPL License)
-tree-sitter==0.21.3      # Multi-language code parsing (MIT License)
+gitpython>=3.1.43        # Git operations (BSD-3-Clause License)
+pygments>=2.18.0         # Syntax highlighting (BSD-2-Clause License)
+rope>=1.13.0             # Python refactoring library (LGPL License)
+tree-sitter>=0.21.3      # Multi-language code parsing (MIT License)
 
 # Code Quality and Security
-jsonschema==4.23.0       # JSON schema validation (MIT License)
-radon==6.0.1             # Code complexity metrics (MIT License)
-bandit==1.7.10           # Security vulnerability scanning (Apache-2.0 License)
+jsonschema>=4.23.0       # JSON schema validation (MIT License)
+radon>=6.0.1             # Code complexity metrics (MIT License)
+bandit>=1.7.10           # Security vulnerability scanning (Apache-2.0 License)

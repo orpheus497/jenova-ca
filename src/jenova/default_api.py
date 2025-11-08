@@ -12,10 +12,16 @@ import os
 import shlex
 import subprocess
 
-from selenium import webdriver
-from selenium.common.exceptions import WebDriverException
-from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.options import Options
+# Selenium is optional - only needed for web search functionality
+# To enable: pip install jenova-ai[web]
+try:
+    from selenium import webdriver
+    from selenium.common.exceptions import WebDriverException
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.firefox.options import Options
+    SELENIUM_AVAILABLE = True
+except ImportError:
+    SELENIUM_AVAILABLE = False
 
 
 def get_current_datetime() -> str:
@@ -66,7 +72,21 @@ def execute_shell_command(command: str) -> dict:
 def web_search(query: str) -> list[dict] | str:
     """
     Performs a web search using DuckDuckGo and returns the results.
+
+    Note: This function requires selenium and webdriver-manager to be installed.
+    Install with: pip install jenova-ai[web]
     """
+    # Check if selenium is available
+    if not SELENIUM_AVAILABLE:
+        return (
+            "Error: Web search functionality requires selenium and related packages.\n"
+            "Install with one of these commands:\n"
+            "  - pip install jenova-ai[web]\n"
+            "  - pip install selenium webdriver-manager\n"
+            "\n"
+            "This is an optional feature for advanced web search capabilities."
+        )
+
     # Preserve CUDA environment for subprocess (geckodriver/Firefox)
     # This prevents CUDA context conflicts when spawning the browser
     import os

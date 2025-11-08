@@ -5,6 +5,81 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Installation System Overhaul** - Complete fix for dependency mismatches and CUDA compilation issues
+  - **Dependency Synchronization**: Fixed critical mismatch between `pyproject.toml` and `requirements.txt`
+    * Added all missing dependencies to `pyproject.toml` (pydantic, tenacity, psutil, filelock, zeroconf, grpcio, protobuf, PyJWT, gitpython, pygments, rope, tree-sitter, jsonschema, radon, bandit)
+    * Moved selenium and webdriver-manager to optional `[web]` extras
+    * Updated all dependency versions to use `>=` ranges for better flexibility
+    * Fixed llama-cpp-python from pinned 0.2.90 to flexible `>=0.3.0,<0.4.0` range
+
+  - **CUDA Compilation Fixes**: Resolved llama-cpp-python CUDA build failures
+    * Fixed deprecated CMAKE flag: Changed `LLAMA_CUDA` to modern `GGML_CUDA` flag
+    * Added `GGML_CUBLAS` flag for better CUDA performance
+    * Added comprehensive CUDA toolkit detection (nvcc, libcuda.so, libcudart.so)
+    * Implemented automatic fallback to CPU-only build on CUDA failure
+    * Added build log capture for debugging failed compilations
+    * Added retry logic with version fallback (0.3.x → 0.2.90)
+
+  - **Installation Script (`install.sh`) Complete Rewrite**:
+    * Added color-coded output for better user experience (errors=red, success=green, info=blue)
+    * Implemented Python version validation (3.10-3.13 required)
+    * Added Python 3.13 compatibility detection with torch version warning
+    * Modern CUDA detection with version reporting
+    * Comprehensive CUDA library verification (ldconfig checks)
+    * Improved error messages with specific troubleshooting steps
+    * Added installation summary with system configuration report
+    * Sequential installation order: llama-cpp-python first, then requirements.txt, then package
+
+  - **Circular Dependency Fix**: Resolved setup.py Protocol Buffer compilation issue
+    * Made proto compilation optional during package installation
+    * Added graceful fallback when grpcio-tools not yet installed
+    * Proto files now compile on first import if needed
+    * Added explicit proto compilation step after main installation
+    * Non-fatal proto compilation failures (distributed features degrade gracefully)
+
+  - **Optional Selenium**: Made web search functionality optional
+    * Selenium moved to `[web]` optional dependency group
+    * Added runtime check in `default_api.py` with graceful fallback
+    * web_search() returns helpful error message when selenium not installed
+    * Clear installation instructions: `pip install jenova-ai[web]`
+    * Reduces base installation size and complexity
+
+  - **Installation Verification**: Created comprehensive `verify_install.py` script
+    * Checks all critical dependencies with version reporting
+    * Tests llama-cpp-python GPU offload support
+    * Verifies PyTorch CUDA availability with device enumeration
+    * Checks Protocol Buffer compilation status
+    * Detects GGUF models in both system and local directories
+    * Color-coded pass/fail report with specific remediation steps
+    * Returns exit code 0 (success) or 1 (failure) for CI/CD integration
+
+### Changed
+
+- **Dependency Version Policy**: Switched from pinned (`==`) to minimum (`>=`) versions
+  * Allows pip to resolve compatible versions automatically
+  * Prevents conflicts with other packages
+  * Maintains compatibility while allowing security updates
+  * Only llama-cpp-python has upper bound (`<0.4.0`) to prevent breaking changes
+
+- **Error Messages**: Installation errors now include specific troubleshooting steps
+  * CUDA build failures explain how to retry with CPU-only
+  * Missing dependencies list exact installation commands
+  * Proto compilation errors include manual compilation instructions
+  * Model download failures link to HuggingFace model repositories
+
+### Added
+
+- Python 3.13 official support (requires torch>=2.5.1)
+- Comprehensive installation verification script (`verify_install.py`)
+- Color-coded terminal output in installation script
+- Build log capture for debugging CUDA compilation failures
+- CUDA library detection (nvcc, libcuda.so, libcudart.so verification)
+- Installation summary report showing Python version, GPU support status, and models directory
+
 ## [5.2.0]
 
 ### Added
