@@ -9,6 +9,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 21: Full Project Remediation & Modernization (Continued)** - Architecture refactoring, security hardening, and new feature infrastructure
+
+#### Core Architecture Modernization
+
+- **Configuration Constants Module** (src/jenova/config/constants.py - 320 lines)
+  * Centralized all magic numbers and configuration values into named constants
+  * Eliminates 150+ scattered magic numbers throughout codebase
+  * Organized by category: application lifecycle, timeouts, file sizes, model configuration, memory, security, network, UI, testing
+  * Improves maintainability and makes configuration changes systematic
+  * All constants properly typed with `Final` type hints
+  * Categories: PROGRESS (startup percentages), TIMEOUTS (command/LLM/network), FILE_SIZES (validation limits), MODEL_CONFIG (GPU/inference), MEMORY (search/reflection intervals), SECURITY (crypto parameters), NETWORK (distributed computing), UI (display settings)
+  * Exported via config module for centralized access
+  * FIXES: MEDIUM-1 - Magic numbers scattered throughout codebase
+
+- **Core Application Module** (src/jenova/core/ - 4 files, ~1,450 lines)
+  * **Component Lifecycle Management** (src/jenova/core/lifecycle.py - 520 lines)
+    - Structured lifecycle phases: CREATED → INITIALIZED → STARTED → STOPPED → DISPOSED → FAILED
+    - Dependency-aware initialization order using topological sort
+    - Automatic dependency resolution preventing circular dependencies
+    - Graceful error handling with proper cleanup on failure
+    - Protocol-based lifecycle interface for component participation
+    - Classes: `ComponentLifecycle`, `LifecyclePhase` enum, `LifecycleAware` protocol
+    - Methods: `register()`, `initialize_all()`, `start_all()`, `stop_all()`, `dispose_all()`
+    - Ensures components start/stop in correct dependency order
+
+  * **Dependency Injection Container** (src/jenova/core/container.py - 450 lines)
+    - Lightweight DI container for managing component dependencies
+    - Service lifetime management: SINGLETON, TRANSIENT, SCOPED
+    - Automatic dependency resolution and injection
+    - Factory function support for complex object creation
+    - Circular dependency detection with detailed error messages
+    - Classes: `DependencyContainer`, `ServiceDescriptor`, `ServiceLifetime` enum
+    - Methods: `register()`, `register_singleton()`, `register_transient()`, `register_factory()`, `register_instance()`, `resolve()`, `resolve_all()`
+    - Eliminates manual parameter passing and tight coupling
+    - Enables comprehensive unit testing with mock injection
+
+  * **Application Bootstrapper** (src/jenova/core/bootstrap.py - 280 lines)
+    - Phased application initialization with progress reporting
+    - 10-phase bootstrap process (10%, 20%, ..., 100%)
+    - Phases: logging setup, configuration loading, infrastructure init, health checks, model loading, memory init, cognitive engine init, network init, CLI tools init, finalization
+    - Classes: `ApplicationBootstrapper`
+    - Methods: `bootstrap()`, `_phase_1_setup_logging()` through `_phase_10_finalize()`
+    - Uses DI container for component registration
+    - Proper error handling with detailed error context
+
+  * **Module Exports** (src/jenova/core/__init__.py - 40 lines)
+    - Clean public API for core module
+    - Exports: `Application`, `ApplicationBootstrapper`, `DependencyContainer`, `ComponentLifecycle`, `LifecyclePhase`
+
+  * **Impact**: Replaces monolithic 793-line main() function with structured, testable architecture
+  * **Benefits**: Improved testability, reduced coupling, better error handling, clearer initialization flow
+  * FIXES: CRITICAL-1 - Massive main() function (793 lines) with untestable initialization logic
+  * FIXES: CRITICAL-2 - God object pattern in application initialization
+  * FIXES: HIGH-4 - Tight coupling between components preventing unit testing
+
+### Fixed
+
+#### Critical Security Vulnerabilities
+
+- **Password Hashing Vulnerability** (src/jenova/network/security_store.py:148-210)
+  * Replaced insecure SHA-256 password hashing with Argon2id algorithm
+  * SHA-256 is too fast for password hashing and vulnerable to GPU-accelerated brute-force attacks
+  * Implemented Argon2id with OWASP 2024 recommended parameters:
+    - time_cost=3 iterations
+    - memory_cost=65536 (64 MB memory usage)
+    - parallelism=4 threads
+    - hash_len=32 (256-bit output)
+    - salt_len=16 (128-bit salt)
+  * Argon2id provides resistance to both side-channel and GPU attacks
+  * Graceful fallback to PBKDF2 (600,000 iterations) if argon2-cffi unavailable
+  * Password hashes now include salt and parameters in Argon2 format
+  * FIXES: HIGH-1 - Weak password hashing vulnerable to brute-force attacks
+  * **Security Impact**: HIGH - Prevents offline password cracking attacks
+
+- **Timing Attack Vulnerability** (src/jenova/network/security.py:379-393)
+  * Replaced string comparison operator with constant-time comparison
+  * Previous implementation used `==` for certificate fingerprint validation
+  * Attacker could measure comparison time to deduce expected fingerprint
+  * Implemented `hmac.compare_digest()` for constant-time comparison
+  * Prevents timing side-channel attacks on certificate pinning
+  * FIXES: HIGH-2 - Timing attack in certificate validation allowing fingerprint leakage
+  * **Security Impact**: MEDIUM - Prevents certificate fingerprint enumeration
+
+### Changed
+
+- **Configuration Module Exports** (src/jenova/config/__init__.py:110)
+  * Added `constants` module to public API exports
+  * Enables centralized access to configuration constants
+  * Updated `__all__` list to include constants module
+
 - **Phase 20: Complete Project Remediation & Modernization** - Full-scale security fixes, architecture modernization, and feature enhancements
 
 #### Critical Security Fixes

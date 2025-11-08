@@ -147,15 +147,67 @@ class SecureCredentialStore:
 
     def _hash_password(self, password: bytes) -> bytes:
         """
-        Hash password for storage verification.
+        Hash password for storage verification using Argon2id.
+
+        SECURITY FIX (Phase 21): Replaced SHA-256 with Argon2id password hashing.
+        SHA-256 is too fast for password hashing and susceptible to GPU-accelerated
+        brute-force attacks. Argon2id is the OWASP 2024 recommended algorithm for
+        password hashing, providing resistance to both side-channel and GPU attacks.
 
         Args:
             password: Password to hash
 
         Returns:
-            Password hash
+            Password hash in Argon2 format (includes salt, parameters, and hash)
         """
-        return hashlib.sha256(password).digest()
+        try:
+            from argon2 import PasswordHasher, Type
+            from argon2.exceptions import HashingError
+
+            # Use Argon2id with OWASP 2024 recommended parameters
+            # time_cost=3, memory_cost=65536 (64 MB), parallelism=4
+            ph = PasswordHasher(
+                time_cost=3,          # Number of iterations
+                memory_cost=65536,    # 64 MB memory usage
+                parallelism=4,        # Number of parallel threads
+                hash_len=32,          # 256-bit hash output
+                salt_len=16,          # 128-bit salt
+                type=Type.ID          # Argon2id (hybrid mode)
+            )
+
+            # Hash password - returns string in Argon2 format
+            # Format: $argon2id$v=19$m=65536,t=3,p=4$<salt>$<hash>
+            hash_str = ph.hash(password)
+
+            # Convert to bytes for storage
+            return hash_str.encode('utf-8')
+
+        except ImportError:
+            # Fallback to PBKDF2 if argon2-cffi not available
+            # This maintains security while ensuring graceful degradation
+            import os
+            from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
+            from cryptography.hazmat.primitives import hashes
+            from cryptography.hazmat.backends import default_backend
+
+            salt = os.urandom(32)  # 256-bit salt
+            kdf = PBKDF2(
+                algorithm=hashes.SHA256(),
+                length=32,
+                salt=salt,
+                iterations=600000,  # OWASP 2024 recommendation
+                backend=default_backend(),
+            )
+            hash_value = kdf.derive(password)
+
+            # Return salt + hash for verification
+            return salt + hash_value
+
+        except HashingError as e:
+            # Log error and raise
+            if hasattr(self, 'file_logger') and self.file_logger:
+                self.file_logger.log_error(f"Password hashing failed: {e}")
+            raise RuntimeError(f"Password hashing failed: {e}") from e
 
     def derive_encryption_key(
         self, password: Optional[bytes] = None, salt: Optional[bytes] = None

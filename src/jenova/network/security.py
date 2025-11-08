@@ -375,7 +375,14 @@ class SecurityManager:
             return False
 
         pinned_fingerprint = self.trusted_peers[peer_id]
-        if current_fingerprint == pinned_fingerprint:
+
+        # SECURITY FIX (Phase 21): Use constant-time comparison to prevent timing attacks
+        # The previous implementation used '==' which is vulnerable to timing attacks.
+        # An attacker could measure comparison time to deduce information about the
+        # expected fingerprint. hmac.compare_digest() performs constant-time comparison
+        # to prevent this attack vector.
+        import hmac
+        if hmac.compare_digest(current_fingerprint, pinned_fingerprint):
             return True
         else:
             self.file_logger.log_error(
