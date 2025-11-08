@@ -78,7 +78,7 @@ The JENOVA Cognitive Architecture implements a production-ready framework with s
 3. **Memory Layer**: Abstract base classes, unified memory manager, atomic operations, cross-memory search
 4. **Cognitive Engine**: RAG system with LRU caching, configurable re-ranking, comprehensive timeout coverage
 5. **UI Layer**: Health display, rich terminal interface, real-time metrics, comprehensive command system
-6. **Testing Layer**: 24 comprehensive tests across configuration, CUDA, memory, and error recovery
+6. **Testing Layer**: 168+ comprehensive tests across all architecture layers including CLI enhancements
 7. **Distributed Layer**: gRPC services, peer management, federated operations, security infrastructure
 
 ### 2.3. The Cognitive Processing Cycle
@@ -306,7 +306,7 @@ JENOVA includes comprehensive hardware detection supporting multiple GPU types a
 - **ARM CPUs** (including Android/Termux support)
 - **Multi-GPU systems** (automatic detection and prioritization)
 
-The system automatically detects available hardware and configures optimal settings. For detailed information on hardware support, configuration options, and troubleshooting, see `docs/HARDWARE_SUPPORT.md`.
+The system automatically detects available hardware and configures optimal settings for your specific hardware tier.
 
 **Quick Setup for NVIDIA GPUs with CUDA:**
 
@@ -484,6 +484,77 @@ JENOVA provides a comprehensive command system for direct control of cognitive p
     - Correction history and suggestion feedback
     - Response style preferences
 
+#### Code & Development Commands
+
+-   **`/edit <file_path>`** - File editing with diff-based preview
+    - Multi-file editing support
+    - Syntax-aware line operations
+    - Automatic backup creation before edits
+    - Preview changes before applying
+    - Output: Applied changes summary with line numbers
+
+-   **`/parse <file_path>`** - Code structure and AST analysis
+    - AST-based Python code parsing
+    - Symbol extraction (classes, functions, methods, variables)
+    - Dependency graph generation
+    - Code structure visualization
+    - Output: Parsed code structure and symbols
+
+-   **`/refactor <operation> <target>`** - Code refactoring operations
+    - Symbol renaming across codebase
+    - Extract method/function
+    - Inline variable
+    - Import organization
+    - Output: Refactoring summary and affected files
+
+-   **`/analyze <file_or_directory>`** - Code quality and complexity analysis
+    - Cyclomatic complexity metrics (McCabe)
+    - Halstead metrics calculation
+    - Maintainability index with quality grading (A-F)
+    - Issue detection and recommendations
+    - Output: Comprehensive code quality report
+
+-   **`/scan <file_or_directory>`** - Security vulnerability scanning
+    - Python security issue detection via Bandit
+    - Pattern matching for common vulnerabilities (SQL injection, XSS, hardcoded secrets)
+    - Multiple output formats (text, JSON, HTML)
+    - Severity-based issue categorization
+    - Output: Security scan report with recommendations
+
+#### Git Commands
+
+-   **`/git <operation> [args]`** - Git operations with AI assistance
+    - `status` - Show working tree status
+    - `diff [file]` - Show changes with analysis
+    - `commit [message]` - Commit with AI-generated message (if message omitted)
+    - `branch [name]` - Create, list, or delete branches
+    - `log [count]` - Show commit history
+    - Output: Git operation result with intelligent summaries
+
+#### Orchestration Commands
+
+-   **`/task <action>`** - Multi-step task planning and execution
+    - `create <description>` - Create task plan with dependency graph
+    - `execute <plan_id>` - Execute task plan with progress tracking
+    - `pause <task_id>` - Pause running task
+    - `resume <task_id>` - Resume paused task
+    - `cancel <task_id>` - Cancel task execution
+    - `list` - Show all task plans and their status
+    - Output: Task execution progress and results
+
+-   **`/workflow <workflow_name> [args]`** - Execute predefined workflows
+    - Available workflows: `code_review`, `testing`, `deployment`, `refactoring`, `documentation`, `analysis`
+    - Each workflow includes validation, execution steps, and rollback capability
+    - Progress tracking with step-by-step status
+    - Output: Workflow execution report
+
+-   **`/command <action>`** - Custom command management
+    - `create <name>` - Create custom Markdown template command
+    - `execute <name> [vars]` - Execute custom command with variables
+    - `list` - Show all available custom commands
+    - `delete <name>` - Remove custom command
+    - Output: Command execution result or management confirmation
+
 ## 6. Codebase and Configuration Overview
 
 ### 6.1. Project Structure
@@ -498,24 +569,49 @@ JENOVA provides a comprehensive command system for direct control of cognitive p
 ├── install.sh
 ├── LICENSE
 ├── MANIFEST.in
-├── pylint_report.txt
 ├── pyproject.toml
 ├── README.md
 ├── requirements.txt
+├── requirements-dev.txt
 ├── setup.py
+├── build_proto.py
+├── verify_build.py
 ├── src/
 │   └── jenova/
+│       ├── analysis/
+│       │   ├── __init__.py
+│       │   ├── context_optimizer.py
+│       │   ├── code_metrics.py
+│       │   ├── security_scanner.py
+│       │   ├── intent_classifier.py
+│       │   └── command_disambiguator.py
 │       ├── assumptions/
 │       │   ├── __init__.py
 │       │   └── manager.py
+│       ├── automation/
+│       │   ├── __init__.py
+│       │   ├── custom_commands.py
+│       │   ├── hooks_system.py
+│       │   ├── template_engine.py
+│       │   └── workflow_library.py
+│       ├── code_tools/
+│       │   ├── __init__.py
+│       │   ├── file_editor.py
+│       │   ├── code_parser.py
+│       │   ├── refactoring_engine.py
+│       │   ├── syntax_highlighter.py
+│       │   ├── codebase_mapper.py
+│       │   └── interactive_terminal.py
 │       ├── cognitive_engine/
 │       │   ├── __init__.py
 │       │   ├── engine.py
 │       │   ├── memory_search.py
 │       │   ├── rag_system.py
-│       │   └── scheduler.py
+│       │   ├── scheduler.py
+│       │   └── semantic_analyzer.py
 │       ├── config/
 │       │   ├── __init__.py
+│       │   ├── config_schema.py
 │       │   ├── main_config.yaml
 │       │   └── persona.yaml
 │       ├── cortex/
@@ -525,7 +621,14 @@ JENOVA provides a comprehensive command system for direct control of cognitive p
 │       │   └── proactive_engine.py
 │       ├── docs/
 │       │   └── __init__.py
-│       ├── infrastructure/         
+│       ├── git_tools/
+│       │   ├── __init__.py
+│       │   ├── git_interface.py
+│       │   ├── commit_assistant.py
+│       │   ├── diff_analyzer.py
+│       │   ├── hooks_manager.py
+│       │   └── branch_manager.py
+│       ├── infrastructure/
 │       │   ├── __init__.py
 │       │   ├── error_handler.py
 │       │   ├── timeout_manager.py
@@ -533,27 +636,60 @@ JENOVA provides a comprehensive command system for direct control of cognitive p
 │       │   ├── data_validator.py
 │       │   ├── file_manager.py
 │       │   └── metrics_collector.py
-│       ├── llm/                  
-│       │   ├── __init__.py
-│       │   ├── cuda_manager.py
-│       │   ├── model_manager.py
-│       │   ├── embedding_manager.py
-│       │   └── llm_interface.py
 │       ├── insights/
 │       │   ├── __init__.py
 │       │   ├── concerns.py
 │       │   └── manager.py
-│       ├── memory/                
+│       ├── learning/
 │       │   ├── __init__.py
-│       │   ├── base_memory.py      
-│       │   ├── memory_manager.py   
+│       │   └── contextual_engine.py
+│       ├── llm/
+│       │   ├── __init__.py
+│       │   ├── cuda_manager.py
+│       │   ├── model_manager.py
+│       │   ├── embedding_manager.py
+│       │   ├── llm_interface.py
+│       │   └── distributed_llm_interface.py
+│       ├── memory/
+│       │   ├── __init__.py
+│       │   ├── base_memory.py
+│       │   ├── memory_manager.py
 │       │   ├── episodic.py
 │       │   ├── procedural.py
-│       │   └── semantic.py
+│       │   ├── semantic.py
+│       │   └── distributed_memory_search.py
+│       ├── network/
+│       │   ├── __init__.py
+│       │   ├── discovery.py
+│       │   ├── peer_manager.py
+│       │   ├── rpc_service.py
+│       │   ├── rpc_client.py
+│       │   ├── security.py
+│       │   ├── security_store.py
+│       │   ├── metrics.py
+│       │   └── proto/
+│       │       ├── __init__.py
+│       │       ├── jenova.proto
+│       │       ├── jenova_pb2.py
+│       │       └── jenova_pb2_grpc.py
+│       ├── orchestration/
+│       │   ├── __init__.py
+│       │   ├── task_planner.py
+│       │   ├── subagent_manager.py
+│       │   ├── execution_engine.py
+│       │   ├── checkpoint_manager.py
+│       │   └── background_tasks.py
 │       ├── ui/
 │       │   ├── __init__.py
 │       │   ├── logger.py
-│       │   └── terminal.py
+│       │   ├── terminal.py
+│       │   ├── commands.py
+│       │   ├── health_display.py
+│       │   └── settings_menu.py
+│       ├── user/
+│       │   ├── __init__.py
+│       │   ├── profile.py
+│       │   └── personalization.py
 │       ├── utils/
 │       │   ├── __init__.py
 │       │   ├── data_sanitizer.py
@@ -565,9 +701,18 @@ JENOVA provides a comprehensive command system for direct control of cognitive p
 │       │   └── telemetry_fix.py
 │       ├── __init__.py
 │       ├── default_api.py
-│       ├── llm_interface.py
 │       ├── main.py
 │       └── tools.py
+├── tests/
+│   ├── __init__.py
+│   ├── pytest.ini
+│   ├── test_analysis.py
+│   ├── test_automation.py
+│   ├── test_code_tools.py
+│   ├── test_config_validation.py
+│   ├── test_git_integration.py
+│   ├── test_hardware_detection.py
+│   └── test_orchestration.py
 └── uninstall.sh
 ```
 
@@ -652,7 +797,7 @@ JENOVA implements comprehensive code quality standards and production-ready prac
 - **Timeout Protection**: All long-running operations protected with configurable timeouts
 - **Health Monitoring**: Real-time CPU, memory, and GPU monitoring with `/health` command
 - **Security**: Whitelisted shell commands, path traversal prevention, encrypted credential storage
-- **Testing**: 24 comprehensive tests across configuration, CUDA, memory, and error recovery
+- **Testing**: 168+ comprehensive tests across all architecture layers including CLI enhancements
 
 ## 7. Credits and Acknowledgments
 
@@ -684,6 +829,34 @@ The JENOVA Cognitive Architecture is made possible by the following exceptional 
     *   *License: BSD-3-Clause*
 *   **filelock**: Platform-independent file locking, used for atomic file operations and preventing concurrent access corruption.
     *   *License: Unlicense (Public Domain)
+
+### Distributed Computing Dependencies
+
+*   **Zeroconf**: Pure Python implementation of mDNS service discovery, enabling automatic peer discovery on local networks.
+    *   *License: MIT*
+*   **gRPC** (grpcio): High-performance RPC framework from Google, providing the foundation for distributed computing communication.
+    *   *License: Apache 2.0*
+*   **Protocol Buffers** (protobuf): Language-neutral serialization format, used for efficient data exchange between distributed instances.
+    *   *License: BSD-3-Clause*
+*   **PyJWT**: JSON Web Token implementation for Python, used for secure authentication between distributed peers.
+    *   *License: MIT*
+
+### CLI Enhancement Dependencies
+
+*   **GitPython**: Python library for interacting with Git repositories, enabling comprehensive Git workflow automation.
+    *   *License: BSD-3-Clause*
+*   **Pygments**: Syntax highlighting library supporting 500+ languages, used for code display in terminal.
+    *   *License: BSD-2-Clause*
+*   **Rope**: Python refactoring library, providing code transformation capabilities including renaming, extraction, and inline operations.
+    *   *License: LGPL*
+*   **tree-sitter**: Multi-language parser library, enabling syntax-aware code analysis across multiple programming languages.
+    *   *License: MIT*
+*   **jsonschema**: JSON Schema validation library, used for validating structured data and configuration files.
+    *   *License: MIT*
+*   **Radon**: Code complexity metrics tool, computing cyclomatic complexity, Halstead metrics, and maintainability index.
+    *   *License: MIT*
+*   **Bandit**: Security vulnerability scanner for Python code, detecting common security issues and anti-patterns.
+    *   *License: Apache 2.0*
 
 ### Optional Dependencies
 
