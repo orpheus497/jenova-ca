@@ -16,7 +16,7 @@ Provides:
 """
 
 import re
-from typing import Dict, List, Tuple, Optional, Set
+from typing import Any, Dict, List, Tuple, Optional, Set
 from enum import Enum
 from dataclasses import dataclass
 from collections import defaultdict
@@ -64,7 +64,7 @@ class SemanticAnalysis:
     sentiment: Sentiment
     topics: List[str]
     dependencies: List[Tuple[str, str, str]]  # (word, relation, word)
-    rhetorical_elements: Dict[str, any]
+    rhetorical_elements: Dict[str, Any]
 
 
 class SemanticAnalyzer:
@@ -425,7 +425,7 @@ class SemanticAnalyzer:
 
         return list(topics)
 
-    def _analyze_rhetoric(self, query: str, words: List[str]) -> Dict[str, any]:
+    def _analyze_rhetoric(self, query: str, words: List[str]) -> Dict[str, Any]:
         """
         Analyze rhetorical structure of the query.
 

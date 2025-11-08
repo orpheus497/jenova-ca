@@ -165,7 +165,8 @@ class HealthDisplay:
                 # Try to get cache stats from RAG system if available
                 cache_info = "Cache stats not available"
                 content.append(Text("RAG System: ", style="bold cyan") + Text(cache_info))
-            except:
+            except Exception as e:
+                # RAG cache stats not available, skip display
                 pass
 
         # Check for scheduler status

@@ -293,7 +293,8 @@ class EmbeddingManager:
                     try:
                         import torch
                         torch.cuda.empty_cache()
-                    except:
+                    except Exception as e:
+                        # Unable to clear CUDA cache, not critical
                         pass
 
             except Exception as e:

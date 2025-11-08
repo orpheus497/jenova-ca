@@ -9,7 +9,6 @@ This module provides checkpoint save/restore functionality with file locking.
 import json
 import logging
 import os
-import pickle
 import shutil
 from datetime import datetime
 from pathlib import Path

@@ -14,7 +14,7 @@ import json
 import os
 from dataclasses import dataclass, asdict
 from datetime import datetime
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 from collections import Counter, defaultdict
 
 
@@ -200,7 +200,7 @@ class UserProfile:
         """Get most discussed topics."""
         return Counter(self.stats.topics_discussed).most_common(limit)
 
-    def get_expertise_indicators(self) -> Dict[str, any]:
+    def get_expertise_indicators(self) -> Dict[str, Any]:
         """Get indicators of user expertise."""
         return {
             'vocabulary_size': len(self.vocabulary),
