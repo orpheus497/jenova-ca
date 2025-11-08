@@ -6,6 +6,7 @@
 
 """This module is responsible for handling the tools for the JENOVA Cognitive Architecture."""
 
+import getpass
 import inspect
 
 from jenova.default_api import (
@@ -173,7 +174,9 @@ class ToolHandler:
         self.tools["web_search"] = web_search
 
         # Register FileTools class methods
-        file_tools = FileTools(self.config["tools"]["file_sandbox_path"])
+        # Get current username for audit trail
+        username = getpass.getuser()
+        file_tools = FileTools(self.config["tools"]["file_sandbox_path"], username)
         self.tools["read_file"] = file_tools.read_file
         self.tools["write_file"] = file_tools.write_file
         self.tools["list_directory"] = file_tools.list_directory

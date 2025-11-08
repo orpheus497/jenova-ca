@@ -7,6 +7,110 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Username Audit Trail** - Fixed FileTools initialization to include username parameter
+  - Updated `src/jenova/tools.py` to get username via `getpass.getuser()`
+  - Ensures all file operations are properly attributed in audit logs
+  - Prevents "unknown" user entries in security audit trail
+  - Location: src/jenova/tools.py:178
+
+- **Distributed Mode Security Validation** - Added startup validation for network security configuration
+  - Enforces SSL/TLS and JWT authentication when distributed mode enabled
+  - Prevents insecure distributed deployment with clear error messaging
+  - Provides detailed fix instructions for configuration errors
+  - Exits with code 1 if security requirements not met
+  - Location: src/jenova/main.py:540-566
+
+- **Silent Exception Handler Logging** - Improved debugging capability for edge cases
+  - Added debug logging to silent exception handlers in hardware_detector.py
+  - Captures command execution failures for better troubleshooting
+  - Preserves graceful degradation while adding observability
+  - Location: src/jenova/utils/hardware_detector.py:120-122
+
+### Added
+
+- **Phase 19: Comprehensive Test Coverage** - 5 new test modules for core components (2,150 lines)
+  - **Memory System Tests** (tests/test_memory.py - 450 lines)
+    * Test all 4 memory types (Episodic, Semantic, Procedural, Insight)
+    * Test memory manager coordination and cross-layer search
+    * Test distributed memory search functionality
+    * Test error handling and edge cases
+    * Test timeout protection and atomic operations
+
+  - **LLM Interface Tests** (tests/test_llm.py - 380 lines)
+    * Test LLM interface with mocked model for reproducibility
+    * Test CUDA manager GPU detection across platforms
+    * Test model manager lifecycle and configuration
+    * Test embedding manager initialization and encoding
+    * Test timeout handling and retry logic
+    * Test distributed LLM interface with fallback
+
+  - **Cortex Tests** (tests/test_cortex.py - 520 lines)
+    * Test cognitive node creation and linking
+    * Test centrality calculation with relationship weights
+    * Test orphan node detection and linking (reflection method)
+    * Test meta-insight generation from clusters
+    * Test graph persistence (save/load)
+    * Test graph pruning and archival
+    * Test proactive engine suggestion generation
+
+  - **Security Tests** (tests/test_security.py - 420 lines)
+    * Test path validator with traversal attack vectors
+    * Test file validator (MIME type, size limits)
+    * Test input validator (URLs, emails, numbers)
+    * Test prompt sanitizer injection pattern detection
+    * Test rate limiter token bucket algorithm
+    * Test security audit logger event recording
+    * Test PII redaction in audit logs
+
+  - **Network Tests** (tests/test_network.py - 380 lines)
+    * Test peer manager lifecycle and health tracking
+    * Test peer selection strategies (load balanced, fastest)
+    * Test security manager certificate generation
+    * Test JWT token creation and verification
+    * Test network metrics collection and statistics
+    * Test RPC client initialization and retry logic
+
+- **JSON Validation Utility** (src/jenova/utils/json_validator.py - 180 lines)
+  - Robust JSON parsing for LLM-generated responses with multiple fallback strategies
+  - Schema validation against predefined schemas (links, meta_insight, plan, insight, assumption)
+  - JSON extraction from markdown code blocks and mixed text
+  - Automatic error correction (single quotes, trailing commas, unescaped newlines)
+  - Detailed validation error reporting for debugging
+  - Custom schema registration for extensibility
+  - Addresses vulnerability: malformed LLM JSON responses
+
+- **Feature 7: Memory Export/Import & Backup System** (src/jenova/memory/backup_manager.py - 680 lines)
+  - **Full Backup**: Complete cognitive state export to portable format (ZIP + JSON/MessagePack)
+  - **Incremental Backup**: Delta encoding for efficient storage (only changes since last backup)
+  - **Conflict Resolution**: Multiple strategies (keep existing, replace, merge)
+  - **Integrity Verification**: SHA256 checksums for all backup data
+  - **Automatic Rotation**: Configurable retention policy (default: keep last 10 backups)
+  - **Compression**: gzip or uncompressed formats for space efficiency
+  - **Selective Export**: Choose which components to backup (memories, graph, assumptions, insights, profile)
+  - **Backup Listing**: View all available backups with metadata
+  - **Restore Operations**: Full restore from any backup with conflict handling
+  - **Delta Calculation**: Efficient diff algorithm for incremental backups
+  - **Cross-System Migration**: Portable format enables moving cognitive state between systems
+  - **Disaster Recovery**: Protect against data loss with automated backup rotation
+
+- **Feature 10: Smart Retry Logic with Context Adaptation** (src/jenova/llm/smart_retry.py - 580 lines)
+  - **Failure Type Detection**: Identifies 6 failure patterns (timeout, malformed JSON, refusal, hallucination, quality issues, unknown)
+  - **Adaptive Strategies**: Modifies prompts based on failure type
+    * Timeout → Simplify prompt, reduce max_tokens
+    * Malformed JSON → Add explicit format instructions and examples
+    * Refusal → Rephrase to avoid trigger words, add contextual framing
+    * Hallucination → Add grounding instructions, reduce temperature
+    * Quality Issues → Add detail requirements, increase max_tokens
+  - **Learning from Failures**: Tracks patterns and successful recovery strategies
+  - **Retry Statistics**: Comprehensive metrics (success rate, failure breakdown, recovery rates)
+  - **Pattern Tracking**: Maintains history of failures and successful adaptations
+  - **Exponential Backoff**: Configurable delay with maximum limit
+  - **Strategy Retrieval**: Get learned successful strategies for each failure type
+  - **Temperature Adaptation**: Dynamically adjusts temperature based on failure type
+  - **Token Budget Optimization**: Reduces max_tokens for timeout, increases for quality issues
+
 ## [5.3.0] - 2025-11-08
 
 ### Fixed

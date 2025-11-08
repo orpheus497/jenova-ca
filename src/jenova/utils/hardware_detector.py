@@ -117,8 +117,9 @@ class HardwareDetector:
             )
             if result.returncode == 0:
                 return result.stdout.strip()
-        except (FileNotFoundError, subprocess.TimeoutExpired, Exception):
-            pass
+        except (FileNotFoundError, subprocess.TimeoutExpired, Exception) as e:
+            if self.file_logger:
+                self.file_logger.log_debug(f"Command execution failed: {e}")
         return None
 
     def _detect_nvidia_gpus(self) -> List[ComputeDevice]:
