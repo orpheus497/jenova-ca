@@ -35,7 +35,7 @@ BANNER = """
 ATTRIBUTION = "Designed and Developed by orpheus497 - https://github.com/orpheus497"
 
 class TerminalUI:
-    def __init__(self, cognitive_engine: CognitiveEngine, logger: UILogger, health_monitor=None, metrics=None):
+    def __init__(self, cognitive_engine: CognitiveEngine, logger: UILogger, health_monitor=None, metrics=None, **kwargs):
         """
         Initialize TerminalUI.
 
@@ -44,6 +44,12 @@ class TerminalUI:
             logger: UI logger instance
             health_monitor: Optional health monitor (Phase 2)
             metrics: Optional metrics collector (Phase 2)
+            **kwargs: Optional CLI enhancement modules (Phases 13-17)
+                - Analysis: context_optimizer, code_metrics, security_scanner, intent_classifier, command_disambiguator
+                - Code Tools: file_editor, code_parser, refactoring_engine, syntax_highlighter, codebase_mapper, interactive_terminal
+                - Git Tools: git_interface, commit_assistant, diff_analyzer, hooks_manager, branch_manager
+                - Orchestration: task_planner, subagent_manager, execution_engine, checkpoint_manager, background_task_manager
+                - Automation: custom_command_manager, hooks_system, template_engine, workflow_library
         """
         self.engine = cognitive_engine
         self.logger = logger
@@ -61,8 +67,55 @@ class TerminalUI:
         self._spinner_thread = None
         self.message_queue = self.logger.message_queue
 
-        # Phase 9: Integrated Command Registry
-        self.command_registry = CommandRegistry(cognitive_engine, logger, cognitive_engine.file_logger)
+        # Phases 13-17: Store CLI enhancement modules for command handlers
+        # Analysis Module
+        self.context_optimizer = kwargs.get('context_optimizer')
+        self.code_metrics = kwargs.get('code_metrics')
+        self.security_scanner = kwargs.get('security_scanner')
+        self.intent_classifier = kwargs.get('intent_classifier')
+        self.command_disambiguator = kwargs.get('command_disambiguator')
+        # Code Tools Module
+        self.file_editor = kwargs.get('file_editor')
+        self.code_parser = kwargs.get('code_parser')
+        self.refactoring_engine = kwargs.get('refactoring_engine')
+        self.syntax_highlighter = kwargs.get('syntax_highlighter')
+        self.codebase_mapper = kwargs.get('codebase_mapper')
+        self.interactive_terminal = kwargs.get('interactive_terminal')
+        # Git Tools Module
+        self.git_interface = kwargs.get('git_interface')
+        self.commit_assistant = kwargs.get('commit_assistant')
+        self.diff_analyzer = kwargs.get('diff_analyzer')
+        self.hooks_manager = kwargs.get('hooks_manager')
+        self.branch_manager = kwargs.get('branch_manager')
+        # Orchestration Module
+        self.task_planner = kwargs.get('task_planner')
+        self.subagent_manager = kwargs.get('subagent_manager')
+        self.execution_engine = kwargs.get('execution_engine')
+        self.checkpoint_manager = kwargs.get('checkpoint_manager')
+        self.background_task_manager = kwargs.get('background_task_manager')
+        # Automation Module
+        self.custom_command_manager = kwargs.get('custom_command_manager')
+        self.hooks_system = kwargs.get('hooks_system')
+        self.template_engine = kwargs.get('template_engine')
+        self.workflow_library = kwargs.get('workflow_library')
+
+        # Phase 9: Integrated Command Registry (pass CLI enhancements)
+        self.command_registry = CommandRegistry(
+            cognitive_engine, logger, cognitive_engine.file_logger,
+            # Pass CLI enhancements to command registry
+            context_optimizer=self.context_optimizer,
+            code_metrics=self.code_metrics,
+            security_scanner=self.security_scanner,
+            file_editor=self.file_editor,
+            code_parser=self.code_parser,
+            refactoring_engine=self.refactoring_engine,
+            git_interface=self.git_interface,
+            commit_assistant=self.commit_assistant,
+            task_planner=self.task_planner,
+            execution_engine=self.execution_engine,
+            custom_command_manager=self.custom_command_manager,
+            workflow_library=self.workflow_library
+        )
         self.commands = self._register_commands()
 
         # Phase 6: Health Display
