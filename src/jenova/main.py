@@ -53,6 +53,22 @@ from jenova.ui.terminal import TerminalUI
 from jenova.utils.file_logger import FileLogger
 from jenova.utils.telemetry_fix import apply_telemetry_patch
 
+# Phase 8: Distributed computing imports
+from jenova.network import (
+    JenovaDiscoveryService, PeerManager,
+    JenovaRPCClient, SecurityManager
+)
+from jenova.network.rpc_service import JenovaRPCServicer, JenovaRPCServer
+from jenova.network.metrics import NetworkMetricsCollector
+from jenova.llm.distributed_llm_interface import DistributedLLMInterface
+from jenova.memory.distributed_memory_search import DistributedMemorySearch
+
+# Phase 10: User profiling and personalization
+from jenova.user.profile import UserProfileManager
+
+# Phase 12: Contextual learning
+from jenova.learning.contextual_engine import ContextualLearningEngine
+
 apply_telemetry_patch()
 
 
@@ -74,6 +90,22 @@ def main():
     error_handler = None
     health_monitor = None
     metrics = None
+
+    # Phase 8: Network layer components
+    security_manager = None
+    peer_manager = None
+    rpc_client = None
+    rpc_server = None
+    discovery_service = None
+    network_metrics = None
+    distributed_llm = None
+    distributed_memory = None
+
+    # Phase 10: User profiling
+    user_profile_manager = None
+
+    # Phase 12: Learning engine
+    learning_engine = None
     
     try:
         # --- Configuration ---
@@ -94,6 +126,15 @@ def main():
         metrics = MetricsCollector(ui_logger, file_logger)
         file_manager = FileManager(ui_logger, file_logger)
         ui_logger.success("Infrastructure initialized")
+
+        # --- Initialize User Profiling (Phase 10) ---
+        user_profile_manager = UserProfileManager(config, file_logger)
+        user_profile = user_profile_manager.get_profile(username)
+        file_logger.log_info(f"User profile loaded for: {username}")
+
+        # --- Initialize Learning Engine (Phase 12) ---
+        learning_engine = ContextualLearningEngine(config, file_logger, user_data_root)
+        file_logger.log_info("Contextual learning engine initialized")
 
         # Check system health at startup (Phase 6: Enhanced display)
         ui_logger.progress_message("Checking system health", 30)
@@ -256,6 +297,143 @@ def main():
             error_handler.handle_error(e, "Cognitive Core Initialization", ErrorSeverity.CRITICAL)
             return 1
 
+        # --- Phase 8: Network Layer (Distributed Computing) ---
+        network_enabled = config.get('network', {}).get('enabled', False)
+
+        if network_enabled:
+            ui_logger.progress_message("Initializing distributed networking", 90)
+            try:
+                with metrics.measure('network_layer_init'):
+                    # Initialize security manager first
+                    security_config = config.get('network', {}).get('security', {})
+                    cert_dir = security_config.get('cert_dir', '~/.jenova-ai/certs')
+
+                    security_manager = SecurityManager(
+                        config=config,
+                        file_logger=file_logger,
+                        cert_dir=cert_dir
+                    )
+
+                    # Generate/verify certificates
+                    instance_name = config.get('instance_name', f'jenova-{username}')
+                    security_manager.ensure_certificates(instance_name)
+
+                    # Initialize network metrics
+                    network_metrics = NetworkMetricsCollector(
+                        file_logger=file_logger,
+                        history_size=1000
+                    )
+
+                    # Initialize peer manager
+                    peer_manager = PeerManager(
+                        config=config,
+                        file_logger=file_logger
+                    )
+
+                    # Initialize RPC client
+                    rpc_client = JenovaRPCClient(
+                        config=config,
+                        file_logger=file_logger,
+                        peer_manager=peer_manager,
+                        security_manager=security_manager
+                    )
+
+                    # Create authentication token for outgoing requests
+                    instance_id = config.get('instance_id', username)
+                    auth_token = security_manager.create_auth_token(
+                        instance_id=instance_id,
+                        instance_name=instance_name,
+                        validity_seconds=3600
+                    )
+                    rpc_client.set_auth_token(auth_token)
+
+                    # Initialize RPC servicer (exposes local resources)
+                    rpc_servicer = JenovaRPCServicer(
+                        config=config,
+                        file_logger=file_logger,
+                        llm_interface=llm_interface,
+                        embedding_manager=embedding_manager,
+                        memory_search=memory_search,
+                        health_monitor=health_monitor
+                    )
+
+                    # Initialize RPC server
+                    discovery_config = config.get('network', {}).get('discovery', {})
+                    rpc_port = discovery_config.get('port', 50051)
+
+                    rpc_server = JenovaRPCServer(
+                        config=config,
+                        file_logger=file_logger,
+                        servicer=rpc_servicer,
+                        security_manager=security_manager,
+                        port=rpc_port
+                    )
+
+                    # Start RPC server
+                    rpc_server.start()
+
+                    # Initialize discovery service
+                    discovery_service = JenovaDiscoveryService(
+                        config=config,
+                        file_logger=file_logger,
+                        peer_manager=peer_manager,
+                        rpc_port=rpc_port
+                    )
+
+                    # Start discovery (mDNS advertising + browsing)
+                    discovery_service.start_advertising()
+                    discovery_service.start_browsing()
+
+                    # Initialize distributed LLM interface
+                    distributed_llm = DistributedLLMInterface(
+                        config=config,
+                        file_logger=file_logger,
+                        ui_logger=ui_logger,
+                        local_llm_interface=llm_interface,
+                        rpc_client=rpc_client,
+                        peer_manager=peer_manager,
+                        network_metrics=network_metrics
+                    )
+
+                    # Initialize distributed memory search
+                    distributed_memory = DistributedMemorySearch(
+                        config=config,
+                        file_logger=file_logger,
+                        local_memory_search=memory_search,
+                        rpc_client=rpc_client,
+                        peer_manager=peer_manager,
+                        network_metrics=network_metrics
+                    )
+
+                stats = metrics.get_stats('network_layer_init')
+                network_details = (
+                    f"Discovery ({discovery_config.get('service_name', 'jenova-ai')}), "
+                    f"RPC (port {rpc_port}), "
+                    f"Security ({'enabled' if security_config.get('enabled', True) else 'disabled'})"
+                )
+                ui_logger.startup_info("Network Layer", stats.avg_time, network_details)
+                ui_logger.success("Distributed computing enabled")
+                file_logger.log_info(
+                    f"Network layer initialized: {instance_name} on port {rpc_port}"
+                )
+
+            except Exception as e:
+                # Network layer failures are non-critical - system can operate without it
+                error_handler.handle_error(e, "Network Layer Initialization", ErrorSeverity.HIGH)
+                ui_logger.warning("Distributed features unavailable - continuing in local-only mode")
+                file_logger.log_warning(f"Network layer initialization failed: {e}")
+                # Set all network components to None
+                security_manager = None
+                peer_manager = None
+                rpc_client = None
+                rpc_server = None
+                discovery_service = None
+                network_metrics = None
+                distributed_llm = None
+                distributed_memory = None
+        else:
+            file_logger.log_info("Network layer disabled in configuration (network.enabled=false)")
+
         # --- Final Engine and UI Setup ---
         ui_logger.progress_message("Finalizing cognitive engine", 95)
 
@@ -278,6 +456,26 @@ def main():
                 metrics=metrics,
                 error_handler=error_handler
             )
+
+        # Phase 8: Pass network layer to cognitive engine
+        if hasattr(cognitive_engine, 'set_network_layer'):
+            cognitive_engine.set_network_layer(
+                distributed_llm=distributed_llm,
+                distributed_memory=distributed_memory,
+                peer_manager=peer_manager,
+                network_metrics=network_metrics
+            )
+
+        # Phase 10: Pass user profile to cognitive engine
+        if hasattr(cognitive_engine, 'set_user_profile'):
+            cognitive_engine.set_user_profile(
+                user_profile_manager=user_profile_manager,
+                user_profile=user_profile
+            )
+
+        # Phase 12: Pass learning engine to cognitive engine
+        if hasattr(cognitive_engine, 'set_learning_engine'):
+            cognitive_engine.set_learning_engine(learning_engine)
 
         # Display startup summary (Phase 6)
         ui_logger.progress_message("Ready", 100)
@@ -319,6 +517,29 @@ def main():
                 model_manager.unload_model()
             if embedding_manager:
                 embedding_manager.unload_model()
+
+            # Phase 8: Network layer cleanup
+            if discovery_service:
+                file_logger.log_info("Stopping discovery service...")
+                discovery_service.stop_advertising()
+                discovery_service.stop_browsing()
+
+            if rpc_server:
+                file_logger.log_info("Stopping RPC server...")
+                rpc_server.stop(grace_period=5)
+
+            if rpc_client:
+                file_logger.log_info("Closing RPC client connections...")
+                rpc_client.close_all_connections()
+
+            if security_manager:
+                file_logger.log_info("Cleaning up security resources...")
+                security_manager.close()
+
+            if network_metrics:
+                file_logger.log_info("Logging network metrics summary...")
+                network_metrics.log_summary(top_n=10)
+
         except Exception as e:
             if file_logger:
                 file_logger.log_error(f"Error during resource cleanup: {e}")

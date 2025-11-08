@@ -323,6 +323,152 @@ class PersonaConfig(BaseModel):
     )
 
 
+class NetworkMode(str, Enum):
+    """Network operation modes."""
+    AUTO = "auto"
+    LOCAL_ONLY = "local_only"
+    DISTRIBUTED = "distributed"
+
+
+class DistributionStrategy(str, Enum):
+    """LLM distribution strategies."""
+    LOCAL_FIRST = "local_first"
+    LOAD_BALANCED = "load_balanced"
+    FASTEST_PEER = "fastest"
+    PARALLEL_VOTING = "parallel_voting"
+    ROUND_ROBIN = "round_robin"
+
+
+class SecurityConfig(BaseModel):
+    """Network security configuration."""
+    enabled: bool = Field(
+        default=True,
+        description="Enable SSL/TLS encryption and authentication"
+    )
+    cert_dir: str = Field(
+        default='~/.jenova-ai/certs',
+        description="Directory for SSL certificates and keys"
+    )
+    require_auth: bool = Field(
+        default=True,
+        description="Require JWT authentication for all requests"
+    )
+
+
+class DiscoveryConfig(BaseModel):
+    """mDNS/Zeroconf discovery configuration."""
+    service_name: str = Field(
+        default='jenova-ai',
+        description="mDNS service name for discovery"
+    )
+    port: int = Field(
+        default=50051,
+        ge=1024,
+        le=65535,
+        description="RPC server port"
+    )
+    ttl: int = Field(
+        default=60,
+        ge=10,
+        le=300,
+        description="Service advertisement TTL in seconds"
+    )
+
+
+class ResourceSharingConfig(BaseModel):
+    """Resource sharing configuration."""
+    share_llm: bool = Field(
+        default=True,
+        description="Share LLM inference capacity with peers"
+    )
+    share_embeddings: bool = Field(
+        default=True,
+        description="Share embedding generation with peers"
+    )
+    share_memory: bool = Field(
+        default=False,
+        description="Share memory search with peers (privacy-sensitive)"
+    )
+    max_concurrent_requests: int = Field(
+        default=5,
+        ge=1,
+        le=50,
+        description="Maximum concurrent incoming requests"
+    )
+
+
+class PeerSelectionConfig(BaseModel):
+    """Peer selection and routing configuration."""
+    strategy: DistributionStrategy = Field(
+        default=DistributionStrategy.LOAD_BALANCED,
+        description="Strategy for selecting peers"
+    )
+    timeout_ms: int = Field(
+        default=5000,
+        ge=1000,
+        le=30000,
+        description="Request timeout in milliseconds"
+    )
+    retry_attempts: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="Number of retry attempts for failed requests"
+    )
+
+
+class NetworkConfig(BaseModel):
+    """Phase 8: Distributed computing network configuration."""
+    enabled: bool = Field(
+        default=False,
+        description="Enable distributed computing features"
+    )
+    mode: NetworkMode = Field(
+        default=NetworkMode.AUTO,
+        description="Network operation mode"
+    )
+    instance_id: Optional[str] = Field(
+        default=None,
+        description="Unique instance identifier (auto-generated if None)"
+    )
+    instance_name: Optional[str] = Field(
+        default=None,
+        description="Human-readable instance name (auto-generated if None)"
+    )
+    discovery: DiscoveryConfig = Field(
+        default_factory=DiscoveryConfig,
+        description="Peer discovery configuration"
+    )
+    security: SecurityConfig = Field(
+        default_factory=SecurityConfig,
+        description="Network security configuration"
+    )
+    resource_sharing: ResourceSharingConfig = Field(
+        default_factory=ResourceSharingConfig,
+        description="Resource sharing configuration"
+    )
+    peer_selection: PeerSelectionConfig = Field(
+        default_factory=PeerSelectionConfig,
+        description="Peer selection and routing configuration"
+    )
+
+    @field_validator('instance_id')
+    @classmethod
+    def validate_instance_id(cls, v: Optional[str]) -> Optional[str]:
+        """Validate instance ID format if provided."""
+        if v is not None and len(v) > 64:
+            raise ValueError("instance_id must be 64 characters or less")
+        return v
+
+    @field_validator('instance_name')
+    @classmethod
+    def validate_instance_name(cls, v: Optional[str]) -> Optional[str]:
+        """Validate instance name format if provided."""
+        if v is not None and len(v) > 128:
+            raise ValueError("instance_name must be 128 characters or less")
+        return v
+
+
 class JenovaConfig(BaseModel):
     """Complete JENOVA configuration with validation."""
     model: ModelConfig = Field(default_factory=ModelConfig)
@@ -335,6 +481,7 @@ class JenovaConfig(BaseModel):
     memory_search: MemorySearchConfig = Field(default_factory=MemorySearchConfig)
     tools: ToolsConfig = Field(default_factory=ToolsConfig)
     persona: PersonaConfig = Field(default_factory=PersonaConfig)
+    network: NetworkConfig = Field(default_factory=NetworkConfig)
 
     # Runtime fields (not in config file)
     user_data_root: Optional[str] = Field(default=None, exclude=True)

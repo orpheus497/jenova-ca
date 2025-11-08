@@ -18,6 +18,8 @@ import re
 import shlex
 
 from jenova.cognitive_engine.scheduler import CognitiveScheduler
+from jenova.cognitive_engine.semantic_analyzer import SemanticAnalyzer
+from jenova.user.personalization import PersonalizationEngine
 from jenova.cortex.proactive_engine import ProactiveEngine
 from jenova.infrastructure.timeout_manager import timeout, TimeoutError
 from jenova.infrastructure.error_handler import ErrorHandler, ErrorSeverity
@@ -44,10 +46,27 @@ class CognitiveEngine:
         self.MAX_HISTORY_TURNS = 5  # Keep the last 5 conversation turns
         self.pending_assumption = None
 
+        # Phase 11: Semantic analyzer for enhanced query understanding
+        self.semantic_analyzer = SemanticAnalyzer(llm, file_logger)
+
         # Phase 2 Infrastructure (optional, set via set_infrastructure)
         self.health_monitor = None
         self.metrics = None
         self.error_handler = ErrorHandler(file_logger) if file_logger else None
+
+        # Phase 8: Network layer (optional, set via set_network_layer)
+        self.distributed_llm = None
+        self.distributed_memory = None
+        self.peer_manager = None
+        self.network_metrics = None
+
+        # Phase 10: User profiling and personalization (optional, set via set_user_profile)
+        self.user_profile_manager = None
+        self.user_profile = None
+        self.personalization_engine = None
+
+        # Phase 12: Contextual learning engine (optional, set via set_learning_engine)
+        self.learning_engine = None
 
         # Configuration
         self.llm_timeout = config.get('cognitive_engine', {}).get('llm_timeout', 120)
@@ -63,6 +82,44 @@ class CognitiveEngine:
         if self.file_logger and metrics:
             self.file_logger.log_info("Infrastructure components integrated into cognitive engine")
 
+    def set_network_layer(self, distributed_llm=None, distributed_memory=None, peer_manager=None, network_metrics=None):
+        """Set Phase 8 network layer components for distributed computing."""
+        self.distributed_llm = distributed_llm
+        self.distributed_memory = distributed_memory
+        self.peer_manager = peer_manager
+        self.network_metrics = network_metrics
+
+        if self.file_logger:
+            if distributed_llm or distributed_memory:
+                self.file_logger.log_info(
+                    "Network layer integrated into cognitive engine "
+                    f"(distributed_llm={'enabled' if distributed_llm else 'disabled'}, "
+                    f"distributed_memory={'enabled' if distributed_memory else 'disabled'})"
+                )
+            else:
+                self.file_logger.log_info("Network layer components available but not enabled")
+
+    def set_user_profile(self, user_profile_manager=None, user_profile=None):
+        """Set Phase 10 user profiling components for personalization."""
+        self.user_profile_manager = user_profile_manager
+        self.user_profile = user_profile
+
+        # Initialize personalization engine if profile is available
+        if user_profile:
+            self.personalization_engine = PersonalizationEngine(user_profile, self.file_logger)
+
+        if self.file_logger and user_profile:
+            self.file_logger.log_info(
+                f"User profile integrated into cognitive engine for: {user_profile.username}"
+            )
+
+    def set_learning_engine(self, learning_engine):
+        """Set Phase 12 contextual learning engine."""
+        self.learning_engine = learning_engine
+
+        if self.file_logger:
+            self.file_logger.log_info("Learning engine integrated into cognitive engine")
+
     def think(self, user_input: str, username: str) -> str:
         """Runs the full cognitive cycle: Retrieve, Plan, Execute, and Reflect."""
         with self.ui_logger.cognitive_process("Thinking..."):
@@ -77,10 +134,30 @@ class CognitiveEngine:
                     f"New query received from {username}: {user_input}")
                 self.turn_count += 1
 
+                # Phase 10: Record user interaction in profile
+                if self.user_profile:
+                    interaction_type = "command" if user_input.startswith('/') else "query"
+                    self.user_profile.record_interaction(user_input, interaction_type)
+
+                # Phase 11: Semantic analysis for enhanced understanding
+                semantic_analysis = self.semantic_analyzer.analyze(user_input)
+                self.file_logger.log_info(
+                    f"Semantic analysis: intent={semantic_analysis.intent.value}, "
+                    f"sentiment={semantic_analysis.sentiment.value}, "
+                    f"keywords={semantic_analysis.keywords[:5]}"
+                )
+
+                # Record topics in user profile
+                if self.user_profile and semantic_analysis.topics:
+                    for topic in semantic_analysis.topics:
+                        self.user_profile.record_topic(topic)
+
                 # Retrieve, Plan, Execute with timeout protection
+                # Use expanded query for better retrieval
+                search_query = semantic_analysis.expanded_query if semantic_analysis.expanded_query else user_input
                 try:
                     with timeout(30):  # 30s timeout for memory retrieval
-                        context = self.memory_search.search_all(user_input, username)
+                        context = self.memory_search.search_all(search_query, username)
                         # Proactive safeguard: Ensure all context items are strings.
                         if context:
                             context = [str(item) for item in context]
@@ -138,6 +215,15 @@ class CognitiveEngine:
                         self.file_logger.log_warning(f"System health: {status.value}")
                         for warning in warnings:
                             self.file_logger.log_warning(f"  - {warning}")
+
+                # Phase 10: Personalize response before returning
+                if self.personalization_engine:
+                    context = {
+                        'semantic_analysis': semantic_analysis,
+                        'turn_count': self.turn_count,
+                        'user_input': user_input
+                    }
+                    response = self.personalization_engine.adapt_response(response, context)
 
                 return response
 

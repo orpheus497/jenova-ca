@@ -23,6 +23,7 @@ from prompt_toolkit.styles import Style
 from jenova.cognitive_engine.engine import CognitiveEngine
 from jenova.ui.logger import UILogger
 from jenova.ui.health_display import HealthDisplay, CompactHealthDisplay
+from jenova.ui.commands import CommandRegistry
 
 BANNER = """
      ██╗███████╗███╗   ██╗ ██████╗ ██╗   ██╗ █████╗
@@ -59,6 +60,9 @@ class TerminalUI:
         self._spinner_running = False
         self._spinner_thread = None
         self.message_queue = self.logger.message_queue
+
+        # Phase 9: Integrated Command Registry
+        self.command_registry = CommandRegistry(cognitive_engine, logger, cognitive_engine.file_logger)
         self.commands = self._register_commands()
 
         # Phase 6: Health Display
@@ -160,14 +164,27 @@ class TerminalUI:
                     self.logger.process_queued_messages()
 
     def _handle_command(self, user_input: str):
-        command_name, *args = user_input.split(' ', 1)
-        command_func = self.commands.get(command_name.lower())
+        # Parse command and arguments
+        parts = user_input.split(' ', 1)
+        command_name = parts[0]
+        args = parts[1].split() if len(parts) > 1 else []
 
+        # Try Phase 9 command registry first
+        result = self.command_registry.execute(command_name, args)
+        if result and not result.startswith("Unknown command"):
+            if self.logger:
+                self.logger.system_message(result)
+                self.logger.system_message("")
+                self.logger.process_queued_messages()
+            return
+
+        # Fallback to legacy commands for backward compatibility
+        command_func = self.commands.get(command_name.lower())
         if command_func:
             command_func(args)
         else:
             if self.logger:
-                self.logger.system_message(f"Unknown command: {command_name}")
+                self.logger.system_message(f"Unknown command: {command_name}. Type /help for available commands.")
 
         if self.logger:
             self.logger.system_message("")

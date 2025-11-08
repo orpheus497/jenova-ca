@@ -12,16 +12,19 @@ This package provides comprehensive LLM functionality including:
 - Model lifecycle management
 - Embedding operations
 - High-level LLM interface
+- Distributed LLM operations (Phase 8)
 - Timeout protection
 - Resource cleanup
 
 Phase 3 Implementation - Part of JENOVA Remediation
+Phase 8 Enhancement - Distributed Computing
 """
 
 from jenova.llm.cuda_manager import CUDAManager, CUDAInfo
 from jenova.llm.model_manager import ModelManager, ModelLoadError
 from jenova.llm.embedding_manager import EmbeddingManager, EmbeddingLoadError
 from jenova.llm.llm_interface import LLMInterface
+from jenova.llm.distributed_llm_interface import DistributedLLMInterface, DistributionStrategy
 
 __all__ = [
     # CUDA Management
@@ -38,7 +41,11 @@ __all__ = [
 
     # LLM Interface
     'LLMInterface',
+
+    # Distributed LLM (Phase 8)
+    'DistributedLLMInterface',
+    'DistributionStrategy',
 ]
 
-__version__ = '4.2.0'
-__phase__ = 'Phase 3: LLM Layer'
+__version__ = '5.0.0'
+__phase__ = 'Phase 8: Distributed Computing & LAN Networking'

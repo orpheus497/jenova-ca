@@ -8,6 +8,20 @@ JENOVA operates as a system with interconnected components that mimic aspects of
 
 **Creator:** The JENOVA Cognitive Architecture (JCA) was designed and developed by **orpheus497**.
 
+### NEW: Distributed Computing (Phase 8)
+
+JENOVA now supports **LAN-based distributed computing**, enabling multiple instances to discover each other automatically and pool their hardware resources:
+
+- 🚀 **3-4x Faster Responses** - Parallel LLM inference across multiple GPUs
+- ⚡ **Load Balancing** - Automatic distribution based on system load
+- 🔄 **Failover** - Automatic recovery if an instance goes down
+- 💪 **Resource Pooling** - Combine CPU, GPU, and RAM across machines
+- 🧠 **Superior Cognition** - Federated memory search and parallel planning
+- 🔒 **Secure by Default** - SSL/TLS encryption and JWT authentication
+- 🌐 **Zero Configuration** - Automatic mDNS/Zeroconf peer discovery
+
+**See [`docs/DISTRIBUTED_MODE.md`](docs/DISTRIBUTED_MODE.md) for complete setup guide.**
+
 ## 2. The JENOVA Advantage: A Superior Cognitive Architecture
 
 ### 2.1. Beyond Statelessness: The Problem with General Systems
