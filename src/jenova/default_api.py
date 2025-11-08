@@ -11,6 +11,12 @@ import datetime
 import os
 import shlex
 import subprocess
+from pathlib import Path
+import logging
+
+# Security infrastructure (FIXES VULN-H1)
+from jenova.security.validators import PathValidator, FileValidator, ValidationError
+from jenova.security.audit_log import get_default_audit_logger
 
 # Selenium is optional - only needed for web search functionality
 # To enable: pip install jenova-ai[web]
@@ -22,6 +28,8 @@ try:
     SELENIUM_AVAILABLE = True
 except ImportError:
     SELENIUM_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
 
 
 def get_current_datetime() -> str:
@@ -127,47 +135,102 @@ def web_search(query: str) -> list[dict] | str:
 
 
 class FileTools:
-    def __init__(self, sandbox_path: str):
+    def __init__(self, sandbox_path: str, username: str = "unknown"):
         self.sandbox_path = os.path.realpath(os.path.expanduser(sandbox_path))
+        self.username = username
         if not os.path.exists(self.sandbox_path):
             os.makedirs(self.sandbox_path)
 
+        # Initialize secure path validator (FIXES VULN-H1)
+        self.path_validator = PathValidator(
+            sandbox_root=self.sandbox_path,
+            strict_mode=True,
+        )
+
+        # Initialize file validator for additional security
+        self.file_validator = FileValidator(
+            max_size=100 * 1024 * 1024,  # 100MB max file size
+            check_mime=True,
+        )
+
+        # Get audit logger for security events
+        self.audit_logger = get_default_audit_logger()
+
     def _get_safe_path(self, path: str) -> str | None:
         """
-        Resolves a path to a real, absolute path within the sandbox.
-        Returns None if the path is outside the sandbox or is a symlink.
+        Securely validates path and returns resolved path if safe.
+
+        FIXES VULN-H1: Path traversal vulnerability
+        - Validates BEFORE symlink resolution
+        - Checks for traversal patterns
+        - Verifies containment after resolution
+        - Validates file extensions
+
+        Returns:
+            Resolved path string or None if validation fails
         """
-        # Normalize the user-provided path by removing any relative path components
-        normalized_path = os.path.normpath(path)
-        # Prevent absolute paths from being treated as relative
-        if os.path.isabs(normalized_path):
+        try:
+            # Use secure PathValidator (validates BEFORE symlink resolution)
+            validated_path = self.path_validator.validate_path(
+                path,
+                must_exist=False,  # Allow creating new files
+                must_be_file=False,
+                must_be_dir=False,
+            )
+            return str(validated_path)
+
+        except ValidationError as e:
+            # Log security event
+            self.audit_logger.log_path_traversal_attempt(
+                username=self.username,
+                path=path,
+            )
+            logger.warning(f"Path validation failed for user '{self.username}': {e}")
             return None
-
-        # Join with the sandbox root
-        prospective_path = os.path.join(self.sandbox_path, normalized_path)
-
-        # Get the real, absolute path, resolving any symlinks
-        real_path = os.path.realpath(prospective_path)
-
-        # Check if the resolved path is within the sandbox directory
-        if os.path.commonprefix([self.sandbox_path, real_path]) != self.sandbox_path:
-            return None
-
-        return real_path
 
     def read_file(self, path: str) -> str:
         """
         Reads the content of a file within the sandbox.
+
+        Enhanced with file validation (size, MIME type).
         """
         safe_path = self._get_safe_path(path)
         if not safe_path:
             return "Error: Path is outside the sandbox or is invalid."
+
         try:
+            # Additional file validation (size, MIME type)
+            path_obj = Path(safe_path)
+            if path_obj.exists():
+                try:
+                    self.file_validator.validate_file(path_obj)
+                except ValidationError as e:
+                    self.audit_logger.log_file_access(
+                        username=self.username,
+                        action="read",
+                        file_path=path,
+                        success=False,
+                    )
+                    return f"Error: File validation failed: {e}"
+
+            # Read file
             with open(safe_path, 'r', encoding='utf-8') as f:
-                return f.read()
+                content = f.read()
+
+            # Log successful access
+            self.audit_logger.log_file_access(
+                username=self.username,
+                action="read",
+                file_path=path,
+                success=True,
+            )
+
+            return content
+
         except FileNotFoundError:
             return f"Error: File not found at '{path}'."
         except Exception as e:
+            logger.error(f"Error reading file '{path}': {e}")
             return f"Error reading file: {e}"
 
     def write_file(self, path: str, content: str) -> str:
