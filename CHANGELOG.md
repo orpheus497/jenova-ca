@@ -323,6 +323,135 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Flexible Permissions**: Granular control over plugin capabilities
 - **Rate Limiting**: Prevents API abuse and resource overconsumption
 
+- **Phase 27: Emotional Intelligence Layer** - Emotion detection and empathetic response generation
+
+#### Emotional Intelligence Layer
+
+- **Emotion Detector** (src/jenova/emotional/emotion_detector.py - 470 lines)
+  * Keyword-based emotion detection with intensity scoring
+  * **EmotionType** enum (9 emotion types):
+    - Primary emotions: joy, sadness, anger, fear, surprise, disgust, trust, anticipation
+    - Neutral state for non-emotional content
+  * **EmotionDetection** dataclass:
+    - `primary_emotion` - Dominant detected emotion
+    - `intensity` - Emotion strength (0.0-1.0)
+    - `all_emotions` - All detected emotions with scores
+    - `confidence` - Detection confidence (0.0-1.0)
+    - `keywords_matched` - Triggering keywords
+  * **EmotionDetector** class:
+    - `detect()` - Analyze text and detect emotions
+    - `get_emotion_summary()` - Human-readable detection summary
+  * **Detection features**:
+    - Curated keyword lists per emotion (400+ keywords total)
+    - Weighted scoring (keywords have base intensity 0.5-0.95)
+    - Intensifier support ("very", "extremely" boost scores by 1.2-1.5x)
+    - Diminisher support ("slightly", "somewhat" reduce scores to 0.5-0.7x)
+    - Negation handling (flips emotion polarity with -0.5x multiplier)
+    - Multi-word keyword matching
+    - Confidence scoring based on emotion separation
+
+- **Emotional State Manager** (src/jenova/emotional/state_manager.py - 340 lines)
+  * Tracks emotional state across conversation turns
+  * **EmotionalMoment** dataclass:
+    - Timestamp, detection, message, turn number
+  * **EmotionalTrend** dataclass:
+    - Emotion, direction (increasing/decreasing/stable), strength, duration
+  * **EmotionalStateManager** class:
+    - `update()` - Record emotion detection for turn
+    - `get_current_state()` - Current emotion, intensity, baseline, trends
+    - `detect_recent_trend()` - Identify emotional trends using linear regression
+    - `get_emotional_context()` - Human-readable context summary
+    - `get_history_summary()` - Recent emotion history
+    - `reset()` - Clear emotional state
+    - `get_stats()` - Comprehensive statistics
+  * **Features**:
+    - Configurable history length (default: 20 turns)
+    - Emotional baseline calculation (average across conversation)
+    - Trend detection with linear regression (slope analysis)
+    - Turn-by-turn tracking with timestamps
+    - Automatic history pruning when limit exceeded
+
+- **Empathetic Response Generator** (src/jenova/emotional/response_generator.py - 370 lines)
+  * Generates emotionally-aware responses
+  * **ResponseTone** enum (7 tone types):
+    - supportive, encouraging, calming, celebratory, validating, neutral, gentle
+  * **EmpatheticResponseGenerator** class:
+    - `select_tone()` - Choose appropriate response tone for emotion
+    - `get_empathetic_prefix()` - Add empathetic opening to response
+    - `adjust_response_parameters()` - LLM parameter tuning for emotion
+    - `get_response_strategy()` - Strategic guidelines per emotion
+    - `build_system_prompt_addition()` - System prompt emotional context
+    - `generate_empathetic_wrapper()` - Wrap response with empathy
+  * **Emotion-to-tone mapping**:
+    - Joy → Celebratory | Sadness → Supportive | Anger → Calming
+    - Fear → Calming | Surprise → Encouraging | Disgust → Validating
+    - Trust → Encouraging | Anticipation → Encouraging | Neutral → Neutral
+  * **Empathetic prefixes** (60+ curated phrases):
+    - Joy: "I'm glad you're feeling positive!", "That's wonderful!"
+    - Sadness: "I understand you're going through a difficult time."
+    - Anger: "I understand your frustration.", "Your feelings are valid."
+    - Fear: "It's okay to feel anxious.", "Let's work through this together."
+  * **Response strategies** (specific guidelines per emotion):
+    - Sadness: Validate feelings, offer support, avoid toxic positivity
+    - Anger: Acknowledge without judgment, use calm language
+    - Fear: Provide reassurance, break down concerns, offer steps forward
+  * **LLM parameter adjustments**:
+    - Joy: Higher temperature (0.8) for enthusiasm
+    - Sadness/Fear: Lower temperature (0.5) for controlled support
+    - Anger: Lowest temperature (0.4) for calm, measured responses
+    - High intensity: Further reduce temperature, limit tokens
+
+- **Module Exports** (src/jenova/emotional/__init__.py - 60 lines)
+  * Clean API surface with all public classes
+  * Organized imports by component
+
+- **Comprehensive Test Suite** (tests/test_emotional_intelligence.py - 520 lines)
+  * **TestEmotionDetector** class (14 test methods):
+    - Detector initialization
+    - Joy, sadness, anger, fear detection
+    - Intensifier boost and diminisher reduction
+    - Negation handling
+    - Empty and neutral text handling
+    - Multiple emotion detection
+    - Keyword matching tracking
+    - Confidence scoring
+    - Emotion summary generation
+  * **TestEmotionalStateManager** class (11 test methods):
+    - Manager initialization and state updates
+    - History tracking and length limits
+    - Current state retrieval
+    - Baseline calculation
+    - Recent trend detection
+    - Emotional context generation
+    - History summary
+    - State reset
+    - Statistics retrieval
+  * **TestEmpatheticResponseGenerator** class (13 test methods):
+    - Generator initialization
+    - Tone selection for all emotions
+    - Low intensity handling
+    - Empathetic prefix generation
+    - Response parameter adjustments
+    - High intensity parameter tuning
+    - Response strategy retrieval
+    - System prompt building
+    - Empathetic response wrapping
+  * **TestIntegration** class (3 integration tests):
+    - Full detection-to-response workflow
+    - Emotional trend detection over conversation
+    - Multi-emotion conversation handling
+
+#### Benefits
+
+- **Emotion Awareness**: Detects user emotions from text input
+- **Contextual Tracking**: Maintains emotional state across conversation
+- **Empathetic Responses**: Adjusts tone and language based on emotion
+- **Trend Detection**: Identifies emotional patterns over time
+- **Flexible Detection**: Handles intensifiers, diminishers, negation
+- **Production-Ready**: Comprehensive testing and error handling
+- **Extensible**: Easy to add emotions, keywords, or response strategies
+- **Privacy-Focused**: All processing local, no external emotion detection APIs
+
 - **Phase 24: Adaptive Context Window Management** - Intelligent context prioritization and compression
 
 #### Adaptive Context Window Management

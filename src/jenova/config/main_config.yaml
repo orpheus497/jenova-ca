@@ -267,3 +267,25 @@ plugins:
     llm_calls_per_minute: 10  # LLM API calls per plugin
     memory_queries_per_minute: 30  # Memory queries per plugin
     api_calls_per_minute: 60  # Total API calls per plugin
+
+# Phase 27: Emotional Intelligence Layer
+emotional_intelligence:
+  # Enable emotion detection and empathetic responses
+  enabled: false  # Opt-in feature (requires explicit user activation)
+  # Emotion detection settings
+  detection:
+    min_intensity_threshold: 0.3  # Minimum intensity to trigger emotional response (0.0-1.0)
+    confidence_threshold: 0.6  # Minimum confidence for emotion detection (0.0-1.0)
+    detect_in_system_messages: false  # Apply detection to system messages (not recommended)
+  # State management
+  state_tracking:
+    enabled: true  # Track emotional state across conversation
+    history_length: 20  # Number of turns to maintain in emotional history
+    trend_detection_window: 5  # Number of recent turns for trend analysis
+  # Response generation
+  empathetic_responses:
+    enabled: true  # Generate empathetic response prefixes
+    use_empathetic_prefix: true  # Add empathetic prefix to responses
+    adjust_llm_parameters: true  # Adjust temperature/tokens based on emotion
+    include_context_in_prompt: true  # Add emotional context to system prompt
+    max_prefix_variants: 4  # Number of prefix variations to rotate through
