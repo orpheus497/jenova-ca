@@ -7,12 +7,11 @@
 """
 Timeout manager to prevent hung operations from freezing the system.
 
-Provides context managers and decorators for timing out operations:
-- Signal-based timeout (Unix systems): True interruption of blocking operations using SIGALRM
-- Thread-based soft timeout (fallback): Checks timeout after operation completes
-- Auto strategy: Uses signal-based on Unix (primary), thread-based as fallback
+Provides context managers and decorators for timing out operations with multiple strategies:
+- Signal-based timeout (Unix/Linux only): True interruption of blocking operations
+- Thread-based soft timeout (Cross-platform): Checks timeout after operation completes
+- Auto strategy: Automatically selects the best strategy for the platform
 
-Platform Support: Linux, macOS, Termux (Android/iOS) - All Unix-like systems
 Thread-safe implementation that works in both main and worker threads.
 """
 

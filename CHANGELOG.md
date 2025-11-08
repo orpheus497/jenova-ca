@@ -9,14 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Linux-Only Optimization** - Removed Windows compatibility code for streamlined Unix-only deployment
-  - Removed Platform.WINDOWS enum from hardware detector (src/jenova/utils/hardware_detector.py)
-  - Removed wmic command usage for Windows GPU detection (~50 lines)
-  - Simplified platform detection logic to support Linux, macOS, and Termux (Android/iOS) only
-  - Updated module docstrings to reflect Unix-only platform support
-  - Clarified timeout manager uses signal-based SIGALRM as primary strategy on Unix systems
-  - Updated README.md platform requirements section for Unix-only deployment
-  - Installation scripts now explicitly target Linux, macOS, and Termux platforms
+- **Multi-Platform Support Restored** - Re-added Windows compatibility for cross-platform deployment
+  - Restored Platform.WINDOWS enum in hardware detector (src/jenova/utils/hardware_detector.py)
+  - Restored Windows platform detection logic
+  - Restored Windows GPU detection using wmic command (~50 lines)
+  - Re-added AMD GPU detection via wmic for Windows
+  - Re-added Intel GPU detection via wmic for Windows
+  - Updated module docstrings to reflect multi-platform support (Linux, macOS, Windows, Termux)
+  - Restored cross-platform documentation in timeout manager
+  - Updated README.md platform requirements for multi-platform support
+  - Supports Linux, macOS, Windows, and Termux (Android/iOS)
 
 ### Added
 

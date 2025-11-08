@@ -13,7 +13,7 @@ Supports:
 - Intel GPUs (Iris, UHD, Arc, integrated)
 - CPU-only systems
 - ARM architectures (Apple Silicon, Android, etc.)
-- Platforms: Linux, macOS, Termux (Android/iOS) - Unix-only systems
+- Multi-platform: Linux, macOS, Windows, Android/Termux
 """
 
 import os
@@ -40,9 +40,10 @@ class HardwareType(Enum):
 
 
 class Platform(Enum):
-    """Operating system platforms (Unix-only)."""
+    """Operating system platforms."""
     LINUX = "linux"
     MACOS = "macos"
+    WINDOWS = "windows"
     ANDROID = "android"
     UNKNOWN = "unknown"
 
@@ -87,7 +88,7 @@ class HardwareDetector:
         self.architecture = platform.machine().lower()
 
     def _detect_platform(self) -> Platform:
-        """Detect the operating system platform (Unix-only)."""
+        """Detect the operating system platform."""
         system = platform.system().lower()
         if system == "linux":
             # Check if running on Android/Termux
@@ -96,6 +97,8 @@ class HardwareDetector:
             return Platform.LINUX
         elif system == "darwin":
             return Platform.MACOS
+        elif system == "windows":
+            return Platform.WINDOWS
         return Platform.UNKNOWN
 
     def _run_command(self, cmd: List[str], timeout: int = 5) -> Optional[str]:
@@ -195,6 +198,23 @@ class HardwareDetector:
                             )
                             devices.append(device)
 
+        elif self.platform == Platform.WINDOWS:
+            # Use wmic on Windows
+            output = self._run_command(['wmic', 'path', 'win32_VideoController', 'get', 'name'])
+            if output:
+                for line in output.split('\n'):
+                    if 'AMD' in line.upper() or 'ATI' in line.upper():
+                        is_apu = any(apu in line.upper() for apu in ['RYZEN', 'APU'])
+                        device = ComputeDevice(
+                            device_type=HardwareType.AMD_APU if is_apu else HardwareType.AMD_GPU,
+                            name=line.strip(),
+                            is_integrated=is_apu,
+                            supports_opencl=True,
+                            supports_vulkan=True,
+                            priority=70 if is_apu else 90
+                        )
+                        devices.append(device)
+
         return devices
 
     def _detect_intel_gpus(self) -> List[ComputeDevice]:
@@ -249,6 +269,22 @@ class HardwareDetector:
                             name=name,
                             memory_mb=memory_mb,
                             is_integrated=is_integrated,
+                            supports_opencl=True,
+                            supports_vulkan=True,
+                            priority=80 if is_arc else 60
+                        )
+                        devices.append(device)
+
+        elif self.platform == Platform.WINDOWS:
+            output = self._run_command(['wmic', 'path', 'win32_VideoController', 'get', 'name'])
+            if output:
+                for line in output.split('\n'):
+                    if 'INTEL' in line.upper() and ('IRIS' in line.upper() or 'UHD' in line.upper() or 'ARC' in line.upper() or 'HD' in line.upper()):
+                        is_arc = 'ARC' in line.upper()
+                        device = ComputeDevice(
+                            device_type=HardwareType.INTEL_GPU if is_arc else HardwareType.INTEL_INTEGRATED,
+                            name=line.strip(),
+                            is_integrated=not is_arc,
                             supports_opencl=True,
                             supports_vulkan=True,
                             priority=80 if is_arc else 60

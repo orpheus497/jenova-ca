@@ -220,14 +220,12 @@ JENOVA uses a local virtualenv-based installation that keeps dependencies isolat
 
 ### 4.1. Prerequisites
 
-**Platform Support:** Unix-only systems
-*   **Linux** (desktop/server) - Tested on Fedora, Ubuntu, Debian, Arch
-*   **macOS** - Intel and Apple Silicon (M1/M2/M3/M4)
-*   **Termux** - Android smartphones/tablets and iOS (via Termux/iSH)
-
-**System Requirements:**
+*   A Linux-based operating system (tested on Fedora, Ubuntu, Debian, Arch)
+*   macOS (Intel and Apple Silicon M1/M2/M3/M4 supported)
+*   Windows (10/11 supported)
+*   Termux (Android smartphones/tablets and iOS via Termux/iSH)
 *   `git`, `python3` (3.10+), and `python3-venv` installed
-*   For GPU acceleration: NVIDIA GPU with CUDA toolkit installed (Linux only)
+*   For GPU acceleration: NVIDIA GPU with CUDA toolkit installed
 
 ### 4.2. Installation Steps
 
@@ -310,15 +308,15 @@ JENOVA's configuration is in `src/jenova/config/main_config.yaml`. Key settings:
 
 ### 4.4. Hardware Detection and GPU Acceleration
 
-JENOVA includes comprehensive hardware detection supporting multiple GPU types on Unix platforms:
+JENOVA includes comprehensive hardware detection supporting multiple GPU types and platforms:
 
-**Supported Hardware (Unix-only):**
-- **NVIDIA GPUs** (GeForce, RTX, Quadro) via CUDA on Linux
-- **Intel GPUs** (Iris Xe, UHD, Arc) via OpenCL/Vulkan on Linux/macOS
-- **AMD GPUs and APUs** (Radeon, Ryzen with graphics) via OpenCL/ROCm on Linux
-- **Apple Silicon** (M1/M2/M3/M4) via Metal on macOS
-- **ARM CPUs** (Android/iOS via Termux - CPU-only)
-- **Multi-GPU systems** (automatic detection and prioritization on Linux/macOS)
+**Supported Hardware:**
+- **NVIDIA GPUs** (GeForce, RTX, Quadro) via CUDA
+- **Intel GPUs** (Iris Xe, UHD, Arc) via OpenCL/Vulkan
+- **AMD GPUs and APUs** (Radeon, Ryzen with graphics) via OpenCL/ROCm
+- **Apple Silicon** (M1/M2/M3/M4) via Metal
+- **ARM CPUs** (including Android/Termux support)
+- **Multi-GPU systems** (automatic detection and prioritization)
 
 The system automatically detects available hardware and configures optimal settings for your specific hardware tier.
 
