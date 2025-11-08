@@ -65,6 +65,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * FIXES: CRITICAL-2 - Race conditions causing data corruption and crashes in concurrent task operations
   * FIXES: MEDIUM-6 - Non-atomic list operations on shared state
 
+- **Enhanced Cortex with JSON DoS Protection** (src/jenova/cortex/cortex.py - Enhanced)
+  * Fixed JSON DoS vulnerabilities in graph loading and saving
+  * Integrated safe JSON parser with 50MB limit for cognitive graphs
+  * Added comprehensive None checks on all graph operations
+  * Enhanced type hints for critical methods
+  * Safe emotion JSON parsing with 1KB limit and depth validation
+  * Key improvements:
+    - `_load_graph()`: Uses `load_json_safe()` with size and depth limits
+    - `_save_graph()`: Uses `save_json_safe()` with 50MB limit, includes None filtering
+    - Emotion parsing: Uses `parse_json_safe()` with 1KB limit
+    - All graph access: Protected with None checks before operations
+  * FIXES: CRITICAL-3 - JSON DoS vulnerability in cognitive graph operations
+  * FIXES: HIGH-4 - Missing None checks causing AttributeError crashes
+
+#### New Modules (Phase 20)
+
+- **Observability Module** (src/jenova/observability/ - 3 files, ~680 lines)
+  * Complete OpenTelemetry integration for distributed tracing and metrics
+  * IMPLEMENTS: Feature #2 - Distributed Tracing with OpenTelemetry
+  * IMPLEMENTS: Feature #9 (partial) - Advanced Observability
+
+- **Distributed Tracing** (src/jenova/observability/tracing.py - 390 lines)
+  * OpenTelemetry integration with Jaeger export
+  * Automatic span creation for all major operations
+  * Context manager and decorator patterns for tracing
+  * Classes: `TracingManager`, `SpanStatus`
+  * Functions: `initialize_tracing()`, `create_span()`, `trace_function()`, `get_current_span()`, `set_span_attribute()`, `set_span_status()`
+  * Graceful fallback when OpenTelemetry not available
+
+- **Metrics Export** (src/jenova/observability/metrics_exporter.py - 290 lines)
+  * Prometheus metrics export via OpenTelemetry
+  * Custom cognitive metrics: LLM latency, memory operations, insight generation, graph size
+  * Classes: `MetricsExporter`
+  * Functions: `initialize_metrics()`, `record_counter()`, `record_histogram()`, `record_gauge()`
+  * Pre-defined cognitive metrics: `record_llm_request()`, `record_memory_operation()`, `record_insight_generation()`, `record_graph_size()`
+  * HTTP server for Prometheus scraping (default port 8000)
+
 #### New Dependencies (Phase 20) - All FOSS-Compliant
 
 - **Circuit Breaker & Resilience**
