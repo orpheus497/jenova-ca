@@ -9,7 +9,7 @@ LLM Interface for JENOVA with timeout protection and robust error handling.
 
 This module provides a high-level interface to the language model with:
 - Timeout protection to prevent hangs
-- Retry logic with exponential backoff
+- Smart retry logic with adaptive prompt modification (Phase 19)
 - Detailed error messages
 - Resource cleanup
 """
@@ -18,6 +18,7 @@ import time
 from typing import Optional, List, Dict, Any
 
 from jenova.infrastructure.timeout_manager import with_timeout, timeout, TimeoutError
+from jenova.llm.smart_retry import SmartRetryHandler, FailureType
 
 
 class LLMInterface:
@@ -43,7 +44,15 @@ class LLMInterface:
         self.default_max_tokens = config.get("model", {}).get("max_tokens", 512)
         self.default_top_p = config.get("model", {}).get("top_p", 0.95)
 
-        # Retry settings
+        # Phase 19: Smart retry handler with adaptive strategies
+        self.smart_retry = SmartRetryHandler(
+            max_retries=3,
+            base_delay=1.0,
+            max_delay=30.0,
+            file_logger=file_logger
+        )
+
+        # Legacy retry settings (kept for get_model_info compatibility)
         self.max_retries = 3
         self.backoff_factor = 2
 
@@ -119,7 +128,10 @@ You must follow these directives:
         timeout_seconds: int = 120,
     ) -> str:
         """
-        Generate a response from the LLM with retry logic and timeout protection.
+        Generate a response from the LLM with smart retry logic and timeout protection.
+
+        Phase 19: Now uses SmartRetryHandler for adaptive retry strategies that learn
+        from failure patterns and adapt prompts accordingly.
 
         Args:
             prompt: User prompt (system prompt added automatically)
@@ -143,74 +155,39 @@ You must follow these directives:
             stop if stop is not None else ["\nUser:", "\nJenova:", "User:", "Jenova:"]
         )
 
-        # Retry loop with exponential backoff
-        for attempt in range(self.max_retries):
-            try:
-                result = self._generate_with_timeout(
-                    prompt=full_prompt,
-                    temperature=temp,
-                    max_tokens=max_new_tokens,
-                    top_p=self.default_top_p,
-                    stop_sequences=stop_sequences,
-                    timeout_seconds=timeout_seconds,
+        # Create wrapper function for SmartRetry
+        def llm_call_wrapper(adapted_prompt: str, max_tokens: int, temperature: float):
+            """Wrapper to match SmartRetry's expected signature."""
+            return self._generate_with_timeout(
+                prompt=adapted_prompt,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                top_p=self.default_top_p,
+                stop_sequences=stop_sequences,
+                timeout_seconds=timeout_seconds,
+            )
+
+        # Use SmartRetry for intelligent retry with adaptive strategies
+        result = self.smart_retry.execute_with_retry(
+            llm_func=llm_call_wrapper,
+            prompt=full_prompt,
+            max_tokens=max_new_tokens,
+            temperature=temp,
+        )
+
+        if result:
+            return result
+        else:
+            # SmartRetry exhausted all attempts
+            if self.ui_logger:
+                self.ui_logger.error(
+                    "LLM generation failed after all smart retry attempts"
                 )
-
-                if result:
-                    return result
-                else:
-                    raise ValueError("Empty response from LLM")
-
-            except TimeoutError as e:
-                if self.file_logger:
-                    self.file_logger.log_error(
-                        f"LLM generation attempt {attempt + 1} timed out: {e}"
-                    )
-
-                if attempt + 1 == self.max_retries:
-                    if self.ui_logger:
-                        self.ui_logger.error(
-                            f"LLM generation timed out after {self.max_retries} attempts"
-                        )
-                    return ""
-
-                sleep_time = self.backoff_factor**attempt
-                if self.ui_logger:
-                    self.ui_logger.system_message(
-                        f"Generation timed out. Retrying in {sleep_time}s..."
-                    )
-                time.sleep(sleep_time)
-
-            except Exception as e:
-                if self.file_logger:
-                    self.file_logger.log_error(
-                        f"LLM generation attempt {attempt + 1} failed: {e}"
-                    )
-
-                if attempt + 1 == self.max_retries:
-                    if self.file_logger:
-                        self.file_logger.log_error(
-                            "Max retries reached. LLM generation failed."
-                        )
-                        import traceback
-
-                        self.file_logger.log_error(
-                            f"Traceback: {traceback.format_exc()}"
-                        )
-
-                    if self.ui_logger:
-                        self.ui_logger.error(
-                            "LLM generation failed after multiple attempts"
-                        )
-                    return ""
-
-                sleep_time = self.backoff_factor**attempt
-                if self.ui_logger:
-                    self.ui_logger.system_message(
-                        f"Generation failed. Retrying in {sleep_time}s..."
-                    )
-                time.sleep(sleep_time)
-
-        return ""
+            if self.file_logger:
+                self.file_logger.log_error(
+                    "SmartRetry exhausted: All adaptive strategies failed"
+                )
+            return ""
 
     def generate_with_context(
         self,

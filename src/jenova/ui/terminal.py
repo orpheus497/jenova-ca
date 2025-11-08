@@ -51,7 +51,8 @@ class TerminalUI:
             logger: UI logger instance
             health_monitor: Optional health monitor (Phase 2)
             metrics: Optional metrics collector (Phase 2)
-            **kwargs: Optional CLI enhancement modules (Phases 13-17)
+            **kwargs: Optional CLI enhancement modules (Phases 13-17, 19)
+                - Backup: backup_manager (Phase 19)
                 - Analysis: context_optimizer, code_metrics, security_scanner, intent_classifier, command_disambiguator
                 - Code Tools: file_editor, code_parser, refactoring_engine, syntax_highlighter, codebase_mapper, interactive_terminal
                 - Git Tools: git_interface, commit_assistant, diff_analyzer, hooks_manager, branch_manager
@@ -81,6 +82,9 @@ class TerminalUI:
         self._spinner_running = False
         self._spinner_thread = None
         self.message_queue = self.logger.message_queue
+
+        # Phase 19: Store backup manager
+        self.backup_manager = kwargs.get("backup_manager")
 
         # Phases 13-17: Store CLI enhancement modules for command handlers
         # Analysis Module
@@ -115,10 +119,13 @@ class TerminalUI:
         self.workflow_library = kwargs.get("workflow_library")
 
         # Phase 9: Integrated Command Registry (pass CLI enhancements)
+        # Phase 19: Also pass backup_manager
         self.command_registry = CommandRegistry(
             cognitive_engine,
             logger,
             cognitive_engine.file_logger,
+            # Phase 19: Backup capabilities
+            backup_manager=self.backup_manager,
             # Pass CLI enhancements to command registry
             context_optimizer=self.context_optimizer,
             code_metrics=self.code_metrics,

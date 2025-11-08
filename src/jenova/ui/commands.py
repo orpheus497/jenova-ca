@@ -79,6 +79,9 @@ class CommandRegistry:
             file_logger=file_logger,
         )
 
+        # Phase 19: Store backup manager
+        self.backup_manager = kwargs.get("backup_manager")
+
         # Phases 13-17: Store CLI enhancement modules
         self.context_optimizer = kwargs.get("context_optimizer")
         self.code_metrics = kwargs.get("code_metrics")
@@ -198,6 +201,68 @@ class CommandRegistry:
                 ],
             )
         )
+
+        # Phase 19: Backup commands
+        if self.backup_manager:
+            self.register(
+                Command(
+                    name="backup",
+                    description="Create backup of cognitive architecture",
+                    category=CommandCategory.MEMORY,
+                    handler=self._cmd_backup,
+                    usage="/backup [full|incremental]",
+                    examples=[
+                        "/backup - Create full backup",
+                        "/backup full - Create full backup explicitly",
+                        "/backup incremental - Create incremental backup (delta only)",
+                    ],
+                )
+            )
+
+            self.register(
+                Command(
+                    name="export",
+                    description="Export cognitive architecture to portable format",
+                    category=CommandCategory.MEMORY,
+                    handler=self._cmd_export,
+                    aliases=["dump"],
+                    usage="/export [--format json|msgpack] [--compress]",
+                    examples=[
+                        "/export - Export in JSON format",
+                        "/export --format msgpack - Export in MessagePack format",
+                        "/export --compress - Export with compression",
+                    ],
+                )
+            )
+
+            self.register(
+                Command(
+                    name="import",
+                    description="Import cognitive architecture from backup",
+                    category=CommandCategory.MEMORY,
+                    handler=self._cmd_import,
+                    aliases=["restore", "load"],
+                    usage="/import <backup_path> [--strategy keep|replace|merge]",
+                    examples=[
+                        "/import backup_file.zip - Import with default strategy (keep existing)",
+                        "/import backup_file.zip --strategy replace - Replace existing data",
+                        "/import backup_file.zip --strategy merge - Merge with existing data",
+                    ],
+                )
+            )
+
+            self.register(
+                Command(
+                    name="backups",
+                    description="List available backups",
+                    category=CommandCategory.MEMORY,
+                    handler=self._cmd_list_backups,
+                    usage="/backups",
+                    examples=[
+                        "/backups - List all backups with metadata",
+                    ],
+                )
+            )
 
         # Phases 13-17: Enhanced CLI Commands
         self._register_phase13_17_commands()
@@ -1115,6 +1180,134 @@ Available subcommands:
         except Exception as e:
             self.file_logger.log_error(f"Custom command error: {e}")
             return f"Error managing custom commands: {str(e)}"
+
+    # Phase 19: Backup command handlers
+    def _cmd_backup(self, args: List[str]) -> str:
+        """Handle /backup command."""
+        if not self.backup_manager:
+            return "Backup manager not available. Check initialization errors."
+
+        try:
+            backup_type = args[0] if args else "full"
+
+            if backup_type not in ["full", "incremental"]:
+                return f"Unknown backup type: {backup_type}. Use 'full' or 'incremental'."
+
+            self.ui_logger.info(f"Creating {backup_type} backup...")
+
+            if backup_type == "full":
+                backup_path = self.backup_manager.create_backup(
+                    include_memories=True,
+                    include_graph=True,
+                    include_assumptions=True,
+                    include_insights=True,
+                    include_profile=True,
+                    compress=True,
+                )
+            else:  # incremental
+                backup_path = self.backup_manager.create_incremental_backup()
+
+            return f"✓ Backup created successfully:\n  Location: {backup_path}"
+
+        except Exception as e:
+            self.file_logger.log_error(f"Backup creation error: {e}")
+            return f"Error creating backup: {str(e)}"
+
+    def _cmd_export(self, args: List[str]) -> str:
+        """Handle /export command."""
+        if not self.backup_manager:
+            return "Backup manager not available. Check initialization errors."
+
+        try:
+            # Parse arguments
+            export_format = "json"  # default
+            compress = False
+
+            for arg in args:
+                if arg.startswith("--format="):
+                    export_format = arg.split("=")[1]
+                elif arg == "--format" and len(args) > args.index(arg) + 1:
+                    export_format = args[args.index(arg) + 1]
+                elif arg == "--compress":
+                    compress = True
+
+            if export_format not in ["json", "msgpack"]:
+                return f"Unknown format: {export_format}. Use 'json' or 'msgpack'."
+
+            self.ui_logger.info(f"Exporting to {export_format} format...")
+
+            export_path = self.backup_manager.export_full(
+                format_type=export_format,
+                compress=compress,
+            )
+
+            return f"✓ Export completed successfully:\n  Location: {export_path}\n  Format: {export_format.upper()}\n  Compressed: {compress}"
+
+        except Exception as e:
+            self.file_logger.log_error(f"Export error: {e}")
+            return f"Error exporting data: {str(e)}"
+
+    def _cmd_import(self, args: List[str]) -> str:
+        """Handle /import command."""
+        if not self.backup_manager:
+            return "Backup manager not available. Check initialization errors."
+
+        try:
+            if not args:
+                return "Usage: /import <backup_path> [--strategy keep|replace|merge]"
+
+            backup_path = args[0]
+            strategy = "keep"  # default
+
+            for arg in args[1:]:
+                if arg.startswith("--strategy="):
+                    strategy = arg.split("=")[1]
+                elif arg == "--strategy" and len(args) > args.index(arg) + 1:
+                    strategy = args[args.index(arg) + 1]
+
+            if strategy not in ["keep", "replace", "merge"]:
+                return f"Unknown strategy: {strategy}. Use 'keep', 'replace', or 'merge'."
+
+            self.ui_logger.info(f"Importing from {backup_path} with strategy '{strategy}'...")
+
+            result = self.backup_manager.restore_backup(
+                backup_path=backup_path,
+                conflict_strategy=strategy,
+            )
+
+            return f"✓ Import completed successfully:\n  Imported: {result.get('imported_items', 'N/A')} items\n  Strategy: {strategy}\n  Conflicts: {result.get('conflicts', 0)}"
+
+        except FileNotFoundError:
+            return f"Error: Backup file not found: {backup_path}"
+        except Exception as e:
+            self.file_logger.log_error(f"Import error: {e}")
+            return f"Error importing backup: {str(e)}"
+
+    def _cmd_list_backups(self, args: List[str]) -> str:
+        """Handle /backups command."""
+        if not self.backup_manager:
+            return "Backup manager not available. Check initialization errors."
+
+        try:
+            backups = self.backup_manager.list_backups()
+
+            if not backups:
+                return "No backups found."
+
+            lines = ["Available backups:", ""]
+            for backup in backups:
+                lines.append(f"  {backup['filename']}")
+                lines.append(f"    Created: {backup.get('timestamp', 'Unknown')}")
+                lines.append(f"    Type: {backup.get('type', 'Unknown')}")
+                lines.append(f"    Size: {backup.get('size', 'Unknown')}")
+                lines.append(f"    Checksum: {backup.get('checksum', 'Unknown')[:16]}...")
+                lines.append("")
+
+            return "\n".join(lines)
+
+        except Exception as e:
+            self.file_logger.log_error(f"List backups error: {e}")
+            return f"Error listing backups: {str(e)}"
 
     def _help_command(self, command: Command) -> str:
         """Show help for a specific command."""
