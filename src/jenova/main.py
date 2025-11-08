@@ -537,6 +537,34 @@ def main():
         network_enabled = config.get("network", {}).get("enabled", False)
 
         if network_enabled:
+            # SECURITY: Validate that distributed mode requires SSL/TLS and JWT authentication
+            security_config = config.get("network", {}).get("security", {})
+            ssl_enabled = security_config.get("enabled", False)
+            jwt_enabled = security_config.get("require_auth", False)
+
+            if not ssl_enabled or not jwt_enabled:
+                ui_logger.error("╔═══════════════════════════════════════════════════════════════╗")
+                ui_logger.error("║ SECURITY ERROR: Insecure Distributed Mode Configuration      ║")
+                ui_logger.error("╠═══════════════════════════════════════════════════════════════╣")
+                ui_logger.error("║ Distributed mode requires both SSL/TLS and JWT authentication║")
+                ui_logger.error("║ to protect network communications.                            ║")
+                ui_logger.error("║                                                               ║")
+                ui_logger.error("║ Current settings:                                             ║")
+                ui_logger.error(f"║   network.security.enabled = {ssl_enabled:<31} ║")
+                ui_logger.error(f"║   network.security.require_auth = {jwt_enabled:<28} ║")
+                ui_logger.error("║                                                               ║")
+                ui_logger.error("║ Fix: Edit src/jenova/config/main_config.yaml:                 ║")
+                ui_logger.error("║   network:                                                    ║")
+                ui_logger.error("║     security:                                                 ║")
+                ui_logger.error("║       enabled: true      # Enable SSL/TLS encryption          ║")
+                ui_logger.error("║       require_auth: true # Enable JWT authentication          ║")
+                ui_logger.error("╚═══════════════════════════════════════════════════════════════╝")
+                file_logger.log_critical(
+                    f"Distributed mode security validation failed: "
+                    f"ssl_enabled={ssl_enabled}, jwt_enabled={jwt_enabled}"
+                )
+                sys.exit(1)
+
             ui_logger.progress_message("Initializing distributed networking", 90)
             try:
                 with metrics.measure("network_layer_init"):
