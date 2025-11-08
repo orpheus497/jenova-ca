@@ -22,6 +22,7 @@ Features:
 Phase 4 Implementation
 """
 
+from contextlib import nullcontext
 from typing import Dict, List, Tuple, Optional, Any
 
 from jenova.infrastructure import HealthMonitor, MetricsCollector
@@ -93,7 +94,7 @@ class MemoryManager:
             return None
 
         try:
-            with self.metrics.measure('memory_episodic_add') if self.metrics else _nullcontext():
+            with self.metrics.measure('memory_episodic_add') if self.metrics else nullcontext():
                 return self.episodic.add_episode(summary, username, **kwargs)
         except Exception as e:
             if self.file_logger:
@@ -123,7 +124,7 @@ class MemoryManager:
             return None
 
         try:
-            with self.metrics.measure('memory_semantic_add') if self.metrics else _nullcontext():
+            with self.metrics.measure('memory_semantic_add') if self.metrics else nullcontext():
                 return self.semantic.add_fact(fact, username, **kwargs)
         except Exception as e:
             if self.file_logger:
@@ -153,7 +154,7 @@ class MemoryManager:
             return None
 
         try:
-            with self.metrics.measure('memory_procedural_add') if self.metrics else _nullcontext():
+            with self.metrics.measure('memory_procedural_add') if self.metrics else nullcontext():
                 return self.procedural.add_procedure(procedure, username, **kwargs)
         except Exception as e:
             if self.file_logger:
@@ -183,7 +184,7 @@ class MemoryManager:
         # Search episodic
         if self.episodic:
             try:
-                with self.metrics.measure('memory_episodic_search') if self.metrics else _nullcontext():
+                with self.metrics.measure('memory_episodic_search') if self.metrics else nullcontext():
                     results['episodic'] = self.episodic.recall_relevant_episodes(
                         query, username, n_results_per_memory
                     )
@@ -195,7 +196,7 @@ class MemoryManager:
         # Search semantic
         if self.semantic:
             try:
-                with self.metrics.measure('memory_semantic_search') if self.metrics else _nullcontext():
+                with self.metrics.measure('memory_semantic_search') if self.metrics else nullcontext():
                     results['semantic'] = self.semantic.search_collection(
                         query, username, n_results_per_memory
                     )
@@ -207,7 +208,7 @@ class MemoryManager:
         # Search procedural
         if self.procedural:
             try:
-                with self.metrics.measure('memory_procedural_search') if self.metrics else _nullcontext():
+                with self.metrics.measure('memory_procedural_search') if self.metrics else nullcontext():
                     results['procedural'] = self.procedural.search(
                         query, username, n_results_per_memory
                     )
@@ -329,20 +330,23 @@ class MemoryManager:
         if self.episodic:
             try:
                 total += self.episodic.collection.count() if hasattr(self.episodic, 'collection') else 0
-            except:
-                pass
+            except Exception as e:
+                if self.file_logger:
+                    self.file_logger.log_warning(f"Failed to count episodic memory entries: {e}")
 
         if self.semantic:
             try:
                 total += self.semantic.collection.count() if hasattr(self.semantic, 'collection') else 0
-            except:
-                pass
+            except Exception as e:
+                if self.file_logger:
+                    self.file_logger.log_warning(f"Failed to count semantic memory entries: {e}")
 
         if self.procedural:
             try:
                 total += self.procedural.collection.count() if hasattr(self.procedural, 'collection') else 0
-            except:
-                pass
+            except Exception as e:
+                if self.file_logger:
+                    self.file_logger.log_warning(f"Failed to count procedural memory entries: {e}")
 
         return total
 
@@ -369,13 +373,3 @@ class MemoryManager:
             lines.append(f"  {memory_type.title()}: {count} entries ({status})")
 
         return "\n".join(lines)
-
-
-# Null context manager for when metrics is None
-class _nullcontext:
-    """Null context manager that does nothing."""
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        pass

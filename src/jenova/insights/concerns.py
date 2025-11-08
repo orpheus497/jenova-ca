@@ -44,7 +44,6 @@ class ConcernManager:
         except OSError as e:
             if self.file_logger:
                 self.file_logger.log_error(f"Error saving concerns file: {e}")
-            pass
 
     def get_all_concerns(self) -> list[str]:
         """Returns a list of all existing concern topics."""
@@ -98,8 +97,6 @@ Topic:"""
             self.file_logger.log_error(f"Error creating new concern: {e}")
             return "general"
 
-    def reorganize_insights(self, all_insights: list) -> list:
-        """DEPRECATED: This method is no longer used. Reorganization is handled by Cortex.reflect."""
-        self.file_logger.log_warning(
-            "ConcernManager.reorganize_insights is deprecated and should not be called.")
-        return all_insights
+    # Note: reorganize_insights() method has been removed
+    # Insight reorganization is now handled by Cortex.reflect() method
+    # See src/jenova/cortex/cortex.py for the new implementation

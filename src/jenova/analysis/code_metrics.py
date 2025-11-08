@@ -291,7 +291,9 @@ class CodeMetrics:
                             f"Long function '{node.name}' ({func_length} lines) "
                             f"at line {node.lineno}"
                         )
-        except:
+        except Exception as e:
+            # Unable to parse code for function length analysis
+            # This is not critical, other metrics can still be computed
             pass
 
         # Too many comments might indicate unclear code

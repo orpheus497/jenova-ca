@@ -16,7 +16,7 @@ import socket
 import threading
 import time
 import uuid
-from typing import Dict, List, Optional, Callable
+from typing import Any, Dict, List, Optional, Callable
 
 from zeroconf import ServiceBrowser, ServiceInfo, Zeroconf, ServiceListener
 
@@ -30,7 +30,7 @@ class PeerInfo:
         instance_name: str,
         address: str,
         port: int,
-        properties: Dict[str, any],
+        properties: Dict[str, Any],
         last_seen: float
     ):
         self.instance_id = instance_id
@@ -362,7 +362,8 @@ class JenovaDiscoveryService:
             for key, value in info.properties.items():
                 try:
                     properties[key.decode('utf-8')] = value.decode('utf-8')
-                except:
+                except Exception as e:
+                    # Value is not UTF-8 decodable, convert to string
                     properties[key.decode('utf-8')] = str(value)
 
         # Extract instance ID and name

@@ -31,8 +31,10 @@ class CommitAssistant:
             try:
                 message = self.llm.generate(prompt, max_tokens=100)
                 return message.strip()
-            except:
-                pass
+            except Exception as e:
+                # LLM generation failed, fall back to simple analysis
+                if hasattr(self, 'file_logger') and self.file_logger:
+                    self.file_logger.log_warning(f"LLM commit message generation failed: {e}")
 
         # Fallback: simple analysis
         if "def " in diff_text or "class " in diff_text:

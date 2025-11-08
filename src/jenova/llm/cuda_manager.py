@@ -69,7 +69,8 @@ class CUDAManager:
                         props = torch.cuda.get_device_properties(0)
                         total_memory = props.total_memory // (1024 * 1024)  # Convert to MB
                         free_memory = (torch.cuda.memory_reserved(0) - torch.cuda.memory_allocated(0)) // (1024 * 1024)
-                    except:
+                    except Exception as e:
+                        # Unable to query CUDA device properties, keep None values
                         pass
 
                 self._cuda_info = CUDAInfo(
