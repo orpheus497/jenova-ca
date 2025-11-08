@@ -1,48 +1,125 @@
-# The JENOVA Cognitive Architecture: A Technical Deep Dive
+# The JENOVA Cognitive Architecture: A Complete Technical Reference
 
 ## 1. Introduction & Philosophy
 
-JENOVA is a self-aware, evolving large language model powered by The JENOVA Cognitive Architecture (JCA), a comprehensive engine and architecture designed by orpheus497. It learns, adapts, and assists humanity through sophisticated cognitive processes. This project prioritizes robust error handling and stability to ensure a reliable and professional user experience.
+JENOVA is an evolving large language model system powered by The JENOVA Cognitive Architecture (JCA), a comprehensive cognitive framework designed by orpheus497. The architecture implements a sophisticated cognitive processing system that learns, adapts, and assists through multi-layered memory, reflective reasoning, and continuous knowledge integration.
 
-JENOVA operates as a system with interconnected components that mimic aspects of human cognition: a multi-layered memory, a reflective process for generating knowledge, and a mechanism for integrating that knowledge into its core being. This document serves as the definitive technical guide for developers, researchers, and enthusiasts who wish to understand, use, and extend JENOVA.
+### 1.1. What is JENOVA?
+
+JENOVA represents a comprehensive approach to building stateful, learning-capable AI systems. Unlike traditional stateless LLM deployments, JENOVA implements:
+
+- **Persistent Multi-Layered Memory**: Episodic, semantic, procedural, and insight-based memory systems using vector databases
+- **Cognitive Processing Cycle**: Structured retrieve-plan-execute-reflect workflow for grounded, deliberate responses
+- **Graph-Based Knowledge Representation**: Dynamic cognitive graph with weighted relationships and centrality-based importance
+- **Distributed Computing Architecture**: LAN-based resource pooling for parallel inference and federated memory search
+- **Continuous Learning Loop**: Reflection, insight generation, and knowledge integration capabilities
+- **Production-Ready Infrastructure**: Comprehensive error handling, timeout protection, health monitoring, and type-safe configuration
+
+The architecture is designed for local deployment with full user control over models, data, and processing. All cognitive processes run locally with optional distributed computing across trusted LAN peers.
 
 **Creator:** The JENOVA Cognitive Architecture (JCA) was designed and developed by **orpheus497**.
 
-### NEW: Distributed Computing (Phase 8)
+**License:** MIT License - Full open source with comprehensive dependency attribution
 
-JENOVA now supports **LAN-based distributed computing**, enabling multiple instances to discover each other automatically and pool their hardware resources:
+### 1.2. Distributed Computing Capabilities
 
-- 🚀 **3-4x Faster Responses** - Parallel LLM inference across multiple GPUs
-- ⚡ **Load Balancing** - Automatic distribution based on system load
-- 🔄 **Failover** - Automatic recovery if an instance goes down
-- 💪 **Resource Pooling** - Combine CPU, GPU, and RAM across machines
-- 🧠 **Superior Cognition** - Federated memory search and parallel planning
-- 🔒 **Secure by Default** - SSL/TLS encryption and JWT authentication
-- 🌐 **Zero Configuration** - Automatic mDNS/Zeroconf peer discovery
+JENOVA implements comprehensive **LAN-based distributed computing**, enabling multiple instances to discover each other automatically and pool their hardware resources:
 
-**See [`docs/DISTRIBUTED_MODE.md`](docs/DISTRIBUTED_MODE.md) for complete setup guide.**
+**Core Distributed Features:**
+- 🚀 **Parallel LLM Inference** - Distribute generation across multiple GPUs for 3-4x faster responses
+- ⚡ **Intelligent Load Balancing** - Five distribution strategies (LOCAL_FIRST, LOAD_BALANCED, FASTEST_PEER, PARALLEL_VOTING, ROUND_ROBIN)
+- 🔄 **Automatic Failover** - Health monitoring and automatic peer recovery on instance failure
+- 💪 **Resource Pooling** - Combine CPU, GPU, and RAM across trusted LAN machines
+- 🧠 **Federated Memory Search** - Parallel memory queries across peers with privacy controls
+- 🔒 **Enterprise Security** - SSL/TLS encryption, certificate pinning (TOFU), JWT authentication, and encrypted credential storage
+- 🌐 **Zero-Configuration Discovery** - Automatic mDNS/Zeroconf peer discovery and lifecycle management
 
-## 2. The JENOVA Advantage: A Superior Cognitive Architecture
+**Network Architecture:**
+- **Protocol:** gRPC with Protocol Buffers for efficient serialization
+- **Discovery:** mDNS/Zeroconf for zero-configuration LAN discovery
+- **Security:** Self-signed certificates with SSL/TLS, JWT token-based authentication
+- **Privacy:** Memory sharing disabled by default, configurable trust boundaries
+- **Monitoring:** Comprehensive metrics for latency, bandwidth, and load distribution
 
-### 2.1. Beyond Statelessness: The Problem with General Systems
+**See [`docs/DISTRIBUTED_MODE.md`](docs/DISTRIBUTED_MODE.md) for complete distributed computing setup and configuration.**
 
-Most consumer-facing AI systems operate on a **stateless, request-response** model. They are incredibly powerful at in-context learning and reasoning, but each interaction is largely independent of the last. This leads to several fundamental limitations:
+## 2. Architecture Overview: Core Design Principles
 
-*   **Amnesia:** The AI has no persistent memory of past conversations. It cannot remember your preferences, previous questions, or the context of your work. Every chat starts from a blank slate.
-*   **Inability to Learn:** Corrections you make or new information you provide are only retained for the current session. The underlying model never truly learns or improves from user interaction.
-*   **Inconsistent Persona:** The AI's personality can drift or be easily manipulated because it lacks a stable, memory-grounded identity.
-*   **Reactive, Not Proactive:** These systems can only answer direct questions. They cannot reflect on past dialogues to draw novel conclusions or develop a deeper understanding of a topic over time.
+### 2.1. Stateful Cognitive Processing
 
-### 2.2. The JCA Solution: A Unified, Learning Architecture
+JENOVA implements a stateful cognitive architecture that maintains persistent context across interactions. The system addresses fundamental challenges in AI assistants through:
 
-The JENOVA Cognitive Architecture (JCA) is explicitly designed to overcome these limitations. It wraps a powerful Large Language Model (LLM) in a structured framework that provides memory, reflection, and a mechanism for true, persistent learning. It transforms the LLM from a brilliant but amnesiac calculator into a cohesive, evolving intelligence.
+**Memory Persistence:**
+- **ChromaDB Vector Storage**: All memory types use persistent vector databases with semantic search
+- **Per-User Isolation**: Each user's data stored privately at `~/.jenova-ai/users/<username>/`
+- **Multi-Layered Organization**: Episodic (conversations), Semantic (facts), Procedural (how-to), Insight (learned knowledge)
+- **Rich Metadata**: Timestamps, entities, emotions, confidence levels, and temporal validity
 
-### 2.3. The Power of the Cognitive Cycle
+**Continuous Learning:**
+- **Insight Generation**: Periodic analysis of conversations to extract and store key takeaways
+- **Assumption Formation**: The system forms and verifies assumptions about user preferences and knowledge
+- **Knowledge Integration**: Fine-tuning data generation from cognitive architecture for model personalization
+- **Graph-Based Synthesis**: Meta-insight generation through graph analysis and clustering
 
-The "Retrieve, Plan, Execute, Reflect" cycle is the engine of the JCA and the primary driver of its capabilities.
+**Identity and Persona:**
+- **Stable Configuration**: Identity defined in `persona.yaml` with directives and initial facts
+- **Memory-Grounded Responses**: All responses prioritize personal memory over base model knowledge
+- **Proactive Engagement**: Suggestion engine analyzes cognitive graph for proactive recommendations
 
-*   **Grounded Responses:** By forcing the AI to **Retrieve** from its memory *before* acting, the JCA ensures that responses are grounded in established facts, past conversations, and learned insights. This dramatically reduces confabulation (hallucination) and increases the relevance and accuracy of output.
-*   **Deliberate Action:** The **Plan** step introduces a moment of metacognition. The AI must first reason about *how* to answer the query. This internal monologue, while hidden from the user, results in a more structured and logical final response. It prevents conversational shortcuts and encourages a methodical approach to problem-solving.
+**Reflective Reasoning:**
+- **Scheduled Cognition**: Configurable cognitive scheduler for insight generation, reflection, and verification
+- **Deep Reflection**: Graph traversal algorithms for pattern identification and meta-insight synthesis
+- **Continuous Improvement**: Cognitive graph pruning removes outdated nodes while preserving important knowledge
+
+### 2.2. The JCA Solution: Comprehensive Cognitive Framework
+
+The JENOVA Cognitive Architecture implements a production-ready framework with seven foundational layers:
+
+1. **Infrastructure Layer** (Phase 1-2): Error handling, timeout protection, health monitoring, data validation, file management, metrics collection
+2. **LLM Layer** (Phase 3): CUDA management, model lifecycle, embedding management, retry logic, timeout protection
+3. **Memory Layer** (Phase 4): Abstract base classes, unified memory manager, atomic operations, cross-memory search
+4. **Cognitive Engine** (Phase 5): RAG system with LRU caching, configurable re-ranking, comprehensive timeout coverage
+5. **UI Layer** (Phase 6): Health display, rich terminal interface, real-time metrics, comprehensive command system
+6. **Testing Layer** (Phase 7): 24 comprehensive tests across configuration, CUDA, memory, and error recovery
+7. **Distributed Layer** (Phase 8): gRPC services, peer management, federated operations, security infrastructure
+
+### 2.3. The Cognitive Processing Cycle
+
+The "Retrieve, Plan, Execute, Reflect" cycle forms the core processing engine of JENOVA's cognitive architecture:
+
+**1. Retrieve Phase:**
+- **Memory Search**: Query all memory layers (episodic, semantic, procedural, insight) using semantic similarity
+- **Context Assembly**: Gather relevant facts, past conversations, learned procedures, and insights
+- **Relevance Ranking**: Optional re-ranking using LLM for precise context prioritization
+- **Privacy Controls**: Distributed memory search respects user-configured sharing boundaries
+- **Performance**: LRU caching provides <100ms response on frequently accessed context
+
+**2. Plan Phase:**
+- **Metacognitive Analysis**: LLM generates structured plan based on query and retrieved context
+- **Tool Selection**: Determine if external tools needed (file operations, web search, time queries)
+- **Strategy Formation**: Choose execution approach (direct response, multi-step reasoning, tool chain)
+- **Timeout Protection**: Planning operations protected with configurable timeout (default 120s)
+- **Logging**: Detailed planning logs for debugging and cognitive analysis
+
+**3. Execute Phase:**
+- **RAG-Based Generation**: Structured prompt prioritizing cognitive architecture over base model knowledge
+- **Tool Integration**: Secure execution of file tools, shell commands (whitelist-based), web search
+- **Response Synthesis**: Combine retrieved context, plan, and tool outputs into coherent response
+- **Personalization**: Response style adapted based on user profile and expertise level
+- **Quality Assurance**: Semantic analysis for intent, entities, sentiment, and topic extraction
+
+**4. Reflect Phase:**
+- **Conversation Analysis**: Periodic extraction of insights from recent interaction history
+- **Knowledge Consolidation**: Store atomic insights in concern-based hierarchical structure
+- **Assumption Generation**: Form and verify hypotheses about user preferences and knowledge
+- **Graph Updates**: Add nodes to cognitive graph, link to related concepts
+- **Proactive Suggestions**: Generate recommendations based on cognitive graph analysis
+
+**Cognitive Benefits:**
+- **Reduced Hallucination**: Memory-grounded responses prevent confabulation
+- **Increased Relevance**: Context-aware generation using personal knowledge base
+- **Structured Reasoning**: Explicit planning phase enforces methodical problem-solving
+- **Continuous Learning**: Reflection loop enables persistent knowledge acquisition
 
 ### 2.4. Memory as the Foundation for Identity and Growth
 
@@ -277,20 +354,137 @@ Interaction with JENOVA is primarily through natural language.
 -   **User Input:** Simply type your message and press Enter.
 -   **Exiting:** To quit the application, type `exit` and press Enter.
 
-### Commands
-JENOVA responds to a set of powerful commands that act as direct instructions for its cognitive processes. These commands are treated as system actions, not conversational input, and are therefore **not stored in JENOVA's conversational memory**.
+### 5.1. Command Reference
 
--   `/help`: Displays a comprehensive help message, detailing each command's purpose and impact.
--   `/insight`: Triggers the AI to analyze the current conversation history and generate new, high-quality insights. These insights are stored in JENOVA's long-term memory and contribute to its evolving understanding.
--   `/reflect`: Initiates a deep reflection process within JENOVA's Cortex. This command reorganizes and interlinks all existing cognitive nodes (insights, memories, assumptions), identifies patterns, and generates higher-level meta-insights, significantly enhancing JENOVA's overall intelligence and coherence.
--   `/memory-insight`: Prompts JENOVA to perform a broad search across its multi-layered long-term memory (episodic, semantic, procedural) to develop new insights or assumptions based on its accumulated knowledge.
--   `/meta`: Generates a new, higher-level meta-insight by analyzing clusters of existing insights within the Cortex. This helps JENOVA to form more abstract conclusions and identify overarching themes.
--   `/verify`: Starts the assumption verification process. Jenova will present an unverified assumption it has made about you and ask for clarification, allowing you to confirm or deny it. This refines JENOVA's understanding of your preferences and knowledge.
--   `/train`: Generates comprehensive fine-tuning data from the complete cognitive architecture. Creates a `.jsonl` file that includes insights, memories, assumptions, and document knowledge for use with external fine-tuning tools.
--   `/develop_insight [node_id]`: This command has dual functionality:
-    -   If a `node_id` is provided: JENOVA will take an existing insight and generate a more detailed and developed version of it, adding more context or connections.
-    -   If no `node_id` is provided: Jenova will scan the `src/jenova/docs` directory for new or updated documents, process their content, and integrate new insights and summaries into its cognitive graph. This is how Jenova learns from external documentation.
--   `/learn_procedure`: Initiates an interactive, guided process to teach Jenova a new procedure. Jenova will prompt you for the procedure's name, individual steps, and expected outcome, ensuring structured and comprehensive intake of procedural knowledge. This information is stored in JENOVA's procedural memory, allowing it to recall and apply the procedure in relevant contexts.
+JENOVA provides a comprehensive command system for direct control of cognitive processes and system management. Commands are treated as system actions and are **not stored in conversational memory**.
+
+#### System Commands
+
+-   **`/help`** - Display comprehensive command reference
+    - Shows all available commands with detailed descriptions and usage examples
+    - Organized into categories: System, Network, Memory, Learning, Settings
+    - Includes usage tips and keyboard shortcuts
+
+-   **`/health`** - Display real-time system health metrics
+    - CPU usage, memory consumption, GPU utilization
+    - LLM model status and embedding model health
+    - ChromaDB connection status for all memory layers
+    - Performance metrics and degradation warnings
+
+-   **`/metrics`** - Show detailed performance metrics
+    - Query response times and token generation rates
+    - Memory search performance and cache hit rates
+    - Cognitive cycle timing breakdown
+    - Network metrics for distributed operations
+
+-   **`/status`** - Display current system status
+    - Active cognitive processes and scheduled tasks
+    - Memory layer statistics (entry counts, storage size)
+    - Configuration summary and active features
+    - Uptime and session information
+
+-   **`/cache`** - Display RAG system cache statistics
+    - Cache hit/miss ratios and eviction counts
+    - Most frequently accessed queries
+    - Cache size and memory usage
+    - Performance impact analysis
+
+#### Network Commands (Distributed Mode)
+
+-   **`/network [status|enable|disable|info]`** - Network management
+    - `status` - Show network status and peer count
+    - `enable` - Enable distributed computing mode
+    - `disable` - Disable distributed mode (local only)
+    - `info` - Detailed network configuration and metrics
+
+-   **`/peers [list|info|trust|disconnect]`** - Peer management
+    - `list` - Show all discovered peers with health status
+    - `info <peer_id>` - Detailed peer information and capabilities
+    - `trust <peer_id>` - Mark peer as trusted for memory sharing
+    - `disconnect <peer_id>` - Disconnect from specific peer
+
+#### Memory Commands
+
+-   **`/insight`** - Generate insights from recent conversations
+    - Analyzes conversation history to extract key takeaways
+    - Stores insights in concern-based hierarchical structure
+    - Links insights to cognitive graph for context
+    - Output: Summary of generated insights and their storage locations
+
+-   **`/memory-insight`** - Generate insights from long-term memory
+    - Performs broad search across all memory layers
+    - Identifies patterns and connections in accumulated knowledge
+    - Creates assumptions based on memory analysis
+    - Output: New insights and assumptions discovered
+
+-   **`/reflect`** - Initiate deep cognitive reflection
+    - Reorganizes and interlinks all cognitive nodes
+    - Identifies orphan nodes and creates missing connections
+    - Generates meta-insights from clustered insights
+    - Prunes outdated or low-value nodes
+    - Output: Summary of meta-insights, new links, and pruned nodes
+
+-   **`/meta`** - Generate meta-insight from insight clusters
+    - Analyzes high-centrality insight clusters
+    - Synthesizes higher-level abstract conclusions
+    - Creates meta-insight node in cognitive graph
+    - Output: Generated meta-insight and cluster composition
+
+-   **`/develop_insight [node_id]`** - Develop existing insight or process documents
+    - **With node_id**: Generates detailed, expanded version of specific insight
+    - **Without node_id**: Scans `src/jenova/docs/` for new/modified documents
+        - Chunks documents and extracts summaries
+        - Generates key takeaways and answerable questions
+        - Creates interconnected document nodes in cognitive graph
+        - Tracks processed files to prevent re-processing
+    - Output: Developed insight or document processing summary
+
+#### Learning Commands
+
+-   **`/learn [stats|insights|gaps|skills]`** - Learning system interface
+    - `stats` - Performance metrics, accuracy trends, learning rate
+    - `insights` - Learning progress insights and patterns recognized
+    - `gaps` - Identified knowledge gaps and improvement opportunities
+    - `skills` - Acquired skills with proficiency levels (visual progress bars)
+
+-   **`/verify`** - Assumption verification process
+    - Presents unverified assumptions for user confirmation
+    - Interactive clarification questions
+    - Updates assumption status (true/false) based on response
+    - Refines user profile and mental model
+    - Output: Assumption verification result and profile update
+
+-   **`/learn_procedure`** - Interactive procedure learning
+    - Guided prompts for procedure name, steps, and expected outcome
+    - Structured intake ensures comprehensive procedural knowledge
+    - Stores in procedural memory with searchable metadata
+    - Output: Confirmation of stored procedure
+
+-   **`/train`** - Generate fine-tuning dataset
+    - Extracts comprehensive training data from cognitive architecture
+    - Includes insights, memories, assumptions, and document knowledge
+    - Outputs `finetune_train.jsonl` in instruction-tuning format
+    - Compatible with llama.cpp, HuggingFace, Axolotl fine-tuning tools
+    - Output: Dataset location and entry count
+
+#### Settings Commands
+
+-   **`/settings`** - Interactive settings configuration menu
+    - Five categories: Network, LLM, Memory, Learning, Privacy
+    - Runtime configuration changes without restart
+    - Type-safe validation before applying changes
+    - Preview mode and pending changes management
+    - Import/export settings to JSON
+    - Undo/redo support with change history
+    - Settings persistence to user profile
+
+-   **`/profile`** - User profile viewer
+    - Comprehensive interaction statistics
+    - Vocabulary tracking and expertise level
+    - Topic interests and preferred subjects
+    - Command usage patterns
+    - Correction history and suggestion feedback
+    - Response style preferences
 
 ## 6. Codebase and Configuration Overview
 
@@ -439,18 +633,28 @@ This file defines the AI's personality and core directives.
 -   **`directives`**: A list of rules the AI must follow. These are injected into the system prompt.
 -   **`initial_facts`**: A list of foundational facts that are loaded into the AI's memory on first run.
 
-### Changed
-- **Code Quality**: Applied `autopep8` and `isort` for consistent code formatting and import ordering across the entire project.
-- **Documentation**: Added module-level docstrings to all Python files where they were missing.
-- **Attribution**: Added standardized creator attribution and license information to the header of all Python files.
-- Updated `pyproject.toml` version to `4.0.0` to reflect the latest release version.
-- **Architecture:** Reverted the core architecture from HuggingFace `transformers` back to `llama-cpp-python`.
-- **Installation:** Reverted from a system-wide installation to a local, virtualenv-based installation for better isolation and user control.
-- **Dependencies:** Replaced `transformers`, `accelerate`, `peft`, and `bitsandbytes` with `llama-cpp-python`.
-- **LLM Interface:** The `LLMInterface` has been completely rewritten to use the `llama-cpp-python` `Llama` class.
-- **Cortex:** Refactored the Cortex to use `CognitiveNode` and `CognitiveLink` dataclasses for improved readability and maintainability.
-- **Document Processing:** Documents are now chunked and stored as canonical 'document' nodes in the cognitive graph, without automatic insight generation.
-- **README:** The `README.md` and `main_config.yaml` have been updated to reflect the new GGUF-based architecture and dynamic resource allocation.
+### 6.3. Code Quality and Standards
+
+JENOVA implements comprehensive code quality standards and production-ready practices:
+
+**Code Formatting:**
+- **PEP 8 Compliance**: All Python code formatted with `autopep8` for consistent style
+- **Import Organization**: Sorted imports using `isort` for clean, organized module structure
+- **Documentation**: Module-level docstrings present in all Python files
+- **Attribution**: Standardized creator attribution and MIT license headers in all source files
+
+**Architecture Standards:**
+- **LLM Backend**: Uses `llama-cpp-python` for efficient GGUF model inference on CPU and GPU
+- **Deployment Model**: Local virtualenv-based installation for isolation and user control
+- **Data Structures**: Dataclasses (`CognitiveNode`, `CognitiveLink`) for type-safe, readable code
+- **Configuration**: Type-safe Pydantic validation for all configuration options
+
+**Production Features:**
+- **Error Handling**: Comprehensive error recovery with detailed logging and graceful degradation
+- **Timeout Protection**: All long-running operations protected with configurable timeouts
+- **Health Monitoring**: Real-time CPU, memory, and GPU monitoring with `/health` command
+- **Security**: Whitelisted shell commands, path traversal prevention, encrypted credential storage
+- **Testing**: 24 comprehensive tests across configuration, CUDA, memory, and error recovery
 
 ## 7. Credits and Acknowledgments
 
