@@ -96,6 +96,9 @@ from jenova.user.profile import UserProfileManager
 # Phase 12: Contextual learning
 from jenova.learning.contextual_engine import ContextualLearningEngine
 
+# Phase 19: Backup and restore capabilities
+from jenova.memory.backup_manager import BackupManager
+
 # Phases 13-17: Enhanced CLI capabilities
 from jenova.analysis import (
     ContextOptimizer,
@@ -440,6 +443,27 @@ def main():
                 e, "Cognitive Core Initialization", ErrorSeverity.CRITICAL
             )
             return 1
+
+        # --- Phase 19: Backup Manager ---
+        ui_logger.progress_message("Initializing backup manager", 86)
+        try:
+            with metrics.measure("backup_manager_init"):
+                backup_manager = BackupManager(
+                    user_data_root=user_data_root,
+                    backup_dir=None,  # Uses default: {user_data_root}/backups
+                    file_logger=file_logger,
+                )
+            stats = metrics.get_stats("backup_manager_init")
+            ui_logger.startup_info("Backup Manager", stats.avg_time, "Export/Import/Backup")
+        except Exception as e:
+            error_handler.handle_error(
+                e, "Backup Manager Initialization", ErrorSeverity.MEDIUM
+            )
+            ui_logger.warning(
+                "Backup features unavailable - continuing without backup capabilities"
+            )
+            file_logger.log_warning(f"Backup manager initialization failed: {e}")
+            backup_manager = None
 
         # --- Phases 13-17: Enhanced CLI Capabilities ---
         ui_logger.progress_message("Initializing enhanced CLI capabilities", 87)
@@ -815,11 +839,14 @@ def main():
 
         # Phase 6: Pass health_monitor and metrics to TerminalUI
         # Phases 13-17: Also pass CLI enhancement modules
+        # Phase 19: Pass backup_manager
         ui = TerminalUI(
             cognitive_engine,
             ui_logger,
             health_monitor=health_monitor,
             metrics=metrics,
+            # Phase 19: Backup capabilities
+            backup_manager=backup_manager,
             # Phase 13-17 CLI enhancements
             context_optimizer=context_optimizer,
             code_metrics=code_metrics,

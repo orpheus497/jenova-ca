@@ -164,7 +164,12 @@ class DistributedLLMInterface:
     def _generate_local(
         self, prompt: str, temperature: float, top_p: float, max_tokens: int
     ) -> str:
-        """Generate using local LLM."""
+        """
+        Generate using local LLM.
+
+        Phase 19: Local generation now benefits from SmartRetryHandler with adaptive
+        retry strategies integrated into LLMInterface.
+        """
         if not self.local_llm:
             raise RuntimeError("Local LLM not available")
 
@@ -172,7 +177,7 @@ class DistributedLLMInterface:
             self.local_generations += 1
 
         return self.local_llm.generate(
-            prompt=prompt, temperature=temperature, top_p=top_p, max_tokens=max_tokens
+            prompt=prompt, temperature=temperature, max_tokens=max_tokens
         )
 
     def _generate_distributed(
