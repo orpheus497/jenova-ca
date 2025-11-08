@@ -3,32 +3,32 @@
 # Licensed under the MIT License
 
 # Code Quality and Formatting
-autopep8==2.3.1          # MIT - PEP 8 code formatter
-isort==5.13.2            # MIT - Import statement organizer
-pylint==3.3.2            # GPL 2.0 - Static code analyzer (dev-only, not distributed)
-black==24.10.0           # MIT - Opinionated code formatter (optional alternative)
+autopep8>=2.3.1,<3.0.0          # MIT - PEP 8 code formatter
+isort>=5.13.2,<6.0.0            # MIT - Import statement organizer
+pylint>=3.3.2,<4.0.0            # GPL 2.0 - Static code analyzer (dev-only, not distributed)
+black>=24.10.0,<25.0.0          # MIT - Opinionated code formatter (optional alternative)
 
 # Testing Framework
-pytest==8.3.4            # MIT - Full-featured testing framework
-pytest-cov==6.0.0        # MIT - Code coverage plugin for pytest
-pytest-asyncio==0.24.0   # Apache 2.0 - Async/await test support
-pytest-timeout==2.3.1    # MIT - Test timeout enforcement
+pytest>=8.3.4,<9.0.0            # MIT - Full-featured testing framework
+pytest-cov>=6.0.0,<7.0.0        # MIT - Code coverage plugin for pytest
+pytest-asyncio>=0.24.0,<1.0.0   # Apache 2.0 - Async/await test support
+pytest-timeout>=2.3.1,<3.0.0    # MIT - Test timeout enforcement
 
 # Security and Vulnerability Scanning
-pip-audit==2.7.3         # Apache 2.0 - PyPI vulnerability scanner
-safety==3.2.11           # MIT - Dependency security checker
+pip-audit>=2.7.3,<3.0.0         # Apache 2.0 - PyPI vulnerability scanner
+safety>=3.2.11,<4.0.0           # MIT - Dependency security checker
 
 # Documentation Generation
-sphinx==8.1.3            # BSD-2-Clause - API documentation generator
-sphinx-rtd-theme==3.0.2  # MIT - Read the Docs Sphinx theme
-sphinx-autodoc-typehints==2.5.0  # MIT - Type hint support for Sphinx
+sphinx>=8.1.3,<9.0.0            # BSD-2-Clause - API documentation generator
+sphinx-rtd-theme>=3.0.2,<4.0.0  # MIT - Read the Docs Sphinx theme
+sphinx-autodoc-typehints>=2.5.0,<3.0.0  # MIT - Type hint support for Sphinx
 
 # Development Utilities
-ipython==8.30.0          # BSD - Enhanced interactive Python shell
-ipdb==0.13.13            # BSD - IPython debugger
+ipython>=8.30.0,<9.0.0          # BSD - Enhanced interactive Python shell
+ipdb>=0.13.13,<1.0.0            # BSD - IPython debugger
 
 # Type Checking (optional)
-mypy==1.14.0             # MIT - Static type checker
-types-PyYAML==6.0.12.20240917  # Apache 2.0 - Type stubs for PyYAML
+mypy>=1.14.0,<2.0.0             # MIT - Static type checker
+types-PyYAML>=6.0.12,<7.0.0     # Apache 2.0 - Type stubs for PyYAML
 
 # All licenses verified as FOSS and compatible with MIT
