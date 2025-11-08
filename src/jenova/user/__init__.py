@@ -12,5 +12,6 @@ This module provides:
 """
 
 from jenova.user.profile import UserProfile, UserProfileManager
+from jenova.user.personalization import PersonalizationEngine
 
-__all__ = ['UserProfile', 'UserProfileManager']
+__all__ = ['UserProfile', 'UserProfileManager', 'PersonalizationEngine']

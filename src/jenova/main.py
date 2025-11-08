@@ -63,6 +63,12 @@ from jenova.network.metrics import NetworkMetricsCollector
 from jenova.llm.distributed_llm_interface import DistributedLLMInterface
 from jenova.memory.distributed_memory_search import DistributedMemorySearch
 
+# Phase 10: User profiling and personalization
+from jenova.user.profile import UserProfileManager
+
+# Phase 12: Contextual learning
+from jenova.learning.contextual_engine import ContextualLearningEngine
+
 apply_telemetry_patch()
 
 
@@ -94,6 +100,12 @@ def main():
     network_metrics = None
     distributed_llm = None
     distributed_memory = None
+
+    # Phase 10: User profiling
+    user_profile_manager = None
+
+    # Phase 12: Learning engine
+    learning_engine = None
     
     try:
         # --- Configuration ---
@@ -114,6 +126,15 @@ def main():
         metrics = MetricsCollector(ui_logger, file_logger)
         file_manager = FileManager(ui_logger, file_logger)
         ui_logger.success("Infrastructure initialized")
+
+        # --- Initialize User Profiling (Phase 10) ---
+        user_profile_manager = UserProfileManager(config, file_logger)
+        user_profile = user_profile_manager.get_profile(username)
+        file_logger.log_info(f"User profile loaded for: {username}")
+
+        # --- Initialize Learning Engine (Phase 12) ---
+        learning_engine = ContextualLearningEngine(config, file_logger, user_data_root)
+        file_logger.log_info("Contextual learning engine initialized")
 
         # Check system health at startup (Phase 6: Enhanced display)
         ui_logger.progress_message("Checking system health", 30)
@@ -444,6 +465,17 @@ def main():
                 peer_manager=peer_manager,
                 network_metrics=network_metrics
             )
+
+        # Phase 10: Pass user profile to cognitive engine
+        if hasattr(cognitive_engine, 'set_user_profile'):
+            cognitive_engine.set_user_profile(
+                user_profile_manager=user_profile_manager,
+                user_profile=user_profile
+            )
+
+        # Phase 12: Pass learning engine to cognitive engine
+        if hasattr(cognitive_engine, 'set_learning_engine'):
+            cognitive_engine.set_learning_engine(learning_engine)
 
         # Display startup summary (Phase 6)
         ui_logger.progress_message("Ready", 100)

@@ -17,6 +17,7 @@ Provides centralized command handling with:
 
 from typing import Dict, List, Optional, Callable
 from enum import Enum
+from jenova.ui.settings_menu import SettingsMenu
 
 
 class CommandCategory(Enum):
@@ -59,6 +60,14 @@ class CommandRegistry:
         self.ui_logger = ui_logger
         self.file_logger = file_logger
         self.commands: Dict[str, Command] = {}
+
+        # Initialize settings menu (Phase 9)
+        self.settings_menu = SettingsMenu(
+            config=cognitive_engine.config,
+            user_profile=cognitive_engine.user_profile if hasattr(cognitive_engine, 'user_profile') else None,
+            file_logger=file_logger
+        )
+
         self._register_default_commands()
 
     def _register_default_commands(self):
@@ -311,42 +320,250 @@ class CommandRegistry:
 
     def _cmd_settings(self, args: List[str]) -> str:
         """Handle /settings command."""
-        category = args[0] if args else None
+        if not args:
+            # Show all categories
+            lines = ["Interactive Settings Menu:\n"]
+            for category in self.settings_menu.list_categories():
+                lines.append(f"  /settings {category.name:10} - {category.description}")
+            lines.append("\nUse /settings <category> to view settings in that category.")
+            lines.append("Use /settings <category> <key> <value> to change a setting.")
+            return "\n".join(lines)
 
-        # This will be replaced with interactive menu
-        if category:
-            return f"Settings category: {category} (interactive menu coming soon)"
-        else:
-            return """Interactive Settings Menu:
-  /settings network - Network and distributed computing
-  /settings llm - Language model configuration
-  /settings memory - Memory system settings
-  /settings privacy - Privacy and data settings
-  /settings learning - Learning and personalization
+        category_name = args[0]
+        category = self.settings_menu.get_category(category_name)
 
-Use /settings <category> to open specific settings."""
+        if not category:
+            return f"Unknown settings category: {category_name}\nUse /settings to see available categories."
+
+        # If only category specified, show all settings in that category
+        if len(args) == 1:
+            lines = [f"{category.name.upper()} Settings:\n"]
+            for setting in category.list_settings():
+                current_val = self.settings_menu.get_setting_value(setting.key)
+                restart_note = " [requires restart]" if setting.requires_restart else ""
+                lines.append(f"  {setting.name} ({setting.key}){restart_note}")
+                lines.append(f"    Current: {current_val}")
+                lines.append(f"    {setting.description}")
+                if setting.choices:
+                    lines.append(f"    Choices: {', '.join(str(c) for c in setting.choices)}")
+                elif setting.min_value is not None or setting.max_value is not None:
+                    range_str = f"Range: {setting.min_value or '∞'} to {setting.max_value or '∞'}"
+                    lines.append(f"    {range_str}")
+                lines.append("")
+            return "\n".join(lines)
+
+        # Setting a value: /settings category key value
+        if len(args) >= 3:
+            setting_key = args[1]
+            new_value = args[2]
+
+            # Find the full setting key
+            full_key = None
+            for setting in category.list_settings():
+                if setting.key.endswith(setting_key) or setting.key == setting_key:
+                    full_key = setting.key
+                    break
+
+            if not full_key:
+                return f"Unknown setting: {setting_key} in category {category_name}"
+
+            # Convert value to appropriate type
+            setting = category.get_setting(full_key)
+            try:
+                if setting.value_type == bool:
+                    typed_value = new_value.lower() in ('true', '1', 'yes', 'on')
+                elif setting.value_type == int:
+                    typed_value = int(new_value)
+                elif setting.value_type == float:
+                    typed_value = float(new_value)
+                else:
+                    typed_value = new_value
+            except ValueError:
+                return f"Invalid value type for {full_key}: expected {setting.value_type.__name__}"
+
+            # Apply the change
+            if self.settings_menu.set_setting_value(full_key, typed_value, apply_immediately=True):
+                restart_note = "\nNote: Restart required for this change to take effect." if setting.requires_restart else ""
+                return f"Setting updated: {setting.name} = {typed_value}{restart_note}"
+            else:
+                return f"Failed to update setting {full_key}"
+
+        return f"Usage: /settings {category_name} <key> <value>"
 
     def _cmd_profile(self, args: List[str]) -> str:
         """Handle /profile command."""
-        # Placeholder - will be replaced with user profiling system
-        return """User Profile (Preview):
-  Interactions: 0
-  Preferred Topics: (learning...)
-  Expertise Level: Intermediate
-  Response Style: Balanced
+        profile = self.cognitive_engine.user_profile if hasattr(self.cognitive_engine, 'user_profile') else None
 
-Profile system will track your preferences and adapt over time."""
+        if not profile:
+            return "User profiling system not initialized."
+
+        subcommand = args[0] if args else "view"
+
+        if subcommand == "view":
+            # Show comprehensive profile information
+            lines = [f"User Profile: {profile.username}\n"]
+
+            # Preferences
+            lines.append("=== Preferences ===")
+            lines.append(f"  Response Style: {profile.preferences.response_style}")
+            lines.append(f"  Expertise Level: {profile.preferences.expertise_level}")
+            lines.append(f"  Communication Style: {profile.preferences.communication_style}")
+            lines.append(f"  Learning Mode: {'enabled' if profile.preferences.learning_mode else 'disabled'}")
+            lines.append(f"  Proactive Suggestions: {'enabled' if profile.preferences.proactive_suggestions else 'disabled'}")
+
+            if profile.preferences.preferred_topics:
+                lines.append(f"  Preferred Topics: {', '.join(profile.preferences.preferred_topics[:5])}")
+            lines.append("")
+
+            # Statistics
+            lines.append("=== Statistics ===")
+            lines.append(f"  Total Interactions: {profile.stats.total_interactions}")
+            lines.append(f"  Questions Asked: {profile.stats.questions_asked}")
+            lines.append(f"  Commands Used: {profile.stats.commands_used}")
+            lines.append(f"  Vocabulary Size: {len(profile.vocabulary)} words")
+            lines.append(f"  Unique Topics Discussed: {len(profile.stats.topics_discussed)}")
+
+            if profile.stats.last_interaction:
+                lines.append(f"  Last Interaction: {profile.stats.last_interaction}")
+            lines.append("")
+
+            # Top Topics
+            top_topics = profile.get_top_topics(limit=5)
+            if top_topics:
+                lines.append("=== Top Discussion Topics ===")
+                for topic, count in top_topics:
+                    lines.append(f"  {topic}: {count} times")
+                lines.append("")
+
+            # Top Commands
+            if profile.preferred_commands:
+                lines.append("=== Frequently Used Commands ===")
+                for cmd, count in profile.preferred_commands.most_common(5):
+                    lines.append(f"  {cmd}: {count} times")
+                lines.append("")
+
+            # Expertise Indicators
+            expertise = profile.get_expertise_indicators()
+            lines.append("=== Expertise Indicators ===")
+            lines.append(f"  Vocabulary Size: {expertise['vocabulary_size']} words")
+            lines.append(f"  Topics Mastered: {expertise['topics_mastered']}")
+            lines.append(f"  Command Proficiency: {expertise['command_proficiency']} commands")
+            if profile.total_suggestions > 0:
+                success_rate = profile.get_suggestion_success_rate() * 100
+                lines.append(f"  Suggestion Acceptance Rate: {success_rate:.1f}%")
+
+            return "\n".join(lines)
+
+        elif subcommand == "reset":
+            # Reset profile to defaults
+            profile.preferences.response_style = "balanced"
+            profile.preferences.expertise_level = "intermediate"
+            profile.preferences.communication_style = "friendly"
+            profile.preferences.learning_mode = True
+            profile.preferences.proactive_suggestions = True
+            profile.preferences.preferred_topics = []
+            profile.save()
+            return "Profile reset to defaults."
+
+        else:
+            return f"Unknown profile subcommand: {subcommand}\nUse /profile view or /profile reset"
 
     def _cmd_learn(self, args: List[str]) -> str:
         """Handle /learn command."""
-        # Placeholder - will be replaced with learning engine
-        return """Learning Statistics (Preview):
-  New Concepts Learned: 0
-  Skills Acquired: 0
-  Patterns Recognized: 0
-  User Preferences Learned: 0
+        learning_engine = self.cognitive_engine.learning_engine if hasattr(self.cognitive_engine, 'learning_engine') else None
 
-Learning system will track knowledge acquisition and improvement."""
+        if not learning_engine:
+            return "Learning engine not initialized."
+
+        subcommand = args[0] if args else "stats"
+
+        if subcommand == "stats":
+            # Show learning statistics
+            metrics = learning_engine.monitor_performance()
+
+            lines = ["Learning Statistics:\n"]
+            lines.append("=== Performance ===")
+            lines.append(f"  Total Examples: {metrics['total_examples']}")
+            lines.append(f"  Learned Examples: {metrics['learned_examples']}")
+            lines.append(f"  Learning Rate: {metrics['learning_rate']:.1%}")
+            lines.append("")
+
+            lines.append("=== Pattern Recognition ===")
+            lines.append(f"  Total Patterns: {metrics['total_patterns']}")
+            lines.append(f"  High Confidence Patterns: {metrics['high_confidence_patterns']}")
+            lines.append("")
+
+            lines.append("=== Skill Acquisition ===")
+            lines.append(f"  Total Skills: {metrics['total_skills']}")
+            lines.append(f"  Proficient Skills: {metrics['proficient_skills']}")
+            if metrics['total_skills'] > 0:
+                lines.append(f"  Average Proficiency: {metrics['avg_skill_proficiency']:.1%}")
+            lines.append("")
+
+            return "\n".join(lines)
+
+        elif subcommand == "insights":
+            # Show learning insights
+            insights = learning_engine.get_learning_insights()
+
+            if not insights:
+                return "No learning insights available yet. Continue interacting to generate insights."
+
+            lines = ["Learning Insights:\n"]
+            for i, insight in enumerate(insights, 1):
+                lines.append(f"  {i}. {insight}")
+            lines.append("")
+
+            return "\n".join(lines)
+
+        elif subcommand == "gaps":
+            # Show knowledge gaps
+            gaps = learning_engine.identify_knowledge_gaps()
+
+            if not gaps:
+                return "No significant knowledge gaps identified. Learning is progressing well!"
+
+            lines = ["Knowledge Gaps:\n"]
+            for i, gap in enumerate(gaps, 1):
+                lines.append(f"  {i}. {gap}")
+            lines.append("")
+            lines.append("Consider focusing on these areas for improvement.")
+
+            return "\n".join(lines)
+
+        elif subcommand == "skills":
+            # List all acquired skills
+            skills = learning_engine.skills
+
+            if not skills:
+                return "No skills acquired yet."
+
+            lines = ["Acquired Skills:\n"]
+            # Group by domain
+            from collections import defaultdict
+            domain_skills = defaultdict(list)
+            for skill in skills.values():
+                domain_skills[skill.domain].append(skill)
+
+            for domain, domain_skill_list in sorted(domain_skills.items()):
+                lines.append(f"=== {domain.upper()} ===")
+                for skill in sorted(domain_skill_list, key=lambda s: s.proficiency, reverse=True):
+                    prof_bar = "█" * int(skill.proficiency * 10) + "░" * (10 - int(skill.proficiency * 10))
+                    lines.append(f"  {skill.skill_name}")
+                    lines.append(f"    Proficiency: [{prof_bar}] {skill.proficiency:.1%}")
+                    lines.append(f"    Practice Count: {skill.practice_count}")
+                lines.append("")
+
+            return "\n".join(lines)
+
+        else:
+            return f"""Unknown learn subcommand: {subcommand}
+
+Available subcommands:
+  /learn stats - Show learning statistics
+  /learn insights - Show learning insights
+  /learn gaps - Identify knowledge gaps
+  /learn skills - List all acquired skills"""
 
     def _cmd_help(self, args: List[str]) -> str:
         """Handle /help command."""
