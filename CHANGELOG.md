@@ -152,6 +152,177 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Data-Driven**: All decisions backed by performance metrics
 - **Production-Ready**: Comprehensive error handling, testing, and configuration
 
+- **Phase 26: Plugin Architecture** - Extensible plugin system with sandboxed execution
+
+#### Plugin Architecture
+
+- **Plugin Schema** (src/jenova/plugins/plugin_schema.py - 150 lines)
+  * Pydantic-based manifest validation for type safety
+  * **PluginPermission** enum:
+    - `memory:read` / `memory:write` - Memory system access
+    - `tools:register` / `commands:register` - Extension registration
+    - `file:read` / `file:write` - Sandboxed file operations
+    - `llm:inference` - LLM text generation
+    - `network:access` - Network operations
+  * **ResourceLimits** model:
+    - `max_cpu_seconds` - CPU time limit per call (1-300s, default 30s)
+    - `max_memory_mb` - Memory limit (64-2048 MB, default 256 MB)
+    - `max_file_size_mb` - Max file size (1-100 MB, default 10 MB)
+  * **PluginManifest** model:
+    - Full validation with regex patterns (ID, version)
+    - Dependency specification with version constraints
+    - Permission declaration
+    - Resource limits configuration
+  * **validate_version_compatibility()** - Semantic version checking
+
+- **Plugin API** (src/jenova/plugins/plugin_api.py - 420 lines)
+  * Safe API interface for plugin interactions
+  * **RateLimiter** class:
+    - Time-window based rate limiting (default: 60 calls/60s)
+    - Per-plugin tracking with thread safety
+    - Automatic call expiration outside window
+  * **PluginAPI** class:
+    - `register_tool()` / `unregister_tool()` - Custom tool registration
+    - `register_command()` / `unregister_command()` - Command handler registration
+    - `query_memory()` - Read-only memory access (rate-limited: 30 calls/60s)
+    - `add_insight()` - Controlled memory write
+    - `generate_text()` - LLM access (rate-limited: 10 calls/60s, max 512 tokens)
+    - `read_file()` / `write_file()` - Sandboxed file I/O with path traversal prevention
+    - `get_config()` - Plugin-specific configuration
+    - `log()` - Integrated logging (info, warning, error)
+    - `get_stats()` - API usage statistics
+  * **Security features**:
+    - Permission checking on all operations
+    - Path traversal prevention using resolve() and prefix validation
+    - Rate limiting for expensive operations
+    - Resource tracking (API call counts)
+    - Sandbox directory enforcement
+
+- **Plugin Sandbox** (src/jenova/plugins/plugin_sandbox.py - 390 lines)
+  * Security enforcement layer for isolated execution
+  * **ResourceMonitor** class:
+    - CPU time tracking with process_time()
+    - Memory limit enforcement using resource.setrlimit()
+    - Resource usage collection (cpu_time, wall_time, memory_mb)
+  * **ImportWhitelist** class:
+    - Safe module allowlist (typing, json, math, datetime, pathlib, etc.)
+    - Forbidden module blocklist (os, sys, subprocess, socket, eval, pickle, etc.)
+    - Special allowance for numpy/scipy (optimization needs)
+  * **SandboxedFileIO** class:
+    - Path validation within sandbox directory
+    - Path traversal prevention
+    - File read/write/list operations
+  * **PluginSandbox** class:
+    - `execute()` - Run function with resource monitoring and error capture
+    - `validate_import()` - Check import whitelist
+    - `get_stats()` - Execution statistics
+  * **Security enforcement**:
+    - CPU time limits (configurable, default 30s)
+    - Memory limits (configurable, default 256 MB)
+    - No network access
+    - No subprocess execution
+    - Import restrictions
+    - Sandboxed file system
+
+- **Plugin Manager** (src/jenova/plugins/plugin_manager.py - 680 lines)
+  * Plugin lifecycle orchestration
+  * **PluginState** enum: unloaded, loaded, initialized, active, failed
+  * **PluginInfo** class:
+    - Tracks manifest, module, API, sandbox, state, errors
+  * **PluginManager** class:
+    - `discover_plugins()` - Find plugins in directory, validate manifests
+    - `load_plugin()` - Load module with dependency resolution
+    - `initialize_plugin()` - Create API and sandbox, call initialize()
+    - `activate_plugin()` - Start plugin operation
+    - `deactivate_plugin()` - Stop plugin operation
+    - `unload_plugin()` - Cleanup and remove plugin
+    - `get_plugin_info()` - Detailed plugin information
+    - `list_plugins()` - List plugins with optional state filter
+    - `get_all_registered_tools()` - Aggregate tools from all active plugins
+    - `get_all_registered_commands()` - Aggregate commands from all active plugins
+    - `get_statistics()` - System-wide plugin statistics
+  * **Features**:
+    - Automatic dependency resolution and loading
+    - Version compatibility checking
+    - Thread-safe operations with RLock
+    - Error tracking per plugin
+    - Lifecycle hooks: initialize(), activate(), deactivate(), cleanup()
+
+- **Example Plugin** (examples/plugins/example_plugin/)
+  * Demonstration plugin showing all capabilities
+  * **plugin.yaml** - Manifest with permissions and resource limits
+  * **__init__.py** (320 lines):
+    - Lifecycle handlers (initialize, activate, deactivate, cleanup)
+    - Tool registration (example_tool, word_count, search_and_summarize)
+    - Command registration (/example, /stats)
+    - Memory integration and LLM usage examples
+    - File I/O demonstration
+  * **README.md** - Complete documentation and development guide
+
+- **Module Exports** (src/jenova/plugins/__init__.py - 70 lines)
+  * Clean API surface with all public classes
+  * Organized imports by component
+
+- **Comprehensive Test Suite** (tests/test_plugins.py - 650 lines)
+  * **TestPluginSchema** class (7 test methods):
+    - Permission enum values
+    - ResourceLimits defaults and validation
+    - PluginDependency model
+    - PluginManifest validation
+    - Plugin ID regex validation
+    - Version compatibility checking
+  * **TestRateLimiter** class (3 test methods):
+    - Rate limit initialization
+    - Rate limit enforcement
+    - Separate key tracking
+  * **TestPluginAPI** class (7 test methods):
+    - API initialization
+    - Tool registration with permission checks
+    - Command registration
+    - Sandboxed file operations
+    - Path traversal prevention
+    - Statistics retrieval
+  * **TestResourceMonitor** class (2 test methods):
+    - Monitor initialization
+    - Start/stop monitoring cycle
+  * **TestImportWhitelist** class (3 test methods):
+    - Safe module allowance
+    - Forbidden module blocking
+    - Scientific library allowance
+  * **TestSandboxedFileIO** class (3 test methods):
+    - File write and read
+    - Path traversal prevention
+    - Directory listing
+  * **TestPluginSandbox** class (5 test methods):
+    - Sandbox initialization
+    - Successful execution
+    - Error handling
+    - Execution statistics
+    - Import validation
+  * **TestPluginManager** class (7 test methods):
+    - Manager initialization
+    - Plugin discovery
+    - Complete lifecycle (load, init, activate, deactivate, unload)
+    - Plugin listing with state filters
+    - Plugin info retrieval
+    - System statistics
+  * **TestIntegration** class (1 integration test):
+    - End-to-end workflow with tool registration and file I/O
+
+- **Dependencies** (requirements.txt)
+  * Added `PyYAML>=6.0.1,<7.0.0` - Plugin manifest parsing (MIT)
+
+#### Benefits
+
+- **Extensibility**: Third-party plugins extend JENOVA without core modification
+- **Security**: Sandboxed execution with permission-based access control
+- **Resource Safety**: CPU and memory limits prevent resource exhaustion
+- **Plugin Isolation**: Each plugin runs in isolated sandbox with own file system
+- **Developer Friendly**: Clear API, example plugin, comprehensive documentation
+- **Production-Ready**: Thread-safe, comprehensive error handling, full test coverage
+- **Flexible Permissions**: Granular control over plugin capabilities
+- **Rate Limiting**: Prevents API abuse and resource overconsumption
+
 - **Phase 24: Adaptive Context Window Management** - Intelligent context prioritization and compression
 
 #### Adaptive Context Window Management

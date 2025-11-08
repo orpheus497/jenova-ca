@@ -240,3 +240,30 @@ self_optimization:
     max_tokens:
       min: 128
       max: 2048
+
+# Phase 26: Plugin Architecture
+plugins:
+  # Enable plugin system
+  enabled: false  # Opt-in feature (requires explicit user activation)
+  # Plugin directories (relative to user data directory)
+  plugins_dir: "plugins"
+  sandbox_dir: "plugin_sandboxes"
+  # Auto-load settings
+  auto_load:
+    enabled: false  # Automatically load plugins on startup
+    whitelist: []  # List of plugin IDs to auto-load (empty = all discovered)
+  # Default resource limits (can be overridden per plugin in manifest)
+  default_limits:
+    max_cpu_seconds: 30  # Maximum CPU time per plugin call
+    max_memory_mb: 256  # Maximum memory per plugin
+    max_file_size_mb: 10  # Maximum file size for plugin file operations
+  # Security settings
+  security:
+    require_explicit_permissions: true  # Plugins must declare all permissions
+    allow_network_access: false  # Global network access toggle
+    sandbox_enforcement: strict  # strict, moderate, or permissive
+  # Rate limiting (global defaults, can be overridden per plugin)
+  rate_limits:
+    llm_calls_per_minute: 10  # LLM API calls per plugin
+    memory_queries_per_minute: 30  # Memory queries per plugin
+    api_calls_per_minute: 60  # Total API calls per plugin
