@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Multi-Platform Support Restored** - Re-added Windows compatibility for cross-platform deployment
+  - Restored Platform.WINDOWS enum in hardware detector (src/jenova/utils/hardware_detector.py)
+  - Restored Windows platform detection logic
+  - Restored Windows GPU detection using wmic command (~50 lines)
+  - Re-added AMD GPU detection via wmic for Windows
+  - Re-added Intel GPU detection via wmic for Windows
+  - Updated module docstrings to reflect multi-platform support (Linux, macOS, Windows, Termux)
+  - Restored cross-platform documentation in timeout manager
+  - Updated README.md platform requirements for multi-platform support
+  - Supports Linux, macOS, Windows, and Termux (Android/iOS)
+
+### Added
+
+- **Termux Installation Support** - Official installation script for Android/iOS mobile deployment
+  - Created install-termux.sh for Termux-specific installation (400+ lines)
+  - Added Termux environment detection in install.sh with automatic redirection
+  - Supports ARM CPU architecture for Android smartphones and tablets
+  - Includes pkg package manager integration for Termux
+  - Mobile-optimized model recommendations (TinyLlama 1.1B, Qwen 1.8B)
+  - Termux storage setup for accessible model management
+  - Documentation for mobile deployment considerations (battery, performance, storage)
+  - Enables JENOVA to run on Android devices via Termux or iOS via iSH/a-Shell
+
 ### Fixed
 
 - **Timeout Manager Critical Fix** - Implemented true timeout interruption capability

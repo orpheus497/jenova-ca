@@ -220,8 +220,11 @@ JENOVA uses a local virtualenv-based installation that keeps dependencies isolat
 
 ### 4.1. Prerequisites
 
-*   A Linux-based operating system (tested on Fedora)
-*   `git`, `python3`, and `python3-venv` installed
+*   A Linux-based operating system (tested on Fedora, Ubuntu, Debian, Arch)
+*   macOS (Intel and Apple Silicon M1/M2/M3/M4 supported)
+*   Windows (10/11 supported)
+*   Termux (Android smartphones/tablets and iOS via Termux/iSH)
+*   `git`, `python3` (3.10+), and `python3-venv` installed
 *   For GPU acceleration: NVIDIA GPU with CUDA toolkit installed
 
 ### 4.2. Installation Steps
@@ -233,15 +236,24 @@ JENOVA uses a local virtualenv-based installation that keeps dependencies isolat
     ```
 
 2.  **Run the Installation Script:**
+
+    **For Linux/macOS:**
     Execute the script as a regular user (no sudo required). It creates a Python virtualenv and installs all dependencies:
     ```bash
     ./install.sh
     ```
-    
-    The script will:
-    - Create a virtualenv in `./venv/`
+
+    **For Termux (Android/iOS):**
+    Use the Termux-specific installation script:
+    ```bash
+    chmod +x install-termux.sh
+    ./install-termux.sh
+    ```
+
+    The installation script will:
+    - Create a virtualenv in `./venv/` (Linux/macOS) or install globally (Termux)
     - Install Python dependencies
-    - Build llama-cpp-python (with CUDA if GPU detected)
+    - Build llama-cpp-python (with CUDA if GPU detected on Linux)
     - Create the `models/` directory
     - Display instructions for next steps
 
