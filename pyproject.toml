@@ -23,42 +23,44 @@ classifiers = [
 dependencies = [
     # Core LLM and Inference
     "llama-cpp-python>=0.3.0,<0.4.0",
-    "torch>=2.5.1",
+    "torch>=2.5.1,<2.6.0",
 
     # Vector Database and Embeddings
-    "chromadb>=0.5.20",
-    "sentence-transformers>=3.3.0",
+    "chromadb>=0.5.20,<0.6.0",
+    "sentence-transformers>=3.3.0,<3.4.0",
 
     # Terminal UI
-    "rich>=13.9.0",
-    "prompt-toolkit>=3.0.48",
+    "rich>=13.9.0,<14.0.0",
+    "prompt-toolkit>=3.0.48,<4.0.0",
 
     # Configuration and Data Handling
-    "PyYAML>=6.0.2",
-    "pydantic>=2.10.0",
-    "pydantic-settings>=2.7.0",
+    "PyYAML>=6.0.2,<7.0.0",
+    "pydantic>=2.10.0,<3.0.0",
+    "pydantic-settings>=2.7.0,<3.0.0",
 
     # Utilities
-    "numpy>=1.26.4",
-    "tenacity>=9.0.0",
-    "psutil>=6.1.0",
-    "filelock>=3.16.0",
+    # CRITICAL: numpy<2.0.0 prevents breaking changes in ML packages
+    "numpy>=1.26.4,<2.0.0",
+    "tenacity>=9.0.0,<10.0.0",
+    "psutil>=6.1.0,<7.0.0",
+    "filelock>=3.16.0,<4.0.0",
 
     # Distributed Computing & LAN Networking
-    "zeroconf>=0.140.0",
-    "grpcio>=1.69.0",
-    "grpcio-tools>=1.69.0",
-    "protobuf>=4.25.2",
-    "PyJWT>=2.10.0",
+    "zeroconf>=0.140.0,<1.0.0",
+    "grpcio>=1.69.0,<1.70.0",
+    "grpcio-tools>=1.69.0,<1.70.0",
+    # CRITICAL: protobuf<5.0.0 prevents breaking changes with grpcio
+    "protobuf>=4.25.2,<5.0.0",
+    "PyJWT>=2.10.0,<3.0.0",
 
     # CLI Enhancement Tools
-    "gitpython>=3.1.43",
-    "pygments>=2.18.0",
-    "rope>=1.13.0",
-    "tree-sitter>=0.21.3",
-    "jsonschema>=4.23.0",
-    "radon>=6.0.1",
-    "bandit>=1.7.10",
+    "gitpython>=3.1.43,<4.0.0",
+    "pygments>=2.18.0,<3.0.0",
+    "rope>=1.13.0,<2.0.0",
+    "tree-sitter>=0.21.3,<1.0.0",
+    "jsonschema>=4.23.0,<5.0.0",
+    "radon>=6.0.1,<7.0.0",
+    "bandit>=1.7.10,<2.0.0",
 ]
 
 [project.urls]
@@ -77,23 +79,23 @@ where = ["src"]
 
 [project.optional-dependencies]
 web = [
-    "requests>=2.32.3",
-    "beautifulsoup4>=4.12.3",
-    "selenium>=4.26.0",
-    "webdriver-manager>=4.0.0",
+    "requests>=2.32.3,<3.0.0",
+    "beautifulsoup4>=4.12.3,<5.0.0",
+    "selenium>=4.26.0,<4.27.0",
+    "webdriver-manager>=4.0.0,<5.0.0",
 ]
-browser = ["playwright>=1.50.0"]
+browser = ["playwright>=1.50.0,<2.0.0"]
 dev = [
-    "autopep8>=2.3.1",
-    "isort>=5.13.2",
-    "pylint>=3.3.2",
-    "pytest>=8.3.4",
-    "pytest-cov>=6.0.0",
-    "pytest-asyncio>=0.24.0",
-    "pytest-timeout>=2.3.1",
-    "pip-audit>=2.7.3",
-    "safety>=3.2.0",
-    "mypy>=1.14.0",
-    "types-PyYAML>=6.0.12",
+    "autopep8>=2.3.1,<3.0.0",
+    "isort>=5.13.2,<6.0.0",
+    "pylint>=3.3.2,<4.0.0",
+    "pytest>=8.3.4,<9.0.0",
+    "pytest-cov>=6.0.0,<7.0.0",
+    "pytest-asyncio>=0.24.0,<1.0.0",
+    "pytest-timeout>=2.3.1,<3.0.0",
+    "pip-audit>=2.7.3,<3.0.0",
+    "safety>=3.2.0,<4.0.0",
+    "mypy>=1.14.0,<2.0.0",
+    "types-PyYAML>=6.0.12,<7.0.0",
 ]
 all = ["jenova-ai[web,browser,dev]"]

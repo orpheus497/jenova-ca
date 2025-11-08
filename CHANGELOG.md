@@ -9,12 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Dependency Version Constraints** - Critical fixes to prevent breaking changes and ensure compatibility
+  - **CRITICAL: protobuf version constraint** (`protobuf>=4.25.2,<5.0.0`)
+    * Added upper bound to prevent protobuf 5.x breaking changes with grpcio
+    * Protobuf 5.x breaks gRPC framework and many ML packages (TensorBoard, ONNX Runtime)
+    * Added verification checks in install.sh to ensure protobuf<5.0.0
+    * Documented issue and fix in INSTALLATION_GUIDE.md
+
+  - **CRITICAL: numpy version constraint** (`numpy>=1.26.4,<2.0.0`)
+    * Added upper bound to prevent numpy 2.0 breaking changes in ML packages
+    * NumPy 2.0 breaks sentence-transformers, chromadb, and many scientific packages
+    * Added verification checks in install.sh to ensure numpy<2.0.0
+    * Prevents AttributeError for removed numpy.float and numpy.int aliases
+
+  - **All dependencies now have upper bounds** to prevent breaking changes
+    * torch: `>=2.5.1,<2.6.0` (required for Python 3.13, prevents 2.6 breaking changes)
+    * chromadb: `>=0.5.20,<0.6.0` (ensures compatibility with torch and sentence-transformers)
+    * sentence-transformers: `>=3.3.0,<3.4.0` (ensures compatibility with torch and numpy)
+    * grpcio/grpcio-tools: `>=1.69.0,<1.70.0` (matches protobuf constraint)
+    * All other core dependencies: added upper bounds at next major version
+    * Optional dependencies (web, browser, dev): added upper bounds
+    * Development dependencies: migrated from pinned (`==`) to ranged (`>=,<`) versions
+
+  - **Dependency compatibility verification**
+    * Created comprehensive test_compatibility.py script
+    * Automatically checks all critical dependencies and versions
+    * Verifies protobuf<5.0.0 and numpy<2.0.0 constraints
+    * Tests import compatibility between torch, chromadb, and sentence-transformers
+    * Runs pip check for dependency conflicts
+    * Returns color-coded pass/fail report with remediation steps
+    * Integrated into install.sh for automatic post-installation verification
+
 - **Installation System Overhaul** - Complete fix for dependency mismatches and CUDA compilation issues
   - **Dependency Synchronization**: Fixed critical mismatch between `pyproject.toml` and `requirements.txt`
     * Added all missing dependencies to `pyproject.toml` (pydantic, tenacity, psutil, filelock, zeroconf, grpcio, protobuf, PyJWT, gitpython, pygments, rope, tree-sitter, jsonschema, radon, bandit)
     * Moved selenium and webdriver-manager to optional `[web]` extras
-    * Updated all dependency versions to use `>=` ranges for better flexibility
+    * Updated all dependency versions to use version ranges for better flexibility
     * Fixed llama-cpp-python from pinned 0.2.90 to flexible `>=0.3.0,<0.4.0` range
+    * Ensured complete synchronization between requirements.txt, pyproject.toml, and requirements-dev.txt
 
   - **CUDA Compilation Fixes**: Resolved llama-cpp-python CUDA build failures
     * Fixed deprecated CMAKE flag: Changed `LLAMA_CUDA` to modern `GGML_CUDA` flag
@@ -24,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * Added build log capture for debugging failed compilations
     * Added retry logic with version fallback (0.3.x → 0.2.90)
 
-  - **Installation Script (`install.sh`) Complete Rewrite**:
+  - **Installation Script (`install.sh`) Improvements**:
     * Added color-coded output for better user experience (errors=red, success=green, info=blue)
     * Implemented Python version validation (3.10-3.13 required)
     * Added Python 3.13 compatibility detection with torch version warning
@@ -33,6 +65,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * Improved error messages with specific troubleshooting steps
     * Added installation summary with system configuration report
     * Sequential installation order: llama-cpp-python first, then requirements.txt, then package
+    * Automatic verification of protobuf and numpy version constraints after installation
+    * Integrated test_compatibility.py execution for post-installation validation
+    * Better error messages with pip cache and network troubleshooting steps
 
   - **Circular Dependency Fix**: Resolved setup.py Protocol Buffer compilation issue
     * Made proto compilation optional during package installation
@@ -59,19 +94,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Dependency Version Policy**: Switched from pinned (`==`) to minimum (`>=`) versions
-  * Allows pip to resolve compatible versions automatically
-  * Prevents conflicts with other packages
-  * Maintains compatibility while allowing security updates
-  * Only llama-cpp-python has upper bound (`<0.4.0`) to prevent breaking changes
+- **Dependency Version Policy**: Switched from pinned (`==`) to ranged (`>=,<`) versions
+  * All dependencies now have both lower and upper bounds for stability
+  * Allows pip to resolve compatible versions within safe ranges
+  * Prevents breaking changes from automatic upgrades
+  * Maintains compatibility while allowing security updates within version ranges
+  * Critical constraints: protobuf<5.0.0, numpy<2.0.0, torch<2.6.0
+  * Development dependencies: migrated from pinned to ranged versions
 
 - **Error Messages**: Installation errors now include specific troubleshooting steps
   * CUDA build failures explain how to retry with CPU-only
   * Missing dependencies list exact installation commands
   * Proto compilation errors include manual compilation instructions
   * Model download failures link to HuggingFace model repositories
+  * Dependency conflict errors include version constraint explanations
+  * Network errors include connectivity troubleshooting steps
 
 ### Added
+
+- **Comprehensive Installation Guide** (`INSTALLATION_GUIDE.md`)
+  * Complete documentation of all dependency constraints with explanations
+  * Detailed troubleshooting for common installation issues
+  * Explanation of why critical version constraints exist
+  * Manual installation instructions
+  * System requirements and recommendations
+  * FAQ for dependency conflicts and compatibility issues
+
+- **Dependency Compatibility Test Script** (`test_compatibility.py`)
+  * Automated verification of all critical dependencies
+  * Checks for version constraint violations (protobuf, numpy)
+  * Tests import compatibility between packages
+  * Color-coded pass/fail reporting
+  * Specific remediation steps for each issue
+  * Can be run anytime to verify installation health
 
 - Python 3.13 official support (requires torch>=2.5.1)
 - Comprehensive installation verification script (`verify_install.py`)
@@ -79,6 +134,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Build log capture for debugging CUDA compilation failures
 - CUDA library detection (nvcc, libcuda.so, libcudart.so verification)
 - Installation summary report showing Python version, GPU support status, and models directory
+- Post-installation dependency verification in install.sh
+- Upper bounds for all optional dependencies (web, browser, dev)
 
 ## [5.2.0]
 

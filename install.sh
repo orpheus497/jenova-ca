@@ -230,19 +230,51 @@ rm -f /tmp/llama_build.log
 
 echo
 echo "--> Installing remaining dependencies from requirements.txt..."
-pip install -r requirements.txt --no-cache-dir
+echo
+print_info "Installing core dependencies with version constraints..."
+print_info "This ensures compatibility and prevents breaking changes"
+echo
 
-if [ $? -ne 0 ]; then
+# Install with explicit version constraints to avoid conflicts
+if pip install -r requirements.txt; then
+    print_success "Core dependencies installed successfully"
+else
     print_error "Failed to install dependencies from requirements.txt"
     echo
-    echo "Troubleshooting:"
-    echo "  - Check your internet connection"
-    echo "  - Try running: pip install -r requirements.txt --verbose"
-    echo "  - Check if any packages are failing and install them individually"
+    echo "This usually indicates one of the following issues:"
+    echo "  1. Network connectivity problems"
+    echo "  2. Missing system libraries (build-essential, cmake, etc.)"
+    echo "  3. Incompatible dependency versions"
+    echo
+    echo "Troubleshooting steps:"
+    echo "  1. Check internet: ping pypi.org"
+    echo "  2. Install build tools: sudo dnf install gcc-c++ cmake python3-devel"
+    echo "  3. Try with verbose output: pip install -r requirements.txt --verbose"
+    echo "  4. Check specific package errors and install individually"
+    echo "  5. Ensure protobuf<5.0.0 and numpy<2.0.0 constraints are met"
     exit 1
 fi
 
 print_success "Dependencies installed."
+echo
+
+# Verify critical dependencies
+print_info "Verifying critical dependency versions..."
+python3 -c "import sys; from google.protobuf import __version__ as pb_ver; sys.exit(0 if pb_ver.split('.')[0] < '5' else 1)" 2>/dev/null
+if [ $? -eq 0 ]; then
+    print_success "protobuf version is compatible (<5.0.0)"
+else
+    print_warning "Could not verify protobuf version or it may be >=5.0.0"
+    print_info "If you encounter gRPC issues, reinstall: pip install 'protobuf>=4.25.2,<5.0.0' --force-reinstall"
+fi
+
+python3 -c "import sys; import numpy as np; sys.exit(0 if np.__version__.split('.')[0] < '2' else 1)" 2>/dev/null
+if [ $? -eq 0 ]; then
+    print_success "numpy version is compatible (<2.0.0)"
+else
+    print_warning "Could not verify numpy version or it may be >=2.0.0"
+    print_info "If you encounter ML package issues, reinstall: pip install 'numpy>=1.26.4,<2.0.0' --force-reinstall"
+fi
 echo
 
 # 7. Install the package in editable mode
@@ -365,7 +397,23 @@ fi
 print_success "Models directory ready: $MODELS_DIR"
 echo
 
-# 10. Display completion message
+# 10. Run compatibility test
+echo "======================================================================"
+echo "                DEPENDENCY COMPATIBILITY CHECK"
+echo "======================================================================"
+echo
+print_info "Running compatibility tests to verify installation..."
+echo
+
+if python3 test_compatibility.py; then
+    print_success "Compatibility test passed!"
+else
+    print_warning "Compatibility test found some issues"
+    print_info "Review the output above for details"
+    print_info "You can run 'python3 test_compatibility.py' anytime to recheck"
+fi
+
+# 11. Display completion message
 echo
 echo "======================================================================"
 echo "✅ JENOVA AI installation complete!"
@@ -433,6 +481,9 @@ fi
 
 echo "User data, memories, and insights will be stored at:"
 echo "  ${BLUE}~/.jenova-ai/users/<username>/${NC}"
+echo
+echo "To verify your installation anytime, run:"
+echo "  ${GREEN}python3 test_compatibility.py${NC}"
 echo
 echo "======================================================================"
 echo
