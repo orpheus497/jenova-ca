@@ -49,6 +49,12 @@ class CognitiveEngine:
         self.metrics = None
         self.error_handler = ErrorHandler(file_logger) if file_logger else None
 
+        # Phase 8: Network layer (optional, set via set_network_layer)
+        self.distributed_llm = None
+        self.distributed_memory = None
+        self.peer_manager = None
+        self.network_metrics = None
+
         # Configuration
         self.llm_timeout = config.get('cognitive_engine', {}).get('llm_timeout', 120)
         self.planning_timeout = config.get('cognitive_engine', {}).get('planning_timeout', 60)
@@ -62,6 +68,23 @@ class CognitiveEngine:
             self.error_handler = error_handler
         if self.file_logger and metrics:
             self.file_logger.log_info("Infrastructure components integrated into cognitive engine")
+
+    def set_network_layer(self, distributed_llm=None, distributed_memory=None, peer_manager=None, network_metrics=None):
+        """Set Phase 8 network layer components for distributed computing."""
+        self.distributed_llm = distributed_llm
+        self.distributed_memory = distributed_memory
+        self.peer_manager = peer_manager
+        self.network_metrics = network_metrics
+
+        if self.file_logger:
+            if distributed_llm or distributed_memory:
+                self.file_logger.log_info(
+                    "Network layer integrated into cognitive engine "
+                    f"(distributed_llm={'enabled' if distributed_llm else 'disabled'}, "
+                    f"distributed_memory={'enabled' if distributed_memory else 'disabled'})"
+                )
+            else:
+                self.file_logger.log_info("Network layer components available but not enabled")
 
     def think(self, user_input: str, username: str) -> str:
         """Runs the full cognitive cycle: Retrieve, Plan, Execute, and Reflect."""
