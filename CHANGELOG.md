@@ -9,6 +9,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 24: Adaptive Context Window Management** - Intelligent context prioritization and compression
+
+#### Adaptive Context Window Management
+
+- **Context Window Manager** (src/jenova/memory/context_window_manager.py - 450 lines)
+  * Dynamic relevance scoring based on multiple factors
+  * Priority queue implementation using max-heap for efficient retrieval
+  * Automatic eviction of low-priority items when token limit exceeded
+  * **ContextItem** dataclass:
+    - Tracks priority, content, type, metadata, token count, access frequency
+    - Automatic priority negation for max-heap behavior
+  * **ContextWindowManager** class:
+    - `add_context()` - Add context with automatic prioritization and deduplication
+    - `get_optimal_context()` - Retrieve highest-relevance context for query
+    - `calculate_relevance()` - Multi-factor relevance scoring (semantic 40%, recency 30%, frequency 20%, user priority 10%)
+    - `clear_context()` - Remove all context items
+    - `get_stats()` - Context window statistics and utilization
+  * Features:
+    - Semantic similarity scoring (keyword overlap, will integrate embeddings)
+    - Recency scoring with exponential decay (7-day half-life)
+    - Access frequency tracking with logarithmic scaling
+    - Token counting approximation (~4 chars per token)
+    - Content hash-based deduplication
+    - Automatic compression threshold monitoring
+
+- **Context Compression** (src/jenova/memory/context_compression.py - 330 lines)
+  * Multiple compression strategies for flexible optimization
+  * **ContextCompressor** class:
+    - `compress_context()` - Compress to target ratio using chosen strategy
+    - `_extractive_compression()` - TF-IDF-based sentence selection
+    - `_abstractive_compression()` - LLM-generated summaries (with fallback)
+    - `_hybrid_compression()` - Combined extractive + abstractive approach
+    - `get_compression_stats()` - Detailed compression metrics
+  * **Extractive compression**:
+    - TF-IDF sentence importance scoring
+    - Stop word filtering (60+ common words)
+    - Selects most informative sentences based on term frequency
+  * **Abstractive compression**:
+    - LLM-based summarization with configurable target length
+    - Graceful fallback to extractive if LLM unavailable
+    - Low temperature (0.3) for focused summaries
+  * **Hybrid compression**:
+    - Extractive pre-filtering (1.5x target ratio)
+    - Abstractive final compression (0.5x target ratio)
+    - Balances information retention with compression ratio
+
+- **Comprehensive Test Suite** (tests/test_context_window.py - 280 lines)
+  * **TestContextWindowManager** class (12 test methods):
+    - Initialization with default and custom parameters
+    - Context addition and deduplication
+    - Token counting approximation
+    - Priority-based eviction when over limit
+    - Query-optimized context retrieval
+    - Relevance calculation validation
+    - Recency scoring verification
+    - Access frequency tracking
+    - Context clearing
+    - Type-based grouping
+    - Statistics reporting
+  * **TestContextCompressor** class (8 test methods):
+    - Extractive compression with TF-IDF
+    - Important sentence selection
+    - Compression ratio achievement
+    - Compression statistics
+    - Sentence splitting
+    - Token ization with stop word removal
+    - TF-IDF importance scoring
+    - Edge cases (empty content, no compression needed)
+  * **TestContextIntegration** class (2 integration tests):
+    - Window with compression workflow
+    - Full end-to-end context management
+  * Pytest fixtures for reusable test data
+
+- **Configuration** (src/jenova/config/main_config.yaml)
+  * **context_window** section:
+    - `max_tokens: 4096` - Maximum context window size
+    - `compression_threshold: 0.8` - Begin compression at 80% full
+    - `min_priority_score: 0.3` - Evict items below 30% relevance
+    - `relevance_weights` - Configurable scoring factors (semantic 40%, recency 30%, frequency 20%, priority 10%)
+    - `compression` settings - Strategy (hybrid) and target ratio (0.3)
+
+#### Benefits
+
+- **Intelligent Context Selection**: Automatically prioritizes most relevant information
+- **Token Efficiency**: Respects model context limits through smart eviction
+- **Compression Flexibility**: Three strategies (extractive, abstractive, hybrid) for different use cases
+- **Performance Optimization**: LRU-style access tracking improves frequently-used content retrieval
+- **Graceful Degradation**: Extractive fallback when LLM unavailable
+- **Production-Ready**: Comprehensive error handling and edge case coverage
+
 - **Phase 21: Full Project Remediation & Modernization (Continued)** - Architecture refactoring, security hardening, and new feature infrastructure
 
 #### Core Architecture Modernization

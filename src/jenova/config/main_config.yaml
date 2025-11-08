@@ -189,3 +189,22 @@ network:
     # Strategy: 'local_first', 'load_balanced', 'fastest', 'parallel_voting', 'round_robin'
     strategy: 'load_balanced'
     timeout_ms: 5000  # RPC timeout in milliseconds
+
+# Phase 24: Adaptive Context Window Management
+context_window:
+  # Maximum tokens allowed in context window
+  max_tokens: 4096
+  # Start compression at this percentage full (0.0-1.0)
+  compression_threshold: 0.8
+  # Drop items below this priority score (0.0-1.0)
+  min_priority_score: 0.3
+  # Weights for relevance calculation (must sum to 1.0)
+  relevance_weights:
+    semantic_similarity: 0.4  # 40% - keyword/semantic overlap with query
+    recency: 0.3              # 30% - how recently item was added
+    frequency: 0.2            # 20% - how often item is accessed
+    user_priority: 0.1        # 10% - user-specified importance
+  # Compression settings
+  compression:
+    strategy: hybrid  # extractive, abstractive, or hybrid
+    target_ratio: 0.3  # Compress to 30% of original size
