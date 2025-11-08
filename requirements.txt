@@ -29,6 +29,7 @@ pydantic-settings>=2.7.0,<3.0.0
 # Utilities
 # CRITICAL: numpy must be <2.0.0 - numpy 2.0 breaks many ML packages
 numpy>=1.26.4,<2.0.0
+scipy>=1.13.0,<2.0.0              # Bayesian optimization, scientific computing (BSD-3-Clause License)
 tenacity>=9.0.0,<10.0.0
 psutil>=6.1.0,<7.0.0
 filelock>=3.16.0,<4.0.0

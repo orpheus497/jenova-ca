@@ -208,3 +208,35 @@ context_window:
   compression:
     strategy: hybrid  # extractive, abstractive, or hybrid
     target_ratio: 0.3  # Compress to 30% of original size
+
+# Phase 25: Self-Optimization Engine
+self_optimization:
+  # Enable autonomous parameter optimization
+  enabled: false  # Opt-in feature (requires performance tracking)
+  # Performance database path (relative to user data directory)
+  performance_db_path: "optimization/performance.db"
+  # Auto-optimization settings
+  auto_optimize:
+    enabled: false  # Automatically optimize parameters periodically
+    interval_runs: 50  # Run optimization every N task executions
+    min_data_points: 20  # Minimum data points before optimization
+  # Bayesian optimization settings
+  optimization:
+    max_iterations: 30  # Maximum optimization iterations per task type
+    exploration_weight: 0.1  # Balance exploration vs exploitation (0.0-1.0)
+    convergence_tolerance: 0.001  # Improvement threshold for convergence
+  # Task classification
+  task_classification:
+    auto_detect: true  # Automatically detect task types
+    confidence_threshold: 0.6  # Minimum confidence for classification
+  # Parameter search space (will be bounded by model capabilities)
+  parameter_space:
+    temperature:
+      min: 0.0
+      max: 1.0
+    top_p:
+      min: 0.0
+      max: 1.0
+    max_tokens:
+      min: 128
+      max: 2048
