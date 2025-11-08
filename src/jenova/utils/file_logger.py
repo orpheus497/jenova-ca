@@ -7,8 +7,9 @@
 """This module is responsible for the file logging of the JENOVA Cognitive Architecture."""
 
 import logging
-import os
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
+from typing import Union
 
 
 class FileLogger:
@@ -28,7 +29,7 @@ class FileLogger:
         >>> logger.log_error("Connection failed")
     """
 
-    def __init__(self, user_data_root: str, log_file_name: str = "jenova.log"):
+    def __init__(self, user_data_root: Union[str, Path], log_file_name: str = "jenova.log"):
         """
         Initialize file logger with rotating file handler.
 
@@ -36,12 +37,13 @@ class FileLogger:
         file handler that keeps log files at 5MB with 2 backup files.
 
         Args:
-            user_data_root: Root directory for user data
+            user_data_root: Root directory for user data (str or Path)
             log_file_name: Name of the log file (default: "jenova.log")
         """
-        log_dir = os.path.join(user_data_root, "logs")
-        os.makedirs(log_dir, exist_ok=True)
-        self.log_file_path = os.path.join(log_dir, log_file_name)
+        root_path = Path(user_data_root)
+        log_dir = root_path / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        self.log_file_path = str(log_dir / log_file_name)
 
         self.logger = logging.getLogger("JenovaFileLogger")
         self.logger.setLevel(logging.INFO)

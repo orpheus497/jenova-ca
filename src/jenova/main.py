@@ -7,6 +7,7 @@
 """This module is the main entry point for the JENOVA Cognitive Architecture."""
 
 import os
+from pathlib import Path
 import yaml
 
 # CRITICAL GPU Memory Management - Step 1: Conditional PyTorch CUDA Access
@@ -14,7 +15,7 @@ import yaml
 # Load config to check hardware.pytorch_gpu_enabled setting
 
 # Quick config load to determine PyTorch GPU access
-_config_path = os.path.join(os.path.dirname(__file__), "config", "main_config.yaml")
+_config_path = Path(__file__).parent / "config" / "main_config.yaml"
 try:
     with open(_config_path, "r", encoding="utf-8") as f:
         _quick_config = yaml.safe_load(f)
@@ -142,10 +143,8 @@ apply_telemetry_patch()
 def main():
     """Main entry point for The JENOVA Cognitive Architecture."""
     username = getpass.getuser()
-    user_data_root = os.path.join(
-        os.path.expanduser("~"), ".jenova-ai", "users", username
-    )
-    os.makedirs(user_data_root, exist_ok=True)
+    user_data_root = Path.home() / ".jenova-ai" / "users" / username
+    user_data_root.mkdir(parents=True, exist_ok=True)
 
     # Setup logging first
     message_queue = queue.Queue()
@@ -264,8 +263,8 @@ def main():
                 f"({health.memory_available_gb:.1f}GB free)"
             )
 
-        insights_root = os.path.join(user_data_root, "insights")
-        cortex_root = os.path.join(user_data_root, "cortex")
+        insights_root = user_data_root / "insights"
+        cortex_root = user_data_root / "cortex"
 
         ui_logger.info(">> Initializing Intelligence Matrix...")
 
@@ -351,11 +350,9 @@ def main():
         ui_logger.progress_message("Initializing memory systems", 70)
         try:
             with metrics.measure("memory_systems_init"):
-                episodic_mem_path = os.path.join(user_data_root, "memory", "episodic")
-                procedural_mem_path = os.path.join(
-                    user_data_root, "memory", "procedural"
-                )
-                semantic_mem_path = os.path.join(user_data_root, "memory", "semantic")
+                episodic_mem_path = user_data_root / "memory" / "episodic"
+                procedural_mem_path = user_data_root / "memory" / "procedural"
+                semantic_mem_path = user_data_root / "memory" / "semantic"
 
                 try:
                     semantic_memory = SemanticMemory(
@@ -501,8 +498,8 @@ def main():
                 background_task_manager = BackgroundTaskManager(config, file_logger)
 
                 # Automation Module
-                custom_commands_dir = os.path.join(user_data_root, "custom_commands")
-                os.makedirs(custom_commands_dir, exist_ok=True)
+                custom_commands_dir = user_data_root / "custom_commands"
+                custom_commands_dir.mkdir(parents=True, exist_ok=True)
                 template_engine = TemplateEngine(config, file_logger)
                 custom_command_manager = CustomCommandManager(
                     config, file_logger, template_engine, custom_commands_dir

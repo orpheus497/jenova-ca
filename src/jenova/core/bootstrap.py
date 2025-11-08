@@ -87,10 +87,8 @@ class ApplicationBootstrapper:
             username: Optional username (defaults to current system user)
         """
         self.username = username or getpass.getuser()
-        self.user_data_root = os.path.join(
-            os.path.expanduser("~"), ".jenova-ai", "users", self.username
-        )
-        os.makedirs(self.user_data_root, exist_ok=True)
+        self.user_data_root = Path.home() / ".jenova-ai" / "users" / self.username
+        self.user_data_root.mkdir(parents=True, exist_ok=True)
 
         self.container = DependencyContainer()
         self.config: Dict[str, Any] = {}

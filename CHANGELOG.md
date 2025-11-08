@@ -277,6 +277,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * Uses pytest fixtures for temporary directories and mocked dependencies
   * Demonstrates security controls (whitelist, sandbox, size limits)
 
+- **Infrastructure Module Unit Tests** (tests/test_infrastructure.py - 520 lines)
+  * Comprehensive test coverage for infrastructure components
+  * **TestFileManager class** (6 test methods):
+    - Atomic JSON write/read operations
+    - File locking with context manager
+    - Non-existent file handling
+    - Data preservation on write errors
+    - Lock cleanup verification
+  * **TestErrorHandler class** (5 test methods):
+    - Error logging with context
+    - Error counting and history
+    - Recent error retrieval
+    - Error clearing functionality
+  * **TestHealthMonitor class** (5 test methods):
+    - Health status retrieval (CPU, memory, disk)
+    - Health threshold checking
+    - Disk space monitoring
+    - Memory information retrieval
+  * **TestMetricsCollector class** (6 test methods):
+    - Metric recording
+    - Timing measurements with context manager
+    - Metric summary statistics (count, mean, min, max)
+    - Metrics clearing
+    - Multiple measurements of same operation
+  * **TestDataValidator class** (11 test methods):
+    - String validation (length constraints)
+    - Number validation (range constraints)
+    - Dictionary validation (required keys)
+    - List validation (length constraints)
+    - Email format validation
+    - URL format validation
+  * **Integration test**:
+    - Full infrastructure workflow: validation → file write → health check → metrics → error handling
+  * Total: 33 test methods ensuring robust infrastructure operation
+  * Uses pytest fixtures and mocks for isolated testing
+
+#### Code Modernization
+
+- **Pathlib Migration** (4 critical files modernized)
+  * Migrated from os.path to pathlib.Path for modern, object-oriented path handling
+  * **Core Modules**:
+    - src/jenova/core/bootstrap.py
+      * Replaced `os.path.join(os.path.expanduser("~"), ...)` with `Path.home() / ...`
+      * Replaced `os.makedirs()` with `Path.mkdir(parents=True, exist_ok=True)`
+      * user_data_root now uses Path for cleaner code
+    - src/jenova/main.py (5 conversions)
+      * Config path: `Path(__file__).parent / "config" / "main_config.yaml"`
+      * User data root: `Path.home() / ".jenova-ai" / "users" / username`
+      * Insights/cortex roots: `user_data_root / "insights"`
+      * Memory paths: `user_data_root / "memory" / "episodic"`
+      * Custom commands: `custom_commands_dir.mkdir(parents=True, exist_ok=True)`
+  * **Utility Modules**:
+    - src/jenova/utils/file_logger.py
+      * Updated to accept `Union[str, Path]` for user_data_root
+      * Replaced `os.path.join()` with Path `/` operator
+      * Replaced `os.makedirs()` with `Path.mkdir()`
+      * log_file_path constructed using pathlib
+  * **Infrastructure Modules**:
+    - src/jenova/infrastructure/file_manager.py
+      * Replaced `os.path.exists()` with `Path.exists()`
+      * Replaced `os.unlink()` with `Path.unlink()`
+      * Lock file cleanup using pathlib methods
+
+  * **Benefits**:
+    - More readable and maintainable code
+    - Platform-independent path handling
+    - Type-safe path operations
+    - Better error messages
+    - Consistent with modern Python (3.4+)
+
 ### Changed
 
 - **Configuration Module Exports** (src/jenova/config/__init__.py:110)
