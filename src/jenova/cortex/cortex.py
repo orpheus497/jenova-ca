@@ -9,6 +9,10 @@ import os
 import uuid
 from dataclasses import asdict
 from datetime import datetime
+from typing import List, Dict, Set, Tuple
+from collections import defaultdict
+
+import networkx as nx
 
 from jenova.cortex.graph_components import CognitiveLink, CognitiveNode
 
@@ -185,13 +189,343 @@ JSON:'''
             if node := self.get_node(node_id):
                 node.metadata["centrality"] = count
 
-    def _link_orphans(self, user_nodes: list[CognitiveNode]):
-        # This method remains largely the same but benefits from a more robust LLM interface
-        pass  # Implementation is complex and assumed correct from previous version
+    def _link_orphans(self, user_nodes: List[CognitiveNode]) -> int:
+        """
+        Find and link isolated nodes using NetworkX graph analysis and LLM-based semantic matching.
 
-    def _generate_meta_insights(self, user_nodes: list[CognitiveNode]):
-        # This method remains largely the same but benefits from a more robust LLM interface
-        pass  # Implementation is complex and assumed correct from previous version
+        An "orphan" is defined as a node with degree < 2 (fewer than 2 connections).
+        For each orphan, we use the LLM to analyze semantic relationships and create
+        appropriate links to other relevant nodes.
+
+        FIXES: BUG-C1 - Critical incomplete implementation
+
+        Args:
+            user_nodes: List of cognitive nodes for the user
+
+        Returns:
+            Number of new links created
+        """
+        if len(user_nodes) < 3:
+            # Need at least 3 nodes to make linking meaningful
+            return 0
+
+        # Build NetworkX graph from cognitive graph
+        G = nx.DiGraph()
+
+        # Add all user nodes
+        node_id_to_node = {node.id: node for node in user_nodes}
+        for node in user_nodes:
+            G.add_node(node.id, content=node.content, node_type=node.node_type)
+
+        # Add links between user nodes
+        for link in self.graph['links']:
+            if link.source_id in node_id_to_node and link.target_id in node_id_to_node:
+                G.add_edge(link.source_id, link.target_id, relationship=link.relationship)
+
+        # Find orphans (nodes with degree < 2)
+        orphan_ids = []
+        for node_id in G.nodes():
+            degree = G.degree(node_id)  # Total degree (in + out)
+            if degree < 2:
+                orphan_ids.append(node_id)
+
+        if not orphan_ids:
+            self.file_logger.log_info("No orphan nodes found during reflection")
+            return 0
+
+        self.file_logger.log_info(f"Found {len(orphan_ids)} orphan nodes to link")
+
+        # Limit orphans processed to avoid excessive LLM calls
+        max_orphans = 10
+        orphan_ids = orphan_ids[:max_orphans]
+
+        links_created = 0
+
+        for orphan_id in orphan_ids:
+            orphan_node = node_id_to_node[orphan_id]
+
+            # Build context of potential link targets (exclude nodes already linked)
+            existing_neighbors = set(G.successors(orphan_id)) | set(G.predecessors(orphan_id))
+            potential_targets = [
+                node for node in user_nodes
+                if node.id != orphan_id and node.id not in existing_neighbors
+            ]
+
+            if not potential_targets:
+                continue
+
+            # Limit candidates to avoid token limits
+            # Prioritize high-centrality nodes as they're likely important
+            potential_targets.sort(
+                key=lambda n: n.metadata.get('centrality', 0),
+                reverse=True
+            )
+            candidates = potential_targets[:20]  # Top 20 by centrality
+
+            # Build prompt for LLM to find semantic links
+            candidates_text = "\n".join([
+                f"{i+1}. [{c.id[:8]}] ({c.node_type}) {c.content[:100]}"
+                for i, c in enumerate(candidates)
+            ])
+
+            prompt = f'''Analyze the following orphan node and identify the TOP 2 most semantically related nodes from the candidate list.
+
+Orphan Node:
+Type: {orphan_node.node_type}
+Content: "{orphan_node.content}"
+
+Candidate Nodes:
+{candidates_text}
+
+Respond with ONLY a JSON object containing:
+{{
+    "links": [
+        {{"target_id": "<id>", "relationship": "<relationship_type>", "confidence": <0.0-1.0>}},
+        ...
+    ]
+}}
+
+Valid relationship types: related_to, elaborates_on, conflicts_with, supports, questions
+
+Only include links with confidence >= 0.6.
+
+JSON:'''
+
+            try:
+                response = self.llm.generate(prompt=prompt, temperature=0.3)
+
+                # Extract JSON from response
+                response_clean = response.strip()
+                if '{' in response_clean:
+                    json_start = response_clean.index('{')
+                    json_end = response_clean.rindex('}') + 1
+                    response_clean = response_clean[json_start:json_end]
+
+                link_data = json.loads(response_clean)
+
+                # Create links
+                for link_info in link_data.get('links', []):
+                    target_id = link_info.get('target_id')
+                    relationship = link_info.get('relationship', 'related_to')
+                    confidence = link_info.get('confidence', 0.0)
+
+                    if confidence < 0.6:
+                        continue
+
+                    # Verify target_id exists
+                    if target_id not in node_id_to_node:
+                        # Try prefix matching (LLM might have abbreviated)
+                        matched = [nid for nid in node_id_to_node.keys() if nid.startswith(target_id)]
+                        if matched:
+                            target_id = matched[0]
+                        else:
+                            continue
+
+                    # Create bidirectional link
+                    self.add_link(orphan_id, target_id, relationship)
+                    links_created += 1
+
+                    self.file_logger.log_info(
+                        f"Linked orphan {orphan_id[:8]} -> {target_id[:8]} "
+                        f"({relationship}, confidence: {confidence:.2f})"
+                    )
+
+            except (json.JSONDecodeError, ValueError) as e:
+                self.file_logger.log_warning(
+                    f"Failed to parse LLM response for orphan linking: {e}"
+                )
+                continue
+            except Exception as e:
+                self.file_logger.log_error(f"Error linking orphan {orphan_id[:8]}: {e}")
+                continue
+
+        self.file_logger.log_info(f"Created {links_created} new links for orphan nodes")
+        return links_created
+
+    def _generate_meta_insights(self, user_nodes: List[CognitiveNode]) -> List[str]:
+        """
+        Generate meta-insights from clusters of highly interconnected nodes using community detection.
+
+        This method uses the Louvain algorithm for community detection, then synthesizes
+        meta-insights from dense clusters of related insights.
+
+        FIXES: BUG-C1 - Critical incomplete implementation
+
+        Args:
+            user_nodes: List of cognitive nodes for the user
+
+        Returns:
+            List of generated meta-insight IDs
+        """
+        # Only generate meta-insights from insight nodes
+        insight_nodes = [n for n in user_nodes if n.node_type == 'insight']
+
+        if len(insight_nodes) < 5:
+            # Need sufficient insights to form meaningful clusters
+            self.file_logger.log_info(
+                "Insufficient insight nodes for meta-insight generation"
+            )
+            return []
+
+        # Build undirected graph for community detection
+        G = nx.Graph()
+
+        # Add insight nodes
+        node_id_to_node = {node.id: node for node in insight_nodes}
+        for node in insight_nodes:
+            G.add_node(
+                node.id,
+                content=node.content,
+                centrality=node.metadata.get('centrality', 0)
+            )
+
+        # Add edges from links
+        for link in self.graph['links']:
+            if link.source_id in node_id_to_node and link.target_id in node_id_to_node:
+                # Add edge (undirected - community detection treats as undirected)
+                G.add_edge(link.source_id, link.target_id, relationship=link.relationship)
+
+        if G.number_of_edges() < 3:
+            # Need sufficient connections for community detection
+            self.file_logger.log_info(
+                "Insufficient connections for community detection"
+            )
+            return []
+
+        try:
+            # Use Louvain algorithm for community detection
+            import community as community_louvain
+            has_louvain = True
+        except ImportError:
+            # Fallback to greedy modularity communities if python-louvain not available
+            has_louvain = False
+
+        # Detect communities
+        if has_louvain:
+            try:
+                communities = community_louvain.best_partition(G)
+                # Convert to list of sets
+                community_dict = defaultdict(set)
+                for node_id, comm_id in communities.items():
+                    community_dict[comm_id].add(node_id)
+                community_list = list(community_dict.values())
+            except Exception as e:
+                self.file_logger.log_warning(f"Louvain algorithm failed: {e}, using fallback")
+                community_list = list(nx.community.greedy_modularity_communities(G))
+        else:
+            community_list = list(nx.community.greedy_modularity_communities(G))
+
+        self.file_logger.log_info(f"Detected {len(community_list)} communities in insight graph")
+
+        meta_insight_ids = []
+
+        # Process each community
+        for comm_idx, community in enumerate(community_list):
+            # Only generate meta-insights for sufficiently large and connected communities
+            if len(community) < 3:
+                continue
+
+            # Calculate average centrality of community
+            avg_centrality = sum(
+                node_id_to_node[nid].metadata.get('centrality', 0)
+                for nid in community
+            ) / len(community)
+
+            # Only process high-value communities (high centrality or large size)
+            if avg_centrality < 0.3 and len(community) < 5:
+                continue
+
+            # Get community nodes sorted by centrality
+            community_nodes = [node_id_to_node[nid] for nid in community]
+            community_nodes.sort(
+                key=lambda n: n.metadata.get('centrality', 0),
+                reverse=True
+            )
+
+            # Limit to top nodes to avoid token limits
+            top_nodes = community_nodes[:10]
+
+            # Build prompt for meta-insight synthesis
+            insights_text = "\n".join([
+                f"- {node.content}"
+                for node in top_nodes
+            ])
+
+            prompt = f'''Analyze the following cluster of related insights and synthesize a higher-level meta-insight that captures the overarching theme or pattern.
+
+Related Insights (Cluster {comm_idx + 1}):
+{insights_text}
+
+Generate a meta-insight that:
+1. Identifies the common theme or pattern
+2. Synthesizes the insights into a broader understanding
+3. Is concise (2-3 sentences maximum)
+4. Provides value beyond the individual insights
+
+Respond with ONLY a JSON object:
+{{
+    "meta_insight": "<your synthesized meta-insight>",
+    "confidence": <0.0-1.0>
+}}
+
+JSON:'''
+
+            try:
+                response = self.llm.generate(prompt=prompt, temperature=0.4)
+
+                # Extract JSON
+                response_clean = response.strip()
+                if '{' in response_clean:
+                    json_start = response_clean.index('{')
+                    json_end = response_clean.rindex('}') + 1
+                    response_clean = response_clean[json_start:json_end]
+
+                meta_data = json.loads(response_clean)
+                meta_insight_text = meta_data.get('meta_insight', '')
+                confidence = meta_data.get('confidence', 0.0)
+
+                if not meta_insight_text or confidence < 0.6:
+                    continue
+
+                # Create meta-insight node
+                user = top_nodes[0].user  # Use same user as cluster nodes
+                meta_insight_id = self.add_node(
+                    'meta_insight',
+                    meta_insight_text,
+                    user,
+                    metadata={
+                        'cluster_size': len(community),
+                        'avg_centrality': avg_centrality,
+                        'confidence': confidence
+                    }
+                )
+
+                # Link meta-insight to all nodes in cluster
+                for node in top_nodes:
+                    self.add_link(meta_insight_id, node.id, 'synthesizes')
+
+                meta_insight_ids.append(meta_insight_id)
+
+                self.file_logger.log_info(
+                    f"Generated meta-insight {meta_insight_id[:8]} from "
+                    f"cluster of {len(community)} insights (confidence: {confidence:.2f})"
+                )
+
+            except (json.JSONDecodeError, ValueError) as e:
+                self.file_logger.log_warning(
+                    f"Failed to parse LLM response for meta-insight generation: {e}"
+                )
+                continue
+            except Exception as e:
+                self.file_logger.log_error(
+                    f"Error generating meta-insight for cluster {comm_idx}: {e}"
+                )
+                continue
+
+        self.file_logger.log_info(
+            f"Generated {len(meta_insight_ids)} meta-insights from community analysis"
+        )
+        return meta_insight_ids
 
     def develop_insight(self, insight_id: str, user: str) -> list[str]:
         messages = []

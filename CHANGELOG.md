@@ -7,6 +7,113 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **CRITICAL: Cortex Reflection Implementation** - Implemented complete cortex reflection methods (BUG-C1)
+  - Implemented `_link_orphans()` method using NetworkX graph analysis (192 lines)
+  - Finds isolated nodes (degree < 2) and creates semantic links using LLM analysis
+  - Implemented `_generate_meta_insights()` method using community detection (184 lines)
+  - Uses Louvain algorithm (with greedy modularity fallback) for cluster detection
+  - Synthesizes meta-insights from dense insight clusters using LLM
+  - Added comprehensive error handling and logging
+  - Added centrality-based prioritization for link candidates
+  - Fixes broken `/reflect` command - core cognitive learning loop now functional
+  - Location: src/jenova/cortex/cortex.py:192-528
+
+- **HIGH SECURITY: Path Traversal Vulnerability** - Fixed path traversal attack vector (VULN-H1)
+  - Replaced vulnerable `_get_safe_path()` implementation in default_api.py
+  - Now validates paths BEFORE symlink resolution (defense-in-depth)
+  - Detects traversal patterns (../, ~, $, %) before processing
+  - Verifies resolved path still within sandbox after symlink resolution
+  - Validates file extensions against allowlist
+  - Added file size and MIME type validation (prevents resource exhaustion)
+  - Integrated security audit logging for all file operations
+  - Prevents symlink escape attacks and path traversal exploits
+  - Location: src/jenova/default_api.py:159-234
+  - Uses: src/jenova/security/validators.py (PathValidator, FileValidator)
+
+### Added
+
+- **Phase 18: Comprehensive Security Infrastructure** - New security module with 6 components
+  - **Prompt Sanitizer** (src/jenova/security/prompt_sanitizer.py) - LLM prompt injection defense
+    * Detects 16+ injection patterns (ignore instructions, reveal system, etc.)
+    * Template-based safe prompt construction to prevent manipulation
+    * Output validation to detect jailbreak responses
+    * Escapes dangerous characters and normalizes whitespace
+    * Configurable max input length (default 50KB) to prevent resource exhaustion
+    * Risk scoring system (0.0-1.0) for monitoring without blocking
+    * FIXES: VULN-H2 (High Severity) - LLM prompt injection vulnerability
+
+  - **Input Validators** (src/jenova/security/validators.py) - Comprehensive validation framework
+    * PathValidator: Secure path validation with 7-step defense-in-depth
+    * FileValidator: MIME type and size validation (requires python-magic)
+    * InputValidator: String, URL, email, number validation
+    * Maximum path length enforcement (4096 chars) to prevent buffer overflows
+    * Traversal pattern detection before any path manipulation
+    * Symlink resolution with strict=True for existence verification
+    * Double-check sandbox containment before and after resolution
+    * Extension allowlist (default: .txt, .md, .py, .json, .yaml, .pdf, etc.)
+    * FIXES: VULN-H1 (High Severity) - Path traversal vulnerability
+
+  - **Encryption Manager** (src/jenova/security/encryption.py) - Encryption at rest and secure secrets
+    * Fernet symmetric encryption with PBKDF2 key derivation (600K iterations)
+    * User password-derived encryption keys for ChromaDB storage
+    * SecureSecretManager with OS keyring integration (macOS Keychain, Windows Credential Manager, Linux Secret Service)
+    * Encrypted file fallback when OS keyring unavailable
+    * Automatic migration from plaintext secrets
+    * FIXES: VULN-H3 (High Severity) - JWT secrets stored in plaintext
+    * IMPLEMENTS: FEATURE-C1 - Encryption at rest for memory systems
+
+  - **Security Audit Logger** (src/jenova/security/audit_log.py) - Structured security event logging
+    * 15+ security event types (auth, authz, validation, file access, config changes)
+    * JSON-formatted logs for SIEM integration
+    * Structlog support for structured logging (optional)
+    * Privacy-aware logging (no PII beyond username)
+    * Severity-based categorization (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    * Automatic PII redaction for sensitive settings (passwords, secrets, tokens)
+    * IMPLEMENTS: FEATURE-C2 - Comprehensive audit logging
+
+  - **Rate Limiter** (src/jenova/security/rate_limiter.py) - Token bucket rate limiting
+    * Per-user, per-operation rate limiting using token bucket algorithm
+    * Configurable capacity (max burst) and refill rate (ops/second)
+    * Thread-safe implementation with RLock
+    * Wait time calculation for rate-limited operations
+    * Per-operation buckets (query, memory, file, etc.)
+    * Statistics tracking (tokens, capacity, utilization)
+    * FIXES: BUG-M4 - No rate limiting on cognitive operations
+
+  - **Security Module Init** (src/jenova/security/__init__.py) - Unified security exports
+    * Exports all security components for easy import
+    * Provides singleton instances for convenience
+
+- **Phase 18: Enhanced Dependencies** - 15 new FOSS packages for security and performance
+  - **Security & Encryption**
+    * cryptography>=44.0.0,<45.0.0 (BSD-3 / Apache 2.0) - Encryption at rest, secure secrets
+    * keyring>=25.5.0,<26.0.0 (MIT) - OS-level secret storage
+    * validators>=0.34.0,<1.0.0 (MIT) - Input validation (URL, email, etc.)
+    * python-magic>=0.4.27,<1.0.0 (MIT) - MIME type detection for file validation
+
+  - **Performance Optimization**
+    * cachetools>=5.5.0,<6.0.0 (MIT) - Advanced LRU caching with TTL support
+    * networkx>=3.4.2,<4.0.0 (BSD-3) - Graph algorithms for cortex reflection
+    * aiofiles>=24.1.0,<25.0.0 (Apache 2.0) - Async file I/O operations
+    * httpx>=0.28.0,<1.0.0 (BSD-3) - Async HTTP client (replaces requests for async)
+    * orjson>=3.10.0,<4.0.0 (Apache 2.0 / MIT) - Fast JSON parsing (5-10x faster than stdlib)
+    * msgpack>=1.1.0,<2.0.0 (Apache 2.0) - Binary serialization for efficient caching
+    * uvloop>=0.21.0,<1.0.0 (Apache 2.0 / MIT) - Fast asyncio event loop (Unix only, 50-100% faster)
+
+  - **Observability & Monitoring**
+    * structlog>=24.4.0,<25.0.0 (MIT / Apache 2.0) - Structured logging for security audit
+    * prometheus-client>=0.21.0,<1.0.0 (Apache 2.0) - Metrics export for monitoring
+
+  - **Model Integration**
+    * huggingface-hub>=0.26.0,<1.0.0 (Apache 2.0) - Direct model downloads from HuggingFace
+
+  - All dependencies verified as FOSS-compliant (Total: 61 packages, all open source)
+  - Updated requirements.txt with Phase 18 dependencies
+  - Updated pyproject.toml dependencies section
+  - All dependencies have both lower and upper bounds for stability
+
 ### Changed
 
 - **Multi-Platform Support Restored** - Re-added Windows compatibility for cross-platform deployment

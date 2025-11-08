@@ -60,3 +60,28 @@ tree-sitter>=0.21.3,<1.0.0       # Multi-language code parsing (MIT License)
 jsonschema>=4.23.0,<5.0.0        # JSON schema validation (MIT License)
 radon>=6.0.1,<7.0.0              # Code complexity metrics (MIT License)
 bandit>=1.7.10,<2.0.0            # Security vulnerability scanning (Apache-2.0 License)
+
+# Phase 18: Security Hardening & Performance Optimization (FOSS)
+# Encryption and Secret Management
+cryptography>=44.0.0,<45.0.0     # Encryption at rest, secure secrets (BSD-3-Clause / Apache 2.0 License)
+keyring>=25.5.0,<26.0.0          # OS-level secret storage (MIT License)
+
+# Performance Enhancement
+cachetools>=5.5.0,<6.0.0         # Advanced LRU caching (MIT License)
+networkx>=3.4.2,<4.0.0           # Graph algorithms for cortex (BSD-3-Clause License)
+aiofiles>=24.1.0,<25.0.0         # Async file I/O (Apache 2.0 License)
+httpx>=0.28.0,<1.0.0             # Async HTTP client (BSD-3-Clause License)
+orjson>=3.10.0,<4.0.0            # Fast JSON parsing (Apache 2.0 / MIT License)
+msgpack>=1.1.0,<2.0.0            # Binary serialization (Apache 2.0 License)
+uvloop>=0.21.0,<1.0.0; sys_platform != 'win32'  # Fast asyncio event loop - Unix only (Apache 2.0 / MIT License)
+
+# Observability and Monitoring
+structlog>=24.4.0,<25.0.0        # Structured logging (MIT / Apache 2.0 License)
+prometheus-client>=0.21.0,<1.0.0 # Metrics export (Apache 2.0 License)
+
+# Model and Integration Tools
+huggingface-hub>=0.26.0,<1.0.0   # Model downloads from HuggingFace (Apache 2.0 License)
+
+# Input Validation and Security
+validators>=0.34.0,<1.0.0        # Input validation (MIT License)
+python-magic>=0.4.27,<1.0.0      # File type detection (MIT License)
