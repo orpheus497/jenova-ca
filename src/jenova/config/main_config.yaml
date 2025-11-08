@@ -140,3 +140,40 @@ tools:
     - whoami
     - pwd
     - uname
+
+# Phase 8: Distributed Computing & LAN Networking
+network:
+  # Enable distributed mode (requires zeroconf, grpcio)
+  enabled: false  # Set to true to enable distributed features
+
+  # Operating mode: 'auto', 'server', 'client', 'standalone'
+  # - auto: Act as both server and client (recommended)
+  # - server: Only offer resources to peers (no consumption)
+  # - client: Only consume resources from peers (no offering)
+  # - standalone: Disable networking entirely (same as enabled: false)
+  mode: 'auto'
+
+  # Service discovery configuration (mDNS/Zeroconf)
+  discovery:
+    service_name: 'jenova-ai'  # Service name for discovery
+    port: 50051  # gRPC port for RPC communication
+    ttl: 60  # Service advertisement TTL in seconds
+
+  # Security configuration
+  security:
+    enabled: true  # Enable SSL/TLS encryption
+    cert_dir: '~/.jenova-ai/certs'  # Certificate storage directory
+    require_auth: true  # Require JWT authentication
+
+  # Resource sharing settings
+  resource_sharing:
+    share_llm: true  # Offer LLM inference to peers
+    share_embeddings: true  # Offer embedding generation to peers
+    share_memory: false  # Share memory searches (privacy: disabled by default)
+    max_concurrent_requests: 5  # Maximum concurrent peer requests
+
+  # Peer selection strategy
+  peer_selection:
+    # Strategy: 'local_first', 'load_balanced', 'fastest', 'parallel_voting', 'round_robin'
+    strategy: 'load_balanced'
+    timeout_ms: 5000  # RPC timeout in milliseconds

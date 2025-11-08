@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jenova-ai"
-version = "4.2.0"
+version = "5.0.0"
 authors = [
     {name = "orpheus497"}
 ]
-description = "The JENOVA Cognitive Architecture with a dynamic Insight Engine and self-optimizing context."
+description = "The JENOVA Cognitive Architecture with distributed computing, LAN-based resource pooling, and self-optimizing cognitive processes."
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
