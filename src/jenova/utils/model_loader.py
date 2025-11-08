@@ -110,7 +110,19 @@ def load_llm_model(config, file_logger=None):
         file_logger.log_info(f"Found model: {model_path}")
 
     # Get settings from config
-    gpu_layers = config['model']['gpu_layers']
+    gpu_layers_config = config['model']['gpu_layers']
+
+    # Handle 'auto' gpu_layers - detect optimal value based on available VRAM
+    if isinstance(gpu_layers_config, str) and gpu_layers_config.lower() == 'auto':
+        from jenova.utils.hardware_detector import recommend_gpu_layers
+        gpu_layers = recommend_gpu_layers()
+        if ui_logger:
+            ui_logger.info(f"Auto-detected GPU layers: {gpu_layers}")
+        if file_logger:
+            file_logger.log_info(f"GPU layers auto-detection: {gpu_layers} layers recommended")
+    else:
+        gpu_layers = int(gpu_layers_config)
+
     threads = get_optimal_thread_count(config['model']['threads'])
     context_size = config['model']['context_size']
     n_batch = config['model']['n_batch']

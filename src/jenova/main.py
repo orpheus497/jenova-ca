@@ -8,16 +8,35 @@
 """
 
 import os
+import yaml
 
-# CRITICAL GPU Memory Management - Step 1: Blind PyTorch to CUDA
+# CRITICAL GPU Memory Management - Step 1: Conditional PyTorch CUDA Access
 # This MUST be set BEFORE importing PyTorch (via any module)
-# This prevents PyTorch from initializing CUDA context and consuming ~561 MB GPU memory
-# Strategy:
-#   - PyTorch (embeddings): CPU only, cannot see GPU
-#   - llama-cpp-python (main LLM): Full GPU access via direct CUDA bindings
-# All NVIDIA VRAM must be available for the main LLM via llama-cpp-python
-os.environ['CUDA_VISIBLE_DEVICES'] = ''  # Hide CUDA from PyTorch during initialization
-os.environ['PYTORCH_ALLOC_CONF'] = 'max_split_size_mb:32'
+# Load config to check hardware.pytorch_gpu_enabled setting
+
+# Quick config load to determine PyTorch GPU access
+_config_path = os.path.join(os.path.dirname(__file__), 'config', 'main_config.yaml')
+try:
+    with open(_config_path, 'r', encoding='utf-8') as f:
+        _quick_config = yaml.safe_load(f)
+        _pytorch_gpu = _quick_config.get('hardware', {}).get('pytorch_gpu_enabled', False)
+except Exception:
+    # If config can't be loaded, default to safe mode (PyTorch on CPU)
+    _pytorch_gpu = False
+
+if not _pytorch_gpu:
+    # Default behavior: Hide CUDA from PyTorch to preserve VRAM for main LLM
+    # Strategy:
+    #   - PyTorch (embeddings): CPU only, cannot see GPU
+    #   - llama-cpp-python (main LLM): Full GPU access via direct CUDA bindings
+    # All NVIDIA VRAM is available for the main LLM via llama-cpp-python
+    os.environ['CUDA_VISIBLE_DEVICES'] = ''  # Hide CUDA from PyTorch
+    os.environ['PYTORCH_ALLOC_CONF'] = 'max_split_size_mb:32'
+else:
+    # Allow PyTorch to see GPU for accelerated embeddings (6GB+ VRAM recommended)
+    # Trade-off: Shares VRAM with main LLM, but provides 5-10x faster embeddings
+    # PyTorch will allocate ~500MB-1GB VRAM, reducing available space for LLM layers
+    os.environ['PYTORCH_ALLOC_CONF'] = 'max_split_size_mb:128,expandable_segments:True'
 
 # Fix tokenizers parallelism warning when spawning subprocesses (e.g., web_search)
 # This must be set before importing any libraries that use tokenizers
