@@ -68,6 +68,38 @@ class CognitiveEngine:
         # Phase 12: Contextual learning engine (optional, set via set_learning_engine)
         self.learning_engine = None
 
+        # Phases 13-17: Enhanced CLI capabilities (optional, set via set_cli_enhancements)
+        # Analysis Module
+        self.context_optimizer = None
+        self.code_metrics = None
+        self.security_scanner = None
+        self.intent_classifier = None
+        self.command_disambiguator = None
+        # Code Tools Module
+        self.file_editor = None
+        self.code_parser = None
+        self.refactoring_engine = None
+        self.syntax_highlighter = None
+        self.codebase_mapper = None
+        self.interactive_terminal = None
+        # Git Tools Module
+        self.git_interface = None
+        self.commit_assistant = None
+        self.diff_analyzer = None
+        self.hooks_manager = None
+        self.branch_manager = None
+        # Orchestration Module
+        self.task_planner = None
+        self.subagent_manager = None
+        self.execution_engine = None
+        self.checkpoint_manager = None
+        self.background_task_manager = None
+        # Automation Module
+        self.custom_command_manager = None
+        self.hooks_system = None
+        self.template_engine = None
+        self.workflow_library = None
+
         # Configuration
         self.llm_timeout = config.get('cognitive_engine', {}).get('llm_timeout', 120)
         self.planning_timeout = config.get('cognitive_engine', {}).get('planning_timeout', 60)
@@ -119,6 +151,66 @@ class CognitiveEngine:
 
         if self.file_logger:
             self.file_logger.log_info("Learning engine integrated into cognitive engine")
+
+    def set_cli_enhancements(self, **kwargs):
+        """Set Phases 13-17 enhanced CLI capabilities.
+
+        Accepts all CLI enhancement modules as keyword arguments:
+        - Analysis: context_optimizer, code_metrics, security_scanner, intent_classifier, command_disambiguator
+        - Code Tools: file_editor, code_parser, refactoring_engine, syntax_highlighter, codebase_mapper, interactive_terminal
+        - Git Tools: git_interface, commit_assistant, diff_analyzer, hooks_manager, branch_manager
+        - Orchestration: task_planner, subagent_manager, execution_engine, checkpoint_manager, background_task_manager
+        - Automation: custom_command_manager, hooks_system, template_engine, workflow_library
+        """
+        # Analysis Module
+        self.context_optimizer = kwargs.get('context_optimizer')
+        self.code_metrics = kwargs.get('code_metrics')
+        self.security_scanner = kwargs.get('security_scanner')
+        self.intent_classifier = kwargs.get('intent_classifier')
+        self.command_disambiguator = kwargs.get('command_disambiguator')
+
+        # Code Tools Module
+        self.file_editor = kwargs.get('file_editor')
+        self.code_parser = kwargs.get('code_parser')
+        self.refactoring_engine = kwargs.get('refactoring_engine')
+        self.syntax_highlighter = kwargs.get('syntax_highlighter')
+        self.codebase_mapper = kwargs.get('codebase_mapper')
+        self.interactive_terminal = kwargs.get('interactive_terminal')
+
+        # Git Tools Module
+        self.git_interface = kwargs.get('git_interface')
+        self.commit_assistant = kwargs.get('commit_assistant')
+        self.diff_analyzer = kwargs.get('diff_analyzer')
+        self.hooks_manager = kwargs.get('hooks_manager')
+        self.branch_manager = kwargs.get('branch_manager')
+
+        # Orchestration Module
+        self.task_planner = kwargs.get('task_planner')
+        self.subagent_manager = kwargs.get('subagent_manager')
+        self.execution_engine = kwargs.get('execution_engine')
+        self.checkpoint_manager = kwargs.get('checkpoint_manager')
+        self.background_task_manager = kwargs.get('background_task_manager')
+
+        # Automation Module
+        self.custom_command_manager = kwargs.get('custom_command_manager')
+        self.hooks_system = kwargs.get('hooks_system')
+        self.template_engine = kwargs.get('template_engine')
+        self.workflow_library = kwargs.get('workflow_library')
+
+        if self.file_logger:
+            enabled_modules = []
+            if self.context_optimizer: enabled_modules.append("Analysis")
+            if self.file_editor: enabled_modules.append("Code Tools")
+            if self.git_interface: enabled_modules.append("Git Tools")
+            if self.task_planner: enabled_modules.append("Orchestration")
+            if self.custom_command_manager: enabled_modules.append("Automation")
+
+            if enabled_modules:
+                self.file_logger.log_info(
+                    f"CLI enhancements integrated into cognitive engine: {', '.join(enabled_modules)}"
+                )
+            else:
+                self.file_logger.log_info("CLI enhancements available but not enabled")
 
     def think(self, user_input: str, username: str) -> str:
         """Runs the full cognitive cycle: Retrieve, Plan, Execute, and Reflect."""

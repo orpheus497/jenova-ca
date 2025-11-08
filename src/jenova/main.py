@@ -88,6 +88,28 @@ from jenova.user.profile import UserProfileManager
 # Phase 12: Contextual learning
 from jenova.learning.contextual_engine import ContextualLearningEngine
 
+# Phases 13-17: Enhanced CLI capabilities
+from jenova.analysis import (
+    ContextOptimizer, CodeMetrics, SecurityScanner,
+    IntentClassifier, CommandDisambiguator
+)
+from jenova.code_tools import (
+    FileEditor, CodeParser, RefactoringEngine,
+    SyntaxHighlighter, CodebaseMapper, InteractiveTerminal
+)
+from jenova.git_tools import (
+    GitInterface, CommitAssistant, DiffAnalyzer,
+    HooksManager, BranchManager
+)
+from jenova.orchestration import (
+    TaskPlanner, SubagentManager, ExecutionEngine,
+    CheckpointManager, BackgroundTaskManager
+)
+from jenova.automation import (
+    CustomCommandManager, HooksSystem,
+    TemplateEngine, WorkflowLibrary
+)
+
 apply_telemetry_patch()
 
 
@@ -125,7 +147,34 @@ def main():
 
     # Phase 12: Learning engine
     learning_engine = None
-    
+
+    # Phases 13-17: Enhanced CLI components
+    context_optimizer = None
+    code_metrics = None
+    security_scanner = None
+    intent_classifier = None
+    command_disambiguator = None
+    file_editor = None
+    code_parser = None
+    refactoring_engine = None
+    syntax_highlighter = None
+    codebase_mapper = None
+    interactive_terminal = None
+    git_interface = None
+    commit_assistant = None
+    diff_analyzer = None
+    hooks_manager = None
+    branch_manager = None
+    task_planner = None
+    subagent_manager = None
+    execution_engine = None
+    checkpoint_manager = None
+    background_task_manager = None
+    custom_command_manager = None
+    hooks_system = None
+    template_engine = None
+    workflow_library = None
+
     try:
         # --- Configuration ---
         ui_logger.progress_message("Loading configuration", 10)
@@ -316,6 +365,90 @@ def main():
             error_handler.handle_error(e, "Cognitive Core Initialization", ErrorSeverity.CRITICAL)
             return 1
 
+        # --- Phases 13-17: Enhanced CLI Capabilities ---
+        ui_logger.progress_message("Initializing enhanced CLI capabilities", 87)
+        try:
+            with metrics.measure('cli_enhancements_init'):
+                # Analysis Module
+                context_optimizer = ContextOptimizer(config, file_logger)
+                code_metrics = CodeMetrics(config, file_logger)
+                security_scanner = SecurityScanner(config, file_logger)
+                intent_classifier = IntentClassifier(config, file_logger)
+                command_disambiguator = CommandDisambiguator(config, file_logger)
+
+                # Code Tools Module
+                file_editor = FileEditor(config, file_logger)
+                code_parser = CodeParser(config, file_logger)
+                refactoring_engine = RefactoringEngine(config, file_logger)
+                syntax_highlighter = SyntaxHighlighter(config, file_logger)
+                codebase_mapper = CodebaseMapper(config, file_logger)
+                interactive_terminal = InteractiveTerminal(config, file_logger)
+
+                # Git Tools Module
+                git_interface = GitInterface(config, file_logger)
+                commit_assistant = CommitAssistant(config, file_logger, llm_interface)
+                diff_analyzer = DiffAnalyzer(config, file_logger, llm_interface)
+                hooks_manager = HooksManager(config, file_logger)
+                branch_manager = BranchManager(config, file_logger)
+
+                # Orchestration Module
+                task_planner = TaskPlanner(config, file_logger, llm_interface)
+                subagent_manager = SubagentManager(config, file_logger)
+                execution_engine = ExecutionEngine(config, file_logger, task_planner)
+                checkpoint_manager = CheckpointManager(config, file_logger, user_data_root)
+                background_task_manager = BackgroundTaskManager(config, file_logger)
+
+                # Automation Module
+                custom_commands_dir = os.path.join(user_data_root, 'custom_commands')
+                os.makedirs(custom_commands_dir, exist_ok=True)
+                template_engine = TemplateEngine(config, file_logger)
+                custom_command_manager = CustomCommandManager(config, file_logger, template_engine, custom_commands_dir)
+                hooks_system = HooksSystem(config, file_logger)
+                workflow_library = WorkflowLibrary(config, file_logger)
+
+            stats = metrics.get_stats('cli_enhancements_init')
+            cli_details = (
+                "Analysis (5 tools), Code Tools (6 tools), "
+                "Git (5 tools), Orchestration (5 systems), Automation (4 systems)"
+            )
+            ui_logger.startup_info("CLI Enhancements", stats.avg_time, cli_details)
+            ui_logger.success("Phase 13-17 capabilities activated")
+            file_logger.log_info(
+                "Enhanced CLI capabilities initialized: "
+                "Analysis, Code Tools, Git Integration, Task Orchestration, Automation"
+            )
+        except Exception as e:
+            # CLI enhancements are non-critical - core system can operate without them
+            error_handler.handle_error(e, "CLI Enhancements Initialization", ErrorSeverity.MEDIUM)
+            ui_logger.warning("Enhanced CLI features unavailable - continuing with core features")
+            file_logger.log_warning(f"CLI enhancements initialization failed: {e}")
+            # Set all CLI components to None on failure
+            context_optimizer = None
+            code_metrics = None
+            security_scanner = None
+            intent_classifier = None
+            command_disambiguator = None
+            file_editor = None
+            code_parser = None
+            refactoring_engine = None
+            syntax_highlighter = None
+            codebase_mapper = None
+            interactive_terminal = None
+            git_interface = None
+            commit_assistant = None
+            diff_analyzer = None
+            hooks_manager = None
+            branch_manager = None
+            task_planner = None
+            subagent_manager = None
+            execution_engine = None
+            checkpoint_manager = None
+            background_task_manager = None
+            custom_command_manager = None
+            hooks_system = None
+            template_engine = None
+            workflow_library = None
+
         # --- Phase 8: Network Layer (Distributed Computing) ---
         network_enabled = config.get('network', {}).get('enabled', False)
 
@@ -496,6 +629,41 @@ def main():
         if hasattr(cognitive_engine, 'set_learning_engine'):
             cognitive_engine.set_learning_engine(learning_engine)
 
+        # Phases 13-17: Pass CLI enhancements to cognitive engine
+        if hasattr(cognitive_engine, 'set_cli_enhancements'):
+            cognitive_engine.set_cli_enhancements(
+                # Analysis
+                context_optimizer=context_optimizer,
+                code_metrics=code_metrics,
+                security_scanner=security_scanner,
+                intent_classifier=intent_classifier,
+                command_disambiguator=command_disambiguator,
+                # Code Tools
+                file_editor=file_editor,
+                code_parser=code_parser,
+                refactoring_engine=refactoring_engine,
+                syntax_highlighter=syntax_highlighter,
+                codebase_mapper=codebase_mapper,
+                interactive_terminal=interactive_terminal,
+                # Git Tools
+                git_interface=git_interface,
+                commit_assistant=commit_assistant,
+                diff_analyzer=diff_analyzer,
+                hooks_manager=hooks_manager,
+                branch_manager=branch_manager,
+                # Orchestration
+                task_planner=task_planner,
+                subagent_manager=subagent_manager,
+                execution_engine=execution_engine,
+                checkpoint_manager=checkpoint_manager,
+                background_task_manager=background_task_manager,
+                # Automation
+                custom_command_manager=custom_command_manager,
+                hooks_system=hooks_system,
+                template_engine=template_engine,
+                workflow_library=workflow_library
+            )
+
         # Display startup summary (Phase 6)
         ui_logger.progress_message("Ready", 100)
         ui_logger.info(">> Cognitive Engine: Online.")
@@ -509,7 +677,38 @@ def main():
             file_logger.log_info(f"RAG cache initialized: {cache_stats}")
 
         # Phase 6: Pass health_monitor and metrics to TerminalUI
-        ui = TerminalUI(cognitive_engine, ui_logger, health_monitor=health_monitor, metrics=metrics)
+        # Phases 13-17: Also pass CLI enhancement modules
+        ui = TerminalUI(
+            cognitive_engine, ui_logger,
+            health_monitor=health_monitor,
+            metrics=metrics,
+            # Phase 13-17 CLI enhancements
+            context_optimizer=context_optimizer,
+            code_metrics=code_metrics,
+            security_scanner=security_scanner,
+            intent_classifier=intent_classifier,
+            command_disambiguator=command_disambiguator,
+            file_editor=file_editor,
+            code_parser=code_parser,
+            refactoring_engine=refactoring_engine,
+            syntax_highlighter=syntax_highlighter,
+            codebase_mapper=codebase_mapper,
+            interactive_terminal=interactive_terminal,
+            git_interface=git_interface,
+            commit_assistant=commit_assistant,
+            diff_analyzer=diff_analyzer,
+            hooks_manager=hooks_manager,
+            branch_manager=branch_manager,
+            task_planner=task_planner,
+            subagent_manager=subagent_manager,
+            execution_engine=execution_engine,
+            checkpoint_manager=checkpoint_manager,
+            background_task_manager=background_task_manager,
+            custom_command_manager=custom_command_manager,
+            hooks_system=hooks_system,
+            template_engine=template_engine,
+            workflow_library=workflow_library
+        )
         ui.run()
         
         # Log final metrics summary on clean shutdown
