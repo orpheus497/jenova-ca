@@ -31,7 +31,7 @@ class PeerInfo:
         address: str,
         port: int,
         properties: Dict[str, Any],
-        last_seen: float
+        last_seen: float,
     ):
         self.instance_id = instance_id
         self.instance_name = instance_name
@@ -46,12 +46,12 @@ class PeerInfo:
     def to_dict(self):
         """Convert to dictionary representation."""
         return {
-            'instance_id': self.instance_id,
-            'instance_name': self.instance_name,
-            'address': self.address,
-            'port': self.port,
-            'properties': self.properties,
-            'last_seen': self.last_seen
+            "instance_id": self.instance_id,
+            "instance_name": self.instance_name,
+            "address": self.address,
+            "port": self.port,
+            "properties": self.properties,
+            "last_seen": self.last_seen,
         }
 
 
@@ -97,7 +97,7 @@ class JenovaDiscoveryService:
         file_logger,
         ui_logger=None,
         instance_name: Optional[str] = None,
-        port: int = 50051
+        port: int = 50051,
     ):
         """
         Initialize discovery service.
@@ -137,9 +137,9 @@ class JenovaDiscoveryService:
         self.health_monitor_thread = None
 
         # Configuration
-        network_config = config.get('network', {})
-        discovery_config = network_config.get('discovery', {})
-        self.ttl = discovery_config.get('ttl', 60)
+        network_config = config.get("network", {})
+        discovery_config = network_config.get("discovery", {})
+        self.ttl = discovery_config.get("ttl", 60)
         self.health_check_interval = 30  # seconds
 
     def start(self):
@@ -157,16 +157,13 @@ class JenovaDiscoveryService:
 
             # Start browsing for peers
             self.service_browser = ServiceBrowser(
-                self.zeroconf,
-                self.SERVICE_TYPE,
-                JenovaServiceListener(self)
+                self.zeroconf, self.SERVICE_TYPE, JenovaServiceListener(self)
             )
 
             # Start health monitoring
             self.running = True
             self.health_monitor_thread = threading.Thread(
-                target=self._health_monitor_loop,
-                daemon=True
+                target=self._health_monitor_loop, daemon=True
             )
             self.health_monitor_thread.start()
 
@@ -228,7 +225,7 @@ class JenovaDiscoveryService:
                 addresses=[socket.inet_aton(local_ip)],
                 port=self.port,
                 properties=properties,
-                server=f"{hostname}.local."
+                server=f"{hostname}.local.",
             )
 
             # Register with Zeroconf
@@ -244,27 +241,30 @@ class JenovaDiscoveryService:
 
     def _build_service_properties(self) -> Dict[bytes, bytes]:
         """Build service advertisement properties."""
-        model_config = self.config.get('model', {})
-        network_config = self.config.get('network', {})
-        resource_sharing = network_config.get('resource_sharing', {})
+        model_config = self.config.get("model", {})
+        network_config = self.config.get("network", {})
+        resource_sharing = network_config.get("resource_sharing", {})
 
         # Convert properties to bytes (required by Zeroconf)
         properties = {
-            b'instance_id': self.instance_id.encode('utf-8'),
-            b'version': b'5.0.0',
-            b'protocol': b'1.0',
-
+            b"instance_id": self.instance_id.encode("utf-8"),
+            b"version": b"5.0.0",
+            b"protocol": b"1.0",
             # Capabilities
-            b'share_llm': str(resource_sharing.get('share_llm', True)).encode('utf-8'),
-            b'share_embeddings': str(resource_sharing.get('share_embeddings', True)).encode('utf-8'),
-            b'share_memory': str(resource_sharing.get('share_memory', False)).encode('utf-8'),
-
+            b"share_llm": str(resource_sharing.get("share_llm", True)).encode("utf-8"),
+            b"share_embeddings": str(
+                resource_sharing.get("share_embeddings", True)
+            ).encode("utf-8"),
+            b"share_memory": str(resource_sharing.get("share_memory", False)).encode(
+                "utf-8"
+            ),
             # Hardware info
-            b'gpu_layers': str(model_config.get('gpu_layers', 0)).encode('utf-8'),
-            b'context_size': str(model_config.get('context_size', 4096)).encode('utf-8'),
-
+            b"gpu_layers": str(model_config.get("gpu_layers", 0)).encode("utf-8"),
+            b"context_size": str(model_config.get("context_size", 4096)).encode(
+                "utf-8"
+            ),
             # Status
-            b'timestamp': str(int(time.time())).encode('utf-8')
+            b"timestamp": str(int(time.time())).encode("utf-8"),
         }
 
         return properties
@@ -313,14 +313,18 @@ class JenovaDiscoveryService:
                 self.file_logger.log_info(f"Peer removed: {peer_to_remove}")
 
                 if self.ui_logger:
-                    self.ui_logger.warning(f"Peer disconnected: {peer_to_remove.instance_name}")
+                    self.ui_logger.warning(
+                        f"Peer disconnected: {peer_to_remove.instance_name}"
+                    )
 
                 # Trigger callbacks
                 for callback in self.on_peer_removed_callbacks:
                     try:
                         callback(peer_to_remove)
                     except Exception as e:
-                        self.file_logger.log_error(f"Error in peer_removed callback: {e}")
+                        self.file_logger.log_error(
+                            f"Error in peer_removed callback: {e}"
+                        )
 
         except Exception as e:
             self.file_logger.log_error(f"Error removing service: {e}")
@@ -361,14 +365,14 @@ class JenovaDiscoveryService:
         if info.properties:
             for key, value in info.properties.items():
                 try:
-                    properties[key.decode('utf-8')] = value.decode('utf-8')
+                    properties[key.decode("utf-8")] = value.decode("utf-8")
                 except Exception as e:
                     # Value is not UTF-8 decodable, convert to string
-                    properties[key.decode('utf-8')] = str(value)
+                    properties[key.decode("utf-8")] = str(value)
 
         # Extract instance ID and name
-        instance_id = properties.get('instance_id', str(uuid.uuid4()))
-        instance_name = info.name.split('.')[0]  # Extract name from full service name
+        instance_id = properties.get("instance_id", str(uuid.uuid4()))
+        instance_name = info.name.split(".")[0]  # Extract name from full service name
 
         return PeerInfo(
             instance_id=instance_id,
@@ -376,7 +380,7 @@ class JenovaDiscoveryService:
             address=address,
             port=info.port,
             properties=properties,
-            last_seen=time.time()
+            last_seen=time.time(),
         )
 
     def _health_monitor_loop(self):
@@ -389,7 +393,8 @@ class JenovaDiscoveryService:
                     # Remove stale peers (not seen in 3x TTL)
                     stale_threshold = current_time - (self.ttl * 3)
                     stale_peers = [
-                        peer_id for peer_id, peer in self.peers.items()
+                        peer_id
+                        for peer_id, peer in self.peers.items()
                         if peer.last_seen < stale_threshold
                     ]
 
@@ -438,10 +443,10 @@ class JenovaDiscoveryService:
         """Get discovery service status."""
         with self.peers_lock:
             return {
-                'instance_id': self.instance_id,
-                'instance_name': self.instance_name,
-                'port': self.port,
-                'peer_count': len(self.peers),
-                'peers': [peer.to_dict() for peer in self.peers.values()],
-                'running': self.running
+                "instance_id": self.instance_id,
+                "instance_name": self.instance_name,
+                "port": self.port,
+                "peer_count": len(self.peers),
+                "peers": [peer.to_dict() for peer in self.peers.values()],
+                "running": self.running,
             }

@@ -40,11 +40,7 @@ class JenovaRPCClient:
     """
 
     def __init__(
-        self,
-        config: dict,
-        file_logger,
-        peer_manager=None,
-        security_manager=None
+        self, config: dict, file_logger, peer_manager=None, security_manager=None
     ):
         """
         Initialize RPC client.
@@ -64,9 +60,9 @@ class JenovaRPCClient:
         self.connections: Dict[str, grpc.Channel] = {}
 
         # Configuration
-        network_config = config.get('network', {})
-        peer_selection = network_config.get('peer_selection', {})
-        self.timeout_ms = peer_selection.get('timeout_ms', 5000)
+        network_config = config.get("network", {})
+        peer_selection = network_config.get("peer_selection", {})
+        self.timeout_ms = peer_selection.get("timeout_ms", 5000)
         self.timeout_seconds = self.timeout_ms / 1000.0
 
         # Authentication token
@@ -117,13 +113,14 @@ class JenovaRPCClient:
                 channel.close()
                 self.file_logger.log_info(f"Closed connection to {peer_key}")
             except Exception as e:
-                self.file_logger.log_error(f"Error closing connection to {peer_key}: {e}")
+                self.file_logger.log_error(
+                    f"Error closing connection to {peer_key}: {e}"
+                )
 
         self.connections.clear()
 
     @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=10)
+        stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10)
     )
     def generate_text(
         self,
@@ -131,7 +128,7 @@ class JenovaRPCClient:
         temperature: float = 0.7,
         top_p: float = 0.95,
         max_tokens: int = 512,
-        peer_id: Optional[str] = None
+        peer_id: Optional[str] = None,
     ) -> Optional[str]:
         """
         Request text generation from a peer.
@@ -156,7 +153,7 @@ class JenovaRPCClient:
                     self.file_logger.log_error("No peer manager available")
                     return None
 
-                peer_id = self.peer_manager.select_peer_for_task('llm')
+                peer_id = self.peer_manager.select_peer_for_task("llm")
                 if not peer_id:
                     self.file_logger.log_warning("No available peers for LLM task")
                     return None
@@ -176,7 +173,7 @@ class JenovaRPCClient:
                 temperature=temperature,
                 top_p=top_p,
                 max_tokens=max_tokens,
-                request_id=request_id
+                request_id=request_id,
             )
 
             # Get connection and make call
@@ -192,13 +189,13 @@ class JenovaRPCClient:
             # Add authentication metadata if available
             metadata = []
             if self.auth_token:
-                metadata.append(('authorization', f'Bearer {self.auth_token}'))
+                metadata.append(("authorization", f"Bearer {self.auth_token}"))
 
             # Make the RPC call
             response = stub.GenerateText(
                 request,
                 timeout=self.timeout_seconds,
-                metadata=metadata if metadata else None
+                metadata=metadata if metadata else None,
             )
 
             response_time_ms = (time.time() - start_time) * 1000
@@ -210,9 +207,7 @@ class JenovaRPCClient:
             # Record result with peer manager
             if self.peer_manager:
                 self.peer_manager.record_request_result(
-                    peer_id=peer_id,
-                    success=True,
-                    response_time_ms=response_time_ms
+                    peer_id=peer_id, success=True, response_time_ms=response_time_ms
                 )
 
             self.file_logger.log_info(
@@ -227,9 +222,7 @@ class JenovaRPCClient:
 
             if self.peer_manager and peer_id:
                 self.peer_manager.record_request_result(
-                    peer_id=peer_id,
-                    success=False,
-                    response_time_ms=response_time_ms
+                    peer_id=peer_id, success=False, response_time_ms=response_time_ms
                 )
 
             raise  # Let retry decorator handle it
@@ -239,13 +232,10 @@ class JenovaRPCClient:
             return None
 
     @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=10)
+        stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10)
     )
     def embed_text(
-        self,
-        text: str,
-        peer_id: Optional[str] = None
+        self, text: str, peer_id: Optional[str] = None
     ) -> Optional[List[float]]:
         """
         Request text embedding from a peer.
@@ -267,9 +257,11 @@ class JenovaRPCClient:
                     self.file_logger.log_error("No peer manager available")
                     return None
 
-                peer_id = self.peer_manager.select_peer_for_task('embedding')
+                peer_id = self.peer_manager.select_peer_for_task("embedding")
                 if not peer_id:
-                    self.file_logger.log_warning("No available peers for embedding task")
+                    self.file_logger.log_warning(
+                        "No available peers for embedding task"
+                    )
                     return None
 
             # Get peer connection info
@@ -281,10 +273,7 @@ class JenovaRPCClient:
             peer_info = peer_conn.peer_info
 
             # Create request
-            request = self._create_embed_request(
-                text=text,
-                request_id=request_id
-            )
+            request = self._create_embed_request(text=text, request_id=request_id)
 
             # Get connection
             channel = self._get_connection(peer_info.address, peer_info.port)
@@ -299,13 +288,13 @@ class JenovaRPCClient:
             # Add authentication metadata if available
             metadata = []
             if self.auth_token:
-                metadata.append(('authorization', f'Bearer {self.auth_token}'))
+                metadata.append(("authorization", f"Bearer {self.auth_token}"))
 
             # Make the RPC call
             response = stub.EmbedText(
                 request,
                 timeout=self.timeout_seconds,
-                metadata=metadata if metadata else None
+                metadata=metadata if metadata else None,
             )
 
             response_time_ms = (time.time() - start_time) * 1000
@@ -317,9 +306,7 @@ class JenovaRPCClient:
             # Record result
             if self.peer_manager:
                 self.peer_manager.record_request_result(
-                    peer_id=peer_id,
-                    success=True,
-                    response_time_ms=response_time_ms
+                    peer_id=peer_id, success=True, response_time_ms=response_time_ms
                 )
 
             return list(response.embedding)
@@ -330,9 +317,7 @@ class JenovaRPCClient:
 
             if self.peer_manager and peer_id:
                 self.peer_manager.record_request_result(
-                    peer_id=peer_id,
-                    success=False,
-                    response_time_ms=response_time_ms
+                    peer_id=peer_id, success=False, response_time_ms=response_time_ms
                 )
 
             raise
@@ -342,13 +327,10 @@ class JenovaRPCClient:
             return None
 
     @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=10)
+        stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10)
     )
     def embed_text_batch(
-        self,
-        texts: List[str],
-        peer_id: Optional[str] = None
+        self, texts: List[str], peer_id: Optional[str] = None
     ) -> Optional[List[List[float]]]:
         """
         Request batch text embeddings from a peer.
@@ -369,7 +351,7 @@ class JenovaRPCClient:
                 if not self.peer_manager:
                     return None
 
-                peer_id = self.peer_manager.select_peer_for_task('embedding')
+                peer_id = self.peer_manager.select_peer_for_task("embedding")
                 if not peer_id:
                     return None
 
@@ -382,8 +364,7 @@ class JenovaRPCClient:
 
             # Create request
             request = self._create_embed_batch_request(
-                texts=texts,
-                request_id=request_id
+                texts=texts, request_id=request_id
             )
 
             # Get connection
@@ -400,13 +381,13 @@ class JenovaRPCClient:
             # Add authentication metadata if available
             metadata = []
             if self.auth_token:
-                metadata.append(('authorization', f'Bearer {self.auth_token}'))
+                metadata.append(("authorization", f"Bearer {self.auth_token}"))
 
             # Make the RPC call
             response = stub.EmbedTextBatch(
                 request,
                 timeout=self.timeout_seconds,
-                metadata=metadata if metadata else None
+                metadata=metadata if metadata else None,
             )
 
             response_time_ms = (time.time() - start_time) * 1000
@@ -417,9 +398,7 @@ class JenovaRPCClient:
 
             if self.peer_manager:
                 self.peer_manager.record_request_result(
-                    peer_id=peer_id,
-                    success=True,
-                    response_time_ms=response_time_ms
+                    peer_id=peer_id, success=True, response_time_ms=response_time_ms
                 )
 
             # Extract embeddings from response
@@ -458,25 +437,25 @@ class JenovaRPCClient:
             # Add authentication metadata if available
             metadata = []
             if self.auth_token:
-                metadata.append(('authorization', f'Bearer {self.auth_token}'))
+                metadata.append(("authorization", f"Bearer {self.auth_token}"))
 
             # Make the RPC call
             response = stub.HealthCheck(
                 request,
                 timeout=self.timeout_seconds,
-                metadata=metadata if metadata else None
+                metadata=metadata if metadata else None,
             )
 
             return {
-                'status': response.status,
-                'cpu_percent': response.cpu_percent,
-                'memory_percent': response.memory_percent,
-                'gpu_memory_percent': response.gpu_memory_percent,
-                'active_requests': response.active_requests,
-                'total_requests_served': response.total_requests_served,
-                'uptime_seconds': response.uptime_seconds,
-                'peer_id': peer_id,
-                'peer_name': peer_info.instance_name
+                "status": response.status,
+                "cpu_percent": response.cpu_percent,
+                "memory_percent": response.memory_percent,
+                "gpu_memory_percent": response.gpu_memory_percent,
+                "active_requests": response.active_requests,
+                "total_requests_served": response.total_requests_served,
+                "uptime_seconds": response.uptime_seconds,
+                "peer_id": peer_id,
+                "peer_name": peer_info.instance_name,
             }
 
         except Exception as e:
@@ -512,22 +491,22 @@ class JenovaRPCClient:
             # Add authentication metadata if available
             metadata = []
             if self.auth_token:
-                metadata.append(('authorization', f'Bearer {self.auth_token}'))
+                metadata.append(("authorization", f"Bearer {self.auth_token}"))
 
             # Make the RPC call
             response = stub.GetCapabilities(
                 request,
                 timeout=self.timeout_seconds,
-                metadata=metadata if metadata else None
+                metadata=metadata if metadata else None,
             )
 
             return {
-                'share_llm': response.share_llm,
-                'share_embeddings': response.share_embeddings,
-                'share_memory': response.share_memory,
-                'max_concurrent_requests': response.max_concurrent_requests,
-                'supports_streaming': response.supports_streaming,
-                'version': response.version
+                "share_llm": response.share_llm,
+                "share_embeddings": response.share_embeddings,
+                "share_memory": response.share_memory,
+                "max_concurrent_requests": response.max_concurrent_requests,
+                "supports_streaming": response.supports_streaming,
+                "version": response.version,
             }
 
         except Exception as e:
@@ -539,25 +518,23 @@ class JenovaRPCClient:
     def _create_generate_request(self, **kwargs):
         """Create GenerateRequest using protobuf."""
         return jenova_pb2.GenerateRequest(
-            prompt=kwargs.get('prompt', ''),
-            temperature=kwargs.get('temperature', 0.7),
-            top_p=kwargs.get('top_p', 0.95),
-            max_tokens=kwargs.get('max_tokens', 512),
-            request_id=kwargs.get('request_id', '')
+            prompt=kwargs.get("prompt", ""),
+            temperature=kwargs.get("temperature", 0.7),
+            top_p=kwargs.get("top_p", 0.95),
+            max_tokens=kwargs.get("max_tokens", 512),
+            request_id=kwargs.get("request_id", ""),
         )
 
     def _create_embed_request(self, **kwargs):
         """Create EmbedRequest using protobuf."""
         return jenova_pb2.EmbedRequest(
-            text=kwargs.get('text', ''),
-            request_id=kwargs.get('request_id', '')
+            text=kwargs.get("text", ""), request_id=kwargs.get("request_id", "")
         )
 
     def _create_embed_batch_request(self, **kwargs):
         """Create EmbedBatchRequest using protobuf."""
         return jenova_pb2.EmbedBatchRequest(
-            texts=kwargs.get('texts', []),
-            request_id=kwargs.get('request_id', '')
+            texts=kwargs.get("texts", []), request_id=kwargs.get("request_id", "")
         )
 
     def _create_health_check_request(self):

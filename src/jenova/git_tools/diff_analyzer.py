@@ -4,6 +4,7 @@
 
 """Analyze and summarize Git diffs."""
 
+
 class DiffAnalyzer:
     """Analyze diffs and extract meaningful information."""
 
@@ -13,34 +14,31 @@ class DiffAnalyzer:
 
     def analyze(self, diff_text: str) -> dict:
         """Analyze diff and return statistics."""
-        lines = diff_text.split('\n')
+        lines = diff_text.split("\n")
 
-        stats = {
-            'files_changed': 0,
-            'additions': 0,
-            'deletions': 0,
-            'files': []
-        }
+        stats = {"files_changed": 0, "additions": 0, "deletions": 0, "files": []}
 
         current_file = None
 
         for line in lines:
-            if line.startswith('diff --git'):
+            if line.startswith("diff --git"):
                 parts = line.split()
                 if len(parts) >= 4:
-                    current_file = parts[3].lstrip('b/')
-                    stats['files_changed'] += 1
-                    stats['files'].append({'name': current_file, 'additions': 0, 'deletions': 0})
+                    current_file = parts[3].lstrip("b/")
+                    stats["files_changed"] += 1
+                    stats["files"].append(
+                        {"name": current_file, "additions": 0, "deletions": 0}
+                    )
 
-            elif line.startswith('+') and not line.startswith('+++'):
-                stats['additions'] += 1
-                if stats['files']:
-                    stats['files'][-1]['additions'] += 1
+            elif line.startswith("+") and not line.startswith("+++"):
+                stats["additions"] += 1
+                if stats["files"]:
+                    stats["files"][-1]["additions"] += 1
 
-            elif line.startswith('-') and not line.startswith('---'):
-                stats['deletions'] += 1
-                if stats['files']:
-                    stats['files'][-1]['deletions'] += 1
+            elif line.startswith("-") and not line.startswith("---"):
+                stats["deletions"] += 1
+                if stats["files"]:
+                    stats["files"][-1]["deletions"] += 1
 
         return stats
 
@@ -50,7 +48,7 @@ class DiffAnalyzer:
 
         summary = [
             f"Changed {stats['files_changed']} file(s)",
-            f"+{stats['additions']} additions, -{stats['deletions']} deletions"
+            f"+{stats['additions']} additions, -{stats['deletions']} deletions",
         ]
 
-        return '\n'.join(summary)
+        return "\n".join(summary)

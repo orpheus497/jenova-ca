@@ -21,6 +21,7 @@ from typing import Dict, List, Optional
 @dataclass
 class NetworkMetricSnapshot:
     """Snapshot of network metrics at a point in time."""
+
     timestamp: float
     total_requests: int
     successful_requests: int
@@ -36,6 +37,7 @@ class NetworkMetricSnapshot:
 @dataclass
 class PeerMetrics:
     """Metrics for a specific peer."""
+
     peer_id: str
     peer_name: str
     total_requests: int = 0
@@ -96,7 +98,7 @@ class NetworkMetricsCollector:
         latency_ms: float,
         success: bool,
         bytes_sent: int = 0,
-        bytes_received: int = 0
+        bytes_received: int = 0,
     ):
         """
         Record a network request.
@@ -114,8 +116,7 @@ class NetworkMetricsCollector:
             # Get or create peer metrics
             if peer_id not in self.peer_metrics:
                 self.peer_metrics[peer_id] = PeerMetrics(
-                    peer_id=peer_id,
-                    peer_name=peer_name
+                    peer_id=peer_id, peer_name=peer_name
                 )
 
             peer = self.peer_metrics[peer_id]
@@ -174,19 +175,20 @@ class NetworkMetricsCollector:
                 avg_latency = p95_latency = p99_latency = 0.0
 
             return {
-                'total_requests': self.total_requests,
-                'successful_requests': self.successful_requests,
-                'failed_requests': self.failed_requests,
-                'success_rate': (
+                "total_requests": self.total_requests,
+                "successful_requests": self.successful_requests,
+                "failed_requests": self.failed_requests,
+                "success_rate": (
                     self.successful_requests / self.total_requests * 100
-                    if self.total_requests > 0 else 0.0
+                    if self.total_requests > 0
+                    else 0.0
                 ),
-                'avg_latency_ms': avg_latency,
-                'p95_latency_ms': p95_latency,
-                'p99_latency_ms': p99_latency,
-                'active_peers': active_peers,
-                'requests_by_type': dict(self.requests_by_type),
-                'uptime_seconds': time.time() - self.start_time
+                "avg_latency_ms": avg_latency,
+                "p95_latency_ms": p95_latency,
+                "p99_latency_ms": p99_latency,
+                "active_peers": active_peers,
+                "requests_by_type": dict(self.requests_by_type),
+                "uptime_seconds": time.time() - self.start_time,
             }
 
     def take_snapshot(self) -> NetworkMetricSnapshot:
@@ -195,13 +197,13 @@ class NetworkMetricsCollector:
 
         snapshot = NetworkMetricSnapshot(
             timestamp=time.time(),
-            total_requests=metrics['total_requests'],
-            successful_requests=metrics['successful_requests'],
-            failed_requests=metrics['failed_requests'],
-            avg_latency_ms=metrics['avg_latency_ms'],
-            p95_latency_ms=metrics['p95_latency_ms'],
-            p99_latency_ms=metrics['p99_latency_ms'],
-            active_peers=metrics['active_peers']
+            total_requests=metrics["total_requests"],
+            successful_requests=metrics["successful_requests"],
+            failed_requests=metrics["failed_requests"],
+            avg_latency_ms=metrics["avg_latency_ms"],
+            p95_latency_ms=metrics["p95_latency_ms"],
+            p99_latency_ms=metrics["p99_latency_ms"],
+            active_peers=metrics["active_peers"],
         )
 
         with self.lock:
@@ -209,7 +211,9 @@ class NetworkMetricsCollector:
 
         return snapshot
 
-    def get_historical_snapshots(self, count: Optional[int] = None) -> List[NetworkMetricSnapshot]:
+    def get_historical_snapshots(
+        self, count: Optional[int] = None
+    ) -> List[NetworkMetricSnapshot]:
         """
         Get historical metric snapshots.
 
@@ -243,23 +247,27 @@ class NetworkMetricsCollector:
                 else:
                     avg_latency = p95_latency = 0.0
 
-                summary.append({
-                    'peer_id': peer_id,
-                    'peer_name': peer.peer_name,
-                    'total_requests': peer.total_requests,
-                    'success_rate': (
-                        peer.successful_requests / peer.total_requests * 100
-                        if peer.total_requests > 0 else 0.0
-                    ),
-                    'avg_latency_ms': avg_latency,
-                    'p95_latency_ms': p95_latency,
-                    'last_request_seconds_ago': time.time() - peer.last_request_time,
-                    'bytes_sent': peer.bytes_sent,
-                    'bytes_received': peer.bytes_received
-                })
+                summary.append(
+                    {
+                        "peer_id": peer_id,
+                        "peer_name": peer.peer_name,
+                        "total_requests": peer.total_requests,
+                        "success_rate": (
+                            peer.successful_requests / peer.total_requests * 100
+                            if peer.total_requests > 0
+                            else 0.0
+                        ),
+                        "avg_latency_ms": avg_latency,
+                        "p95_latency_ms": p95_latency,
+                        "last_request_seconds_ago": time.time()
+                        - peer.last_request_time,
+                        "bytes_sent": peer.bytes_sent,
+                        "bytes_received": peer.bytes_received,
+                    }
+                )
 
             # Sort by total requests (descending)
-            summary.sort(key=lambda x: x['total_requests'], reverse=True)
+            summary.sort(key=lambda x: x["total_requests"], reverse=True)
 
             return summary
 
@@ -303,17 +311,15 @@ class NetworkMetricsCollector:
                 f"P95 {metrics['p95_latency_ms']:.1f}ms, "
                 f"P99 {metrics['p99_latency_ms']:.1f}ms"
             )
-            self.file_logger.log_info(
-                f"Active Peers: {metrics['active_peers']}"
-            )
+            self.file_logger.log_info(f"Active Peers: {metrics['active_peers']}")
 
             # Log request type breakdown
-            if metrics['requests_by_type']:
+            if metrics["requests_by_type"]:
                 self.file_logger.log_info("Request Types:")
                 for req_type, count in sorted(
-                    metrics['requests_by_type'].items(),
+                    metrics["requests_by_type"].items(),
                     key=lambda x: x[1],
-                    reverse=True
+                    reverse=True,
                 ):
                     self.file_logger.log_info(f"  {req_type}: {count}")
 

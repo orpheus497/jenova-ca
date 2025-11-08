@@ -20,13 +20,13 @@ from jenova.cognitive_engine.scheduler import CognitiveScheduler
 from jenova.cognitive_engine.rag_system import RAGSystem, LRUCache
 from jenova.cognitive_engine.memory_search import MemorySearch
 
-__version__ = '4.2.0'
-__phase__ = 'Phase 5: Cognitive Engine Enhancements'
+__version__ = "4.2.0"
+__phase__ = "Phase 5: Cognitive Engine Enhancements"
 
 __all__ = [
-    'CognitiveEngine',
-    'CognitiveScheduler',
-    'RAGSystem',
-    'LRUCache',
-    'MemorySearch',
+    "CognitiveEngine",
+    "CognitiveScheduler",
+    "RAGSystem",
+    "LRUCache",
+    "MemorySearch",
 ]

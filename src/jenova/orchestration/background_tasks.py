@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 class TaskStatus(Enum):
     """Status of a background task."""
+
     STARTING = "starting"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -54,7 +55,7 @@ class BackgroundTask:
             "end_time": self.end_time.isoformat() if self.end_time else None,
             "exit_code": self.exit_code,
             "pid": self.process.pid if self.process else None,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
 
@@ -89,7 +90,7 @@ class BackgroundTaskManager:
         command: List[str],
         cwd: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> int:
         """
         Start a background task.
@@ -110,11 +111,7 @@ class BackgroundTaskManager:
             task_id = self._next_task_id
             self._next_task_id += 1
 
-        task = BackgroundTask(
-            task_id=task_id,
-            command=command,
-            metadata=metadata or {}
-        )
+        task = BackgroundTask(task_id=task_id, command=command, metadata=metadata or {})
 
         try:
             # Start process
@@ -125,7 +122,7 @@ class BackgroundTaskManager:
                 text=True,
                 cwd=cwd,
                 env=env,
-                bufsize=1
+                bufsize=1,
             )
 
             task.process = process
@@ -134,7 +131,9 @@ class BackgroundTaskManager:
             with self._lock:
                 self.tasks[task_id] = task
 
-            logger.info(f"Started background task {task_id}: {' '.join(command)} (PID: {process.pid})")
+            logger.info(
+                f"Started background task {task_id}: {' '.join(command)} (PID: {process.pid})"
+            )
 
             # Start monitoring if not already running
             self._ensure_monitoring()
@@ -151,7 +150,9 @@ class BackgroundTaskManager:
         """Ensure the monitoring thread is running."""
         if not self._monitoring:
             self._monitoring = True
-            self._monitor_thread = threading.Thread(target=self._monitor_tasks, daemon=True)
+            self._monitor_thread = threading.Thread(
+                target=self._monitor_tasks, daemon=True
+            )
             self._monitor_thread.start()
             logger.debug("Started task monitoring thread")
 
@@ -170,14 +171,20 @@ class BackgroundTaskManager:
 
                     if poll_result is not None:
                         # Process has ended
-                        task.status = TaskStatus.COMPLETED if poll_result == 0 else TaskStatus.FAILED
+                        task.status = (
+                            TaskStatus.COMPLETED
+                            if poll_result == 0
+                            else TaskStatus.FAILED
+                        )
                         task.exit_code = poll_result
                         task.end_time = datetime.now()
 
                         # Collect remaining output
                         self._collect_output(task)
 
-                        logger.info(f"Task {task.task_id} ended with exit code {poll_result}")
+                        logger.info(
+                            f"Task {task.task_id} ended with exit code {poll_result}"
+                        )
                     else:
                         # Process still running, collect output
                         self._collect_output(task)
@@ -252,7 +259,9 @@ class BackgroundTaskManager:
                 return True
             except subprocess.TimeoutExpired:
                 # Force kill
-                logger.warning(f"Task {task_id} did not terminate gracefully, forcing kill")
+                logger.warning(
+                    f"Task {task_id} did not terminate gracefully, forcing kill"
+                )
                 task.process.kill()
                 task.process.wait()
                 task.status = TaskStatus.TERMINATED
@@ -303,10 +312,7 @@ class BackgroundTaskManager:
         if not task:
             return None
 
-        return {
-            "stdout": task.stdout.copy(),
-            "stderr": task.stderr.copy()
-        }
+        return {"stdout": task.stdout.copy(), "stderr": task.stderr.copy()}
 
     def get_resource_usage(self, task_id: int) -> Optional[Dict[str, Any]]:
         """
@@ -330,13 +336,17 @@ class BackgroundTaskManager:
                 "memory_mb": process.memory_info().rss / (1024 * 1024),
                 "memory_percent": process.memory_percent(),
                 "num_threads": process.num_threads(),
-                "create_time": datetime.fromtimestamp(process.create_time()).isoformat()
+                "create_time": datetime.fromtimestamp(
+                    process.create_time()
+                ).isoformat(),
             }
         except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
             logger.error(f"Error getting resource usage for task {task_id}: {e}")
             return None
 
-    def list_tasks(self, status_filter: Optional[TaskStatus] = None) -> List[Dict[str, Any]]:
+    def list_tasks(
+        self, status_filter: Optional[TaskStatus] = None
+    ) -> List[Dict[str, Any]]:
         """
         List all tasks.
 
@@ -363,8 +373,10 @@ class BackgroundTaskManager:
         """
         with self._lock:
             tasks_to_remove = [
-                task_id for task_id, task in self.tasks.items()
-                if task.status in (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.TERMINATED)
+                task_id
+                for task_id, task in self.tasks.items()
+                if task.status
+                in (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.TERMINATED)
             ]
 
             for task_id in tasks_to_remove:
@@ -384,7 +396,8 @@ class BackgroundTaskManager:
             Number of tasks stopped
         """
         running_tasks = [
-            task_id for task_id, task in self.tasks.items()
+            task_id
+            for task_id, task in self.tasks.items()
             if task.status == TaskStatus.RUNNING
         ]
 

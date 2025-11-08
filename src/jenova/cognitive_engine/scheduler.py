@@ -33,17 +33,22 @@ class CognitiveScheduler:
         self.conversation_intensity = 0
 
         # Load scheduler configuration with defaults
-        scheduler_config = self.config.get('scheduler', {})
+        scheduler_config = self.config.get("scheduler", {})
         self.base_intervals = {
-            'generate_insight': scheduler_config.get('generate_insight_interval', 5),
-            'generate_assumption': scheduler_config.get('generate_assumption_interval', 7),
-            'proactively_verify_assumption': scheduler_config.get('proactively_verify_assumption_interval', 8),
-            'reflect': scheduler_config.get('reflect_interval', 10),
+            "generate_insight": scheduler_config.get("generate_insight_interval", 5),
+            "generate_assumption": scheduler_config.get(
+                "generate_assumption_interval", 7
+            ),
+            "proactively_verify_assumption": scheduler_config.get(
+                "proactively_verify_assumption_interval", 8
+            ),
+            "reflect": scheduler_config.get("reflect_interval", 10),
         }
 
         if self.file_logger:
             self.file_logger.log_info(
-                f"Cognitive Scheduler initialized with intervals: {self.base_intervals}")
+                f"Cognitive Scheduler initialized with intervals: {self.base_intervals}"
+            )
 
     def _update_conversation_intensity(self, user_input: str):
         """Updates a simple metric for conversation intensity."""
@@ -54,14 +59,16 @@ class CognitiveScheduler:
             elif len(user_input) > 20:
                 self.conversation_intensity += 1
             else:
-                self.conversation_intensity = max(
-                    0, self.conversation_intensity - 1)
+                self.conversation_intensity = max(0, self.conversation_intensity - 1)
         except Exception as e:
             if self.file_logger:
                 self.file_logger.log_error(
-                    f"Error updating conversation intensity: {e}")
+                    f"Error updating conversation intensity: {e}"
+                )
 
-    def get_cognitive_tasks(self, turn_count: int, user_input: str, username: str) -> list:
+    def get_cognitive_tasks(
+        self, turn_count: int, user_input: str, username: str
+    ) -> list:
         """
         Determines which cognitive tasks to run based on the current context.
 
@@ -73,10 +80,12 @@ class CognitiveScheduler:
             tasks = []
 
             # --- Base Intervals ---
-            generate_insight_interval = self.base_intervals['generate_insight']
-            generate_assumption_interval = self.base_intervals['generate_assumption']
-            proactively_verify_assumption_interval = self.base_intervals['proactively_verify_assumption']
-            reflect_interval = self.base_intervals['reflect']
+            generate_insight_interval = self.base_intervals["generate_insight"]
+            generate_assumption_interval = self.base_intervals["generate_assumption"]
+            proactively_verify_assumption_interval = self.base_intervals[
+                "proactively_verify_assumption"
+            ]
+            reflect_interval = self.base_intervals["reflect"]
 
             # --- Dynamic Adjustments ---
             # Generate insights more frequently during intense conversations
@@ -86,30 +95,47 @@ class CognitiveScheduler:
             # Verify assumptions more often if many are unverified
             try:
                 unverified_assumptions = self.cortex.get_all_nodes_by_type(
-                    'assumption', username)
-                unverified_count = len([a for a in unverified_assumptions
-                                       if a.metadata.get('status') == 'unverified'])
+                    "assumption", username
+                )
+                unverified_count = len(
+                    [
+                        a
+                        for a in unverified_assumptions
+                        if a.metadata.get("status") == "unverified"
+                    ]
+                )
                 if unverified_count > 3:
                     proactively_verify_assumption_interval = max(
-                        3, proactively_verify_assumption_interval - 3)
+                        3, proactively_verify_assumption_interval - 3
+                    )
             except Exception as e:
                 if self.file_logger:
                     self.file_logger.log_error(
-                        f"Error checking unverified assumptions: {e}")
+                        f"Error checking unverified assumptions: {e}"
+                    )
 
             # --- Task Scheduling ---
-            if self._should_run("generate_insight", turn_count, interval=generate_insight_interval):
-                tasks.append(
-                    ("generate_insight_from_history", {"username": username}))
-                self.conversation_intensity = 0  # Reset intensity after generating an insight
+            if self._should_run(
+                "generate_insight", turn_count, interval=generate_insight_interval
+            ):
+                tasks.append(("generate_insight_from_history", {"username": username}))
+                self.conversation_intensity = (
+                    0  # Reset intensity after generating an insight
+                )
 
-            if self._should_run("generate_assumption", turn_count, interval=generate_assumption_interval):
+            if self._should_run(
+                "generate_assumption", turn_count, interval=generate_assumption_interval
+            ):
                 tasks.append(
-                    ("generate_assumption_from_history", {"username": username}))
+                    ("generate_assumption_from_history", {"username": username})
+                )
 
-            if self._should_run("proactively_verify_assumption", turn_count, interval=proactively_verify_assumption_interval):
-                tasks.append(
-                    ("proactively_verify_assumption", {"username": username}))
+            if self._should_run(
+                "proactively_verify_assumption",
+                turn_count,
+                interval=proactively_verify_assumption_interval,
+            ):
+                tasks.append(("proactively_verify_assumption", {"username": username}))
 
             if self._should_run("reflect", turn_count, interval=reflect_interval):
                 tasks.append(("reflect_on_insights", {"username": username}))
@@ -117,14 +143,14 @@ class CognitiveScheduler:
             if tasks and self.file_logger:
                 task_names = [name for name, _ in tasks]
                 self.file_logger.log_info(
-                    f"Scheduled cognitive tasks for turn {turn_count}: {task_names}")
+                    f"Scheduled cognitive tasks for turn {turn_count}: {task_names}"
+                )
 
             return tasks
 
         except Exception as e:
             if self.file_logger:
-                self.file_logger.log_error(
-                    f"Error in get_cognitive_tasks: {e}")
+                self.file_logger.log_error(f"Error in get_cognitive_tasks: {e}")
             return []  # Return empty list on error to prevent cascade failures
 
     def _should_run(self, task_name: str, turn_count: int, interval: int) -> bool:
@@ -154,7 +180,8 @@ class CognitiveScheduler:
         except Exception as e:
             if self.file_logger:
                 self.file_logger.log_error(
-                    f"Error in _should_run for task '{task_name}': {e}")
+                    f"Error in _should_run for task '{task_name}': {e}"
+                )
             return False
 
     def reset_task_timer(self, task_name: str):
@@ -183,5 +210,5 @@ class CognitiveScheduler:
                 task: (time.isoformat() if time else "Never")
                 for task, time in self.last_execution_times.items()
             },
-            "base_intervals": self.base_intervals
+            "base_intervals": self.base_intervals,
         }

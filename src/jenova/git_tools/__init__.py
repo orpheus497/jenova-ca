@@ -18,11 +18,11 @@ from jenova.git_tools.hooks_manager import HooksManager
 from jenova.git_tools.branch_manager import BranchManager
 
 __all__ = [
-    'GitInterface',
-    'CommitAssistant',
-    'DiffAnalyzer',
-    'HooksManager',
-    'BranchManager',
+    "GitInterface",
+    "CommitAssistant",
+    "DiffAnalyzer",
+    "HooksManager",
+    "BranchManager",
 ]
 
-__version__ = '5.2.0'
+__version__ = "5.2.0"

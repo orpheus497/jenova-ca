@@ -24,11 +24,11 @@ from jenova.network.rpc_client import JenovaRPCClient
 from jenova.network.security import SecurityManager
 
 __all__ = [
-    'JenovaDiscoveryService',
-    'PeerManager',
-    'JenovaRPCClient',
-    'SecurityManager',
+    "JenovaDiscoveryService",
+    "PeerManager",
+    "JenovaRPCClient",
+    "SecurityManager",
 ]
 
-__version__ = '5.0.0'
-__phase__ = 'Phase 8: Distributed Computing & LAN Networking'
+__version__ = "5.0.0"
+__phase__ = "Phase 8: Distributed Computing & LAN Networking"

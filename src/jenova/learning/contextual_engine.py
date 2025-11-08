@@ -26,6 +26,7 @@ from collections import defaultdict, Counter
 @dataclass
 class LearningExample:
     """A single learning example from user interaction."""
+
     input: str
     expected_output: str
     actual_output: str
@@ -38,6 +39,7 @@ class LearningExample:
 @dataclass
 class Pattern:
     """A recognized pattern in user interactions."""
+
     pattern_type: str  # linguistic, behavioral, preference, error
     description: str
     examples: List[str]
@@ -50,6 +52,7 @@ class Pattern:
 @dataclass
 class Skill:
     """A learned skill or capability."""
+
     skill_name: str
     domain: str
     description: str
@@ -86,10 +89,10 @@ class ContextualLearningEngine:
 
         # Performance tracking
         self.performance_metrics = {
-            'accuracy_trend': [],
-            'learning_rate': 0.0,
-            'skill_count': 0,
-            'pattern_count': 0
+            "accuracy_trend": [],
+            "learning_rate": 0.0,
+            "skill_count": 0,
+            "pattern_count": 0,
         }
 
         # Load existing learning data
@@ -104,17 +107,19 @@ class ContextualLearningEngine:
         # Load examples
         if os.path.exists(examples_file):
             try:
-                with open(examples_file, 'r') as f:
+                with open(examples_file, "r") as f:
                     data = json.load(f)
                     self.examples = [LearningExample(**ex) for ex in data]
-                self.file_logger.log_info(f"Loaded {len(self.examples)} learning examples")
+                self.file_logger.log_info(
+                    f"Loaded {len(self.examples)} learning examples"
+                )
             except Exception as e:
                 self.file_logger.log_error(f"Error loading examples: {e}")
 
         # Load patterns
         if os.path.exists(patterns_file):
             try:
-                with open(patterns_file, 'r') as f:
+                with open(patterns_file, "r") as f:
                     data = json.load(f)
                     self.patterns = {k: Pattern(**v) for k, v in data.items()}
                 self.file_logger.log_info(f"Loaded {len(self.patterns)} patterns")
@@ -124,7 +129,7 @@ class ContextualLearningEngine:
         # Load skills
         if os.path.exists(skills_file):
             try:
-                with open(skills_file, 'r') as f:
+                with open(skills_file, "r") as f:
                     data = json.load(f)
                     self.skills = {k: Skill(**v) for k, v in data.items()}
                 self.file_logger.log_info(f"Loaded {len(self.skills)} skills")
@@ -135,24 +140,25 @@ class ContextualLearningEngine:
         """Save learning data to disk."""
         # Save examples (keep last 1000)
         examples_file = os.path.join(self.learning_dir, "examples.json")
-        with open(examples_file, 'w') as f:
+        with open(examples_file, "w") as f:
             examples_data = [asdict(ex) for ex in self.examples[-1000:]]
             json.dump(examples_data, f, indent=2)
 
         # Save patterns
         patterns_file = os.path.join(self.learning_dir, "patterns.json")
-        with open(patterns_file, 'w') as f:
+        with open(patterns_file, "w") as f:
             patterns_data = {k: asdict(v) for k, v in self.patterns.items()}
             json.dump(patterns_data, f, indent=2)
 
         # Save skills
         skills_file = os.path.join(self.learning_dir, "skills.json")
-        with open(skills_file, 'w') as f:
+        with open(skills_file, "w") as f:
             skills_data = {k: asdict(v) for k, v in self.skills.items()}
             json.dump(skills_data, f, indent=2)
 
-    def learn_from_correction(self, user_input: str, actual_output: str,
-                             correction: str, context: Dict):
+    def learn_from_correction(
+        self, user_input: str, actual_output: str, correction: str, context: Dict
+    ):
         """
         Learn from a user correction.
 
@@ -169,7 +175,7 @@ class ContextualLearningEngine:
             correction=correction,
             context=context,
             timestamp=datetime.now().isoformat(),
-            learned=False
+            learned=False,
         )
 
         self.examples.append(example)
@@ -185,8 +191,9 @@ class ContextualLearningEngine:
             f"Learned from correction: '{actual_output}' -> '{correction}'"
         )
 
-    def _extract_patterns_from_correction(self, user_input: str,
-                                         actual_output: str, correction: str):
+    def _extract_patterns_from_correction(
+        self, user_input: str, actual_output: str, correction: str
+    ):
         """Extract learning patterns from corrections."""
         # Identify pattern types
         if len(correction) < len(actual_output):
@@ -200,7 +207,7 @@ class ContextualLearningEngine:
                     confidence=0.5,
                     occurrences=0,
                     first_seen=datetime.now().isoformat(),
-                    last_seen=datetime.now().isoformat()
+                    last_seen=datetime.now().isoformat(),
                 )
             self.patterns[pattern_key].occurrences += 1
             self.patterns[pattern_key].confidence = min(
@@ -221,10 +228,12 @@ class ContextualLearningEngine:
                     confidence=0.7,
                     occurrences=1,
                     first_seen=datetime.now().isoformat(),
-                    last_seen=datetime.now().isoformat()
+                    last_seen=datetime.now().isoformat(),
                 )
 
-    def extract_patterns_from_history(self, interactions: List[Tuple[str, str]]) -> List[Pattern]:
+    def extract_patterns_from_history(
+        self, interactions: List[Tuple[str, str]]
+    ) -> List[Pattern]:
         """
         Extract patterns from interaction history.
 
@@ -255,7 +264,7 @@ class ContextualLearningEngine:
                 confidence=0.8,
                 occurrences=question_types["how"],
                 first_seen=datetime.now().isoformat(),
-                last_seen=datetime.now().isoformat()
+                last_seen=datetime.now().isoformat(),
             )
             self.patterns["preference_procedural"] = pattern
             new_patterns.append(pattern)
@@ -267,7 +276,12 @@ class ContextualLearningEngine:
             next_input, _ = interactions[i + 1]
 
             # If next input is clarification, previous response was insufficient
-            clarification_words = ["what do you mean", "clarify", "explain more", "can you elaborate"]
+            clarification_words = [
+                "what do you mean",
+                "clarify",
+                "explain more",
+                "can you elaborate",
+            ]
             if any(word in next_input.lower() for word in clarification_words):
                 if len(response) < 100:
                     # Short response led to clarification - user needs more detail
@@ -280,17 +294,20 @@ class ContextualLearningEngine:
                             confidence=0.6,
                             occurrences=0,
                             first_seen=datetime.now().isoformat(),
-                            last_seen=datetime.now().isoformat()
+                            last_seen=datetime.now().isoformat(),
                         )
                     self.patterns[pattern_key].occurrences += 1
-                    self.patterns[pattern_key].confidence = min(1.0, self.patterns[pattern_key].confidence + 0.15)
+                    self.patterns[pattern_key].confidence = min(
+                        1.0, self.patterns[pattern_key].confidence + 0.15
+                    )
                     new_patterns.append(self.patterns[pattern_key])
 
         self.save()
         return new_patterns
 
-    def acquire_skill(self, skill_name: str, domain: str, description: str,
-                     examples: List[str]) -> Skill:
+    def acquire_skill(
+        self, skill_name: str, domain: str, description: str, examples: List[str]
+    ) -> Skill:
         """
         Acquire a new skill or capability.
 
@@ -310,11 +327,11 @@ class ContextualLearningEngine:
             proficiency=0.3,  # Start at 30% proficiency
             examples=examples,
             acquired_date=datetime.now().isoformat(),
-            practice_count=0
+            practice_count=0,
         )
 
         self.skills[skill_name] = skill
-        self.performance_metrics['skill_count'] = len(self.skills)
+        self.performance_metrics["skill_count"] = len(self.skills)
 
         self.save()
         self.file_logger.log_info(f"Acquired new skill: {skill_name} in {domain}")
@@ -376,7 +393,7 @@ class ContextualLearningEngine:
                     proficiency=source_skill.proficiency * 0.5,  # 50% transfer
                     examples=[],
                     acquired_date=datetime.now().isoformat(),
-                    practice_count=0
+                    practice_count=0,
                 )
                 self.skills[new_skill_name] = new_skill
                 transferred_skills.append(new_skill)
@@ -396,14 +413,22 @@ class ContextualLearningEngine:
             Performance metrics dictionary
         """
         metrics = {
-            'total_examples': len(self.examples),
-            'learned_examples': sum(1 for ex in self.examples if ex.learned),
-            'learning_rate': self.performance_metrics['learning_rate'],
-            'total_patterns': len(self.patterns),
-            'high_confidence_patterns': sum(1 for p in self.patterns.values() if p.confidence > 0.7),
-            'total_skills': len(self.skills),
-            'proficient_skills': sum(1 for s in self.skills.values() if s.proficiency > 0.7),
-            'avg_skill_proficiency': sum(s.proficiency for s in self.skills.values()) / len(self.skills) if self.skills else 0.0
+            "total_examples": len(self.examples),
+            "learned_examples": sum(1 for ex in self.examples if ex.learned),
+            "learning_rate": self.performance_metrics["learning_rate"],
+            "total_patterns": len(self.patterns),
+            "high_confidence_patterns": sum(
+                1 for p in self.patterns.values() if p.confidence > 0.7
+            ),
+            "total_skills": len(self.skills),
+            "proficient_skills": sum(
+                1 for s in self.skills.values() if s.proficiency > 0.7
+            ),
+            "avg_skill_proficiency": (
+                sum(s.proficiency for s in self.skills.values()) / len(self.skills)
+                if self.skills
+                else 0.0
+            ),
         }
 
         return metrics
@@ -425,17 +450,23 @@ class ContextualLearningEngine:
         # If a domain has < 3 skills, it's underdeveloped
         for domain, skills in domain_skills.items():
             if len(skills) < 3:
-                gaps.append(f"Limited skills in {domain} domain (only {len(skills)} skills)")
+                gaps.append(
+                    f"Limited skills in {domain} domain (only {len(skills)} skills)"
+                )
 
         # Check for skills with low proficiency
         weak_skills = [s for s in self.skills.values() if s.proficiency < 0.5]
         if weak_skills:
-            gaps.append(f"{len(weak_skills)} skills need more practice to reach proficiency")
+            gaps.append(
+                f"{len(weak_skills)} skills need more practice to reach proficiency"
+            )
 
         # Check for patterns with low confidence
         uncertain_patterns = [p for p in self.patterns.values() if p.confidence < 0.5]
         if uncertain_patterns:
-            gaps.append(f"{len(uncertain_patterns)} behavioral patterns need more observations")
+            gaps.append(
+                f"{len(uncertain_patterns)} behavioral patterns need more observations"
+            )
 
         return gaps
 
@@ -445,10 +476,12 @@ class ContextualLearningEngine:
             # Calculate learning rate (how quickly corrections are learned)
             recent_examples = self.examples[-10:]
             learned_count = sum(1 for ex in recent_examples if ex.learned)
-            self.performance_metrics['learning_rate'] = learned_count / len(recent_examples)
+            self.performance_metrics["learning_rate"] = learned_count / len(
+                recent_examples
+            )
 
-        self.performance_metrics['pattern_count'] = len(self.patterns)
-        self.performance_metrics['skill_count'] = len(self.skills)
+        self.performance_metrics["pattern_count"] = len(self.patterns)
+        self.performance_metrics["skill_count"] = len(self.skills)
 
     def get_learning_insights(self) -> List[str]:
         """
@@ -461,7 +494,9 @@ class ContextualLearningEngine:
 
         # Skill acquisition insights
         if len(self.skills) > 0:
-            avg_proficiency = sum(s.proficiency for s in self.skills.values()) / len(self.skills)
+            avg_proficiency = sum(s.proficiency for s in self.skills.values()) / len(
+                self.skills
+            )
             insights.append(
                 f"Acquired {len(self.skills)} skills with average proficiency of {avg_proficiency:.1%}"
             )
@@ -474,11 +509,11 @@ class ContextualLearningEngine:
             )
 
         # Learning rate insight
-        if self.performance_metrics['learning_rate'] > 0.7:
+        if self.performance_metrics["learning_rate"] > 0.7:
             insights.append(
                 f"High learning rate ({self.performance_metrics['learning_rate']:.1%}) - effectively integrating feedback"
             )
-        elif self.performance_metrics['learning_rate'] < 0.3:
+        elif self.performance_metrics["learning_rate"] < 0.3:
             insights.append(
                 f"Learning rate could be improved ({self.performance_metrics['learning_rate']:.1%}) - more practice needed"
             )
@@ -491,6 +526,8 @@ class ContextualLearningEngine:
         for domain, skills in domain_skills.items():
             avg_prof = sum(s.proficiency for s in skills) / len(skills)
             if avg_prof > 0.7:
-                insights.append(f"Strong expertise in {domain} domain ({len(skills)} skills, {avg_prof:.1%} proficiency)")
+                insights.append(
+                    f"Strong expertise in {domain} domain ({len(skills)} skills, {avg_prof:.1%} proficiency)"
+                )
 
         return insights

@@ -22,9 +22,10 @@ from jenova.infrastructure.data_validator import PerformanceMetric
 @dataclass
 class MetricStats:
     """Statistics for a metric."""
+
     count: int = 0
     total_time: float = 0.0
-    min_time: float = float('inf')
+    min_time: float = float("inf")
     max_time: float = 0.0
     success_count: int = 0
     failure_count: int = 0
@@ -43,7 +44,11 @@ class MetricStats:
     @property
     def recent_avg_time(self) -> float:
         """Average of recent execution times."""
-        return sum(self.recent_times) / len(self.recent_times) if self.recent_times else 0.0
+        return (
+            sum(self.recent_times) / len(self.recent_times)
+            if self.recent_times
+            else 0.0
+        )
 
 
 class MetricsCollector:
@@ -96,14 +101,16 @@ class MetricsCollector:
                 operation=operation,
                 duration=duration,
                 success=success,
-                metadata=metadata or {}
+                metadata=metadata or {},
             )
 
-    def record_metric(self,
-                     operation: str,
-                     duration: float,
-                     success: bool = True,
-                     metadata: Optional[Dict[str, Any]] = None):
+    def record_metric(
+        self,
+        operation: str,
+        duration: float,
+        success: bool = True,
+        metadata: Optional[Dict[str, Any]] = None,
+    ):
         """
         Record a performance metric.
 
@@ -132,13 +139,13 @@ class MetricsCollector:
             duration_seconds=duration,
             success=success,
             timestamp=time.time(),
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         # Add to history (with size limit)
         self.metric_history.append(metric)
         if len(self.metric_history) > self.max_history_size:
-            self.metric_history = self.metric_history[-self.max_history_size:]
+            self.metric_history = self.metric_history[-self.max_history_size :]
 
         # Log slow operations
         if duration > 10.0 and self.file_logger:
@@ -208,19 +215,19 @@ class MetricsCollector:
             "=== Performance Metrics Summary ===",
             f"Uptime: {time.time() - self.start_time:.1f}s",
             f"Total operations: {sum(s.count for s in self.metrics.values())}",
-            ""
+            "",
         ]
 
         # Sort by total time (most expensive operations first)
         sorted_ops = sorted(
-            self.metrics.items(),
-            key=lambda x: x[1].total_time,
-            reverse=True
+            self.metrics.items(), key=lambda x: x[1].total_time, reverse=True
         )[:top_n]
 
         lines.append(f"Top {len(sorted_ops)} operations by total time:")
         lines.append("-" * 80)
-        lines.append(f"{'Operation':<30} {'Count':>8} {'Avg (s)':>10} {'Total (s)':>12} {'Success %':>12}")
+        lines.append(
+            f"{'Operation':<30} {'Count':>8} {'Avg (s)':>10} {'Total (s)':>12} {'Success %':>12}"
+        )
         lines.append("-" * 80)
 
         for op_name, stats in sorted_ops:
@@ -279,11 +286,13 @@ class MetricsCollector:
         self.metrics.clear()
         self.metric_history.clear()
         self.start_time = time.time()
-        
+
         if self.file_logger:
             self.file_logger.log_info("Metrics reset")
 
-    def get_slow_operations(self, threshold_seconds: float = 5.0) -> List[PerformanceMetric]:
+    def get_slow_operations(
+        self, threshold_seconds: float = 5.0
+    ) -> List[PerformanceMetric]:
         """
         Get operations that took longer than threshold.
 
@@ -294,8 +303,7 @@ class MetricsCollector:
             List of slow PerformanceMetric objects
         """
         return [
-            m for m in self.metric_history
-            if m.duration_seconds >= threshold_seconds
+            m for m in self.metric_history if m.duration_seconds >= threshold_seconds
         ]
 
     def get_failed_operations(self) -> List[PerformanceMetric]:
@@ -315,30 +323,30 @@ class MetricsCollector:
             Dictionary with all metrics data
         """
         return {
-            'uptime_seconds': time.time() - self.start_time,
-            'operations': {
+            "uptime_seconds": time.time() - self.start_time,
+            "operations": {
                 op_name: {
-                    'count': stats.count,
-                    'avg_time': stats.avg_time,
-                    'total_time': stats.total_time,
-                    'min_time': stats.min_time if stats.min_time != float('inf') else 0,
-                    'max_time': stats.max_time,
-                    'success_rate': stats.success_rate,
-                    'success_count': stats.success_count,
-                    'failure_count': stats.failure_count,
+                    "count": stats.count,
+                    "avg_time": stats.avg_time,
+                    "total_time": stats.total_time,
+                    "min_time": stats.min_time if stats.min_time != float("inf") else 0,
+                    "max_time": stats.max_time,
+                    "success_rate": stats.success_rate,
+                    "success_count": stats.success_count,
+                    "failure_count": stats.failure_count,
                 }
                 for op_name, stats in self.metrics.items()
             },
-            'recent_metrics': [
+            "recent_metrics": [
                 {
-                    'operation': m.operation,
-                    'duration': m.duration_seconds,
-                    'success': m.success,
-                    'timestamp': m.timestamp,
-                    'metadata': m.metadata
+                    "operation": m.operation,
+                    "duration": m.duration_seconds,
+                    "success": m.success,
+                    "timestamp": m.timestamp,
+                    "metadata": m.metadata,
                 }
                 for m in self.metric_history[-100:]  # Last 100 metrics
-            ]
+            ],
         }
 
     def get_operation_trend(self, operation: str, window_size: int = 10) -> List[float]:

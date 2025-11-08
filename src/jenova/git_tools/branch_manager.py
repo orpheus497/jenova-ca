@@ -4,6 +4,7 @@
 
 """Git branch operations and naming."""
 
+
 class BranchManager:
     """Manage Git branches."""
 
@@ -16,10 +17,11 @@ class BranchManager:
         """Suggest branch name from description."""
         # Clean and format description
         name = description.lower()
-        name = name.replace(' ', '-')
+        name = name.replace(" ", "-")
         # Remove special characters
         import re
-        name = re.sub(r'[^a-z0-9-]', '', name)
+
+        name = re.sub(r"[^a-z0-9-]", "", name)
         # Limit length
         if len(name) > 50:
             name = name[:50]
@@ -38,7 +40,9 @@ class BranchManager:
             return False
 
         try:
-            self.git.repo.git.merge(branch_name, m=message or f"Merge branch '{branch_name}'")
+            self.git.repo.git.merge(
+                branch_name, m=message or f"Merge branch '{branch_name}'"
+            )
             return True
         except Exception as e:
             if self.file_logger:

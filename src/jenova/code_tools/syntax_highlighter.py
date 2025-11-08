@@ -24,7 +24,7 @@ class SyntaxHighlighter:
     - Diff highlighting
     """
 
-    def __init__(self, style: str = 'monokai'):
+    def __init__(self, style: str = "monokai"):
         """
         Initialize syntax highlighter.
 
@@ -51,8 +51,9 @@ class SyntaxHighlighter:
         except ImportError:
             pass
 
-    def highlight_code(self, code: str, language: Optional[str] = None,
-                      line_numbers: bool = False) -> str:
+    def highlight_code(
+        self, code: str, language: Optional[str] = None, line_numbers: bool = False
+    ) -> str:
         """
         Highlight code with syntax coloring.
 
@@ -67,9 +68,11 @@ class SyntaxHighlighter:
         if not self._pygments_available:
             # Fallback: return code with line numbers if requested
             if line_numbers:
-                lines = code.split('\n')
+                lines = code.split("\n")
                 width = len(str(len(lines)))
-                return '\n'.join(f"{i+1:>{width}} | {line}" for i, line in enumerate(lines))
+                return "\n".join(
+                    f"{i+1:>{width}} | {line}" for i, line in enumerate(lines)
+                )
             return code
 
         try:
@@ -81,8 +84,7 @@ class SyntaxHighlighter:
 
             # Get formatter
             formatter = self.Terminal256Formatter(
-                style=self.style,
-                linenos=line_numbers
+                style=self.style, linenos=line_numbers
             )
 
             # Highlight
@@ -91,9 +93,11 @@ class SyntaxHighlighter:
         except Exception:
             # Fallback to plain code
             if line_numbers:
-                lines = code.split('\n')
+                lines = code.split("\n")
                 width = len(str(len(lines)))
-                return '\n'.join(f"{i+1:>{width}} | {line}" for i, line in enumerate(lines))
+                return "\n".join(
+                    f"{i+1:>{width}} | {line}" for i, line in enumerate(lines)
+                )
             return code
 
     def highlight_file(self, file_path: str, line_numbers: bool = True) -> str:
@@ -108,7 +112,7 @@ class SyntaxHighlighter:
             Highlighted file content
         """
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 code = f.read()
 
             # Detect language from extension
@@ -133,7 +137,7 @@ class SyntaxHighlighter:
             return diff_text
 
         try:
-            lexer = self.get_lexer_by_name('diff')
+            lexer = self.get_lexer_by_name("diff")
             formatter = self.Terminal256Formatter(style=self.style)
             return self.highlight(diff_text, lexer, formatter)
 
@@ -151,29 +155,30 @@ class SyntaxHighlighter:
             Language name or None
         """
         ext_map = {
-            '.py': 'python',
-            '.js': 'javascript',
-            '.ts': 'typescript',
-            '.java': 'java',
-            '.cpp': 'cpp',
-            '.c': 'c',
-            '.h': 'c',
-            '.hpp': 'cpp',
-            '.rs': 'rust',
-            '.go': 'go',
-            '.rb': 'ruby',
-            '.php': 'php',
-            '.sh': 'bash',
-            '.yaml': 'yaml',
-            '.yml': 'yaml',
-            '.json': 'json',
-            '.xml': 'xml',
-            '.html': 'html',
-            '.css': 'css',
-            '.md': 'markdown',
-            '.sql': 'sql',
+            ".py": "python",
+            ".js": "javascript",
+            ".ts": "typescript",
+            ".java": "java",
+            ".cpp": "cpp",
+            ".c": "c",
+            ".h": "c",
+            ".hpp": "cpp",
+            ".rs": "rust",
+            ".go": "go",
+            ".rb": "ruby",
+            ".php": "php",
+            ".sh": "bash",
+            ".yaml": "yaml",
+            ".yml": "yaml",
+            ".json": "json",
+            ".xml": "xml",
+            ".html": "html",
+            ".css": "css",
+            ".md": "markdown",
+            ".sql": "sql",
         }
 
         import os
+
         _, ext = os.path.splitext(file_path)
         return ext_map.get(ext.lower())

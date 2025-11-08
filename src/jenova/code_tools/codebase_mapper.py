@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 @dataclass
 class FileInfo:
     """Information about a file in the codebase."""
+
     path: str
     language: str
     size: int
@@ -31,6 +32,7 @@ class FileInfo:
 @dataclass
 class ProjectStructure:
     """Represents the complete project structure."""
+
     root_path: str
     files: List[FileInfo]
     total_files: int
@@ -62,7 +64,9 @@ class CodebaseMapper:
         self.ui_logger = ui_logger
         self.file_logger = file_logger
 
-    def map_project(self, root_path: str, exclude_dirs: Optional[List[str]] = None) -> ProjectStructure:
+    def map_project(
+        self, root_path: str, exclude_dirs: Optional[List[str]] = None
+    ) -> ProjectStructure:
         """
         Map entire project structure.
 
@@ -74,7 +78,15 @@ class CodebaseMapper:
             ProjectStructure object
         """
         if exclude_dirs is None:
-            exclude_dirs = ['__pycache__', '.git', 'node_modules', 'venv', '.venv', 'build', 'dist']
+            exclude_dirs = [
+                "__pycache__",
+                ".git",
+                "node_modules",
+                "venv",
+                ".venv",
+                "build",
+                "dist",
+            ]
 
         files = []
         total_lines = 0
@@ -109,7 +121,7 @@ class CodebaseMapper:
             total_files=len(files),
             total_lines=total_lines,
             languages=languages,
-            dependencies=all_dependencies
+            dependencies=all_dependencies,
         )
 
     def _analyze_file(self, file_path: str, language: str) -> Optional[FileInfo]:
@@ -126,7 +138,7 @@ class CodebaseMapper:
         try:
             size = os.path.getsize(file_path)
 
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
                 lines = len(content.splitlines())
 
@@ -135,9 +147,10 @@ class CodebaseMapper:
             imports = set()
 
             # Python-specific analysis
-            if language == 'python':
+            if language == "python":
                 try:
                     from jenova.code_tools.code_parser import CodeParser
+
                     parser = CodeParser()
                     structure = parser.parse_file(file_path)
 
@@ -156,7 +169,7 @@ class CodebaseMapper:
                 lines=lines,
                 classes=classes,
                 functions=functions,
-                imports=imports
+                imports=imports,
             )
 
         except Exception as e:
@@ -175,25 +188,29 @@ class CodebaseMapper:
             Language name or None
         """
         ext_map = {
-            '.py': 'python',
-            '.js': 'javascript',
-            '.ts': 'typescript',
-            '.java': 'java',
-            '.cpp': 'cpp',
-            '.c': 'c',
-            '.h': 'c',
-            '.go': 'go',
-            '.rs': 'rust',
-            '.rb': 'ruby',
-            '.php': 'php',
-            '.sh': 'bash',
+            ".py": "python",
+            ".js": "javascript",
+            ".ts": "typescript",
+            ".java": "java",
+            ".cpp": "cpp",
+            ".c": "c",
+            ".h": "c",
+            ".go": "go",
+            ".rs": "rust",
+            ".rb": "ruby",
+            ".php": "php",
+            ".sh": "bash",
         }
 
         _, ext = os.path.splitext(filename)
         return ext_map.get(ext.lower())
 
-    def generate_tree(self, root_path: str, max_depth: int = 3,
-                     exclude_dirs: Optional[List[str]] = None) -> str:
+    def generate_tree(
+        self,
+        root_path: str,
+        max_depth: int = 3,
+        exclude_dirs: Optional[List[str]] = None,
+    ) -> str:
         """
         Generate directory tree visualization.
 
@@ -206,11 +223,11 @@ class CodebaseMapper:
             Tree visualization string
         """
         if exclude_dirs is None:
-            exclude_dirs = ['__pycache__', '.git', 'node_modules', 'venv', '.venv']
+            exclude_dirs = ["__pycache__", ".git", "node_modules", "venv", ".venv"]
 
-        lines = [os.path.basename(root_path) + '/']
+        lines = [os.path.basename(root_path) + "/"]
 
-        def walk_dir(path: str, prefix: str = '', depth: int = 0):
+        def walk_dir(path: str, prefix: str = "", depth: int = 0):
             if depth >= max_depth:
                 return
 
@@ -220,26 +237,30 @@ class CodebaseMapper:
                 return
 
             # Separate dirs and files
-            dirs = [e for e in entries if os.path.isdir(os.path.join(path, e)) and e not in exclude_dirs]
+            dirs = [
+                e
+                for e in entries
+                if os.path.isdir(os.path.join(path, e)) and e not in exclude_dirs
+            ]
             files = [e for e in entries if os.path.isfile(os.path.join(path, e))]
 
             # Process directories
             for i, dir_name in enumerate(dirs):
                 is_last_dir = (i == len(dirs) - 1) and not files
-                connector = '└── ' if is_last_dir else '├── '
+                connector = "└── " if is_last_dir else "├── "
                 lines.append(f"{prefix}{connector}{dir_name}/")
 
-                extension = '    ' if is_last_dir else '│   '
+                extension = "    " if is_last_dir else "│   "
                 walk_dir(os.path.join(path, dir_name), prefix + extension, depth + 1)
 
             # Process files
             for i, file_name in enumerate(files):
                 is_last = i == len(files) - 1
-                connector = '└── ' if is_last else '├── '
+                connector = "└── " if is_last else "├── "
                 lines.append(f"{prefix}{connector}{file_name}")
 
         walk_dir(root_path)
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     def find_files(self, root_path: str, pattern: str) -> List[str]:
         """
@@ -283,7 +304,9 @@ class CodebaseMapper:
             "Languages:",
         ]
 
-        for lang, count in sorted(structure.languages.items(), key=lambda x: x[1], reverse=True):
+        for lang, count in sorted(
+            structure.languages.items(), key=lambda x: x[1], reverse=True
+        ):
             lines.append(f"  {lang}: {count} files")
 
         if structure.dependencies:
@@ -307,25 +330,27 @@ class CodebaseMapper:
 
         for root, dirs, files in os.walk(root_path):
             # Exclude common build/cache directories
-            dirs[:] = [d for d in dirs if d not in ['__pycache__', '.git', 'node_modules', 'venv']]
+            dirs[:] = [
+                d
+                for d in dirs
+                if d not in ["__pycache__", ".git", "node_modules", "venv"]
+            ]
 
             for filename in files:
-                if not filename.endswith('.py'):
+                if not filename.endswith(".py"):
                     continue
 
                 file_path = os.path.join(root, filename)
 
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         lines = f.readlines()
 
                     for i, line in enumerate(lines, 1):
                         if symbol_name in line:
-                            references.append({
-                                'file': file_path,
-                                'line': i,
-                                'content': line.strip()
-                            })
+                            references.append(
+                                {"file": file_path, "line": i, "content": line.strip()}
+                            )
 
                 except Exception:
                     continue

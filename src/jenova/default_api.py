@@ -4,8 +4,7 @@
 # The JENOVA Cognitive Architecture is licensed under the MIT License.
 # A copy of the license can be found in the LICENSE file in the root directory of this source tree.
 
-"""This module provides the default API for the JENOVA Cognitive Architecture.
-"""
+"""This module provides the default API for the JENOVA Cognitive Architecture."""
 
 import datetime
 import os
@@ -25,6 +24,7 @@ try:
     from selenium.common.exceptions import WebDriverException
     from selenium.webdriver.common.by import By
     from selenium.webdriver.firefox.options import Options
+
     SELENIUM_AVAILABLE = True
 except ImportError:
     SELENIUM_AVAILABLE = False
@@ -47,34 +47,30 @@ def execute_shell_command(command: str) -> dict:
         # Use shlex.split to safely parse the command string
         command_args = shlex.split(command)
         result = subprocess.run(
-            command_args, capture_output=True, text=True, check=False, timeout=30)
+            command_args, capture_output=True, text=True, check=False, timeout=30
+        )
         return {
             "stdout": result.stdout,
             "stderr": result.stderr,
             "returncode": result.returncode,
-            "error": result.returncode != 0
+            "error": result.returncode != 0,
         }
     except FileNotFoundError:
         return {
             "stdout": "",
             "stderr": f"Command not found: {command.split()[0]}",
             "returncode": -1,
-            "error": True
+            "error": True,
         }
     except subprocess.TimeoutExpired:
         return {
             "stdout": "",
             "stderr": "Command timed out after 30 seconds.",
             "returncode": -1,
-            "error": True
+            "error": True,
         }
     except Exception as e:
-        return {
-            "stdout": "",
-            "stderr": str(e),
-            "returncode": -1,
-            "error": True
-        }
+        return {"stdout": "", "stderr": str(e), "returncode": -1, "error": True}
 
 
 def web_search(query: str) -> list[dict] | str:
@@ -98,14 +94,15 @@ def web_search(query: str) -> list[dict] | str:
     # Preserve CUDA environment for subprocess (geckodriver/Firefox)
     # This prevents CUDA context conflicts when spawning the browser
     import os
-    original_cuda_visible = os.environ.get('CUDA_VISIBLE_DEVICES', '')
+
+    original_cuda_visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
 
     options = Options()
     options.headless = True
     driver = None
     try:
         # Temporarily hide CUDA from the browser subprocess to prevent conflicts
-        os.environ['CUDA_VISIBLE_DEVICES'] = ''
+        os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
         driver = webdriver.Firefox(options=options)
         driver.get(f"https://duckduckgo.com/html/?q={query}")
@@ -113,10 +110,10 @@ def web_search(query: str) -> list[dict] | str:
         # Limit to top 5 results
         for result in driver.find_elements(By.CLASS_NAME, "result")[:5]:
             title = result.find_element(By.CLASS_NAME, "result__title").text
-            link = result.find_element(
-                By.CLASS_NAME, "result__url").get_attribute("href")
-            snippet = result.find_element(
-                By.CLASS_NAME, "result__snippet").text
+            link = result.find_element(By.CLASS_NAME, "result__url").get_attribute(
+                "href"
+            )
+            snippet = result.find_element(By.CLASS_NAME, "result__snippet").text
             results.append({"title": title, "link": link, "summary": snippet})
         return results
     except WebDriverException as e:
@@ -125,7 +122,7 @@ def web_search(query: str) -> list[dict] | str:
         return f"Error: An unexpected error occurred during web search: {e}"
     finally:
         # Always restore original CUDA visibility setting
-        os.environ['CUDA_VISIBLE_DEVICES'] = original_cuda_visible
+        os.environ["CUDA_VISIBLE_DEVICES"] = original_cuda_visible
         if driver:
             try:
                 driver.quit()
@@ -214,7 +211,7 @@ class FileTools:
                     return f"Error: File validation failed: {e}"
 
             # Read file
-            with open(safe_path, 'r', encoding='utf-8') as f:
+            with open(safe_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
             # Log successful access
@@ -245,7 +242,7 @@ class FileTools:
             parent_dir = os.path.dirname(safe_path)
             os.makedirs(parent_dir, exist_ok=True)
 
-            with open(safe_path, 'w', encoding='utf-8') as f:
+            with open(safe_path, "w", encoding="utf-8") as f:
                 f.write(content)
             return f"File written successfully to {path}"
         except Exception as e:
@@ -269,6 +266,7 @@ class FileTools:
 # Phase 13-17: Enhanced CLI Capabilities - Tool API Classes
 # These classes provide LLM-callable wrappers for all Phase 13-17 modules
 
+
 class CodeToolsAPI:
     """
     API wrapper for code tools (file editing, parsing, refactoring, etc.).
@@ -276,8 +274,15 @@ class CodeToolsAPI:
     Provides LLM-callable functions for advanced code operations.
     """
 
-    def __init__(self, file_editor, code_parser, refactoring_engine,
-                 syntax_highlighter, codebase_mapper, interactive_terminal):
+    def __init__(
+        self,
+        file_editor,
+        code_parser,
+        refactoring_engine,
+        syntax_highlighter,
+        codebase_mapper,
+        interactive_terminal,
+    ):
         """Initialize CodeToolsAPI with all code tool instances."""
         self.file_editor = file_editor
         self.code_parser = code_parser
@@ -306,7 +311,7 @@ class CodeToolsAPI:
             return {
                 "status": "success" if result else "error",
                 "message": "File edited successfully" if result else "Edit failed",
-                "file_path": file_path
+                "file_path": file_path,
             }
         except Exception as e:
             return {"status": "error", "message": f"Error editing file: {e}"}
@@ -326,11 +331,7 @@ class CodeToolsAPI:
                 return {"status": "error", "message": "Code parser not available"}
 
             structure = self.code_parser.parse_file(file_path)
-            return {
-                "status": "success",
-                "file_path": file_path,
-                "structure": structure
-            }
+            return {"status": "success", "file_path": file_path, "structure": structure}
         except Exception as e:
             return {"status": "error", "message": f"Error parsing code: {e}"}
 
@@ -348,13 +349,18 @@ class CodeToolsAPI:
         """
         try:
             if not self.refactoring_engine:
-                return {"status": "error", "message": "Refactoring engine not available"}
+                return {
+                    "status": "error",
+                    "message": "Refactoring engine not available",
+                }
 
             result = self.refactoring_engine.rename(file_path, old_name, new_name)
             return {
                 "status": "success" if result else "error",
-                "message": f"Renamed {old_name} to {new_name}" if result else "Rename failed",
-                "file_path": file_path
+                "message": (
+                    f"Renamed {old_name} to {new_name}" if result else "Rename failed"
+                ),
+                "file_path": file_path,
             }
         except Exception as e:
             return {"status": "error", "message": f"Error during refactoring: {e}"}
@@ -372,13 +378,16 @@ class CodeToolsAPI:
         """
         try:
             if not self.syntax_highlighter:
-                return {"status": "error", "message": "Syntax highlighter not available"}
+                return {
+                    "status": "error",
+                    "message": "Syntax highlighter not available",
+                }
 
             highlighted = self.syntax_highlighter.highlight(code, language)
             return {
                 "status": "success",
                 "language": language,
-                "highlighted_code": highlighted
+                "highlighted_code": highlighted,
             }
         except Exception as e:
             return {"status": "error", "message": f"Error highlighting syntax: {e}"}
@@ -399,11 +408,7 @@ class CodeToolsAPI:
                 return {"status": "error", "message": "Codebase mapper not available"}
 
             structure = self.codebase_mapper.map_directory(directory, max_depth)
-            return {
-                "status": "success",
-                "directory": directory,
-                "structure": structure
-            }
+            return {"status": "success", "directory": directory, "structure": structure}
         except Exception as e:
             return {"status": "error", "message": f"Error mapping codebase: {e}"}
 
@@ -415,8 +420,14 @@ class GitToolsAPI:
     Provides LLM-callable functions for Git workflow automation.
     """
 
-    def __init__(self, git_interface, commit_assistant, diff_analyzer,
-                 hooks_manager, branch_manager):
+    def __init__(
+        self,
+        git_interface,
+        commit_assistant,
+        diff_analyzer,
+        hooks_manager,
+        branch_manager,
+    ):
         """Initialize GitToolsAPI with all git tool instances."""
         self.git_interface = git_interface
         self.commit_assistant = commit_assistant
@@ -436,10 +447,7 @@ class GitToolsAPI:
                 return {"status": "error", "message": "Git interface not available"}
 
             status = self.git_interface.status()
-            return {
-                "status": "success",
-                "repository_status": status
-            }
+            return {"status": "success", "repository_status": status}
         except Exception as e:
             return {"status": "error", "message": f"Error getting git status: {e}"}
 
@@ -468,7 +476,7 @@ class GitToolsAPI:
                 "status": "success",
                 "diff": diff,
                 "analysis": analysis,
-                "staged": staged
+                "staged": staged,
             }
         except Exception as e:
             return {"status": "error", "message": f"Error getting diff: {e}"}
@@ -500,7 +508,7 @@ class GitToolsAPI:
             return {
                 "status": "success" if result else "error",
                 "message": message,
-                "committed": result
+                "committed": result,
             }
         except Exception as e:
             return {"status": "error", "message": f"Error committing: {e}"}
@@ -525,15 +533,27 @@ class GitToolsAPI:
                 return {"status": "success", "branches": branches}
             elif operation == "create" and branch_name:
                 result = self.branch_manager.create_branch(branch_name)
-                return {"status": "success" if result else "error", "branch": branch_name}
+                return {
+                    "status": "success" if result else "error",
+                    "branch": branch_name,
+                }
             elif operation == "delete" and branch_name:
                 result = self.branch_manager.delete_branch(branch_name)
-                return {"status": "success" if result else "error", "branch": branch_name}
+                return {
+                    "status": "success" if result else "error",
+                    "branch": branch_name,
+                }
             elif operation == "switch" and branch_name:
                 result = self.branch_manager.switch_branch(branch_name)
-                return {"status": "success" if result else "error", "branch": branch_name}
+                return {
+                    "status": "success" if result else "error",
+                    "branch": branch_name,
+                }
             else:
-                return {"status": "error", "message": f"Invalid operation or missing branch_name"}
+                return {
+                    "status": "error",
+                    "message": f"Invalid operation or missing branch_name",
+                }
         except Exception as e:
             return {"status": "error", "message": f"Error with branch operation: {e}"}
 
@@ -545,8 +565,14 @@ class AnalysisToolsAPI:
     Provides LLM-callable functions for code analysis and intent classification.
     """
 
-    def __init__(self, context_optimizer, code_metrics, security_scanner,
-                 intent_classifier, command_disambiguator):
+    def __init__(
+        self,
+        context_optimizer,
+        code_metrics,
+        security_scanner,
+        intent_classifier,
+        command_disambiguator,
+    ):
         """Initialize AnalysisToolsAPI with all analysis tool instances."""
         self.context_optimizer = context_optimizer
         self.code_metrics = code_metrics
@@ -574,7 +600,7 @@ class AnalysisToolsAPI:
                 "status": "success",
                 "optimized_text": optimized,
                 "original_tokens": len(text.split()),
-                "optimized_tokens": len(optimized.split())
+                "optimized_tokens": len(optimized.split()),
             }
         except Exception as e:
             return {"status": "error", "message": f"Error optimizing context: {e}"}
@@ -591,14 +617,13 @@ class AnalysisToolsAPI:
         """
         try:
             if not self.code_metrics:
-                return {"status": "error", "message": "Code metrics analyzer not available"}
+                return {
+                    "status": "error",
+                    "message": "Code metrics analyzer not available",
+                }
 
             metrics = self.code_metrics.analyze_file(file_path)
-            return {
-                "status": "success",
-                "file_path": file_path,
-                "metrics": metrics
-            }
+            return {"status": "success", "file_path": file_path, "metrics": metrics}
         except Exception as e:
             return {"status": "error", "message": f"Error analyzing code metrics: {e}"}
 
@@ -622,7 +647,7 @@ class AnalysisToolsAPI:
                 "status": "success",
                 "path": path,
                 "format": output_format,
-                "results": results
+                "results": results,
             }
         except Exception as e:
             return {"status": "error", "message": f"Error scanning security: {e}"}
@@ -642,11 +667,7 @@ class AnalysisToolsAPI:
                 return {"status": "error", "message": "Intent classifier not available"}
 
             intent = self.intent_classifier.classify(text)
-            return {
-                "status": "success",
-                "text": text,
-                "intent": intent
-            }
+            return {"status": "success", "text": text, "intent": intent}
         except Exception as e:
             return {"status": "error", "message": f"Error classifying intent: {e}"}
 
@@ -662,14 +683,13 @@ class AnalysisToolsAPI:
         """
         try:
             if not self.command_disambiguator:
-                return {"status": "error", "message": "Command disambiguator not available"}
+                return {
+                    "status": "error",
+                    "message": "Command disambiguator not available",
+                }
 
             matches = self.command_disambiguator.find_matches(partial)
-            return {
-                "status": "success",
-                "partial": partial,
-                "matches": matches
-            }
+            return {"status": "success", "partial": partial, "matches": matches}
         except Exception as e:
             return {"status": "error", "message": f"Error disambiguating command: {e}"}
 
@@ -681,8 +701,14 @@ class OrchestrationToolsAPI:
     Provides LLM-callable functions for complex multi-step task management.
     """
 
-    def __init__(self, task_planner, subagent_manager, execution_engine,
-                 checkpoint_manager, background_tasks):
+    def __init__(
+        self,
+        task_planner,
+        subagent_manager,
+        execution_engine,
+        checkpoint_manager,
+        background_tasks,
+    ):
         """Initialize OrchestrationToolsAPI with all orchestration tool instances."""
         self.task_planner = task_planner
         self.subagent_manager = subagent_manager
@@ -709,7 +735,7 @@ class OrchestrationToolsAPI:
                 "status": "success",
                 "plan_id": plan.get("id"),
                 "description": description,
-                "steps": plan.get("steps", [])
+                "steps": plan.get("steps", []),
             }
         except Exception as e:
             return {"status": "error", "message": f"Error creating task plan: {e}"}
@@ -732,7 +758,7 @@ class OrchestrationToolsAPI:
             return {
                 "status": "success" if result.get("completed") else "error",
                 "plan_id": plan_id,
-                "result": result
+                "result": result,
             }
         except Exception as e:
             return {"status": "error", "message": f"Error executing task plan: {e}"}
@@ -752,12 +778,14 @@ class OrchestrationToolsAPI:
             if not self.subagent_manager:
                 return {"status": "error", "message": "Subagent manager not available"}
 
-            subagent_id = self.subagent_manager.create_subagent(task_description, priority)
+            subagent_id = self.subagent_manager.create_subagent(
+                task_description, priority
+            )
             return {
                 "status": "success",
                 "subagent_id": subagent_id,
                 "task": task_description,
-                "priority": priority
+                "priority": priority,
             }
         except Exception as e:
             return {"status": "error", "message": f"Error spawning subagent: {e}"}
@@ -775,13 +803,16 @@ class OrchestrationToolsAPI:
         """
         try:
             if not self.checkpoint_manager:
-                return {"status": "error", "message": "Checkpoint manager not available"}
+                return {
+                    "status": "error",
+                    "message": "Checkpoint manager not available",
+                }
 
             result = self.checkpoint_manager.save(checkpoint_id, state)
             return {
                 "status": "success" if result else "error",
                 "checkpoint_id": checkpoint_id,
-                "saved": result
+                "saved": result,
             }
         except Exception as e:
             return {"status": "error", "message": f"Error saving checkpoint: {e}"}
@@ -799,17 +830,23 @@ class OrchestrationToolsAPI:
         """
         try:
             if not self.background_tasks:
-                return {"status": "error", "message": "Background task manager not available"}
+                return {
+                    "status": "error",
+                    "message": "Background task manager not available",
+                }
 
             task_id = self.background_tasks.start_task(command, timeout)
             return {
                 "status": "success",
                 "task_id": task_id,
                 "command": command,
-                "timeout": timeout
+                "timeout": timeout,
             }
         except Exception as e:
-            return {"status": "error", "message": f"Error starting background task: {e}"}
+            return {
+                "status": "error",
+                "message": f"Error starting background task: {e}",
+            }
 
 
 class AutomationToolsAPI:
@@ -819,15 +856,18 @@ class AutomationToolsAPI:
     Provides LLM-callable functions for workflow automation and custom commands.
     """
 
-    def __init__(self, custom_commands, hooks_system, template_engine,
-                 workflow_library):
+    def __init__(
+        self, custom_commands, hooks_system, template_engine, workflow_library
+    ):
         """Initialize AutomationToolsAPI with all automation tool instances."""
         self.custom_commands = custom_commands
         self.hooks_system = hooks_system
         self.template_engine = template_engine
         self.workflow_library = workflow_library
 
-    def create_custom_command(self, name: str, template: str, description: str = "") -> dict:
+    def create_custom_command(
+        self, name: str, template: str, description: str = ""
+    ) -> dict:
         """
         Create custom command from template.
 
@@ -841,13 +881,16 @@ class AutomationToolsAPI:
         """
         try:
             if not self.custom_commands:
-                return {"status": "error", "message": "Custom command manager not available"}
+                return {
+                    "status": "error",
+                    "message": "Custom command manager not available",
+                }
 
             result = self.custom_commands.create(name, template, description)
             return {
                 "status": "success" if result else "error",
                 "command_name": name,
-                "created": result
+                "created": result,
             }
         except Exception as e:
             return {"status": "error", "message": f"Error creating custom command: {e}"}
@@ -871,7 +914,7 @@ class AutomationToolsAPI:
             return {
                 "status": "success" if result.get("completed") else "error",
                 "workflow_name": workflow_name,
-                "result": result
+                "result": result,
             }
         except Exception as e:
             return {"status": "error", "message": f"Error executing workflow: {e}"}
@@ -897,7 +940,7 @@ class AutomationToolsAPI:
                 "status": "success",
                 "hook_id": hook_id,
                 "event": event,
-                "priority": priority
+                "priority": priority,
             }
         except Exception as e:
             return {"status": "error", "message": f"Error registering hook: {e}"}
@@ -921,7 +964,7 @@ class AutomationToolsAPI:
             return {
                 "status": "success",
                 "rendered": rendered,
-                "variables": list(variables.keys())
+                "variables": list(variables.keys()),
             }
         except Exception as e:
             return {"status": "error", "message": f"Error rendering template: {e}"}

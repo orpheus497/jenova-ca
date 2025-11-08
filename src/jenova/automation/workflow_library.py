@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class WorkflowType(Enum):
     """Types of workflows."""
+
     CODE_REVIEW = "code_review"
     TESTING = "testing"
     DEPLOYMENT = "deployment"
@@ -82,13 +83,13 @@ class Workflow:
                     "optional": step.optional,
                     "timeout": step.timeout,
                     "retry_on_failure": step.retry_on_failure,
-                    "metadata": step.metadata
+                    "metadata": step.metadata,
                 }
                 for step in self.steps
             ],
             "variables": self.variables,
             "metadata": self.metadata,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat(),
         }
 
 
@@ -124,42 +125,52 @@ class WorkflowLibrary:
             id="code_review",
             name="Code Review",
             description="Comprehensive code review workflow",
-            workflow_type=WorkflowType.CODE_REVIEW
+            workflow_type=WorkflowType.CODE_REVIEW,
         )
 
-        workflow.add_step(WorkflowStep(
-            id="analyze_changes",
-            name="Analyze Changes",
-            description="Analyze code changes and identify modified files"
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="analyze_changes",
+                name="Analyze Changes",
+                description="Analyze code changes and identify modified files",
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="check_style",
-            name="Check Code Style",
-            description="Verify code follows style guidelines",
-            dependencies=["analyze_changes"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="check_style",
+                name="Check Code Style",
+                description="Verify code follows style guidelines",
+                dependencies=["analyze_changes"],
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="security_scan",
-            name="Security Scan",
-            description="Scan for security vulnerabilities",
-            dependencies=["analyze_changes"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="security_scan",
+                name="Security Scan",
+                description="Scan for security vulnerabilities",
+                dependencies=["analyze_changes"],
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="complexity_check",
-            name="Complexity Check",
-            description="Check code complexity metrics",
-            dependencies=["analyze_changes"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="complexity_check",
+                name="Complexity Check",
+                description="Check code complexity metrics",
+                dependencies=["analyze_changes"],
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="generate_summary",
-            name="Generate Review Summary",
-            description="Generate code review summary",
-            dependencies=["check_style", "security_scan", "complexity_check"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="generate_summary",
+                name="Generate Review Summary",
+                description="Generate code review summary",
+                dependencies=["check_style", "security_scan", "complexity_check"],
+            )
+        )
 
         self.workflows[workflow.id] = workflow
 
@@ -169,44 +180,54 @@ class WorkflowLibrary:
             id="testing",
             name="Testing",
             description="Comprehensive testing workflow",
-            workflow_type=WorkflowType.TESTING
+            workflow_type=WorkflowType.TESTING,
         )
 
-        workflow.add_step(WorkflowStep(
-            id="setup_environment",
-            name="Setup Test Environment",
-            description="Setup testing environment and dependencies"
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="setup_environment",
+                name="Setup Test Environment",
+                description="Setup testing environment and dependencies",
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="run_unit_tests",
-            name="Run Unit Tests",
-            description="Execute unit tests",
-            dependencies=["setup_environment"],
-            retry_on_failure=True
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="run_unit_tests",
+                name="Run Unit Tests",
+                description="Execute unit tests",
+                dependencies=["setup_environment"],
+                retry_on_failure=True,
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="run_integration_tests",
-            name="Run Integration Tests",
-            description="Execute integration tests",
-            dependencies=["setup_environment"],
-            optional=True
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="run_integration_tests",
+                name="Run Integration Tests",
+                description="Execute integration tests",
+                dependencies=["setup_environment"],
+                optional=True,
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="coverage_analysis",
-            name="Coverage Analysis",
-            description="Analyze test coverage",
-            dependencies=["run_unit_tests", "run_integration_tests"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="coverage_analysis",
+                name="Coverage Analysis",
+                description="Analyze test coverage",
+                dependencies=["run_unit_tests", "run_integration_tests"],
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="generate_report",
-            name="Generate Test Report",
-            description="Generate comprehensive test report",
-            dependencies=["coverage_analysis"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="generate_report",
+                name="Generate Test Report",
+                description="Generate comprehensive test report",
+                dependencies=["coverage_analysis"],
+            )
+        )
 
         self.workflows[workflow.id] = workflow
 
@@ -216,50 +237,62 @@ class WorkflowLibrary:
             id="deployment",
             name="Deployment",
             description="Application deployment workflow",
-            workflow_type=WorkflowType.DEPLOYMENT
+            workflow_type=WorkflowType.DEPLOYMENT,
         )
 
-        workflow.add_step(WorkflowStep(
-            id="pre_deployment_checks",
-            name="Pre-Deployment Checks",
-            description="Run pre-deployment validation"
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="pre_deployment_checks",
+                name="Pre-Deployment Checks",
+                description="Run pre-deployment validation",
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="build_application",
-            name="Build Application",
-            description="Build application artifacts",
-            dependencies=["pre_deployment_checks"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="build_application",
+                name="Build Application",
+                description="Build application artifacts",
+                dependencies=["pre_deployment_checks"],
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="run_tests",
-            name="Run Tests",
-            description="Execute test suite",
-            dependencies=["build_application"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="run_tests",
+                name="Run Tests",
+                description="Execute test suite",
+                dependencies=["build_application"],
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="deploy_staging",
-            name="Deploy to Staging",
-            description="Deploy to staging environment",
-            dependencies=["run_tests"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="deploy_staging",
+                name="Deploy to Staging",
+                description="Deploy to staging environment",
+                dependencies=["run_tests"],
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="verify_staging",
-            name="Verify Staging Deployment",
-            description="Verify staging deployment",
-            dependencies=["deploy_staging"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="verify_staging",
+                name="Verify Staging Deployment",
+                description="Verify staging deployment",
+                dependencies=["deploy_staging"],
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="deploy_production",
-            name="Deploy to Production",
-            description="Deploy to production environment",
-            dependencies=["verify_staging"],
-            optional=True
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="deploy_production",
+                name="Deploy to Production",
+                description="Deploy to production environment",
+                dependencies=["verify_staging"],
+                optional=True,
+            )
+        )
 
         self.workflows[workflow.id] = workflow
 
@@ -269,42 +302,52 @@ class WorkflowLibrary:
             id="refactoring",
             name="Refactoring",
             description="Code refactoring workflow",
-            workflow_type=WorkflowType.REFACTORING
+            workflow_type=WorkflowType.REFACTORING,
         )
 
-        workflow.add_step(WorkflowStep(
-            id="analyze_code",
-            name="Analyze Code Structure",
-            description="Analyze current code structure and identify issues"
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="analyze_code",
+                name="Analyze Code Structure",
+                description="Analyze current code structure and identify issues",
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="identify_opportunities",
-            name="Identify Refactoring Opportunities",
-            description="Identify code that needs refactoring",
-            dependencies=["analyze_code"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="identify_opportunities",
+                name="Identify Refactoring Opportunities",
+                description="Identify code that needs refactoring",
+                dependencies=["analyze_code"],
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="apply_changes",
-            name="Apply Refactoring Changes",
-            description="Apply refactoring transformations",
-            dependencies=["identify_opportunities"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="apply_changes",
+                name="Apply Refactoring Changes",
+                description="Apply refactoring transformations",
+                dependencies=["identify_opportunities"],
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="update_tests",
-            name="Update Tests",
-            description="Update tests to reflect changes",
-            dependencies=["apply_changes"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="update_tests",
+                name="Update Tests",
+                description="Update tests to reflect changes",
+                dependencies=["apply_changes"],
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="verify_functionality",
-            name="Verify Functionality",
-            description="Verify that functionality is preserved",
-            dependencies=["update_tests"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="verify_functionality",
+                name="Verify Functionality",
+                description="Verify that functionality is preserved",
+                dependencies=["update_tests"],
+            )
+        )
 
         self.workflows[workflow.id] = workflow
 
@@ -314,43 +357,53 @@ class WorkflowLibrary:
             id="documentation",
             name="Documentation",
             description="Documentation generation workflow",
-            workflow_type=WorkflowType.DOCUMENTATION
+            workflow_type=WorkflowType.DOCUMENTATION,
         )
 
-        workflow.add_step(WorkflowStep(
-            id="scan_codebase",
-            name="Scan Codebase",
-            description="Scan codebase for documented elements"
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="scan_codebase",
+                name="Scan Codebase",
+                description="Scan codebase for documented elements",
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="extract_docstrings",
-            name="Extract Docstrings",
-            description="Extract docstrings and comments",
-            dependencies=["scan_codebase"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="extract_docstrings",
+                name="Extract Docstrings",
+                description="Extract docstrings and comments",
+                dependencies=["scan_codebase"],
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="generate_api_docs",
-            name="Generate API Documentation",
-            description="Generate API documentation",
-            dependencies=["extract_docstrings"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="generate_api_docs",
+                name="Generate API Documentation",
+                description="Generate API documentation",
+                dependencies=["extract_docstrings"],
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="create_guides",
-            name="Create User Guides",
-            description="Create user and developer guides",
-            dependencies=["extract_docstrings"],
-            optional=True
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="create_guides",
+                name="Create User Guides",
+                description="Create user and developer guides",
+                dependencies=["extract_docstrings"],
+                optional=True,
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="build_docs",
-            name="Build Documentation",
-            description="Build final documentation artifacts",
-            dependencies=["generate_api_docs", "create_guides"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="build_docs",
+                name="Build Documentation",
+                description="Build final documentation artifacts",
+                dependencies=["generate_api_docs", "create_guides"],
+            )
+        )
 
         self.workflows[workflow.id] = workflow
 
@@ -360,42 +413,56 @@ class WorkflowLibrary:
             id="analysis",
             name="Code Analysis",
             description="Comprehensive code analysis workflow",
-            workflow_type=WorkflowType.ANALYSIS
+            workflow_type=WorkflowType.ANALYSIS,
         )
 
-        workflow.add_step(WorkflowStep(
-            id="static_analysis",
-            name="Static Analysis",
-            description="Perform static code analysis"
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="static_analysis",
+                name="Static Analysis",
+                description="Perform static code analysis",
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="complexity_metrics",
-            name="Complexity Metrics",
-            description="Calculate code complexity metrics",
-            dependencies=["static_analysis"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="complexity_metrics",
+                name="Complexity Metrics",
+                description="Calculate code complexity metrics",
+                dependencies=["static_analysis"],
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="security_audit",
-            name="Security Audit",
-            description="Perform security audit",
-            dependencies=["static_analysis"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="security_audit",
+                name="Security Audit",
+                description="Perform security audit",
+                dependencies=["static_analysis"],
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="dependency_analysis",
-            name="Dependency Analysis",
-            description="Analyze dependencies and detect issues",
-            dependencies=["static_analysis"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="dependency_analysis",
+                name="Dependency Analysis",
+                description="Analyze dependencies and detect issues",
+                dependencies=["static_analysis"],
+            )
+        )
 
-        workflow.add_step(WorkflowStep(
-            id="generate_report",
-            name="Generate Analysis Report",
-            description="Generate comprehensive analysis report",
-            dependencies=["complexity_metrics", "security_audit", "dependency_analysis"]
-        ))
+        workflow.add_step(
+            WorkflowStep(
+                id="generate_report",
+                name="Generate Analysis Report",
+                description="Generate comprehensive analysis report",
+                dependencies=[
+                    "complexity_metrics",
+                    "security_audit",
+                    "dependency_analysis",
+                ],
+            )
+        )
 
         self.workflows[workflow.id] = workflow
 
@@ -424,16 +491,13 @@ class WorkflowLibrary:
                 "name": wf.name,
                 "description": wf.description,
                 "type": wf.workflow_type.value,
-                "steps_count": len(wf.steps)
+                "steps_count": len(wf.steps),
             }
             for wf in self.workflows.values()
         ]
 
     def create_custom_workflow(
-        self,
-        name: str,
-        description: str,
-        steps: List[WorkflowStep]
+        self, name: str, description: str, steps: List[WorkflowStep]
     ) -> str:
         """
         Create a custom workflow.
@@ -453,7 +517,7 @@ class WorkflowLibrary:
             name=name,
             description=description,
             workflow_type=WorkflowType.CUSTOM,
-            steps=steps
+            steps=steps,
         )
 
         self.workflows[workflow_id] = workflow
@@ -509,12 +573,12 @@ class WorkflowLibrary:
                     optional=step.optional,
                     timeout=step.timeout,
                     retry_on_failure=step.retry_on_failure,
-                    metadata=step.metadata.copy()
+                    metadata=step.metadata.copy(),
                 )
                 for step in source.steps
             ],
             variables=source.variables.copy(),
-            metadata=source.metadata.copy()
+            metadata=source.metadata.copy(),
         )
 
         self.workflows[new_id] = cloned

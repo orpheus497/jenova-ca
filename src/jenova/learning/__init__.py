@@ -14,4 +14,4 @@ This module provides:
 
 from jenova.learning.contextual_engine import ContextualLearningEngine
 
-__all__ = ['ContextualLearningEngine']
+__all__ = ["ContextualLearningEngine"]

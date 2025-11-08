@@ -21,6 +21,7 @@ from collections import Counter, defaultdict
 @dataclass
 class UserPreferences:
     """User preferences and settings."""
+
     response_style: str = "balanced"  # concise, balanced, detailed
     expertise_level: str = "intermediate"  # beginner, intermediate, advanced, expert
     preferred_topics: List[str] = None
@@ -36,6 +37,7 @@ class UserPreferences:
 @dataclass
 class InteractionStats:
     """Statistics about user interactions."""
+
     total_interactions: int = 0
     questions_asked: int = 0
     commands_used: int = 0
@@ -90,27 +92,27 @@ class UserProfile:
         """Load profile from disk."""
         if os.path.exists(self.profile_file):
             try:
-                with open(self.profile_file, 'r') as f:
+                with open(self.profile_file, "r") as f:
                     data = json.load(f)
 
                 # Load preferences
-                if 'preferences' in data:
-                    self.preferences = UserPreferences(**data['preferences'])
+                if "preferences" in data:
+                    self.preferences = UserPreferences(**data["preferences"])
 
                 # Load stats
-                if 'stats' in data:
-                    self.stats = InteractionStats(**data['stats'])
+                if "stats" in data:
+                    self.stats = InteractionStats(**data["stats"])
 
                 # Load learning data
-                self.vocabulary = set(data.get('vocabulary', []))
-                self.topic_history = data.get('topic_history', [])
-                self.interaction_times = data.get('interaction_times', [])
-                self.corrections = data.get('corrections', [])
+                self.vocabulary = set(data.get("vocabulary", []))
+                self.topic_history = data.get("topic_history", [])
+                self.interaction_times = data.get("interaction_times", [])
+                self.corrections = data.get("corrections", [])
 
                 # Load adaptation data
-                self.successful_suggestions = data.get('successful_suggestions', 0)
-                self.total_suggestions = data.get('total_suggestions', 0)
-                self.preferred_commands = Counter(data.get('preferred_commands', {}))
+                self.successful_suggestions = data.get("successful_suggestions", 0)
+                self.total_suggestions = data.get("total_suggestions", 0)
+                self.preferred_commands = Counter(data.get("preferred_commands", {}))
 
             except Exception as e:
                 print(f"Error loading profile: {e}")
@@ -120,20 +122,20 @@ class UserProfile:
         os.makedirs(self.profile_dir, exist_ok=True)
 
         data = {
-            'username': self.username,
-            'preferences': asdict(self.preferences),
-            'stats': asdict(self.stats),
-            'vocabulary': list(self.vocabulary),
-            'topic_history': self.topic_history[-100:],  # Keep last 100
-            'interaction_times': self.interaction_times[-100:],
-            'corrections': self.corrections[-50:],  # Keep last 50
-            'successful_suggestions': self.successful_suggestions,
-            'total_suggestions': self.total_suggestions,
-            'preferred_commands': dict(self.preferred_commands),
-            'last_updated': datetime.now().isoformat()
+            "username": self.username,
+            "preferences": asdict(self.preferences),
+            "stats": asdict(self.stats),
+            "vocabulary": list(self.vocabulary),
+            "topic_history": self.topic_history[-100:],  # Keep last 100
+            "interaction_times": self.interaction_times[-100:],
+            "corrections": self.corrections[-50:],  # Keep last 50
+            "successful_suggestions": self.successful_suggestions,
+            "total_suggestions": self.total_suggestions,
+            "preferred_commands": dict(self.preferred_commands),
+            "last_updated": datetime.now().isoformat(),
         }
 
-        with open(self.profile_file, 'w') as f:
+        with open(self.profile_file, "w") as f:
             json.dump(data, f, indent=2)
 
     def record_interaction(self, user_input: str, interaction_type: str = "query"):
@@ -175,12 +177,14 @@ class UserProfile:
 
     def record_correction(self, original: str, corrected: str, context: str):
         """Record a user correction to learn from."""
-        self.corrections.append({
-            'original': original,
-            'corrected': corrected,
-            'context': context,
-            'timestamp': datetime.now().isoformat()
-        })
+        self.corrections.append(
+            {
+                "original": original,
+                "corrected": corrected,
+                "context": context,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
         self.save()
 
     def record_suggestion_feedback(self, accepted: bool):
@@ -203,17 +207,24 @@ class UserProfile:
     def get_expertise_indicators(self) -> Dict[str, Any]:
         """Get indicators of user expertise."""
         return {
-            'vocabulary_size': len(self.vocabulary),
-            'total_interactions': self.stats.total_interactions,
-            'topics_mastered': len([t for t, c in self.stats.topics_discussed.items() if c > 10]),
-            'command_proficiency': len(self.preferred_commands),
-            'learning_progress': self.get_suggestion_success_rate()
+            "vocabulary_size": len(self.vocabulary),
+            "total_interactions": self.stats.total_interactions,
+            "topics_mastered": len(
+                [t for t, c in self.stats.topics_discussed.items() if c > 10]
+            ),
+            "command_proficiency": len(self.preferred_commands),
+            "learning_progress": self.get_suggestion_success_rate(),
         }
 
     def adapt_response_style(self):
         """Adapt response style based on user patterns."""
         # If user uses many technical terms, increase expertise level
-        technical_words = {'algorithm', 'optimization', 'architecture', 'implementation'}
+        technical_words = {
+            "algorithm",
+            "optimization",
+            "architecture",
+            "implementation",
+        }
         tech_usage = sum(1 for word in technical_words if word in self.vocabulary)
 
         if tech_usage > 3 and self.preferences.expertise_level == "intermediate":
@@ -232,8 +243,8 @@ class UserProfileManager:
         self.file_logger = file_logger
         self.profiles: Dict[str, UserProfile] = {}
 
-        user_data_root = config.get('user_data_root', '~/.jenova-ai')
-        self.profiles_dir = os.path.join(user_data_root, 'profiles')
+        user_data_root = config.get("user_data_root", "~/.jenova-ai")
+        self.profiles_dir = os.path.join(user_data_root, "profiles")
         os.makedirs(self.profiles_dir, exist_ok=True)
 
     def get_profile(self, username: str) -> UserProfile:

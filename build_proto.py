@@ -50,11 +50,11 @@ def compile_protos():
     python_out = str(proto_dir)
 
     command = [
-        'grpc_tools.protoc',
-        f'--proto_path={proto_include}',
-        f'--python_out={python_out}',
-        f'--grpc_python_out={python_out}',
-        str(proto_file.name)
+        "grpc_tools.protoc",
+        f"--proto_path={proto_include}",
+        f"--python_out={python_out}",
+        f"--grpc_python_out={python_out}",
+        str(proto_file.name),
     ]
 
     print(f"Running: {' '.join(command)}")
@@ -63,7 +63,9 @@ def compile_protos():
     result = protoc.main(command)
 
     if result != 0:
-        print(f"ERROR: protoc compilation failed with exit code {result}", file=sys.stderr)
+        print(
+            f"ERROR: protoc compilation failed with exit code {result}", file=sys.stderr
+        )
         return 1
 
     # Verify generated files
@@ -75,7 +77,10 @@ def compile_protos():
         return 1
 
     if not pb2_grpc_file.exists():
-        print(f"ERROR: Expected generated file not found: {pb2_grpc_file}", file=sys.stderr)
+        print(
+            f"ERROR: Expected generated file not found: {pb2_grpc_file}",
+            file=sys.stderr,
+        )
         return 1
 
     print("✓ Protocol Buffer compilation successful!")

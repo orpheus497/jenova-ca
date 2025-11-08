@@ -22,6 +22,7 @@ class GitInterface:
         """Initialize git repository."""
         try:
             from git import Repo, InvalidGitRepositoryError
+
             self.repo = Repo(self.repo_path)
         except ImportError:
             if self.file_logger:
@@ -41,7 +42,11 @@ class GitInterface:
                 "modified": [item.a_path for item in self.repo.index.diff(None)],
                 "staged": [item.a_path for item in self.repo.index.diff("HEAD")],
                 "untracked": self.repo.untracked_files,
-                "ahead": len(list(self.repo.iter_commits('origin/HEAD..HEAD'))) if 'origin/HEAD' in self.repo.refs else 0
+                "ahead": (
+                    len(list(self.repo.iter_commits("origin/HEAD..HEAD")))
+                    if "origin/HEAD" in self.repo.refs
+                    else 0
+                ),
             }
         except Exception as e:
             return {"error": str(e)}
@@ -53,7 +58,7 @@ class GitInterface:
 
         try:
             if staged:
-                return self.repo.git.diff('--cached')
+                return self.repo.git.diff("--cached")
             return self.repo.git.diff()
         except Exception as e:
             return f"Error: {e}"
@@ -66,12 +71,14 @@ class GitInterface:
         try:
             commits = []
             for commit in self.repo.iter_commits(max_count=max_count):
-                commits.append({
-                    "hash": commit.hexsha[:8],
-                    "author": str(commit.author),
-                    "date": commit.committed_datetime.isoformat(),
-                    "message": commit.message.strip()
-                })
+                commits.append(
+                    {
+                        "hash": commit.hexsha[:8],
+                        "author": str(commit.author),
+                        "date": commit.committed_datetime.isoformat(),
+                        "message": commit.message.strip(),
+                    }
+                )
             return commits
         except Exception as e:
             if self.file_logger:

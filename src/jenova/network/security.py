@@ -52,11 +52,7 @@ class SecurityManager:
 
         # Certificate directory
         if cert_dir is None:
-            cert_dir = os.path.join(
-                os.path.expanduser("~"),
-                ".jenova-ai",
-                "certs"
-            )
+            cert_dir = os.path.join(os.path.expanduser("~"), ".jenova-ai", "certs")
         self.cert_dir = Path(cert_dir)
         self.cert_dir.mkdir(parents=True, exist_ok=True)
 
@@ -72,9 +68,9 @@ class SecurityManager:
         self.jwt_secret = self._load_or_generate_jwt_secret()
 
         # Security settings
-        security_config = config.get('network', {}).get('security', {})
-        self.security_enabled = security_config.get('enabled', True)
-        self.require_auth = security_config.get('require_auth', True)
+        security_config = config.get("network", {}).get("security", {})
+        self.security_enabled = security_config.get("enabled", True)
+        self.require_auth = security_config.get("require_auth", True)
         self.cert_validity_days = 365
 
         # Trusted peer certificates (for certificate pinning)
@@ -114,45 +110,44 @@ class SecurityManager:
         """
         # Generate private key
         private_key = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=2048,
-            backend=default_backend()
+            public_exponent=65537, key_size=2048, backend=default_backend()
         )
 
         # Save private key with encryption using secure credential store
-        self.credential_store.save_private_key(
-            private_key,
-            filename="jenova.key"
-        )
+        self.credential_store.save_private_key(private_key, filename="jenova.key")
 
         # Generate certificate
-        subject = issuer = x509.Name([
-            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "AI"),
-            x509.NameAttribute(NameOID.LOCALITY_NAME, "LAN"),
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "JENOVA"),
-            x509.NameAttribute(NameOID.COMMON_NAME, instance_name),
-        ])
+        subject = issuer = x509.Name(
+            [
+                x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+                x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "AI"),
+                x509.NameAttribute(NameOID.LOCALITY_NAME, "LAN"),
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "JENOVA"),
+                x509.NameAttribute(NameOID.COMMON_NAME, instance_name),
+            ]
+        )
 
-        cert = x509.CertificateBuilder().subject_name(
-            subject
-        ).issuer_name(
-            issuer
-        ).public_key(
-            private_key.public_key()
-        ).serial_number(
-            x509.random_serial_number()
-        ).not_valid_before(
-            datetime.now(timezone.utc)
-        ).not_valid_after(
-            datetime.now(timezone.utc) + timedelta(days=self.cert_validity_days)
-        ).add_extension(
-            x509.SubjectAlternativeName([
-                x509.DNSName("localhost"),
-                x509.DNSName("*.local"),
-            ]),
-            critical=False,
-        ).sign(private_key, hashes.SHA256(), default_backend())
+        cert = (
+            x509.CertificateBuilder()
+            .subject_name(subject)
+            .issuer_name(issuer)
+            .public_key(private_key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(datetime.now(timezone.utc))
+            .not_valid_after(
+                datetime.now(timezone.utc) + timedelta(days=self.cert_validity_days)
+            )
+            .add_extension(
+                x509.SubjectAlternativeName(
+                    [
+                        x509.DNSName("localhost"),
+                        x509.DNSName("*.local"),
+                    ]
+                ),
+                critical=False,
+            )
+            .sign(private_key, hashes.SHA256(), default_backend())
+        )
 
         # Write certificate to file
         with open(self.certificate_path, "wb") as f:
@@ -165,22 +160,20 @@ class SecurityManager:
     def _load_or_generate_jwt_secret(self) -> str:
         """Load or generate JWT secret key."""
         if self.jwt_secret_path.exists():
-            with open(self.jwt_secret_path, 'r') as f:
+            with open(self.jwt_secret_path, "r") as f:
                 return f.read().strip()
         else:
             # Generate new secret
             import secrets
+
             secret = secrets.token_urlsafe(32)
-            with open(self.jwt_secret_path, 'w') as f:
+            with open(self.jwt_secret_path, "w") as f:
                 f.write(secret)
             os.chmod(self.jwt_secret_path, 0o600)
             return secret
 
     def create_auth_token(
-        self,
-        instance_id: str,
-        instance_name: str,
-        validity_seconds: int = 3600
+        self, instance_id: str, instance_name: str, validity_seconds: int = 3600
     ) -> str:
         """
         Create a JWT authentication token.
@@ -197,14 +190,14 @@ class SecurityManager:
             return ""
 
         payload = {
-            'instance_id': instance_id,
-            'instance_name': instance_name,
-            'issued_at': int(time.time()),
-            'expires_at': int(time.time()) + validity_seconds,
-            'version': '5.0.0'
+            "instance_id": instance_id,
+            "instance_name": instance_name,
+            "issued_at": int(time.time()),
+            "expires_at": int(time.time()) + validity_seconds,
+            "version": "5.0.0",
         }
 
-        token = jwt.encode(payload, self.jwt_secret, algorithm='HS256')
+        token = jwt.encode(payload, self.jwt_secret, algorithm="HS256")
         return token
 
     def verify_auth_token(self, token: str) -> Optional[dict]:
@@ -218,17 +211,19 @@ class SecurityManager:
             Decoded payload if valid, None otherwise
         """
         if not self.require_auth:
-            return {'instance_id': 'anonymous', 'instance_name': 'anonymous'}
+            return {"instance_id": "anonymous", "instance_name": "anonymous"}
 
         if not token:
-            self.file_logger.log_warning("Authentication required but no token provided")
+            self.file_logger.log_warning(
+                "Authentication required but no token provided"
+            )
             return None
 
         try:
-            payload = jwt.decode(token, self.jwt_secret, algorithms=['HS256'])
+            payload = jwt.decode(token, self.jwt_secret, algorithms=["HS256"])
 
             # Check expiration
-            if payload.get('expires_at', 0) < int(time.time()):
+            if payload.get("expires_at", 0) < int(time.time()):
                 self.file_logger.log_warning("Token expired")
                 return None
 
@@ -252,7 +247,7 @@ class SecurityManager:
             return True
 
         try:
-            with open(cert_path, 'rb') as f:
+            with open(cert_path, "rb") as f:
                 cert_data = f.read()
 
             cert = x509.load_pem_x509_certificate(cert_data, default_backend())
@@ -282,10 +277,10 @@ class SecurityManager:
             Tuple of (private_key, certificate_chain) as bytes
         """
         try:
-            with open(self.private_key_path, 'rb') as f:
+            with open(self.private_key_path, "rb") as f:
                 private_key = f.read()
 
-            with open(self.certificate_path, 'rb') as f:
+            with open(self.certificate_path, "rb") as f:
                 certificate_chain = f.read()
 
             return private_key, certificate_chain
@@ -305,15 +300,14 @@ class SecurityManager:
     def get_status(self) -> dict:
         """Get security manager status."""
         return {
-            'security_enabled': self.security_enabled,
-            'auth_required': self.require_auth,
-            'cert_dir': str(self.cert_dir),
-            'certificates_exist': (
-                self.private_key_path.exists() and
-                self.certificate_path.exists()
+            "security_enabled": self.security_enabled,
+            "auth_required": self.require_auth,
+            "cert_dir": str(self.cert_dir),
+            "certificates_exist": (
+                self.private_key_path.exists() and self.certificate_path.exists()
             ),
-            'cert_validity_days': self.cert_validity_days,
-            'trusted_peers_count': len(self.trusted_peers)
+            "cert_validity_days": self.cert_validity_days,
+            "trusted_peers_count": len(self.trusted_peers),
         }
 
     def get_certificate_fingerprint(self, cert_path: str) -> Optional[str]:
@@ -327,7 +321,7 @@ class SecurityManager:
             Hex-encoded fingerprint or None on error
         """
         try:
-            with open(cert_path, 'rb') as f:
+            with open(cert_path, "rb") as f:
                 cert_data = f.read()
 
             cert = x509.load_pem_x509_certificate(cert_data, default_backend())

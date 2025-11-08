@@ -14,6 +14,7 @@ from typing import Any, Callable, Optional, Type
 
 class ErrorSeverity(Enum):
     """Error severity levels."""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -40,7 +41,7 @@ class ErrorHandler:
         self,
         error: Exception,
         context: Any = None,
-        severity: ErrorSeverity = ErrorSeverity.ERROR
+        severity: ErrorSeverity = ErrorSeverity.ERROR,
     ) -> None:
         """
         Log an error (convenience method that wraps handle_error).
@@ -65,7 +66,7 @@ class ErrorHandler:
         error: Exception,
         context: str = "",
         severity: ErrorSeverity = ErrorSeverity.ERROR,
-        recovery_action: Optional[Callable] = None
+        recovery_action: Optional[Callable] = None,
     ) -> bool:
         """
         Handle an error with optional recovery.
@@ -116,7 +117,9 @@ class ErrorHandler:
             try:
                 recovery_action()
                 if self.file_logger:
-                    self.file_logger.log_info(f"Recovery action succeeded for: {context}")
+                    self.file_logger.log_info(
+                        f"Recovery action succeeded for: {context}"
+                    )
                 return True
             except Exception as recovery_error:
                 if self.file_logger:
@@ -131,8 +134,14 @@ class ErrorHandler:
         """Check if error is CUDA-related."""
         error_str = str(error).lower()
         cuda_keywords = [
-            'cuda', 'gpu', 'vram', 'out of memory',
-            'device-side', 'cublas', 'cudnn', 'ggml-cuda'
+            "cuda",
+            "gpu",
+            "vram",
+            "out of memory",
+            "device-side",
+            "cublas",
+            "cudnn",
+            "ggml-cuda",
         ]
         return any(keyword in error_str for keyword in cuda_keywords)
 
@@ -148,7 +157,9 @@ class ErrorHandler:
         if is_cuda:
             formatted += " (CUDA-related)"
             if self.cuda_error_count > 3:
-                formatted += f" [CUDA errors: {self.cuda_error_count}, consider CPU-only mode]"
+                formatted += (
+                    f" [CUDA errors: {self.cuda_error_count}, consider CPU-only mode]"
+                )
 
         return formatted
 
@@ -170,7 +181,7 @@ def safe_execute(
     error_handler: ErrorHandler,
     context: str = "",
     default_return: Any = None,
-    raise_on_error: bool = False
+    raise_on_error: bool = False,
 ) -> Any:
     """
     Execute a function with error handling.

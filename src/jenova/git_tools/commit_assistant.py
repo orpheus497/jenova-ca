@@ -4,10 +4,13 @@
 
 """Auto-generate commit messages from changes."""
 
+
 class CommitAssistant:
     """Generate commit messages from diffs using LLM."""
 
-    def __init__(self, git_interface, llm_interface=None, ui_logger=None, file_logger=None):
+    def __init__(
+        self, git_interface, llm_interface=None, ui_logger=None, file_logger=None
+    ):
         self.git = git_interface
         self.llm = llm_interface
         self.ui_logger = ui_logger
@@ -22,8 +25,8 @@ class CommitAssistant:
             return "No staged changes"
 
         # Analyze diff
-        lines_added = diff_text.count('\n+')
-        lines_removed = diff_text.count('\n-')
+        lines_added = diff_text.count("\n+")
+        lines_removed = diff_text.count("\n-")
 
         # Generate message using LLM if available
         if self.llm:
@@ -33,8 +36,10 @@ class CommitAssistant:
                 return message.strip()
             except Exception as e:
                 # LLM generation failed, fall back to simple analysis
-                if hasattr(self, 'file_logger') and self.file_logger:
-                    self.file_logger.log_warning(f"LLM commit message generation failed: {e}")
+                if hasattr(self, "file_logger") and self.file_logger:
+                    self.file_logger.log_warning(
+                        f"LLM commit message generation failed: {e}"
+                    )
 
         # Fallback: simple analysis
         if "def " in diff_text or "class " in diff_text:

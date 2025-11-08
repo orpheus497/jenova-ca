@@ -35,7 +35,7 @@ class CheckpointManager:
         self,
         checkpoint_dir: str = ".jenova/checkpoints",
         max_checkpoints: int = 10,
-        use_compression: bool = False
+        use_compression: bool = False,
     ):
         """
         Initialize the checkpoint manager.
@@ -59,7 +59,7 @@ class CheckpointManager:
         self,
         data: Dict[str, Any],
         checkpoint_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Save a checkpoint.
@@ -88,13 +88,13 @@ class CheckpointManager:
                     "id": checkpoint_id,
                     "timestamp": datetime.now().isoformat(),
                     "data": data,
-                    "metadata": metadata or {}
+                    "metadata": metadata or {},
                 }
 
                 # Save to temporary file first
-                temp_path = checkpoint_path.with_suffix('.tmp')
+                temp_path = checkpoint_path.with_suffix(".tmp")
 
-                with open(temp_path, 'w', encoding='utf-8') as f:
+                with open(temp_path, "w", encoding="utf-8") as f:
                     json.dump(checkpoint_data, f, indent=2, default=str)
 
                 # Atomic rename
@@ -137,7 +137,7 @@ class CheckpointManager:
 
         try:
             with lock:
-                with open(checkpoint_path, 'r', encoding='utf-8') as f:
+                with open(checkpoint_path, "r", encoding="utf-8") as f:
                     checkpoint_data = json.load(f)
 
                 logger.info(f"Loaded checkpoint: {checkpoint_id}")
@@ -176,15 +176,17 @@ class CheckpointManager:
 
         for checkpoint_file in self.checkpoint_dir.glob("*.json"):
             try:
-                with open(checkpoint_file, 'r', encoding='utf-8') as f:
+                with open(checkpoint_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
 
-                checkpoints.append({
-                    "id": data["id"],
-                    "timestamp": data["timestamp"],
-                    "metadata": data.get("metadata", {}),
-                    "size": checkpoint_file.stat().st_size
-                })
+                checkpoints.append(
+                    {
+                        "id": data["id"],
+                        "timestamp": data["timestamp"],
+                        "metadata": data.get("metadata", {}),
+                        "size": checkpoint_file.stat().st_size,
+                    }
+                )
             except Exception as e:
                 logger.warning(f"Error reading checkpoint {checkpoint_file}: {e}")
 
@@ -228,7 +230,7 @@ class CheckpointManager:
 
         if len(checkpoints) > self.max_checkpoints:
             # Delete oldest checkpoints
-            for checkpoint in checkpoints[self.max_checkpoints:]:
+            for checkpoint in checkpoints[self.max_checkpoints :]:
                 self.delete(checkpoint["id"])
                 logger.info(f"Cleaned up old checkpoint: {checkpoint['id']}")
 
@@ -248,7 +250,7 @@ class CheckpointManager:
             export_path_obj = Path(export_path)
             export_path_obj.parent.mkdir(parents=True, exist_ok=True)
 
-            with open(export_path, 'w', encoding='utf-8') as f:
+            with open(export_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, default=str)
 
             logger.info(f"Exported checkpoint {checkpoint_id} to {export_path}")
@@ -258,9 +260,7 @@ class CheckpointManager:
             return False
 
     def import_checkpoint(
-        self,
-        import_path: str,
-        checkpoint_id: Optional[str] = None
+        self, import_path: str, checkpoint_id: Optional[str] = None
     ) -> Optional[str]:
         """
         Import a checkpoint from a file.
@@ -273,7 +273,7 @@ class CheckpointManager:
             Checkpoint ID if successful, None otherwise
         """
         try:
-            with open(import_path, 'r', encoding='utf-8') as f:
+            with open(import_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
             checkpoint_id = self.save(data, checkpoint_id=checkpoint_id)
@@ -299,14 +299,14 @@ class CheckpointManager:
             return None
 
         try:
-            with open(checkpoint_path, 'r', encoding='utf-8') as f:
+            with open(checkpoint_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
             return {
                 "id": data["id"],
                 "timestamp": data["timestamp"],
                 "metadata": data.get("metadata", {}),
-                "size": checkpoint_path.stat().st_size
+                "size": checkpoint_path.stat().st_size,
             }
         except Exception as e:
             logger.error(f"Error reading checkpoint info {checkpoint_id}: {e}")
@@ -341,8 +341,12 @@ class CheckpointManager:
         """
         try:
             data = self.load(checkpoint_id)
-            backup_id = f"{checkpoint_id}_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            return self.save(data, checkpoint_id=backup_id, metadata={"backup_of": checkpoint_id})
+            backup_id = (
+                f"{checkpoint_id}_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            )
+            return self.save(
+                data, checkpoint_id=backup_id, metadata={"backup_of": checkpoint_id}
+            )
         except Exception as e:
             logger.error(f"Error creating backup of {checkpoint_id}: {e}")
             return None

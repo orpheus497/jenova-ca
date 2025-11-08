@@ -25,6 +25,7 @@ from jenova.llm.llm_interface import LLMInterface
 
 class DistributionStrategy(Enum):
     """Strategies for distributing LLM requests."""
+
     LOCAL_FIRST = "local_first"  # Try local, fallback to peers
     LOAD_BALANCED = "load_balanced"  # Distribute across peers by load
     FASTEST_PEER = "fastest"  # Route to fastest peer
@@ -54,7 +55,7 @@ class DistributedLLMInterface:
         local_llm_interface: Optional[LLMInterface] = None,
         rpc_client=None,
         peer_manager=None,
-        network_metrics=None
+        network_metrics=None,
     ):
         """
         Initialize distributed LLM interface.
@@ -77,11 +78,11 @@ class DistributedLLMInterface:
         self.network_metrics = network_metrics
 
         # Configuration
-        network_config = config.get('network', {})
-        self.network_enabled = network_config.get('enabled', False)
+        network_config = config.get("network", {})
+        self.network_enabled = network_config.get("enabled", False)
 
-        peer_selection = network_config.get('peer_selection', {})
-        strategy_name = peer_selection.get('strategy', 'local_first')
+        peer_selection = network_config.get("peer_selection", {})
+        strategy_name = peer_selection.get("strategy", "local_first")
         self.strategy = DistributionStrategy(strategy_name)
 
         # Round-robin counter (thread-safe)
@@ -106,7 +107,7 @@ class DistributedLLMInterface:
         top_p: float = 0.95,
         max_tokens: int = 512,
         force_local: bool = False,
-        force_distributed: bool = False
+        force_distributed: bool = False,
     ) -> str:
         """
         Generate text using local or distributed LLM.
@@ -149,7 +150,9 @@ class DistributedLLMInterface:
             return self._strategy_fastest_peer(prompt, temperature, top_p, max_tokens)
 
         elif self.strategy == DistributionStrategy.PARALLEL_VOTING:
-            return self._strategy_parallel_voting(prompt, temperature, top_p, max_tokens)
+            return self._strategy_parallel_voting(
+                prompt, temperature, top_p, max_tokens
+            )
 
         elif self.strategy == DistributionStrategy.ROUND_ROBIN:
             return self._strategy_round_robin(prompt, temperature, top_p, max_tokens)
@@ -159,11 +162,7 @@ class DistributedLLMInterface:
             return self._strategy_local_first(prompt, temperature, top_p, max_tokens)
 
     def _generate_local(
-        self,
-        prompt: str,
-        temperature: float,
-        top_p: float,
-        max_tokens: int
+        self, prompt: str, temperature: float, top_p: float, max_tokens: int
     ) -> str:
         """Generate using local LLM."""
         if not self.local_llm:
@@ -173,10 +172,7 @@ class DistributedLLMInterface:
             self.local_generations += 1
 
         return self.local_llm.generate(
-            prompt=prompt,
-            temperature=temperature,
-            top_p=top_p,
-            max_tokens=max_tokens
+            prompt=prompt, temperature=temperature, top_p=top_p, max_tokens=max_tokens
         )
 
     def _generate_distributed(
@@ -185,7 +181,7 @@ class DistributedLLMInterface:
         temperature: float,
         top_p: float,
         max_tokens: int,
-        peer_id: Optional[str] = None
+        peer_id: Optional[str] = None,
     ) -> Optional[str]:
         """
         Generate using a peer LLM.
@@ -212,7 +208,7 @@ class DistributedLLMInterface:
                 temperature=temperature,
                 top_p=top_p,
                 max_tokens=max_tokens,
-                peer_id=peer_id
+                peer_id=peer_id,
             )
 
             if result:
@@ -227,9 +223,9 @@ class DistributedLLMInterface:
                         self.network_metrics.record_request(
                             peer_id=peer_id,
                             peer_name=peer_conn.peer_info.instance_name,
-                            request_type='llm',
+                            request_type="llm",
                             latency_ms=latency_ms,
-                            success=True
+                            success=True,
                         )
 
                 return result
@@ -251,25 +247,23 @@ class DistributedLLMInterface:
                     self.network_metrics.record_request(
                         peer_id=peer_id,
                         peer_name=peer_conn.peer_info.instance_name,
-                        request_type='llm',
+                        request_type="llm",
                         latency_ms=latency_ms,
-                        success=False
+                        success=False,
                     )
 
             return None
 
     def _strategy_local_first(
-        self,
-        prompt: str,
-        temperature: float,
-        top_p: float,
-        max_tokens: int
+        self, prompt: str, temperature: float, top_p: float, max_tokens: int
     ) -> str:
         """LOCAL_FIRST strategy: Try local, fallback to distributed."""
         try:
             return self._generate_local(prompt, temperature, top_p, max_tokens)
         except Exception as e:
-            self.file_logger.log_warning(f"Local generation failed: {e}, trying distributed")
+            self.file_logger.log_warning(
+                f"Local generation failed: {e}, trying distributed"
+            )
             result = self._generate_distributed(prompt, temperature, top_p, max_tokens)
             if result:
                 return result
@@ -277,11 +271,7 @@ class DistributedLLMInterface:
                 raise RuntimeError("Both local and distributed generation failed")
 
     def _strategy_load_balanced(
-        self,
-        prompt: str,
-        temperature: float,
-        top_p: float,
-        max_tokens: int
+        self, prompt: str, temperature: float, top_p: float, max_tokens: int
     ) -> str:
         """LOAD_BALANCED strategy: Select least loaded instance (local or peer)."""
         if not self.peer_manager:
@@ -295,7 +285,7 @@ class DistributedLLMInterface:
             return self._generate_local(prompt, temperature, top_p, max_tokens)
 
         # Select best peer
-        peer_id = self.peer_manager.select_peer_for_task('llm')
+        peer_id = self.peer_manager.select_peer_for_task("llm")
 
         if peer_id:
             # Try peer first
@@ -309,18 +299,14 @@ class DistributedLLMInterface:
         return self._generate_local(prompt, temperature, top_p, max_tokens)
 
     def _strategy_fastest_peer(
-        self,
-        prompt: str,
-        temperature: float,
-        top_p: float,
-        max_tokens: int
+        self, prompt: str, temperature: float, top_p: float, max_tokens: int
     ) -> str:
         """FASTEST_PEER strategy: Route to peer with best latency."""
         if not self.peer_manager:
             return self._generate_local(prompt, temperature, top_p, max_tokens)
 
         # Select fastest peer
-        peer_id = self.peer_manager.select_peer_for_task('llm')
+        peer_id = self.peer_manager.select_peer_for_task("llm")
 
         if peer_id:
             result = self._generate_distributed(
@@ -333,11 +319,7 @@ class DistributedLLMInterface:
         return self._generate_local(prompt, temperature, top_p, max_tokens)
 
     def _strategy_parallel_voting(
-        self,
-        prompt: str,
-        temperature: float,
-        top_p: float,
-        max_tokens: int
+        self, prompt: str, temperature: float, top_p: float, max_tokens: int
     ) -> str:
         """
         PARALLEL_VOTING strategy: Generate on multiple instances and vote.
@@ -353,9 +335,11 @@ class DistributedLLMInterface:
         # Get up to 2 peers
         all_peers = self.peer_manager.get_all_peers()
         available_peers = [
-            p.peer_info.instance_id for p in all_peers
-            if p.status.value in ['connected', 'degraded'] and
-            p.capabilities and p.capabilities.share_llm
+            p.peer_info.instance_id
+            for p in all_peers
+            if p.status.value in ["connected", "degraded"]
+            and p.capabilities
+            and p.capabilities.share_llm
         ]
 
         if len(available_peers) < 2:
@@ -369,7 +353,7 @@ class DistributedLLMInterface:
         def generate_local_thread():
             try:
                 result = self._generate_local(prompt, temperature, top_p, max_tokens)
-                results.append(('local', result))
+                results.append(("local", result))
             except Exception as e:
                 self.file_logger.log_error(f"Parallel local generation failed: {e}")
 
@@ -411,11 +395,7 @@ class DistributedLLMInterface:
             raise RuntimeError("All parallel generations failed")
 
     def _strategy_round_robin(
-        self,
-        prompt: str,
-        temperature: float,
-        top_p: float,
-        max_tokens: int
+        self, prompt: str, temperature: float, top_p: float, max_tokens: int
     ) -> str:
         """ROUND_ROBIN strategy: Distribute requests evenly."""
         if not self.peer_manager:
@@ -424,9 +404,11 @@ class DistributedLLMInterface:
         with self.round_robin_lock:
             # Get all available instances (local + peers)
             available_peers = [
-                p.peer_info.instance_id for p in self.peer_manager.get_all_peers()
-                if p.status.value in ['connected', 'degraded'] and
-                p.capabilities and p.capabilities.share_llm
+                p.peer_info.instance_id
+                for p in self.peer_manager.get_all_peers()
+                if p.status.value in ["connected", "degraded"]
+                and p.capabilities
+                and p.capabilities.share_llm
             ]
 
             if not available_peers:
@@ -434,7 +416,7 @@ class DistributedLLMInterface:
                 return self._generate_local(prompt, temperature, top_p, max_tokens)
 
             # Add "local" as an option
-            instances = ['local'] + available_peers
+            instances = ["local"] + available_peers
 
             # Select next instance (thread-safe)
             with self.round_robin_lock:
@@ -443,7 +425,7 @@ class DistributedLLMInterface:
             selected = instances[selected_idx]
 
         # Generate
-        if selected == 'local':
+        if selected == "local":
             return self._generate_local(prompt, temperature, top_p, max_tokens)
         else:
             result = self._generate_distributed(
@@ -458,22 +440,24 @@ class DistributedLLMInterface:
     def get_stats(self) -> dict:
         """Get generation statistics (thread-safe)."""
         with self.stats_lock:
-            total = self.local_generations + self.distributed_generations + self.failed_generations
+            total = (
+                self.local_generations
+                + self.distributed_generations
+                + self.failed_generations
+            )
             return {
-                'local_generations': self.local_generations,
-                'distributed_generations': self.distributed_generations,
-                'failed_generations': self.failed_generations,
-                'total_generations': total,
-                'distributed_percentage': (
-                    self.distributed_generations / total * 100
-                    if total > 0 else 0.0
+                "local_generations": self.local_generations,
+                "distributed_generations": self.distributed_generations,
+                "failed_generations": self.failed_generations,
+                "total_generations": total,
+                "distributed_percentage": (
+                    self.distributed_generations / total * 100 if total > 0 else 0.0
                 ),
-                'failure_rate': (
-                    self.failed_generations / total * 100
-                    if total > 0 else 0.0
+                "failure_rate": (
+                    self.failed_generations / total * 100 if total > 0 else 0.0
                 ),
-                'strategy': self.strategy.value,
-                'network_enabled': self.network_enabled
+                "strategy": self.strategy.value,
+                "network_enabled": self.network_enabled,
             }
 
     def close(self):

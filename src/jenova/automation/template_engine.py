@@ -53,15 +53,17 @@ class TemplateEngine:
 
     def _register_default_filters(self) -> None:
         """Register default filters."""
-        self.global_filters.update({
-            'upper': str.upper,
-            'lower': str.lower,
-            'title': str.title,
-            'capitalize': str.capitalize,
-            'strip': str.strip,
-            'len': len,
-            'default': lambda x, default='': x if x else default,
-        })
+        self.global_filters.update(
+            {
+                "upper": str.upper,
+                "lower": str.lower,
+                "title": str.title,
+                "capitalize": str.capitalize,
+                "strip": str.strip,
+                "len": len,
+                "default": lambda x, default="": x if x else default,
+            }
+        )
 
     def render(self, template: str, variables: Dict[str, Any]) -> str:
         """
@@ -77,7 +79,9 @@ class TemplateEngine:
         Raises:
             ValueError: If template is invalid or variable missing
         """
-        context = TemplateContext(variables=variables, filters=self.global_filters.copy())
+        context = TemplateContext(
+            variables=variables, filters=self.global_filters.copy()
+        )
         return self._render_template(template, context)
 
     def render_with_context(self, template: str, context: TemplateContext) -> str:
@@ -122,14 +126,14 @@ class TemplateEngine:
         - {{variable|filter}} - With filter
         - {{variable|filter:arg}} - Filter with argument
         """
-        pattern = r'\{\{([^}]+)\}\}'
+        pattern = r"\{\{([^}]+)\}\}"
 
         def replace_variable(match):
             expr = match.group(1).strip()
 
             # Check for filter
-            if '|' in expr:
-                var_name, filter_expr = expr.split('|', 1)
+            if "|" in expr:
+                var_name, filter_expr = expr.split("|", 1)
                 var_name = var_name.strip()
                 filter_expr = filter_expr.strip()
 
@@ -141,7 +145,7 @@ class TemplateEngine:
             else:
                 # Simple variable
                 value = self._get_variable(expr, context)
-                return str(value) if value is not None else ''
+                return str(value) if value is not None else ""
 
         return re.sub(pattern, replace_variable, template)
 
@@ -151,7 +155,7 @@ class TemplateEngine:
 
         Supports dot notation: {{user.name}}
         """
-        parts = name.split('.')
+        parts = name.split(".")
         value = context.variables
 
         for part in parts:
@@ -165,7 +169,9 @@ class TemplateEngine:
 
         return value
 
-    def _apply_filter(self, value: Any, filter_expr: str, context: TemplateContext) -> str:
+    def _apply_filter(
+        self, value: Any, filter_expr: str, context: TemplateContext
+    ) -> str:
         """
         Apply filter to a value.
 
@@ -173,16 +179,18 @@ class TemplateEngine:
         - filter_name
         - filter_name:arg
         """
-        if ':' in filter_expr:
-            filter_name, arg = filter_expr.split(':', 1)
+        if ":" in filter_expr:
+            filter_name, arg = filter_expr.split(":", 1)
             filter_name = filter_name.strip()
-            arg = arg.strip().strip('"\'')
+            arg = arg.strip().strip("\"'")
         else:
             filter_name = filter_expr
             arg = None
 
         # Get filter function
-        filter_func = context.filters.get(filter_name) or self.global_filters.get(filter_name)
+        filter_func = context.filters.get(filter_name) or self.global_filters.get(
+            filter_name
+        )
 
         if not filter_func:
             logger.warning(f"Filter not found: {filter_name}")
@@ -205,18 +213,18 @@ class TemplateEngine:
         - {% if variable %}...{% endif %}
         - {% if variable %}...{% else %}...{% endif %}
         """
-        pattern = r'\{%\s*if\s+(\w+)\s*%\}(.*?)\{%\s*endif\s*%\}'
+        pattern = r"\{%\s*if\s+(\w+)\s*%\}(.*?)\{%\s*endif\s*%\}"
 
         def replace_conditional(match):
             var_name = match.group(1).strip()
             content = match.group(2)
 
             # Check for else block
-            else_pattern = r'\{%\s*else\s*%\}'
+            else_pattern = r"\{%\s*else\s*%\}"
             parts = re.split(else_pattern, content, maxsplit=1)
 
             if_content = parts[0]
-            else_content = parts[1] if len(parts) > 1 else ''
+            else_content = parts[1] if len(parts) > 1 else ""
 
             # Evaluate condition
             value = self._get_variable(var_name, context)
@@ -235,7 +243,7 @@ class TemplateEngine:
         Supports:
         - {% for item in list %}...{% endfor %}
         """
-        pattern = r'\{%\s*for\s+(\w+)\s+in\s+(\w+)\s*%\}(.*?)\{%\s*endfor\s*%\}'
+        pattern = r"\{%\s*for\s+(\w+)\s+in\s+(\w+)\s*%\}(.*?)\{%\s*endfor\s*%\}"
 
         def replace_loop(match):
             item_var = match.group(1).strip()
@@ -246,7 +254,7 @@ class TemplateEngine:
             items = self._get_variable(list_var, context)
 
             if not items:
-                return ''
+                return ""
 
             # Render loop content for each item
             results = []
@@ -254,12 +262,12 @@ class TemplateEngine:
                 # Create temporary context with loop variable
                 loop_context = TemplateContext(
                     variables={**context.variables, item_var: item},
-                    filters=context.filters
+                    filters=context.filters,
                 )
                 result = self._render_template(loop_content, loop_context)
                 results.append(result)
 
-            return ''.join(results)
+            return "".join(results)
 
         return re.sub(pattern, replace_loop, template, flags=re.DOTALL)
 
@@ -313,29 +321,33 @@ class TemplateEngine:
         warnings = []
 
         # Check for balanced braces
-        open_var = template.count('{{')
-        close_var = template.count('}}')
+        open_var = template.count("{{")
+        close_var = template.count("}}")
         if open_var != close_var:
-            errors.append(f"Unbalanced variable braces: {open_var} opening, {close_var} closing")
+            errors.append(
+                f"Unbalanced variable braces: {open_var} opening, {close_var} closing"
+            )
 
         # Check for balanced control structures
-        if_count = len(re.findall(r'\{%\s*if\s+', template))
-        endif_count = len(re.findall(r'\{%\s*endif\s*%\}', template))
+        if_count = len(re.findall(r"\{%\s*if\s+", template))
+        endif_count = len(re.findall(r"\{%\s*endif\s*%\}", template))
         if if_count != endif_count:
             errors.append(f"Unbalanced if/endif: {if_count} if, {endif_count} endif")
 
-        for_count = len(re.findall(r'\{%\s*for\s+', template))
-        endfor_count = len(re.findall(r'\{%\s*endfor\s*%\}', template))
+        for_count = len(re.findall(r"\{%\s*for\s+", template))
+        endfor_count = len(re.findall(r"\{%\s*endfor\s*%\}", template))
         if for_count != endfor_count:
-            errors.append(f"Unbalanced for/endfor: {for_count} for, {endfor_count} endfor")
+            errors.append(
+                f"Unbalanced for/endfor: {for_count} for, {endfor_count} endfor"
+            )
 
         # Extract variables
-        variables = re.findall(r'\{\{([^}|]+)', template)
-        variables = [v.strip().split('.')[0] for v in variables]
+        variables = re.findall(r"\{\{([^}|]+)", template)
+        variables = [v.strip().split(".")[0] for v in variables]
         variables = list(set(variables))  # Unique
 
         # Extract filters
-        filters = re.findall(r'\|(\w+)', template)
+        filters = re.findall(r"\|(\w+)", template)
         filters = list(set(filters))
 
         unknown_filters = [f for f in filters if f not in self.global_filters]
@@ -347,7 +359,7 @@ class TemplateEngine:
             "errors": errors,
             "warnings": warnings,
             "variables": variables,
-            "filters": filters
+            "filters": filters,
         }
 
     def extract_variables(self, template: str) -> List[str]:
@@ -360,16 +372,13 @@ class TemplateEngine:
         Returns:
             List of variable names
         """
-        pattern = r'\{\{([^}|]+)'
+        pattern = r"\{\{([^}|]+)"
         matches = re.findall(pattern, template)
-        variables = [v.strip().split('.')[0] for v in matches]
+        variables = [v.strip().split(".")[0] for v in matches]
         return list(set(variables))
 
     def render_safe(
-        self,
-        template: str,
-        variables: Dict[str, Any],
-        default_value: str = ""
+        self, template: str, variables: Dict[str, Any], default_value: str = ""
     ) -> str:
         """
         Render template safely, returning default on error.

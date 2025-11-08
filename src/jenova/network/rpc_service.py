@@ -42,7 +42,7 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
         llm_interface=None,
         embedding_manager=None,
         memory_search=None,
-        health_monitor=None
+        health_monitor=None,
     ):
         """
         Initialize RPC servicer.
@@ -69,12 +69,12 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
         self.start_time = time.time()
 
         # Resource sharing settings
-        network_config = config.get('network', {})
-        resource_sharing = network_config.get('resource_sharing', {})
-        self.share_llm = resource_sharing.get('share_llm', True)
-        self.share_embeddings = resource_sharing.get('share_embeddings', True)
-        self.share_memory = resource_sharing.get('share_memory', False)
-        self.max_concurrent = resource_sharing.get('max_concurrent_requests', 5)
+        network_config = config.get("network", {})
+        resource_sharing = network_config.get("resource_sharing", {})
+        self.share_llm = resource_sharing.get("share_llm", True)
+        self.share_embeddings = resource_sharing.get("share_embeddings", True)
+        self.share_memory = resource_sharing.get("share_memory", False)
+        self.max_concurrent = resource_sharing.get("max_concurrent_requests", 5)
 
         self.file_logger.log_info(
             f"RPC servicer initialized (share_llm={self.share_llm}, "
@@ -103,7 +103,7 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
                 return self._create_generate_response(
                     request_id=request.request_id,
                     success=False,
-                    error_message="LLM sharing is disabled on this instance"
+                    error_message="LLM sharing is disabled on this instance",
                 )
 
             # Check if LLM interface is available
@@ -112,7 +112,7 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
                 return self._create_generate_response(
                     request_id=request.request_id,
                     success=False,
-                    error_message="LLM interface not available"
+                    error_message="LLM interface not available",
                 )
 
             # Generate text
@@ -124,7 +124,7 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
                 prompt=request.prompt,
                 temperature=request.temperature or 0.7,
                 top_p=request.top_p or 0.95,
-                max_tokens=request.max_tokens or 512
+                max_tokens=request.max_tokens or 512,
             )
 
             generation_time = time.time() - start_time
@@ -138,18 +138,16 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
                 text=result,
                 tokens_generated=len(result.split()),  # Rough estimate
                 generation_time_seconds=generation_time,
-                model_name=self.config.get('model', {}).get('model_path', 'unknown'),
+                model_name=self.config.get("model", {}).get("model_path", "unknown"),
                 request_id=request.request_id,
-                success=True
+                success=True,
             )
 
         except Exception as e:
             self.failed_requests += 1
             self.file_logger.log_error(f"RPC: Text generation failed: {e}")
             return self._create_generate_response(
-                request_id=request.request_id,
-                success=False,
-                error_message=str(e)
+                request_id=request.request_id, success=False, error_message=str(e)
             )
 
     def GenerateTextStream(self, request, context):
@@ -176,7 +174,7 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
                 yield self._create_stream_response(
                     token=token + " ",
                     is_final=(i == len(tokens) - 1),
-                    request_id=request.request_id
+                    request_id=request.request_id,
                 )
 
     def EmbedText(self, request, context):
@@ -200,7 +198,7 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
                 return self._create_embed_response(
                     request_id=request.request_id,
                     success=False,
-                    error_message="Embedding sharing is disabled on this instance"
+                    error_message="Embedding sharing is disabled on this instance",
                 )
 
             # Check if embedding manager is available
@@ -209,7 +207,7 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
                 return self._create_embed_response(
                     request_id=request.request_id,
                     success=False,
-                    error_message="Embedding model not available"
+                    error_message="Embedding model not available",
                 )
 
             # Generate embedding
@@ -218,8 +216,7 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
             )
 
             embedding = self.embedding_manager.embedding_model.encode(
-                request.text,
-                show_progress_bar=False
+                request.text, show_progress_bar=False
             )
 
             embedding_time = time.time() - start_time
@@ -230,16 +227,14 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
                 dimension=len(embedding),
                 embedding_time_seconds=embedding_time,
                 request_id=request.request_id,
-                success=True
+                success=True,
             )
 
         except Exception as e:
             self.failed_requests += 1
             self.file_logger.log_error(f"RPC: Embedding generation failed: {e}")
             return self._create_embed_response(
-                request_id=request.request_id,
-                success=False,
-                error_message=str(e)
+                request_id=request.request_id, success=False, error_message=str(e)
             )
 
     def EmbedTextBatch(self, request, context):
@@ -262,7 +257,7 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
                 return self._create_embed_batch_response(
                     request_id=request.request_id,
                     success=False,
-                    error_message="Embedding sharing is disabled"
+                    error_message="Embedding sharing is disabled",
                 )
 
             if not self.embedding_manager or not self.embedding_manager.embedding_model:
@@ -270,7 +265,7 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
                 return self._create_embed_batch_response(
                     request_id=request.request_id,
                     success=False,
-                    error_message="Embedding model not available"
+                    error_message="Embedding model not available",
                 )
 
             # Generate batch embeddings
@@ -279,8 +274,7 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
             )
 
             embeddings = self.embedding_manager.embedding_model.encode(
-                list(request.texts),
-                show_progress_bar=False
+                list(request.texts), show_progress_bar=False
             )
 
             embedding_time = time.time() - start_time
@@ -296,16 +290,14 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
                 embeddings=results,
                 total_time_seconds=embedding_time,
                 request_id=request.request_id,
-                success=True
+                success=True,
             )
 
         except Exception as e:
             self.failed_requests += 1
             self.file_logger.log_error(f"RPC: Batch embedding failed: {e}")
             return self._create_embed_batch_response(
-                request_id=request.request_id,
-                success=False,
-                error_message=str(e)
+                request_id=request.request_id, success=False, error_message=str(e)
             )
 
     def SearchMemory(self, request, context):
@@ -329,7 +321,7 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
                 return self._create_memory_search_response(
                     request_id=request.request_id,
                     success=False,
-                    error_message="Memory sharing is disabled (privacy setting)"
+                    error_message="Memory sharing is disabled (privacy setting)",
                 )
 
             # Note: Memory search implementation would require username context
@@ -342,16 +334,14 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
             return self._create_memory_search_response(
                 request_id=request.request_id,
                 success=False,
-                error_message="Memory search not available for privacy reasons"
+                error_message="Memory search not available for privacy reasons",
             )
 
         except Exception as e:
             self.failed_requests += 1
             self.file_logger.log_error(f"RPC: Memory search failed: {e}")
             return self._create_memory_search_response(
-                request_id=request.request_id,
-                success=False,
-                error_message=str(e)
+                request_id=request.request_id, success=False, error_message=str(e)
             )
 
     def SearchMemoryFederated(self, request, context):
@@ -382,35 +372,41 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
         """
         try:
             health_data = {
-                'status': 'healthy',
-                'cpu_percent': 0.0,
-                'memory_percent': 0.0,
-                'gpu_memory_percent': 0.0,
-                'active_requests': 0,
-                'total_requests_served': self.total_requests,
-                'uptime_seconds': time.time() - self.start_time
+                "status": "healthy",
+                "cpu_percent": 0.0,
+                "memory_percent": 0.0,
+                "gpu_memory_percent": 0.0,
+                "active_requests": 0,
+                "total_requests_served": self.total_requests,
+                "uptime_seconds": time.time() - self.start_time,
             }
 
             # Get real health data if monitor available
             if self.health_monitor:
                 snapshot = self.health_monitor.get_health_snapshot()
-                health_data.update({
-                    'status': snapshot.status.value,
-                    'cpu_percent': snapshot.cpu_percent,
-                    'memory_percent': snapshot.memory_percent,
-                    'gpu_memory_percent': (
-                        (snapshot.gpu_memory_used_mb / snapshot.gpu_memory_total_mb * 100)
-                        if snapshot.gpu_memory_total_mb else 0.0
-                    )
-                })
+                health_data.update(
+                    {
+                        "status": snapshot.status.value,
+                        "cpu_percent": snapshot.cpu_percent,
+                        "memory_percent": snapshot.memory_percent,
+                        "gpu_memory_percent": (
+                            (
+                                snapshot.gpu_memory_used_mb
+                                / snapshot.gpu_memory_total_mb
+                                * 100
+                            )
+                            if snapshot.gpu_memory_total_mb
+                            else 0.0
+                        ),
+                    }
+                )
 
             return self._create_health_response(**health_data)
 
         except Exception as e:
             self.file_logger.log_error(f"RPC: Health check failed: {e}")
             return self._create_health_response(
-                status='unhealthy',
-                uptime_seconds=time.time() - self.start_time
+                status="unhealthy", uptime_seconds=time.time() - self.start_time
             )
 
     def GetCapabilities(self, request, context):
@@ -446,72 +442,69 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
     def _create_generate_response(self, **kwargs):
         """Create GenerateResponse using protobuf."""
         return jenova_pb2.GenerateResponse(
-            text=kwargs.get('text', ''),
-            tokens_generated=kwargs.get('tokens_generated', 0),
-            generation_time_seconds=kwargs.get('generation_time_seconds', 0.0),
-            model_name=kwargs.get('model_name', ''),
-            request_id=kwargs.get('request_id', ''),
-            success=kwargs.get('success', False),
-            error_message=kwargs.get('error_message', '')
+            text=kwargs.get("text", ""),
+            tokens_generated=kwargs.get("tokens_generated", 0),
+            generation_time_seconds=kwargs.get("generation_time_seconds", 0.0),
+            model_name=kwargs.get("model_name", ""),
+            request_id=kwargs.get("request_id", ""),
+            success=kwargs.get("success", False),
+            error_message=kwargs.get("error_message", ""),
         )
 
     def _create_stream_response(self, **kwargs):
         """Create GenerateStreamResponse using protobuf."""
         return jenova_pb2.GenerateStreamResponse(
-            token=kwargs.get('token', ''),
-            is_final=kwargs.get('is_final', False),
-            request_id=kwargs.get('request_id', '')
+            token=kwargs.get("token", ""),
+            is_final=kwargs.get("is_final", False),
+            request_id=kwargs.get("request_id", ""),
         )
 
     def _create_embed_response(self, **kwargs):
         """Create EmbedResponse using protobuf."""
         return jenova_pb2.EmbedResponse(
-            embedding=kwargs.get('embedding', []),
-            dimension=kwargs.get('dimension', 0),
-            embedding_time_seconds=kwargs.get('embedding_time_seconds', 0.0),
-            request_id=kwargs.get('request_id', ''),
-            success=kwargs.get('success', False),
-            error_message=kwargs.get('error_message', '')
+            embedding=kwargs.get("embedding", []),
+            dimension=kwargs.get("dimension", 0),
+            embedding_time_seconds=kwargs.get("embedding_time_seconds", 0.0),
+            request_id=kwargs.get("request_id", ""),
+            success=kwargs.get("success", False),
+            error_message=kwargs.get("error_message", ""),
         )
 
     def _create_embed_batch_response(self, **kwargs):
         """Create EmbedBatchResponse using protobuf."""
         return jenova_pb2.EmbedBatchResponse(
-            embeddings=kwargs.get('embeddings', []),
-            total_time_seconds=kwargs.get('total_time_seconds', 0.0),
-            request_id=kwargs.get('request_id', ''),
-            success=kwargs.get('success', False),
-            error_message=kwargs.get('error_message', '')
+            embeddings=kwargs.get("embeddings", []),
+            total_time_seconds=kwargs.get("total_time_seconds", 0.0),
+            request_id=kwargs.get("request_id", ""),
+            success=kwargs.get("success", False),
+            error_message=kwargs.get("error_message", ""),
         )
 
     def _create_embedding_result(self, embedding, index):
         """Create EmbeddingResult using protobuf."""
-        return jenova_pb2.EmbeddingResult(
-            embedding=embedding,
-            index=index
-        )
+        return jenova_pb2.EmbeddingResult(embedding=embedding, index=index)
 
     def _create_memory_search_response(self, **kwargs):
         """Create MemorySearchResponse using protobuf."""
         return jenova_pb2.MemorySearchResponse(
-            results=kwargs.get('results', []),
-            total_results=kwargs.get('total_results', 0),
-            search_time_seconds=kwargs.get('search_time_seconds', 0.0),
-            request_id=kwargs.get('request_id', ''),
-            success=kwargs.get('success', False),
-            error_message=kwargs.get('error_message', '')
+            results=kwargs.get("results", []),
+            total_results=kwargs.get("total_results", 0),
+            search_time_seconds=kwargs.get("search_time_seconds", 0.0),
+            request_id=kwargs.get("request_id", ""),
+            success=kwargs.get("success", False),
+            error_message=kwargs.get("error_message", ""),
         )
 
     def _create_health_response(self, **kwargs):
         """Create HealthCheckResponse using protobuf."""
         return jenova_pb2.HealthCheckResponse(
-            status=kwargs.get('status', 'unknown'),
-            cpu_percent=kwargs.get('cpu_percent', 0.0),
-            memory_percent=kwargs.get('memory_percent', 0.0),
-            gpu_memory_percent=kwargs.get('gpu_memory_percent', 0.0),
-            active_requests=kwargs.get('active_requests', 0),
-            total_requests_served=kwargs.get('total_requests_served', 0),
-            uptime_seconds=kwargs.get('uptime_seconds', 0.0)
+            status=kwargs.get("status", "unknown"),
+            cpu_percent=kwargs.get("cpu_percent", 0.0),
+            memory_percent=kwargs.get("memory_percent", 0.0),
+            gpu_memory_percent=kwargs.get("gpu_memory_percent", 0.0),
+            active_requests=kwargs.get("active_requests", 0),
+            total_requests_served=kwargs.get("total_requests_served", 0),
+            uptime_seconds=kwargs.get("uptime_seconds", 0.0),
         )
 
     def _create_capabilities_response(self):
@@ -522,7 +515,7 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
             share_memory=self.share_memory,
             max_concurrent_requests=self.max_concurrent,
             supports_streaming=False,  # Not yet implemented
-            version='5.0.0'
+            version="5.0.0",
         )
 
     def _create_metrics_response(self):
@@ -531,7 +524,7 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
             total_requests=self.total_requests,
             successful_requests=self.successful_requests,
             failed_requests=self.failed_requests,
-            uptime_seconds=time.time() - self.start_time
+            uptime_seconds=time.time() - self.start_time,
         )
 
 
@@ -549,7 +542,7 @@ class JenovaRPCServer:
         file_logger,
         servicer: JenovaRPCServicer,
         security_manager=None,
-        port: int = 50051
+        port: int = 50051,
     ):
         """
         Initialize RPC server.
@@ -570,9 +563,9 @@ class JenovaRPCServer:
         self.server: Optional[grpc.Server] = None
 
         # Configuration
-        network_config = config.get('network', {})
-        resource_sharing = network_config.get('resource_sharing', {})
-        self.max_workers = resource_sharing.get('max_concurrent_requests', 5)
+        network_config = config.get("network", {})
+        resource_sharing = network_config.get("resource_sharing", {})
+        self.max_workers = resource_sharing.get("max_concurrent_requests", 5)
 
     def start(self):
         """Start the gRPC server."""
@@ -585,23 +578,18 @@ class JenovaRPCServer:
             )
 
             # Add servicer to server using generated gRPC code
-            jenova_pb2_grpc.add_JenovaRPCServicer_to_server(
-                self.servicer,
-                self.server
-            )
+            jenova_pb2_grpc.add_JenovaRPCServicer_to_server(self.servicer, self.server)
 
             # Bind port
             if self.security_manager and self.security_manager.is_security_enabled():
                 # Use SSL/TLS
                 private_key, cert_chain = self.security_manager.get_ssl_credentials()
-                credentials = grpc.ssl_server_credentials(
-                    [(private_key, cert_chain)]
-                )
-                self.server.add_secure_port(f'[::]:{self.port}', credentials)
+                credentials = grpc.ssl_server_credentials([(private_key, cert_chain)])
+                self.server.add_secure_port(f"[::]:{self.port}", credentials)
                 self.file_logger.log_info("gRPC server using SSL/TLS encryption")
             else:
                 # Insecure (for testing or private networks)
-                self.server.add_insecure_port(f'[::]:{self.port}')
+                self.server.add_insecure_port(f"[::]:{self.port}")
                 self.file_logger.log_warning(
                     "gRPC server running WITHOUT encryption (not recommended)"
                 )

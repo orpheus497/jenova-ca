@@ -21,27 +21,21 @@ from .semantic import SemanticMemory
 from .procedural import ProceduralMemory
 
 # Phase 4: Enhanced memory infrastructure
-from .base_memory import (
-    BaseMemory,
-    MemoryError,
-    MemoryInitError,
-    MemoryOperationError
-)
+from .base_memory import BaseMemory, MemoryError, MemoryInitError, MemoryOperationError
 from .memory_manager import MemoryManager
 
 __all__ = [
     # Original implementations
-    'EpisodicMemory',
-    'SemanticMemory',
-    'ProceduralMemory',
-
+    "EpisodicMemory",
+    "SemanticMemory",
+    "ProceduralMemory",
     # Phase 4: Base infrastructure
-    'BaseMemory',
-    'MemoryError',
-    'MemoryInitError',
-    'MemoryOperationError',
-    'MemoryManager',
+    "BaseMemory",
+    "MemoryError",
+    "MemoryInitError",
+    "MemoryOperationError",
+    "MemoryManager",
 ]
 
-__version__ = '4.2.0'
-__phase__ = 'Phase 4: Memory Layer (Foundation)'
+__version__ = "4.2.0"
+__phase__ = "Phase 4: Memory Layer (Foundation)"

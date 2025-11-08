@@ -4,8 +4,7 @@
 # The JENOVA Cognitive Architecture is licensed under the MIT License.
 # A copy of the license can be found in the LICENSE file in the root directory of this source tree.
 
-"""This module is responsible for the embedding function of the JENOVA Cognitive Architecture.
-"""
+"""This module is responsible for the embedding function of the JENOVA Cognitive Architecture."""
 
 from chromadb import Documents, EmbeddingFunction, Embeddings
 from sentence_transformers import SentenceTransformer
@@ -34,8 +33,7 @@ class CustomEmbeddingFunction(EmbeddingFunction):
         """
         # Ensure input is a list and encode using the model
         # convert_to_numpy=True then .tolist() ensures compatibility with ChromaDB
-        embeddings = self._model.encode(
-            list(input), convert_to_numpy=True).tolist()
+        embeddings = self._model.encode(list(input), convert_to_numpy=True).tolist()
         return embeddings
 
     def name(self) -> str:

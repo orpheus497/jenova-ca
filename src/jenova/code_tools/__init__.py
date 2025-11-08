@@ -21,12 +21,12 @@ from jenova.code_tools.codebase_mapper import CodebaseMapper
 from jenova.code_tools.interactive_terminal import InteractiveTerminal
 
 __all__ = [
-    'FileEditor',
-    'CodeParser',
-    'RefactoringEngine',
-    'SyntaxHighlighter',
-    'CodebaseMapper',
-    'InteractiveTerminal',
+    "FileEditor",
+    "CodeParser",
+    "RefactoringEngine",
+    "SyntaxHighlighter",
+    "CodebaseMapper",
+    "InteractiveTerminal",
 ]
 
-__version__ = '5.2.0'
+__version__ = "5.2.0"

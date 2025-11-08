@@ -21,6 +21,7 @@ from jenova.infrastructure.timeout_manager import timeout, TimeoutError
 
 class ModelLoadError(Exception):
     """Raised when model loading fails."""
+
     pass
 
 
@@ -54,17 +55,17 @@ class ModelManager:
             ModelLoadError: If no model found
         """
         # Check configured model path
-        if 'model' in self.config and 'model_path' in self.config['model']:
-            model_path = Path(self.config['model']['model_path'])
-            if model_path.exists() and model_path.suffix == '.gguf':
+        if "model" in self.config and "model_path" in self.config["model"]:
+            model_path = Path(self.config["model"]["model_path"])
+            if model_path.exists() and model_path.suffix == ".gguf":
                 return model_path
 
         # Search common locations
         search_paths = [
-            Path('/usr/local/share/models'),
-            Path.home() / '.cache' / 'jenova' / 'models',
-            Path('./models'),
-            Path('../models'),
+            Path("/usr/local/share/models"),
+            Path.home() / ".cache" / "jenova" / "models",
+            Path("./models"),
+            Path("../models"),
         ]
 
         for search_dir in search_paths:
@@ -72,10 +73,10 @@ class ModelManager:
                 continue
 
             # Find any .gguf file
-            gguf_files = list(search_dir.glob('*.gguf'))
+            gguf_files = list(search_dir.glob("*.gguf"))
             if gguf_files:
                 # Prefer files with common patterns
-                for pattern in ['q4_k_m', 'q4_0', 'q5_k_m', 'q8_0']:
+                for pattern in ["q4_k_m", "q4_0", "q5_k_m", "q8_0"]:
                     for file in gguf_files:
                         if pattern.lower() in file.name.lower():
                             return file
@@ -121,6 +122,7 @@ class ModelManager:
         except ImportError:
             # psutil not available, use simple heuristic
             import os
+
             logical_cores = os.cpu_count() or 4
             return max(logical_cores // 2, 1)
 
@@ -136,7 +138,9 @@ class ModelManager:
         """
         if self.llm is not None:
             if self.file_logger:
-                self.file_logger.log_warning("Model already loaded, returning existing instance")
+                self.file_logger.log_warning(
+                    "Model already loaded, returning existing instance"
+                )
             return self.llm
 
         try:
@@ -151,12 +155,12 @@ class ModelManager:
                 self.ui_logger.info(f"Found model: {model_path.name}")
 
             # Get configuration
-            model_config = self.config.get('model', {})
-            gpu_layers = model_config.get('gpu_layers', 0)
-            context_size = model_config.get('context_size', 4096)
-            n_batch = model_config.get('n_batch', 256)
-            threads = model_config.get('threads', -1)
-            mlock = model_config.get('mlock', False)
+            model_config = self.config.get("model", {})
+            gpu_layers = model_config.get("gpu_layers", 0)
+            context_size = model_config.get("context_size", 4096)
+            n_batch = model_config.get("n_batch", 256)
+            threads = model_config.get("threads", -1)
+            mlock = model_config.get("mlock", False)
 
             # Validate GPU configuration
             if gpu_layers > 0:
@@ -174,7 +178,9 @@ class ModelManager:
             optimal_threads = self.get_optimal_thread_count(threads)
 
             if self.ui_logger:
-                self.ui_logger.info(f"Loading model with {gpu_layers} GPU layers, {optimal_threads} threads...")
+                self.ui_logger.info(
+                    f"Loading model with {gpu_layers} GPU layers, {optimal_threads} threads..."
+                )
 
             # Log CUDA info if using GPU
             if gpu_layers > 0 and self.file_logger:
@@ -191,7 +197,7 @@ class ModelManager:
                         n_ctx=context_size,
                         n_batch=n_batch,
                         use_mlock=mlock,
-                        verbose=False
+                        verbose=False,
                     )
             except TimeoutError as e:
                 raise ModelLoadError(
@@ -222,7 +228,7 @@ class ModelManager:
             error_msg = str(e).lower()
 
             # Provide helpful error messages
-            if 'out of memory' in error_msg or 'oom' in error_msg:
+            if "out of memory" in error_msg or "oom" in error_msg:
                 raise ModelLoadError(
                     f"Model loading failed: Out of memory\n\n"
                     f"Your system ran out of memory loading the model. Try:\n"
@@ -232,7 +238,7 @@ class ModelManager:
                     f"4. Use a smaller model\n\n"
                     f"Original error: {e}"
                 )
-            elif 'cuda' in error_msg:
+            elif "cuda" in error_msg:
                 raise ModelLoadError(
                     f"Model loading failed: CUDA error\n\n"
                     f"There was a problem with GPU acceleration. Try:\n"
@@ -241,7 +247,7 @@ class ModelManager:
                     f"3. Update GPU drivers\n\n"
                     f"Original error: {e}"
                 )
-            elif 'file' in error_msg or 'path' in error_msg:
+            elif "file" in error_msg or "path" in error_msg:
                 raise ModelLoadError(
                     f"Model loading failed: File error\n\n"
                     f"Could not access the model file. Check:\n"
@@ -268,6 +274,7 @@ class ModelManager:
 
                 # Force garbage collection to free memory
                 import gc
+
                 gc.collect()
 
             except Exception as e:
@@ -287,9 +294,9 @@ class ModelManager:
             "status": "loaded",
             "model_path": str(self._model_path) if self._model_path else None,
             "model_name": self._model_path.name if self._model_path else None,
-            "context_size": self.config.get('model', {}).get('context_size', 4096),
-            "gpu_layers": self.config.get('model', {}).get('gpu_layers', 0),
-            "cuda_available": self.cuda_manager.is_cuda_available()
+            "context_size": self.config.get("model", {}).get("context_size", 4096),
+            "gpu_layers": self.config.get("model", {}).get("gpu_layers", 0),
+            "cuda_available": self.cuda_manager.is_cuda_available(),
         }
 
     def __del__(self):

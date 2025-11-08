@@ -28,6 +28,7 @@ from cryptography.hazmat.backends import default_backend
 
 try:
     import keyring
+
     HAS_KEYRING = True
 except ImportError:
     HAS_KEYRING = False
@@ -77,7 +78,7 @@ class EncryptionManager:
             iterations=self.PBKDF2_ITERATIONS,
             backend=default_backend(),
         )
-        return base64.urlsafe_b64encode(kdf.derive(password.encode('utf-8')))
+        return base64.urlsafe_b64encode(kdf.derive(password.encode("utf-8")))
 
     def initialize_encryption(
         self,
@@ -96,13 +97,13 @@ class EncryptionManager:
         """
         # Load or generate salt
         if salt_file.exists():
-            with open(salt_file, 'rb') as f:
+            with open(salt_file, "rb") as f:
                 salt = f.read()
             logger.debug(f"Loaded existing salt from {salt_file}")
         else:
             salt = os.urandom(self.SALT_SIZE)
             salt_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(salt_file, 'wb') as f:
+            with open(salt_file, "wb") as f:
                 f.write(salt)
             os.chmod(salt_file, 0o600)  # Owner read/write only
             logger.info(f"Generated new salt at {salt_file}")
@@ -127,10 +128,12 @@ class EncryptionManager:
             RuntimeError: If encryption not initialized
         """
         if self._fernet is None:
-            raise RuntimeError("Encryption not initialized. Call initialize_encryption() first.")
+            raise RuntimeError(
+                "Encryption not initialized. Call initialize_encryption() first."
+            )
 
         if isinstance(plaintext, str):
-            plaintext = plaintext.encode('utf-8')
+            plaintext = plaintext.encode("utf-8")
 
         return self._fernet.encrypt(plaintext)
 
@@ -149,7 +152,9 @@ class EncryptionManager:
             cryptography.fernet.InvalidToken: If decryption fails
         """
         if self._fernet is None:
-            raise RuntimeError("Encryption not initialized. Call initialize_encryption() first.")
+            raise RuntimeError(
+                "Encryption not initialized. Call initialize_encryption() first."
+            )
 
         return self._fernet.decrypt(ciphertext)
 
@@ -164,7 +169,7 @@ class EncryptionManager:
             Decrypted string
         """
         plaintext_bytes = self.decrypt(ciphertext)
-        return plaintext_bytes.decode('utf-8')
+        return plaintext_bytes.decode("utf-8")
 
 
 class SecureSecretManager:
@@ -199,13 +204,9 @@ class SecureSecretManager:
         if self.use_keyring:
             logger.info("Using OS keyring for secret storage")
         else:
-            logger.warning(
-                "OS keyring not available - using encrypted file fallback"
-            )
+            logger.warning("OS keyring not available - using encrypted file fallback")
             if not self.fallback_dir:
-                raise ValueError(
-                    "fallback_dir required when keyring not available"
-                )
+                raise ValueError("fallback_dir required when keyring not available")
             if not self.encryption_manager:
                 raise ValueError(
                     "encryption_manager required when keyring not available"
@@ -240,7 +241,7 @@ class SecureSecretManager:
             secret_file = self.fallback_dir / f"{key}.enc"
             secret_file.parent.mkdir(parents=True, exist_ok=True)
 
-            with open(secret_file, 'wb') as f:
+            with open(secret_file, "wb") as f:
                 f.write(encrypted)
 
             os.chmod(secret_file, 0o600)  # Owner read/write only
@@ -283,7 +284,7 @@ class SecureSecretManager:
                 logger.debug(f"Secret '{key}' not found")
                 return None
 
-            with open(secret_file, 'rb') as f:
+            with open(secret_file, "rb") as f:
                 encrypted = f.read()
 
             value = self.encryption_manager.decrypt_to_string(encrypted)
@@ -340,7 +341,7 @@ class SecureSecretManager:
 
         try:
             # Read plaintext secret
-            with open(old_file, 'r') as f:
+            with open(old_file, "r") as f:
                 plaintext_secret = f.read().strip()
 
             # Store securely
@@ -348,9 +349,7 @@ class SecureSecretManager:
 
             # Delete plaintext file
             old_file.unlink()
-            logger.info(
-                f"Migrated secret from plaintext {old_file} to secure storage"
-            )
+            logger.info(f"Migrated secret from plaintext {old_file} to secure storage")
 
         except Exception as e:
             logger.error(f"Secret migration failed: {e}")

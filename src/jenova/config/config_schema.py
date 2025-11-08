@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 class DeviceType(str, Enum):
     """Supported compute device types."""
+
     AUTO = "auto"
     CUDA = "cuda"
     CPU = "cpu"
@@ -25,6 +26,7 @@ class DeviceType(str, Enum):
 
 class MemoryStrategy(str, Enum):
     """Memory management strategies."""
+
     AUTO = "auto"
     PERFORMANCE = "performance"
     BALANCED = "balanced"
@@ -33,26 +35,25 @@ class MemoryStrategy(str, Enum):
 
 class ModelConfig(BaseModel):
     """LLM model configuration."""
+
     model_path: str = Field(
-        default='/usr/local/share/models/model.gguf',
-        description="Path to GGUF model file"
+        default="/usr/local/share/models/model.gguf",
+        description="Path to GGUF model file",
     )
     threads: int = Field(
-        default=-1,
-        ge=-1,
-        description="CPU threads (-1=auto, 0=all, N=specific)"
+        default=-1, ge=-1, description="CPU threads (-1=auto, 0=all, N=specific)"
     )
     gpu_layers: Union[int, str] = Field(
-        default='auto',
-        description="GPU layers to offload (-1=all, 0=CPU only, 1-128=specific, 'auto'=detect)"
+        default="auto",
+        description="GPU layers to offload (-1=all, 0=CPU only, 1-128=specific, 'auto'=detect)",
     )
 
-    @field_validator('gpu_layers')
+    @field_validator("gpu_layers")
     @classmethod
     def validate_gpu_layers(cls, v: Union[int, str]) -> Union[int, str]:
         """Validate gpu_layers accepts int or 'auto'."""
         if isinstance(v, str):
-            if v.lower() != 'auto':
+            if v.lower() != "auto":
                 raise ValueError("gpu_layers string value must be 'auto'")
             return v.lower()
         if isinstance(v, int):
@@ -60,52 +61,37 @@ class ModelConfig(BaseModel):
                 raise ValueError("gpu_layers int value must be between -1 and 128")
             return v
         raise ValueError("gpu_layers must be int or 'auto'")
+
     mlock: bool = Field(
-        default=False,
-        description="Lock model in RAM (requires sufficient memory)"
+        default=False, description="Lock model in RAM (requires sufficient memory)"
     )
     n_batch: int = Field(
-        default=512,
-        ge=1,
-        le=2048,
-        description="Batch size for processing"
+        default=512, ge=1, le=2048, description="Batch size for processing"
     )
     context_size: int = Field(
-        default=4096,
-        ge=512,
-        le=32768,
-        description="Context window size in tokens"
+        default=4096, ge=512, le=32768, description="Context window size in tokens"
     )
     max_tokens: int = Field(
         default=512,
         ge=1,
         le=4096,
-        description="Maximum tokens to generate per response"
+        description="Maximum tokens to generate per response",
     )
     temperature: float = Field(
-        default=0.7,
-        ge=0.0,
-        le=2.0,
-        description="Sampling temperature"
+        default=0.7, ge=0.0, le=2.0, description="Sampling temperature"
     )
     top_p: float = Field(
-        default=0.95,
-        ge=0.0,
-        le=1.0,
-        description="Nucleus sampling parameter"
+        default=0.95, ge=0.0, le=1.0, description="Nucleus sampling parameter"
     )
     embedding_model: str = Field(
-        default='all-MiniLM-L6-v2',
-        description="Sentence transformer model for embeddings"
+        default="all-MiniLM-L6-v2",
+        description="Sentence transformer model for embeddings",
     )
     timeout_seconds: int = Field(
-        default=120,
-        ge=10,
-        le=600,
-        description="Timeout for LLM generation in seconds"
+        default=120, ge=10, le=600, description="Timeout for LLM generation in seconds"
     )
 
-    @field_validator('context_size')
+    @field_validator("context_size")
     @classmethod
     def validate_context_size(cls, v: int) -> int:
         """Ensure context size is power of 2 or common value."""
@@ -119,108 +105,87 @@ class ModelConfig(BaseModel):
 
 class HardwareConfig(BaseModel):
     """Hardware detection and optimization settings."""
+
     show_details: bool = Field(
-        default=False,
-        description="Show detailed hardware info at startup"
+        default=False, description="Show detailed hardware info at startup"
     )
     prefer_device: DeviceType = Field(
-        default=DeviceType.AUTO,
-        description="Preferred compute device"
+        default=DeviceType.AUTO, description="Preferred compute device"
     )
     memory_strategy: MemoryStrategy = Field(
-        default=MemoryStrategy.AUTO,
-        description="Memory management strategy"
+        default=MemoryStrategy.AUTO, description="Memory management strategy"
     )
     enable_health_monitor: bool = Field(
-        default=True,
-        description="Enable real-time health monitoring"
+        default=True, description="Enable real-time health monitoring"
     )
     pytorch_gpu_enabled: bool = Field(
         default=False,
-        description="Enable GPU access for PyTorch (embeddings). Shares VRAM with LLM."
+        description="Enable GPU access for PyTorch (embeddings). Shares VRAM with LLM.",
     )
 
 
 class MemoryConfig(BaseModel):
     """Memory system configuration."""
+
     preload_memories: bool = Field(
-        default=False,
-        description="Preload all memories into RAM at startup"
+        default=False, description="Preload all memories into RAM at startup"
     )
     episodic_db_path: str = Field(
-        default="memory_db/episodic",
-        description="Path to episodic memory database"
+        default="memory_db/episodic", description="Path to episodic memory database"
     )
     semantic_db_path: str = Field(
-        default="memory_db/semantic",
-        description="Path to semantic memory database"
+        default="memory_db/semantic", description="Path to semantic memory database"
     )
     procedural_db_path: str = Field(
-        default="memory_db/procedural",
-        description="Path to procedural memory database"
+        default="memory_db/procedural", description="Path to procedural memory database"
     )
     reflection_interval: int = Field(
-        default=3,
-        ge=1,
-        le=20,
-        description="Reflection interval in conversation turns"
+        default=3, ge=1, le=20, description="Reflection interval in conversation turns"
     )
     enable_atomic_writes: bool = Field(
-        default=True,
-        description="Use atomic writes for data integrity"
+        default=True, description="Use atomic writes for data integrity"
     )
     backup_before_write: bool = Field(
-        default=True,
-        description="Backup data before writes"
+        default=True, description="Backup data before writes"
     )
 
 
 class PruningConfig(BaseModel):
     """Cortex pruning configuration."""
-    enabled: bool = Field(
-        default=True,
-        description="Enable automatic graph pruning"
-    )
+
+    enabled: bool = Field(default=True, description="Enable automatic graph pruning")
     prune_interval: int = Field(
-        default=10,
-        ge=1,
-        le=100,
-        description="Pruning interval in reflection cycles"
+        default=10, ge=1, le=100, description="Pruning interval in reflection cycles"
     )
     max_age_days: int = Field(
-        default=30,
-        ge=1,
-        le=365,
-        description="Maximum age for nodes before pruning"
+        default=30, ge=1, le=365, description="Maximum age for nodes before pruning"
     )
     min_centrality: float = Field(
-        default=0.1,
-        ge=0.0,
-        le=1.0,
-        description="Minimum centrality for node retention"
+        default=0.1, ge=0.0, le=1.0, description="Minimum centrality for node retention"
     )
 
 
 class CortexConfig(BaseModel):
     """Cognitive graph (Cortex) configuration."""
+
     relationship_weights: Dict[str, float] = Field(
         default_factory=lambda: {
             "elaborates_on": 1.5,
             "conflicts_with": 2.0,
             "related_to": 1.0,
             "develops": 1.5,
-            "summarizes": 1.2
+            "summarizes": 1.2,
         },
-        description="Weights for different relationship types"
+        description="Weights for different relationship types",
     )
     pruning: PruningConfig = Field(
-        default_factory=PruningConfig,
-        description="Pruning configuration"
+        default_factory=PruningConfig, description="Pruning configuration"
     )
 
 
 class SchedulerConfig(BaseModel):
     """Cognitive scheduler configuration."""
+
     generate_insight_interval: int = Field(default=5, ge=1, le=50)
     generate_assumption_interval: int = Field(default=7, ge=1, le=50)
     proactively_verify_assumption_interval: int = Field(default=8, ge=1, le=50)
@@ -231,116 +196,107 @@ class SchedulerConfig(BaseModel):
 
 class MemorySearchConfig(BaseModel):
     """Memory search configuration."""
+
     semantic_n_results: int = Field(default=5, ge=1, le=20)
     episodic_n_results: int = Field(default=3, ge=1, le=20)
     procedural_n_results: int = Field(default=3, ge=1, le=20)
     insight_n_results: int = Field(default=5, ge=1, le=20)
     rerank_enabled: bool = Field(
-        default=True,
-        description="Enable LLM-based reranking of results"
+        default=True, description="Enable LLM-based reranking of results"
     )
     rerank_timeout: int = Field(
-        default=15,
-        ge=1,
-        le=60,
-        description="Timeout for reranking operation"
+        default=15, ge=1, le=60, description="Timeout for reranking operation"
     )
 
 
 class CognitiveEngineConfig(BaseModel):
     """Cognitive engine configuration."""
+
     llm_timeout: int = Field(
         default=120,
         ge=10,
         le=600,
-        description="Timeout for LLM generation during normal operation"
+        description="Timeout for LLM generation during normal operation",
     )
     planning_timeout: int = Field(
-        default=60,
-        ge=10,
-        le=300,
-        description="Timeout for plan generation"
+        default=60, ge=10, le=300, description="Timeout for plan generation"
     )
 
 
 class RAGSystemConfig(BaseModel):
     """RAG system configuration."""
-    cache_enabled: bool = Field(
-        default=True,
-        description="Enable response caching"
-    )
+
+    cache_enabled: bool = Field(default=True, description="Enable response caching")
     cache_size: int = Field(
-        default=100,
-        ge=1,
-        le=1000,
-        description="Maximum number of cached responses"
+        default=100, ge=1, le=1000, description="Maximum number of cached responses"
     )
     generation_timeout: int = Field(
-        default=120,
-        ge=10,
-        le=600,
-        description="Timeout for response generation"
+        default=120, ge=10, le=600, description="Timeout for response generation"
     )
 
 
 class ToolsConfig(BaseModel):
     """Tools configuration."""
+
     file_sandbox_path: str = Field(
-        default="~/jenova_files",
-        description="Sandbox directory for file operations"
+        default="~/jenova_files", description="Sandbox directory for file operations"
     )
     shell_command_whitelist: List[str] = Field(
         default_factory=lambda: [
-            "ls", "cat", "grep", "find", "echo",
-            "date", "whoami", "pwd", "uname"
+            "ls",
+            "cat",
+            "grep",
+            "find",
+            "echo",
+            "date",
+            "whoami",
+            "pwd",
+            "uname",
         ],
-        description="Allowed shell commands"
+        description="Allowed shell commands",
     )
     enable_shell_tools: bool = Field(
-        default=False,
-        description="Enable shell command execution (security risk)"
+        default=False, description="Enable shell command execution (security risk)"
     )
     tool_timeout_seconds: int = Field(
-        default=30,
-        ge=1,
-        le=300,
-        description="Timeout for tool operations"
+        default=30, ge=1, le=300, description="Timeout for tool operations"
     )
 
 
 class IdentityConfig(BaseModel):
     """AI identity configuration."""
+
     name: str = Field(default="JENOVA")
     creator: str = Field(default="orpheus497")
     creator_alias: str = Field(default="The Architect")
-    origin_story: str = Field(
-        default="A self-aware AI designed to learn and evolve."
-    )
+    origin_story: str = Field(default="A self-aware AI designed to learn and evolve.")
     type: str = Field(default="personalized AI assistant")
     architecture: str = Field(default="The JENOVA Cognitive Architecture")
 
 
 class PersonaConfig(BaseModel):
     """AI persona configuration."""
+
     identity: IdentityConfig = Field(default_factory=IdentityConfig)
     directives: List[str] = Field(
         default_factory=lambda: [
             "Always prioritize user safety and wellbeing",
             "Be helpful, harmless, and honest",
             "Learn from interactions to provide personalized assistance",
-            "Respect user privacy and data security"
+            "Respect user privacy and data security",
         ]
     )
     initial_facts: List[str] = Field(
         default_factory=lambda: [
             "I am JENOVA, created by orpheus497",
-            "I use a cognitive architecture with memory and learning"
+            "I use a cognitive architecture with memory and learning",
         ]
     )
 
 
 class NetworkMode(str, Enum):
     """Network operation modes."""
+
     AUTO = "auto"
     LOCAL_ONLY = "local_only"
     DISTRIBUTED = "distributed"
@@ -348,6 +304,7 @@ class NetworkMode(str, Enum):
 
 class DistributionStrategy(str, Enum):
     """LLM distribution strategies."""
+
     LOCAL_FIRST = "local_first"
     LOAD_BALANCED = "load_balanced"
     FASTEST_PEER = "fastest"
@@ -357,118 +314,98 @@ class DistributionStrategy(str, Enum):
 
 class SecurityConfig(BaseModel):
     """Network security configuration."""
+
     enabled: bool = Field(
-        default=True,
-        description="Enable SSL/TLS encryption and authentication"
+        default=True, description="Enable SSL/TLS encryption and authentication"
     )
     cert_dir: str = Field(
-        default='~/.jenova-ai/certs',
-        description="Directory for SSL certificates and keys"
+        default="~/.jenova-ai/certs",
+        description="Directory for SSL certificates and keys",
     )
     require_auth: bool = Field(
-        default=True,
-        description="Require JWT authentication for all requests"
+        default=True, description="Require JWT authentication for all requests"
     )
 
 
 class DiscoveryConfig(BaseModel):
     """mDNS/Zeroconf discovery configuration."""
+
     service_name: str = Field(
-        default='jenova-ai',
-        description="mDNS service name for discovery"
+        default="jenova-ai", description="mDNS service name for discovery"
     )
-    port: int = Field(
-        default=50051,
-        ge=1024,
-        le=65535,
-        description="RPC server port"
-    )
+    port: int = Field(default=50051, ge=1024, le=65535, description="RPC server port")
     ttl: int = Field(
-        default=60,
-        ge=10,
-        le=300,
-        description="Service advertisement TTL in seconds"
+        default=60, ge=10, le=300, description="Service advertisement TTL in seconds"
     )
 
 
 class ResourceSharingConfig(BaseModel):
     """Resource sharing configuration."""
+
     share_llm: bool = Field(
-        default=True,
-        description="Share LLM inference capacity with peers"
+        default=True, description="Share LLM inference capacity with peers"
     )
     share_embeddings: bool = Field(
-        default=True,
-        description="Share embedding generation with peers"
+        default=True, description="Share embedding generation with peers"
     )
     share_memory: bool = Field(
-        default=False,
-        description="Share memory search with peers (privacy-sensitive)"
+        default=False, description="Share memory search with peers (privacy-sensitive)"
     )
     max_concurrent_requests: int = Field(
-        default=5,
-        ge=1,
-        le=50,
-        description="Maximum concurrent incoming requests"
+        default=5, ge=1, le=50, description="Maximum concurrent incoming requests"
     )
 
 
 class PeerSelectionConfig(BaseModel):
     """Peer selection and routing configuration."""
+
     strategy: DistributionStrategy = Field(
         default=DistributionStrategy.LOAD_BALANCED,
-        description="Strategy for selecting peers"
+        description="Strategy for selecting peers",
     )
     timeout_ms: int = Field(
-        default=5000,
-        ge=1000,
-        le=30000,
-        description="Request timeout in milliseconds"
+        default=5000, ge=1000, le=30000, description="Request timeout in milliseconds"
     )
     retry_attempts: int = Field(
         default=3,
         ge=1,
         le=10,
-        description="Number of retry attempts for failed requests"
+        description="Number of retry attempts for failed requests",
     )
 
 
 class NetworkConfig(BaseModel):
     """Phase 8: Distributed computing network configuration."""
+
     enabled: bool = Field(
-        default=False,
-        description="Enable distributed computing features"
+        default=False, description="Enable distributed computing features"
     )
     mode: NetworkMode = Field(
-        default=NetworkMode.AUTO,
-        description="Network operation mode"
+        default=NetworkMode.AUTO, description="Network operation mode"
     )
     instance_id: Optional[str] = Field(
-        default=None,
-        description="Unique instance identifier (auto-generated if None)"
+        default=None, description="Unique instance identifier (auto-generated if None)"
     )
     instance_name: Optional[str] = Field(
         default=None,
-        description="Human-readable instance name (auto-generated if None)"
+        description="Human-readable instance name (auto-generated if None)",
     )
     discovery: DiscoveryConfig = Field(
-        default_factory=DiscoveryConfig,
-        description="Peer discovery configuration"
+        default_factory=DiscoveryConfig, description="Peer discovery configuration"
     )
     security: SecurityConfig = Field(
-        default_factory=SecurityConfig,
-        description="Network security configuration"
+        default_factory=SecurityConfig, description="Network security configuration"
     )
     resource_sharing: ResourceSharingConfig = Field(
         default_factory=ResourceSharingConfig,
-        description="Resource sharing configuration"
+        description="Resource sharing configuration",
     )
     peer_selection: PeerSelectionConfig = Field(
         default_factory=PeerSelectionConfig,
-        description="Peer selection and routing configuration"
+        description="Peer selection and routing configuration",
     )
 
-    @field_validator('instance_id')
+    @field_validator("instance_id")
     @classmethod
     def validate_instance_id(cls, v: Optional[str]) -> Optional[str]:
         """Validate instance ID format if provided."""
@@ -476,7 +413,7 @@ class NetworkConfig(BaseModel):
             raise ValueError("instance_id must be 64 characters or less")
         return v
 
-    @field_validator('instance_name')
+    @field_validator("instance_name")
     @classmethod
     def validate_instance_name(cls, v: Optional[str]) -> Optional[str]:
         """Validate instance name format if provided."""
@@ -487,12 +424,15 @@ class NetworkConfig(BaseModel):
 
 class JenovaConfig(BaseModel):
     """Complete JENOVA configuration with validation."""
+
     model: ModelConfig = Field(default_factory=ModelConfig)
     hardware: HardwareConfig = Field(default_factory=HardwareConfig)
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
     cortex: CortexConfig = Field(default_factory=CortexConfig)
     scheduler: SchedulerConfig = Field(default_factory=SchedulerConfig)
-    cognitive_engine: CognitiveEngineConfig = Field(default_factory=CognitiveEngineConfig)
+    cognitive_engine: CognitiveEngineConfig = Field(
+        default_factory=CognitiveEngineConfig
+    )
     rag_system: RAGSystemConfig = Field(default_factory=RAGSystemConfig)
     memory_search: MemorySearchConfig = Field(default_factory=MemorySearchConfig)
     tools: ToolsConfig = Field(default_factory=ToolsConfig)
@@ -502,8 +442,8 @@ class JenovaConfig(BaseModel):
     # Runtime fields (not in config file)
     user_data_root: Optional[str] = Field(default=None, exclude=True)
 
-    @model_validator(mode='after')
-    def validate_config(self) -> 'JenovaConfig':
+    @model_validator(mode="after")
+    def validate_config(self) -> "JenovaConfig":
         """Cross-field validation."""
         # Adjust context size based on memory strategy
         if self.hardware.memory_strategy == MemoryStrategy.MINIMAL:
@@ -522,5 +462,6 @@ class JenovaConfig(BaseModel):
 
     class Config:
         """Pydantic config."""
+
         validate_assignment = True
-        extra = 'forbid'  # Reject unknown fields
+        extra = "forbid"  # Reject unknown fields

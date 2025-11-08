@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class SubagentStatus(Enum):
     """Status of a subagent."""
+
     IDLE = "idle"
     BUSY = "busy"
     PAUSED = "paused"
@@ -66,7 +67,7 @@ class Subagent:
             "completed_tasks": self.completed_tasks,
             "failed_tasks": self.failed_tasks,
             "created_at": self.created_at.isoformat(),
-            "last_activity": self.last_activity.isoformat()
+            "last_activity": self.last_activity.isoformat(),
         }
 
 
@@ -128,7 +129,7 @@ class SubagentManager:
         *args,
         task_id: Optional[str] = None,
         priority: int = 1,
-        **kwargs
+        **kwargs,
     ) -> str:
         """
         Spawn a task on a subagent.
@@ -160,7 +161,7 @@ class SubagentManager:
             callable=task_callable,
             args=args,
             kwargs=kwargs,
-            priority=priority
+            priority=priority,
         )
 
         # Add to queue (lower priority number = higher priority)
@@ -241,7 +242,9 @@ class SubagentManager:
             logger.error(f"Task {task.task_id} failed: {e}")
             raise
 
-    def _task_completed(self, agent: Subagent, task: SubagentTask, future: Future) -> None:
+    def _task_completed(
+        self, agent: Subagent, task: SubagentTask, future: Future
+    ) -> None:
         """
         Handle task completion.
 
@@ -288,9 +291,15 @@ class SubagentManager:
             Dictionary with status information
         """
         with self._lock:
-            idle_count = sum(1 for a in self.subagents.values() if a.status == SubagentStatus.IDLE)
-            busy_count = sum(1 for a in self.subagents.values() if a.status == SubagentStatus.BUSY)
-            error_count = sum(1 for a in self.subagents.values() if a.status == SubagentStatus.ERROR)
+            idle_count = sum(
+                1 for a in self.subagents.values() if a.status == SubagentStatus.IDLE
+            )
+            busy_count = sum(
+                1 for a in self.subagents.values() if a.status == SubagentStatus.BUSY
+            )
+            error_count = sum(
+                1 for a in self.subagents.values() if a.status == SubagentStatus.ERROR
+            )
 
             return {
                 "total_subagents": len(self.subagents),
@@ -300,7 +309,7 @@ class SubagentManager:
                 "queued_tasks": self.task_queue.qsize(),
                 "completed_tasks": len(self.completed_tasks),
                 "failed_tasks": len(self.failed_tasks),
-                "is_shutdown": self._shutdown
+                "is_shutdown": self._shutdown,
             }
 
     def get_subagent_status(self, agent_id: int) -> Optional[Dict[str, Any]]:
@@ -365,6 +374,7 @@ class SubagentManager:
             True if all tasks completed, False if timeout
         """
         import time
+
         start_time = time.time()
 
         while True:

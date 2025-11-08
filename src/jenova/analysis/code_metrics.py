@@ -20,6 +20,7 @@ try:
     from radon.complexity import cc_visit, cc_rank
     from radon.metrics import h_visit, mi_visit
     from radon.raw import analyze
+
     RADON_AVAILABLE = True
 except ImportError:
     RADON_AVAILABLE = False
@@ -28,6 +29,7 @@ except ImportError:
 @dataclass
 class ComplexityResult:
     """Complexity analysis for a single function/class."""
+
     name: str
     type: str  # 'function', 'method', 'class'
     complexity: int
@@ -40,6 +42,7 @@ class ComplexityResult:
 @dataclass
 class HalsteadMetrics:
     """Halstead complexity metrics."""
+
     h1: int = 0  # Number of distinct operators
     h2: int = 0  # Number of distinct operands
     N1: int = 0  # Total number of operators
@@ -57,6 +60,7 @@ class HalsteadMetrics:
 @dataclass
 class CodeMetricsResult:
     """Complete code quality analysis results."""
+
     file_path: str
     loc: int = 0  # Lines of code (total)
     lloc: int = 0  # Logical lines of code
@@ -112,8 +116,8 @@ class CodeMetrics:
             return self._result_to_dict(result)
 
         # Basic metrics
-        result.loc = len(code.split('\n'))
-        result.blank = code.count('\n\n')
+        result.loc = len(code.split("\n"))
+        result.blank = code.count("\n\n")
         result.comments = self._count_comments(code)
 
         if not self.radon_available:
@@ -135,12 +139,12 @@ class CodeMetrics:
             result.complexity_blocks = [
                 ComplexityResult(
                     name=block.name,
-                    type=block.classname if hasattr(block, 'classname') else 'function',
+                    type=block.classname if hasattr(block, "classname") else "function",
                     complexity=block.complexity,
                     rank=cc_rank(block.complexity),
                     lineno=block.lineno,
                     col_offset=block.col_offset,
-                    endline=block.endline
+                    endline=block.endline,
                 )
                 for block in complexity_blocks
             ]
@@ -165,7 +169,7 @@ class CodeMetrics:
                     difficulty=halstead_report.difficulty,
                     effort=halstead_report.effort,
                     time=halstead_report.time,
-                    bugs=halstead_report.bugs
+                    bugs=halstead_report.bugs,
                 )
 
             # Maintainability index
@@ -182,12 +186,12 @@ class CodeMetrics:
 
     def _count_comments(self, code: str) -> int:
         """Count comment lines in code."""
-        lines = code.split('\n')
+        lines = code.split("\n")
         comments = 0
 
         for line in lines:
             stripped = line.strip()
-            if stripped.startswith('#'):
+            if stripped.startswith("#"):
                 comments += 1
 
         return comments
@@ -216,7 +220,9 @@ class CodeMetrics:
                     # Simple complexity: count decision points
                     complexity = 1  # Base complexity
                     for child in ast.walk(node):
-                        if isinstance(child, (ast.If, ast.While, ast.For, ast.ExceptHandler)):
+                        if isinstance(
+                            child, (ast.If, ast.While, ast.For, ast.ExceptHandler)
+                        ):
                             complexity += 1
                         elif isinstance(child, ast.BoolOp):
                             complexity += len(child.values) - 1
@@ -228,16 +234,16 @@ class CodeMetrics:
 
             # Create complexity results
             for name, complexity, lineno in functions:
-                rank = 'A' if complexity <= 5 else 'B' if complexity <= 10 else 'C'
+                rank = "A" if complexity <= 5 else "B" if complexity <= 10 else "C"
                 result.complexity_blocks.append(
                     ComplexityResult(
                         name=name,
-                        type='function',
+                        type="function",
                         complexity=complexity,
                         rank=rank,
                         lineno=lineno,
                         col_offset=0,
-                        endline=lineno
+                        endline=lineno,
                     )
                 )
 
@@ -313,7 +319,7 @@ class CodeMetrics:
 
     def _get_function_length(self, node: ast.FunctionDef) -> int:
         """Get length of function in lines."""
-        if hasattr(node, 'end_lineno') and hasattr(node, 'lineno'):
+        if hasattr(node, "end_lineno") and hasattr(node, "lineno"):
             return node.end_lineno - node.lineno + 1
         return 0
 
@@ -328,7 +334,7 @@ class CodeMetrics:
                 "comments": result.comments,
                 "blank": result.blank,
                 "multi_line_strings": result.multi,
-                "single_comments": result.single_comments
+                "single_comments": result.single_comments,
             },
             "complexity": {
                 "average": round(result.avg_complexity, 2),
@@ -339,27 +345,31 @@ class CodeMetrics:
                         "type": b.type,
                         "complexity": b.complexity,
                         "rank": b.rank,
-                        "lineno": b.lineno
+                        "lineno": b.lineno,
                     }
                     for b in result.complexity_blocks
-                ]
+                ],
             },
             "maintainability_index": round(result.maintainability_index, 2),
-            "halstead": {
-                "distinct_operators": result.halstead.h1,
-                "distinct_operands": result.halstead.h2,
-                "total_operators": result.halstead.N1,
-                "total_operands": result.halstead.N2,
-                "vocabulary": result.halstead.vocabulary,
-                "length": result.halstead.length,
-                "volume": round(result.halstead.volume, 2),
-                "difficulty": round(result.halstead.difficulty, 2),
-                "effort": round(result.halstead.effort, 2),
-                "time": round(result.halstead.time, 2),
-                "bugs": round(result.halstead.bugs, 3)
-            } if result.halstead else {},
+            "halstead": (
+                {
+                    "distinct_operators": result.halstead.h1,
+                    "distinct_operands": result.halstead.h2,
+                    "total_operators": result.halstead.N1,
+                    "total_operands": result.halstead.N2,
+                    "vocabulary": result.halstead.vocabulary,
+                    "length": result.halstead.length,
+                    "volume": round(result.halstead.volume, 2),
+                    "difficulty": round(result.halstead.difficulty, 2),
+                    "effort": round(result.halstead.effort, 2),
+                    "time": round(result.halstead.time, 2),
+                    "bugs": round(result.halstead.bugs, 3),
+                }
+                if result.halstead
+                else {}
+            ),
             "issues": result.issues,
-            "quality_grade": self._calculate_grade(result)
+            "quality_grade": self._calculate_grade(result),
         }
 
     def _calculate_grade(self, result: CodeMetricsResult) -> str:
@@ -391,15 +401,15 @@ class CodeMetrics:
 
         # Convert to grade
         if score >= 90:
-            return 'A'
+            return "A"
         elif score >= 80:
-            return 'B'
+            return "B"
         elif score >= 70:
-            return 'C'
+            return "C"
         elif score >= 60:
-            return 'D'
+            return "D"
         else:
-            return 'F'
+            return "F"
 
     def analyze_file(self, file_path: str) -> Dict:
         """
@@ -412,14 +422,14 @@ class CodeMetrics:
             Metrics dictionary
         """
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 code = f.read()
             return self.calculate(code, file_path)
         except Exception as e:
             return {
                 "file_path": file_path,
                 "error": str(e),
-                "issues": [f"Failed to analyze file: {str(e)}"]
+                "issues": [f"Failed to analyze file: {str(e)}"],
             }
 
     def analyze_directory(self, directory: str, recursive: bool = True) -> List[Dict]:
@@ -438,15 +448,17 @@ class CodeMetrics:
         if recursive:
             for root, dirs, files in os.walk(directory):
                 # Skip hidden and __pycache__ directories
-                dirs[:] = [d for d in dirs if not d.startswith('.') and d != '__pycache__']
+                dirs[:] = [
+                    d for d in dirs if not d.startswith(".") and d != "__pycache__"
+                ]
 
                 for file in files:
-                    if file.endswith('.py'):
+                    if file.endswith(".py"):
                         file_path = os.path.join(root, file)
                         results.append(self.analyze_file(file_path))
         else:
             for file in os.listdir(directory):
-                if file.endswith('.py'):
+                if file.endswith(".py"):
                     file_path = os.path.join(directory, file)
                     if os.path.isfile(file_path):
                         results.append(self.analyze_file(file_path))

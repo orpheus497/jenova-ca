@@ -39,9 +39,9 @@ class LLMInterface:
         self.system_prompt = self._build_system_prompt()
 
         # Generation settings
-        self.default_temperature = config.get('model', {}).get('temperature', 0.7)
-        self.default_max_tokens = config.get('model', {}).get('max_tokens', 512)
-        self.default_top_p = config.get('model', {}).get('top_p', 0.95)
+        self.default_temperature = config.get("model", {}).get("temperature", 0.7)
+        self.default_max_tokens = config.get("model", {}).get("max_tokens", 512)
+        self.default_top_p = config.get("model", {}).get("top_p", 0.95)
 
         # Retry settings
         self.max_retries = 3
@@ -49,14 +49,14 @@ class LLMInterface:
 
     def _build_system_prompt(self) -> str:
         """Builds a robust, persistent system prompt to ground the AI."""
-        persona = self.config.get('persona', {})
-        identity = persona.get('identity', {})
-        directives = persona.get('directives', [])
+        persona = self.config.get("persona", {})
+        identity = persona.get("identity", {})
+        directives = persona.get("directives", [])
 
-        name = identity.get('name', 'Jenova')
-        ai_type = identity.get('type', 'personalized AI assistant')
-        origin = identity.get('origin_story', 'You are a helpful assistant.')
-        creator = identity.get('creator', 'a developer')
+        name = identity.get("name", "Jenova")
+        ai_type = identity.get("type", "personalized AI assistant")
+        origin = identity.get("origin_story", "You are a helpful assistant.")
+        creator = identity.get("creator", "a developer")
 
         prompt = f"""You are {name}, a {ai_type}. \
 Your origin story: {origin} \
@@ -74,7 +74,7 @@ You must follow these directives:
         max_tokens: int,
         top_p: float,
         stop_sequences: List[str],
-        timeout_seconds: int
+        timeout_seconds: int,
     ) -> Optional[str]:
         """
         Generate with timeout protection.
@@ -93,18 +93,20 @@ You must follow these directives:
         Raises:
             TimeoutError: If generation times out
         """
-        with timeout(timeout_seconds, f"LLM generation timed out after {timeout_seconds}s"):
+        with timeout(
+            timeout_seconds, f"LLM generation timed out after {timeout_seconds}s"
+        ):
             response = self.llm.create_completion(
                 prompt=prompt,
                 max_tokens=max_tokens,
                 temperature=max(temperature, 0.1),  # Ensure min temperature
                 top_p=top_p,
                 stop=stop_sequences,
-                echo=False
+                echo=False,
             )
 
-            if response and 'choices' in response and len(response['choices']) > 0:
-                return response['choices'][0]['text'].strip()
+            if response and "choices" in response and len(response["choices"]) > 0:
+                return response["choices"][0]["text"].strip()
             else:
                 raise ValueError("Invalid or empty response from LLM")
 
@@ -114,7 +116,7 @@ You must follow these directives:
         stop: Optional[List[str]] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        timeout_seconds: int = 120
+        timeout_seconds: int = 120,
     ) -> str:
         """
         Generate a response from the LLM with retry logic and timeout protection.
@@ -134,10 +136,12 @@ You must follow these directives:
 
         # Use defaults if not specified
         temp = temperature if temperature is not None else self.default_temperature
-        max_new_tokens = max_tokens if max_tokens is not None else self.default_max_tokens
-        stop_sequences = stop if stop is not None else [
-            "\nUser:", "\nJenova:", "User:", "Jenova:"
-        ]
+        max_new_tokens = (
+            max_tokens if max_tokens is not None else self.default_max_tokens
+        )
+        stop_sequences = (
+            stop if stop is not None else ["\nUser:", "\nJenova:", "User:", "Jenova:"]
+        )
 
         # Retry loop with exponential backoff
         for attempt in range(self.max_retries):
@@ -148,7 +152,7 @@ You must follow these directives:
                     max_tokens=max_new_tokens,
                     top_p=self.default_top_p,
                     stop_sequences=stop_sequences,
-                    timeout_seconds=timeout_seconds
+                    timeout_seconds=timeout_seconds,
                 )
 
                 if result:
@@ -169,7 +173,7 @@ You must follow these directives:
                         )
                     return ""
 
-                sleep_time = self.backoff_factor ** attempt
+                sleep_time = self.backoff_factor**attempt
                 if self.ui_logger:
                     self.ui_logger.system_message(
                         f"Generation timed out. Retrying in {sleep_time}s..."
@@ -188,6 +192,7 @@ You must follow these directives:
                             "Max retries reached. LLM generation failed."
                         )
                         import traceback
+
                         self.file_logger.log_error(
                             f"Traceback: {traceback.format_exc()}"
                         )
@@ -198,7 +203,7 @@ You must follow these directives:
                         )
                     return ""
 
-                sleep_time = self.backoff_factor ** attempt
+                sleep_time = self.backoff_factor**attempt
                 if self.ui_logger:
                     self.ui_logger.system_message(
                         f"Generation failed. Retrying in {sleep_time}s..."
@@ -213,7 +218,7 @@ You must follow these directives:
         context: str = "",
         memory_context: str = "",
         max_tokens: Optional[int] = None,
-        temperature: Optional[float] = None
+        temperature: Optional[float] = None,
     ) -> str:
         """
         Generate response with additional context from memory systems.
@@ -242,9 +247,7 @@ You must follow these directives:
         full_prompt = "\n".join(prompt_parts)
 
         return self.generate(
-            prompt=full_prompt,
-            max_tokens=max_tokens,
-            temperature=temperature
+            prompt=full_prompt, max_tokens=max_tokens, temperature=temperature
         )
 
     def test_generation(self, test_prompt: str = "Hello, how are you?") -> bool:
@@ -259,9 +262,7 @@ You must follow these directives:
         """
         try:
             result = self.generate(
-                prompt=test_prompt,
-                max_tokens=50,
-                timeout_seconds=30
+                prompt=test_prompt, max_tokens=50, timeout_seconds=30
             )
             return len(result) > 0
 
@@ -277,7 +278,7 @@ You must follow these directives:
             "max_tokens": self.default_max_tokens,
             "top_p": self.default_top_p,
             "max_retries": self.max_retries,
-            "backoff_factor": self.backoff_factor
+            "backoff_factor": self.backoff_factor,
         }
 
     def update_system_prompt(self, new_directives: Optional[List[str]] = None):
@@ -288,7 +289,7 @@ You must follow these directives:
             new_directives: New list of directives to use
         """
         if new_directives:
-            self.config['persona']['directives'] = new_directives
+            self.config["persona"]["directives"] = new_directives
 
         self.system_prompt = self._build_system_prompt()
 
@@ -303,10 +304,13 @@ You must follow these directives:
                 self.llm = None
 
                 if self.file_logger:
-                    self.file_logger.log_info("LLM interface closed, resources released")
+                    self.file_logger.log_info(
+                        "LLM interface closed, resources released"
+                    )
 
                 # Force garbage collection
                 import gc
+
                 gc.collect()
 
             except Exception as e:

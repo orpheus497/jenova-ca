@@ -20,6 +20,7 @@ import numpy as np
 @dataclass
 class ContextSegment:
     """Represents a segment of context."""
+
     content: str
     tokens: int
     relevance_score: float
@@ -72,7 +73,7 @@ class ContextOptimizer:
         base_tokens = len(text) // 4
 
         # Count newlines and add overhead
-        newlines = text.count('\n')
+        newlines = text.count("\n")
 
         return base_tokens + (newlines * 2) + 10
 
@@ -91,7 +92,7 @@ class ContextOptimizer:
             return []
 
         # Split on double newlines (paragraph breaks) first
-        paragraphs = re.split(r'\n\s*\n', text)
+        paragraphs = re.split(r"\n\s*\n", text)
 
         chunks = []
         current_chunk = []
@@ -107,7 +108,7 @@ class ContextOptimizer:
             # If single paragraph exceeds limit, split on sentences
             if para_tokens > max_chunk_tokens:
                 # Split on sentence boundaries
-                sentences = re.split(r'([.!?]\s+)', para)
+                sentences = re.split(r"([.!?]\s+)", para)
 
                 for i in range(0, len(sentences), 2):
                     sentence = sentences[i]
@@ -118,7 +119,7 @@ class ContextOptimizer:
 
                     if current_tokens + sent_tokens > max_chunk_tokens:
                         if current_chunk:
-                            chunks.append(' '.join(current_chunk))
+                            chunks.append(" ".join(current_chunk))
                         current_chunk = [sentence]
                         current_tokens = sent_tokens
                     else:
@@ -128,7 +129,7 @@ class ContextOptimizer:
                 # Add paragraph to current chunk
                 if current_tokens + para_tokens > max_chunk_tokens:
                     if current_chunk:
-                        chunks.append(' '.join(current_chunk))
+                        chunks.append(" ".join(current_chunk))
                     current_chunk = [para]
                     current_tokens = para_tokens
                 else:
@@ -137,7 +138,7 @@ class ContextOptimizer:
 
         # Add remaining chunk
         if current_chunk:
-            chunks.append(' '.join(current_chunk))
+            chunks.append(" ".join(current_chunk))
 
         return chunks
 
@@ -162,8 +163,8 @@ class ContextOptimizer:
         query_lower = query.lower()
 
         # Extract keywords (simple: split on whitespace and punctuation)
-        query_words = set(re.findall(r'\b\w+\b', query_lower))
-        segment_words = re.findall(r'\b\w+\b', segment_lower)
+        query_words = set(re.findall(r"\b\w+\b", query_lower))
+        segment_words = re.findall(r"\b\w+\b", segment_lower)
 
         if not query_words or not segment_words:
             return 0.0
@@ -175,7 +176,7 @@ class ContextOptimizer:
         overlap_score = matches / len(segment_words)
 
         # Boost score if query words appear in order
-        query_text = ' '.join(query_words)
+        query_text = " ".join(query_words)
         if query_text in segment_lower:
             overlap_score *= 1.5
 
@@ -189,10 +190,7 @@ class ContextOptimizer:
         return min(overlap_score, 1.0)
 
     def optimize_context(
-        self,
-        segments: List[ContextSegment],
-        query: str,
-        preserve_order: bool = False
+        self, segments: List[ContextSegment], query: str, preserve_order: bool = False
     ) -> List[ContextSegment]:
         """
         Optimize context by selecting most relevant segments within token budget.
@@ -211,16 +209,12 @@ class ContextOptimizer:
         # Score each segment for relevance if not already scored
         for segment in segments:
             if segment.relevance_score == 0.0:
-                segment.relevance_score = self.score_relevance(
-                    segment.content, query
-                )
+                segment.relevance_score = self.score_relevance(segment.content, query)
 
         # Sort by relevance (descending) if not preserving order
         if not preserve_order:
             sorted_segments = sorted(
-                segments,
-                key=lambda s: s.relevance_score,
-                reverse=True
+                segments, key=lambda s: s.relevance_score, reverse=True
             )
         else:
             sorted_segments = segments
@@ -239,8 +233,7 @@ class ContextOptimizer:
                 if remaining_tokens > 50:  # Only if meaningful space left
                     # Truncate segment to fit
                     truncated_content = self.truncate_to_tokens(
-                        segment.content,
-                        remaining_tokens
+                        segment.content, remaining_tokens
                     )
                     if truncated_content:
                         truncated_segment = ContextSegment(
@@ -248,7 +241,7 @@ class ContextOptimizer:
                             tokens=self.estimate_tokens(truncated_content),
                             relevance_score=segment.relevance_score,
                             source=segment.source,
-                            metadata=segment.metadata
+                            metadata=segment.metadata,
                         )
                         selected.append(truncated_segment)
                 break
@@ -257,7 +250,7 @@ class ContextOptimizer:
         if preserve_order and selected:
             # Create index map
             index_map = {id(seg): i for i, seg in enumerate(segments)}
-            selected.sort(key=lambda s: index_map.get(id(s), float('inf')))
+            selected.sort(key=lambda s: index_map.get(id(s), float("inf")))
 
         return selected
 
@@ -288,13 +281,11 @@ class ContextOptimizer:
 
         # Find last sentence boundary
         last_period = max(
-            truncated.rfind('. '),
-            truncated.rfind('! '),
-            truncated.rfind('? ')
+            truncated.rfind(". "), truncated.rfind("! "), truncated.rfind("? ")
         )
 
         if last_period > target_chars * 0.5:  # If found in latter half
-            truncated = truncated[:last_period + 1]
+            truncated = truncated[: last_period + 1]
 
         # Add ellipsis if truncated
         if len(truncated) < len(text):
@@ -303,9 +294,7 @@ class ContextOptimizer:
         return truncated
 
     def create_segments(
-        self,
-        content_dict: Dict[str, str],
-        query: str = ""
+        self, content_dict: Dict[str, str], query: str = ""
     ) -> List[ContextSegment]:
         """
         Create context segments from content dictionary.
@@ -335,7 +324,7 @@ class ContextOptimizer:
                         tokens=tokens,
                         relevance_score=relevance,
                         source=f"{source}_chunk_{i}",
-                        metadata={"chunk_index": i, "total_chunks": len(chunks)}
+                        metadata={"chunk_index": i, "total_chunks": len(chunks)},
                     )
                     segments.append(segment)
             else:
@@ -348,7 +337,7 @@ class ContextOptimizer:
                     tokens=tokens,
                     relevance_score=relevance,
                     source=source,
-                    metadata={}
+                    metadata={},
                 )
                 segments.append(segment)
 
@@ -369,7 +358,7 @@ class ContextOptimizer:
                 "total_segments": 0,
                 "total_tokens": 0,
                 "avg_relevance": 0.0,
-                "utilization": 0.0
+                "utilization": 0.0,
             }
 
         total_tokens = sum(s.tokens for s in segments)
@@ -381,7 +370,7 @@ class ContextOptimizer:
             "total_tokens": total_tokens,
             "avg_relevance": round(avg_relevance, 3),
             "utilization": round(utilization, 3),
-            "sources": list(set(s.source for s in segments))
+            "sources": list(set(s.source for s in segments)),
         }
 
     def optimize(self, context: str, max_tokens: int) -> str:
@@ -399,4 +388,4 @@ class ContextOptimizer:
         self.available_tokens = max_tokens
         optimized_segments = self.optimize_context(segments, "", preserve_order=True)
 
-        return ' '.join(s.content for s in optimized_segments)
+        return " ".join(s.content for s in optimized_segments)

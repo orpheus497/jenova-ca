@@ -22,6 +22,7 @@ from jenova.ui.settings_menu import SettingsMenu
 
 class CommandCategory(Enum):
     """Command categories for organization."""
+
     SYSTEM = "system"
     NETWORK = "network"
     MEMORY = "memory"
@@ -47,7 +48,7 @@ class Command:
         handler: Callable,
         aliases: Optional[List[str]] = None,
         usage: Optional[str] = None,
-        examples: Optional[List[str]] = None
+        examples: Optional[List[str]] = None,
     ):
         self.name = name
         self.description = description
@@ -70,23 +71,27 @@ class CommandRegistry:
         # Initialize settings menu (Phase 9)
         self.settings_menu = SettingsMenu(
             config=cognitive_engine.config,
-            user_profile=cognitive_engine.user_profile if hasattr(cognitive_engine, 'user_profile') else None,
-            file_logger=file_logger
+            user_profile=(
+                cognitive_engine.user_profile
+                if hasattr(cognitive_engine, "user_profile")
+                else None
+            ),
+            file_logger=file_logger,
         )
 
         # Phases 13-17: Store CLI enhancement modules
-        self.context_optimizer = kwargs.get('context_optimizer')
-        self.code_metrics = kwargs.get('code_metrics')
-        self.security_scanner = kwargs.get('security_scanner')
-        self.file_editor = kwargs.get('file_editor')
-        self.code_parser = kwargs.get('code_parser')
-        self.refactoring_engine = kwargs.get('refactoring_engine')
-        self.git_interface = kwargs.get('git_interface')
-        self.commit_assistant = kwargs.get('commit_assistant')
-        self.task_planner = kwargs.get('task_planner')
-        self.execution_engine = kwargs.get('execution_engine')
-        self.custom_command_manager = kwargs.get('custom_command_manager')
-        self.workflow_library = kwargs.get('workflow_library')
+        self.context_optimizer = kwargs.get("context_optimizer")
+        self.code_metrics = kwargs.get("code_metrics")
+        self.security_scanner = kwargs.get("security_scanner")
+        self.file_editor = kwargs.get("file_editor")
+        self.code_parser = kwargs.get("code_parser")
+        self.refactoring_engine = kwargs.get("refactoring_engine")
+        self.git_interface = kwargs.get("git_interface")
+        self.commit_assistant = kwargs.get("commit_assistant")
+        self.task_planner = kwargs.get("task_planner")
+        self.execution_engine = kwargs.get("execution_engine")
+        self.custom_command_manager = kwargs.get("custom_command_manager")
+        self.workflow_library = kwargs.get("workflow_library")
 
         self._register_default_commands()
 
@@ -94,93 +99,105 @@ class CommandRegistry:
         """Register all default JENOVA commands."""
 
         # Network commands
-        self.register(Command(
-            name="network",
-            description="Show network status and manage distributed mode",
-            category=CommandCategory.NETWORK,
-            handler=self._cmd_network,
-            aliases=["net"],
-            usage="/network [status|enable|disable|info]",
-            examples=[
-                "/network status - Show current network status",
-                "/network enable - Enable distributed mode",
-                "/network disable - Disable distributed mode",
-                "/network info - Detailed network information"
-            ]
-        ))
+        self.register(
+            Command(
+                name="network",
+                description="Show network status and manage distributed mode",
+                category=CommandCategory.NETWORK,
+                handler=self._cmd_network,
+                aliases=["net"],
+                usage="/network [status|enable|disable|info]",
+                examples=[
+                    "/network status - Show current network status",
+                    "/network enable - Enable distributed mode",
+                    "/network disable - Disable distributed mode",
+                    "/network info - Detailed network information",
+                ],
+            )
+        )
 
-        self.register(Command(
-            name="peers",
-            description="Manage and view peer connections",
-            category=CommandCategory.NETWORK,
-            handler=self._cmd_peers,
-            usage="/peers [list|connect|disconnect|trust|info]",
-            examples=[
-                "/peers list - List all discovered peers",
-                "/peers info <peer_id> - Show detailed peer information",
-                "/peers trust <peer_id> - Trust a peer's certificate",
-                "/peers disconnect <peer_id> - Disconnect from a peer"
-            ]
-        ))
+        self.register(
+            Command(
+                name="peers",
+                description="Manage and view peer connections",
+                category=CommandCategory.NETWORK,
+                handler=self._cmd_peers,
+                usage="/peers [list|connect|disconnect|trust|info]",
+                examples=[
+                    "/peers list - List all discovered peers",
+                    "/peers info <peer_id> - Show detailed peer information",
+                    "/peers trust <peer_id> - Trust a peer's certificate",
+                    "/peers disconnect <peer_id> - Disconnect from a peer",
+                ],
+            )
+        )
 
         # Settings commands
-        self.register(Command(
-            name="settings",
-            description="Interactive settings menu",
-            category=CommandCategory.SETTINGS,
-            handler=self._cmd_settings,
-            aliases=["config", "preferences"],
-            usage="/settings [category]",
-            examples=[
-                "/settings - Open interactive settings menu",
-                "/settings network - Network settings",
-                "/settings llm - LLM configuration",
-                "/settings privacy - Privacy settings"
-            ]
-        ))
+        self.register(
+            Command(
+                name="settings",
+                description="Interactive settings menu",
+                category=CommandCategory.SETTINGS,
+                handler=self._cmd_settings,
+                aliases=["config", "preferences"],
+                usage="/settings [category]",
+                examples=[
+                    "/settings - Open interactive settings menu",
+                    "/settings network - Network settings",
+                    "/settings llm - LLM configuration",
+                    "/settings privacy - Privacy settings",
+                ],
+            )
+        )
 
         # User profile commands
-        self.register(Command(
-            name="profile",
-            description="View and manage your user profile",
-            category=CommandCategory.LEARNING,
-            handler=self._cmd_profile,
-            usage="/profile [view|edit|reset]",
-            examples=[
-                "/profile view - View your profile and preferences",
-                "/profile edit - Edit profile settings",
-                "/profile reset - Reset profile to defaults"
-            ]
-        ))
+        self.register(
+            Command(
+                name="profile",
+                description="View and manage your user profile",
+                category=CommandCategory.LEARNING,
+                handler=self._cmd_profile,
+                usage="/profile [view|edit|reset]",
+                examples=[
+                    "/profile view - View your profile and preferences",
+                    "/profile edit - Edit profile settings",
+                    "/profile reset - Reset profile to defaults",
+                ],
+            )
+        )
 
         # Learning commands
-        self.register(Command(
-            name="learn",
-            description="View learning statistics and insights",
-            category=CommandCategory.LEARNING,
-            handler=self._cmd_learn,
-            usage="/learn [stats|insights|progress]",
-            examples=[
-                "/learn stats - Show learning statistics",
-                "/learn insights - Recent learning insights",
-                "/learn progress - Learning progress over time"
-            ]
-        ))
+        self.register(
+            Command(
+                name="learn",
+                description="View learning statistics and insights",
+                category=CommandCategory.LEARNING,
+                handler=self._cmd_learn,
+                usage="/learn [stats|insights|progress]",
+                examples=[
+                    "/learn stats - Show learning statistics",
+                    "/learn insights - Recent learning insights",
+                    "/learn progress - Learning progress over time",
+                ],
+            )
+        )
 
         # Enhanced help
-        self.register(Command(
-            name="help",
-            description="Show help and documentation",
-            category=CommandCategory.HELP,
-            handler=self._cmd_help,
-            aliases=["?", "man"],
-            usage="/help [command|category]",
-            examples=[
-                "/help - Show all commands",
-                "/help network - Show network commands",
-                "/help /network - Show help for specific command"
-            ]
-        ))
+        self.register(
+            Command(
+                name="help",
+                description="Show help and documentation",
+                category=CommandCategory.HELP,
+                handler=self._cmd_help,
+                aliases=["?", "man"],
+                usage="/help [command|category]",
+                examples=[
+                    "/help - Show all commands",
+                    "/help network - Show network commands",
+                    "/help /network - Show help for specific command",
+                ],
+            )
+        )
 
         # Phases 13-17: Enhanced CLI Commands
         self._register_phase13_17_commands()
@@ -190,142 +207,160 @@ class CommandRegistry:
 
         # Code editing commands
         if self.file_editor:
-            self.register(Command(
-                name="edit",
-                description="Edit files with diff-based preview",
-                category=CommandCategory.CODE,
-                handler=self._cmd_edit,
-                usage="/edit <file> [--preview|--apply]",
-                examples=[
-                    "/edit main.py - Preview edits",
-                    "/edit main.py --apply - Apply edits",
-                    "/edit main.py --backup - Create backup before editing"
-                ]
-            ))
+            self.register(
+                Command(
+                    name="edit",
+                    description="Edit files with diff-based preview",
+                    category=CommandCategory.CODE,
+                    handler=self._cmd_edit,
+                    usage="/edit <file> [--preview|--apply]",
+                    examples=[
+                        "/edit main.py - Preview edits",
+                        "/edit main.py --apply - Apply edits",
+                        "/edit main.py --backup - Create backup before editing",
+                    ],
+                )
+            )
 
         # Code analysis commands
         if self.code_metrics:
-            self.register(Command(
-                name="analyze",
-                description="Analyze code quality and complexity",
-                category=CommandCategory.ANALYSIS,
-                handler=self._cmd_analyze,
-                usage="/analyze <file|directory>",
-                examples=[
-                    "/analyze main.py - Analyze single file",
-                    "/analyze src/ - Analyze directory",
-                    "/analyze . --report=json - JSON format report"
-                ]
-            ))
+            self.register(
+                Command(
+                    name="analyze",
+                    description="Analyze code quality and complexity",
+                    category=CommandCategory.ANALYSIS,
+                    handler=self._cmd_analyze,
+                    usage="/analyze <file|directory>",
+                    examples=[
+                        "/analyze main.py - Analyze single file",
+                        "/analyze src/ - Analyze directory",
+                        "/analyze . --report=json - JSON format report",
+                    ],
+                )
+            )
 
         if self.security_scanner:
-            self.register(Command(
-                name="scan",
-                description="Scan code for security vulnerabilities",
-                category=CommandCategory.ANALYSIS,
-                handler=self._cmd_scan,
-                aliases=["security"],
-                usage="/scan <file|directory>",
-                examples=[
-                    "/scan main.py - Scan single file",
-                    "/scan src/ - Scan directory",
-                    "/scan . --severity=high - Show only high severity"
-                ]
-            ))
+            self.register(
+                Command(
+                    name="scan",
+                    description="Scan code for security vulnerabilities",
+                    category=CommandCategory.ANALYSIS,
+                    handler=self._cmd_scan,
+                    aliases=["security"],
+                    usage="/scan <file|directory>",
+                    examples=[
+                        "/scan main.py - Scan single file",
+                        "/scan src/ - Scan directory",
+                        "/scan . --severity=high - Show only high severity",
+                    ],
+                )
+            )
 
         # Code parsing commands
         if self.code_parser:
-            self.register(Command(
-                name="parse",
-                description="Parse and analyze code structure (AST)",
-                category=CommandCategory.CODE,
-                handler=self._cmd_parse,
-                usage="/parse <file>",
-                examples=[
-                    "/parse main.py - Show code structure",
-                    "/parse main.py --symbols - List all symbols",
-                    "/parse main.py --tree - Show AST tree"
-                ]
-            ))
+            self.register(
+                Command(
+                    name="parse",
+                    description="Parse and analyze code structure (AST)",
+                    category=CommandCategory.CODE,
+                    handler=self._cmd_parse,
+                    usage="/parse <file>",
+                    examples=[
+                        "/parse main.py - Show code structure",
+                        "/parse main.py --symbols - List all symbols",
+                        "/parse main.py --tree - Show AST tree",
+                    ],
+                )
+            )
 
         # Code refactoring commands
         if self.refactoring_engine:
-            self.register(Command(
-                name="refactor",
-                description="Refactor code (rename, extract, etc.)",
-                category=CommandCategory.CODE,
-                handler=self._cmd_refactor,
-                usage="/refactor <operation> <args>",
-                examples=[
-                    "/refactor rename old_name new_name",
-                    "/refactor extract-method function_name",
-                    "/refactor inline variable_name"
-                ]
-            ))
+            self.register(
+                Command(
+                    name="refactor",
+                    description="Refactor code (rename, extract, etc.)",
+                    category=CommandCategory.CODE,
+                    handler=self._cmd_refactor,
+                    usage="/refactor <operation> <args>",
+                    examples=[
+                        "/refactor rename old_name new_name",
+                        "/refactor extract-method function_name",
+                        "/refactor inline variable_name",
+                    ],
+                )
+            )
 
         # Git commands
         if self.git_interface:
-            self.register(Command(
-                name="git",
-                description="Git operations with AI assistance",
-                category=CommandCategory.GIT,
-                handler=self._cmd_git,
-                usage="/git <operation> [args]",
-                examples=[
-                    "/git status - Show git status",
-                    "/git commit - Auto-generate commit message",
-                    "/git diff - Show and analyze diff",
-                    "/git branch - List branches"
-                ]
-            ))
+            self.register(
+                Command(
+                    name="git",
+                    description="Git operations with AI assistance",
+                    category=CommandCategory.GIT,
+                    handler=self._cmd_git,
+                    usage="/git <operation> [args]",
+                    examples=[
+                        "/git status - Show git status",
+                        "/git commit - Auto-generate commit message",
+                        "/git diff - Show and analyze diff",
+                        "/git branch - List branches",
+                    ],
+                )
+            )
 
         # Task orchestration commands
         if self.task_planner and self.execution_engine:
-            self.register(Command(
-                name="task",
-                description="Plan and execute multi-step tasks",
-                category=CommandCategory.ORCHESTRATION,
-                handler=self._cmd_task,
-                usage="/task <plan|execute|status|cancel> [args]",
-                examples=[
-                    "/task plan 'refactor module X' - Create task plan",
-                    "/task execute <plan_id> - Execute planned task",
-                    "/task status - Show active tasks",
-                    "/task cancel <task_id> - Cancel running task"
-                ]
-            ))
+            self.register(
+                Command(
+                    name="task",
+                    description="Plan and execute multi-step tasks",
+                    category=CommandCategory.ORCHESTRATION,
+                    handler=self._cmd_task,
+                    usage="/task <plan|execute|status|cancel> [args]",
+                    examples=[
+                        "/task plan 'refactor module X' - Create task plan",
+                        "/task execute <plan_id> - Execute planned task",
+                        "/task status - Show active tasks",
+                        "/task cancel <task_id> - Cancel running task",
+                    ],
+                )
+            )
 
         # Workflow commands
         if self.workflow_library:
-            self.register(Command(
-                name="workflow",
-                description="Execute predefined workflows",
-                category=CommandCategory.AUTOMATION,
-                handler=self._cmd_workflow,
-                usage="/workflow <name> [args]",
-                examples=[
-                    "/workflow code-review - Run code review workflow",
-                    "/workflow test - Run testing workflow",
-                    "/workflow deploy - Run deployment workflow",
-                    "/workflow list - List available workflows"
-                ]
-            ))
+            self.register(
+                Command(
+                    name="workflow",
+                    description="Execute predefined workflows",
+                    category=CommandCategory.AUTOMATION,
+                    handler=self._cmd_workflow,
+                    usage="/workflow <name> [args]",
+                    examples=[
+                        "/workflow code-review - Run code review workflow",
+                        "/workflow test - Run testing workflow",
+                        "/workflow deploy - Run deployment workflow",
+                        "/workflow list - List available workflows",
+                    ],
+                )
+            )
 
         # Custom command management
         if self.custom_command_manager:
-            self.register(Command(
-                name="command",
-                description="Manage custom commands",
-                category=CommandCategory.AUTOMATION,
-                handler=self._cmd_command,
-                usage="/command <create|list|execute|delete> [args]",
-                examples=[
-                    "/command list - List custom commands",
-                    "/command create my_cmd - Create new command",
-                    "/command execute my_cmd - Run custom command",
-                    "/command delete my_cmd - Delete command"
-                ]
-            ))
+            self.register(
+                Command(
+                    name="command",
+                    description="Manage custom commands",
+                    category=CommandCategory.AUTOMATION,
+                    handler=self._cmd_command,
+                    usage="/command <create|list|execute|delete> [args]",
+                    examples=[
+                        "/command list - List custom commands",
+                        "/command create my_cmd - Create new command",
+                        "/command execute my_cmd - Run custom command",
+                        "/command delete my_cmd - Delete command",
+                    ],
+                )
+            )
 
     def register(self, command: Command):
         """Register a command."""
@@ -335,7 +370,7 @@ class CommandRegistry:
 
     def get_command(self, name: str) -> Optional[Command]:
         """Get a command by name or alias."""
-        return self.commands.get(name.lstrip('/'))
+        return self.commands.get(name.lstrip("/"))
 
     def get_by_category(self, category: CommandCategory) -> List[Command]:
         """Get all commands in a category."""
@@ -349,7 +384,7 @@ class CommandRegistry:
 
     def execute(self, command_str: str, args: List[str]) -> str:
         """Execute a command."""
-        cmd_name = command_str.lstrip('/')
+        cmd_name = command_str.lstrip("/")
         command = self.get_command(cmd_name)
 
         if not command:
@@ -366,7 +401,9 @@ class CommandRegistry:
     def _cmd_network(self, args: List[str]) -> str:
         """Handle /network command."""
         if not self.cognitive_engine.peer_manager:
-            return "Network layer not available. Enable distributed mode in configuration."
+            return (
+                "Network layer not available. Enable distributed mode in configuration."
+            )
 
         subcommand = args[0] if args else "status"
 
@@ -388,7 +425,7 @@ class CommandRegistry:
             return "Network: Disabled"
 
         peers = pm.get_all_peers()
-        connected = sum(1 for p in peers if p.status.value == 'connected')
+        connected = sum(1 for p in peers if p.status.value == "connected")
 
         status = [
             "Network Status:",
@@ -398,7 +435,9 @@ class CommandRegistry:
 
         if self.cognitive_engine.distributed_llm:
             stats = self.cognitive_engine.distributed_llm.get_stats()
-            status.append(f"  Distributed Generations: {stats['distributed_generations']}")
+            status.append(
+                f"  Distributed Generations: {stats['distributed_generations']}"
+            )
             status.append(f"  Strategy: {stats['strategy']}")
 
         return "\n".join(status)
@@ -446,8 +485,10 @@ class CommandRegistry:
         lines = ["Discovered Peers:"]
         for peer in peers:
             info = peer.peer_info
-            status_icon = "✓" if peer.status.value == 'connected' else "○"
-            latency = f"{peer.avg_response_time:.0f}ms" if peer.response_times else "untested"
+            status_icon = "✓" if peer.status.value == "connected" else "○"
+            latency = (
+                f"{peer.avg_response_time:.0f}ms" if peer.response_times else "untested"
+            )
             lines.append(
                 f"  {status_icon} {info.instance_name} ({info.instance_id[:8]}...) "
                 f"- {info.address}:{info.port} - {latency}"
@@ -490,7 +531,9 @@ class CommandRegistry:
             lines = ["Interactive Settings Menu:\n"]
             for category in self.settings_menu.list_categories():
                 lines.append(f"  /settings {category.name:10} - {category.description}")
-            lines.append("\nUse /settings <category> to view settings in that category.")
+            lines.append(
+                "\nUse /settings <category> to view settings in that category."
+            )
             lines.append("Use /settings <category> <key> <value> to change a setting.")
             return "\n".join(lines)
 
@@ -510,7 +553,9 @@ class CommandRegistry:
                 lines.append(f"    Current: {current_val}")
                 lines.append(f"    {setting.description}")
                 if setting.choices:
-                    lines.append(f"    Choices: {', '.join(str(c) for c in setting.choices)}")
+                    lines.append(
+                        f"    Choices: {', '.join(str(c) for c in setting.choices)}"
+                    )
                 elif setting.min_value is not None or setting.max_value is not None:
                     range_str = f"Range: {setting.min_value or '∞'} to {setting.max_value or '∞'}"
                     lines.append(f"    {range_str}")
@@ -536,7 +581,7 @@ class CommandRegistry:
             setting = category.get_setting(full_key)
             try:
                 if setting.value_type == bool:
-                    typed_value = new_value.lower() in ('true', '1', 'yes', 'on')
+                    typed_value = new_value.lower() in ("true", "1", "yes", "on")
                 elif setting.value_type == int:
                     typed_value = int(new_value)
                 elif setting.value_type == float:
@@ -547,8 +592,14 @@ class CommandRegistry:
                 return f"Invalid value type for {full_key}: expected {setting.value_type.__name__}"
 
             # Apply the change
-            if self.settings_menu.set_setting_value(full_key, typed_value, apply_immediately=True):
-                restart_note = "\nNote: Restart required for this change to take effect." if setting.requires_restart else ""
+            if self.settings_menu.set_setting_value(
+                full_key, typed_value, apply_immediately=True
+            ):
+                restart_note = (
+                    "\nNote: Restart required for this change to take effect."
+                    if setting.requires_restart
+                    else ""
+                )
                 return f"Setting updated: {setting.name} = {typed_value}{restart_note}"
             else:
                 return f"Failed to update setting {full_key}"
@@ -557,7 +608,11 @@ class CommandRegistry:
 
     def _cmd_profile(self, args: List[str]) -> str:
         """Handle /profile command."""
-        profile = self.cognitive_engine.user_profile if hasattr(self.cognitive_engine, 'user_profile') else None
+        profile = (
+            self.cognitive_engine.user_profile
+            if hasattr(self.cognitive_engine, "user_profile")
+            else None
+        )
 
         if not profile:
             return "User profiling system not initialized."
@@ -572,12 +627,20 @@ class CommandRegistry:
             lines.append("=== Preferences ===")
             lines.append(f"  Response Style: {profile.preferences.response_style}")
             lines.append(f"  Expertise Level: {profile.preferences.expertise_level}")
-            lines.append(f"  Communication Style: {profile.preferences.communication_style}")
-            lines.append(f"  Learning Mode: {'enabled' if profile.preferences.learning_mode else 'disabled'}")
-            lines.append(f"  Proactive Suggestions: {'enabled' if profile.preferences.proactive_suggestions else 'disabled'}")
+            lines.append(
+                f"  Communication Style: {profile.preferences.communication_style}"
+            )
+            lines.append(
+                f"  Learning Mode: {'enabled' if profile.preferences.learning_mode else 'disabled'}"
+            )
+            lines.append(
+                f"  Proactive Suggestions: {'enabled' if profile.preferences.proactive_suggestions else 'disabled'}"
+            )
 
             if profile.preferences.preferred_topics:
-                lines.append(f"  Preferred Topics: {', '.join(profile.preferences.preferred_topics[:5])}")
+                lines.append(
+                    f"  Preferred Topics: {', '.join(profile.preferences.preferred_topics[:5])}"
+                )
             lines.append("")
 
             # Statistics
@@ -586,7 +649,9 @@ class CommandRegistry:
             lines.append(f"  Questions Asked: {profile.stats.questions_asked}")
             lines.append(f"  Commands Used: {profile.stats.commands_used}")
             lines.append(f"  Vocabulary Size: {len(profile.vocabulary)} words")
-            lines.append(f"  Unique Topics Discussed: {len(profile.stats.topics_discussed)}")
+            lines.append(
+                f"  Unique Topics Discussed: {len(profile.stats.topics_discussed)}"
+            )
 
             if profile.stats.last_interaction:
                 lines.append(f"  Last Interaction: {profile.stats.last_interaction}")
@@ -612,7 +677,9 @@ class CommandRegistry:
             lines.append("=== Expertise Indicators ===")
             lines.append(f"  Vocabulary Size: {expertise['vocabulary_size']} words")
             lines.append(f"  Topics Mastered: {expertise['topics_mastered']}")
-            lines.append(f"  Command Proficiency: {expertise['command_proficiency']} commands")
+            lines.append(
+                f"  Command Proficiency: {expertise['command_proficiency']} commands"
+            )
             if profile.total_suggestions > 0:
                 success_rate = profile.get_suggestion_success_rate() * 100
                 lines.append(f"  Suggestion Acceptance Rate: {success_rate:.1f}%")
@@ -635,7 +702,11 @@ class CommandRegistry:
 
     def _cmd_learn(self, args: List[str]) -> str:
         """Handle /learn command."""
-        learning_engine = self.cognitive_engine.learning_engine if hasattr(self.cognitive_engine, 'learning_engine') else None
+        learning_engine = (
+            self.cognitive_engine.learning_engine
+            if hasattr(self.cognitive_engine, "learning_engine")
+            else None
+        )
 
         if not learning_engine:
             return "Learning engine not initialized."
@@ -655,14 +726,18 @@ class CommandRegistry:
 
             lines.append("=== Pattern Recognition ===")
             lines.append(f"  Total Patterns: {metrics['total_patterns']}")
-            lines.append(f"  High Confidence Patterns: {metrics['high_confidence_patterns']}")
+            lines.append(
+                f"  High Confidence Patterns: {metrics['high_confidence_patterns']}"
+            )
             lines.append("")
 
             lines.append("=== Skill Acquisition ===")
             lines.append(f"  Total Skills: {metrics['total_skills']}")
             lines.append(f"  Proficient Skills: {metrics['proficient_skills']}")
-            if metrics['total_skills'] > 0:
-                lines.append(f"  Average Proficiency: {metrics['avg_skill_proficiency']:.1%}")
+            if metrics["total_skills"] > 0:
+                lines.append(
+                    f"  Average Proficiency: {metrics['avg_skill_proficiency']:.1%}"
+                )
             lines.append("")
 
             return "\n".join(lines)
@@ -706,16 +781,23 @@ class CommandRegistry:
             lines = ["Acquired Skills:\n"]
             # Group by domain
             from collections import defaultdict
+
             domain_skills = defaultdict(list)
             for skill in skills.values():
                 domain_skills[skill.domain].append(skill)
 
             for domain, domain_skill_list in sorted(domain_skills.items()):
                 lines.append(f"=== {domain.upper()} ===")
-                for skill in sorted(domain_skill_list, key=lambda s: s.proficiency, reverse=True):
-                    prof_bar = "█" * int(skill.proficiency * 10) + "░" * (10 - int(skill.proficiency * 10))
+                for skill in sorted(
+                    domain_skill_list, key=lambda s: s.proficiency, reverse=True
+                ):
+                    prof_bar = "█" * int(skill.proficiency * 10) + "░" * (
+                        10 - int(skill.proficiency * 10)
+                    )
                     lines.append(f"  {skill.skill_name}")
-                    lines.append(f"    Proficiency: [{prof_bar}] {skill.proficiency:.1%}")
+                    lines.append(
+                        f"    Proficiency: [{prof_bar}] {skill.proficiency:.1%}"
+                    )
                     lines.append(f"    Practice Count: {skill.practice_count}")
                 lines.append("")
 
@@ -735,7 +817,7 @@ Available subcommands:
         if not args:
             return self._help_all()
 
-        target = args[0].lstrip('/')
+        target = args[0].lstrip("/")
 
         # Check if it's a specific command
         command = self.get_command(target)
@@ -805,7 +887,7 @@ Available subcommands:
             file_path = args[0]
             mode = args[1] if len(args) > 1 else "--preview"
 
-            result = self.file_editor.edit_file(file_path, mode=mode.lstrip('--'))
+            result = self.file_editor.edit_file(file_path, mode=mode.lstrip("--"))
             return f"Edit operation completed:\n{result}"
         except Exception as e:
             self.file_logger.log_error(f"Edit command error: {e}")
@@ -847,7 +929,9 @@ Available subcommands:
                 if arg.startswith("--severity="):
                     severity_filter = arg.split("=")[1]
 
-            scan_results = self.security_scanner.scan(target, severity_filter=severity_filter)
+            scan_results = self.security_scanner.scan(
+                target, severity_filter=severity_filter
+            )
             return f"Security Scan Results:\n{scan_results}"
         except Exception as e:
             self.file_logger.log_error(f"Scan command error: {e}")
@@ -979,7 +1063,9 @@ Available subcommands:
             else:
                 workflow_name = subcommand
                 workflow_args = args[1:]
-                result = self.workflow_library.execute_workflow(workflow_name, workflow_args)
+                result = self.workflow_library.execute_workflow(
+                    workflow_name, workflow_args
+                )
                 return f"Workflow executed:\n{result}"
 
         except Exception as e:

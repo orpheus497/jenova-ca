@@ -23,6 +23,7 @@ from jenova.network.discovery import PeerInfo
 
 class PeerStatus(Enum):
     """Status of a peer connection."""
+
     UNKNOWN = "unknown"
     CONNECTING = "connecting"
     CONNECTED = "connected"
@@ -34,6 +35,7 @@ class PeerStatus(Enum):
 @dataclass
 class PeerCapabilities:
     """Capabilities advertised by a peer."""
+
     instance_id: str
     instance_name: str
 
@@ -64,6 +66,7 @@ class PeerCapabilities:
 @dataclass
 class PeerConnection:
     """Represents a connection to a peer."""
+
     peer_info: PeerInfo
     capabilities: Optional[PeerCapabilities] = None
     status: PeerStatus = PeerStatus.UNKNOWN
@@ -106,10 +109,10 @@ class PeerManager:
         self.peers_lock = threading.RLock()
 
         # Configuration
-        network_config = config.get('network', {})
-        peer_selection = network_config.get('peer_selection', {})
-        self.strategy = peer_selection.get('strategy', 'load_balanced')
-        self.timeout_ms = peer_selection.get('timeout_ms', 5000)
+        network_config = config.get("network", {})
+        peer_selection = network_config.get("peer_selection", {})
+        self.strategy = peer_selection.get("strategy", "load_balanced")
+        self.timeout_ms = peer_selection.get("timeout_ms", 5000)
 
         # Health monitoring
         self.health_check_interval = 30  # seconds
@@ -124,14 +127,11 @@ class PeerManager:
 
         # Start health monitoring
         self.health_monitor_thread = threading.Thread(
-            target=self._health_monitor_loop,
-            daemon=True
+            target=self._health_monitor_loop, daemon=True
         )
         self.health_monitor_thread.start()
 
-        self.file_logger.log_info(
-            f"Peer manager started (strategy: {self.strategy})"
-        )
+        self.file_logger.log_info(f"Peer manager started (strategy: {self.strategy})")
 
     def stop(self):
         """Stop the peer manager."""
@@ -153,8 +153,7 @@ class PeerManager:
         with self.peers_lock:
             if peer_info.instance_id not in self.peers:
                 connection = PeerConnection(
-                    peer_info=peer_info,
-                    status=PeerStatus.CONNECTING
+                    peer_info=peer_info, status=PeerStatus.CONNECTING
                 )
                 self.peers[peer_info.instance_id] = connection
 
@@ -195,10 +194,7 @@ class PeerManager:
                 )
 
     def record_request_result(
-        self,
-        peer_id: str,
-        success: bool,
-        response_time_ms: float
+        self, peer_id: str, success: bool, response_time_ms: float
     ):
         """
         Record the result of a request to a peer.
@@ -238,9 +234,7 @@ class PeerManager:
                 peer.response_times.pop(0)
 
     def select_peer_for_task(
-        self,
-        task_type: str,
-        exclude_peers: Optional[List[str]] = None
+        self, task_type: str, exclude_peers: Optional[List[str]] = None
     ) -> Optional[str]:
         """
         Select the best peer for a task based on strategy.
@@ -269,11 +263,11 @@ class PeerManager:
                     continue
 
                 # Check task-specific capability
-                if task_type == 'llm' and not peer.capabilities.share_llm:
+                if task_type == "llm" and not peer.capabilities.share_llm:
                     continue
-                if task_type == 'embedding' and not peer.capabilities.share_embeddings:
+                if task_type == "embedding" and not peer.capabilities.share_embeddings:
                     continue
-                if task_type == 'memory' and not peer.capabilities.share_memory:
+                if task_type == "memory" and not peer.capabilities.share_memory:
                     continue
 
                 available_peers.append(peer_id)
@@ -282,11 +276,11 @@ class PeerManager:
                 return None
 
             # Apply selection strategy
-            if self.strategy == 'load_balanced':
+            if self.strategy == "load_balanced":
                 return self._select_by_load(available_peers)
-            elif self.strategy == 'fastest':
+            elif self.strategy == "fastest":
                 return self._select_by_speed(available_peers)
-            elif self.strategy == 'local_first':
+            elif self.strategy == "local_first":
                 # In LAN context, "local_first" means prefer lower latency
                 return self._select_by_speed(available_peers)
             else:
@@ -296,7 +290,7 @@ class PeerManager:
     def _select_by_load(self, peer_ids: List[str]) -> str:
         """Select peer with lowest current load."""
         best_peer = None
-        lowest_load = float('inf')
+        lowest_load = float("inf")
 
         for peer_id in peer_ids:
             peer = self.peers[peer_id]
@@ -313,7 +307,7 @@ class PeerManager:
     def _select_by_speed(self, peer_ids: List[str]) -> str:
         """Select peer with best average response time."""
         best_peer = None
-        best_time = float('inf')
+        best_time = float("inf")
 
         for peer_id in peer_ids:
             peer = self.peers[peer_id]
@@ -324,7 +318,7 @@ class PeerManager:
             else:
                 # Untested peers get infinity - they'll be tried if no tested peers available
                 # but won't be prioritized over peers with known good latency
-                avg_time = float('inf')
+                avg_time = float("inf")
 
             if avg_time < best_time:
                 best_time = avg_time
@@ -346,8 +340,7 @@ class PeerManager:
         """Get count of connected peers."""
         with self.peers_lock:
             return sum(
-                1 for peer in self.peers.values()
-                if peer.status == PeerStatus.CONNECTED
+                1 for peer in self.peers.values() if peer.status == PeerStatus.CONNECTED
             )
 
     def _health_monitor_loop(self):
@@ -380,26 +373,28 @@ class PeerManager:
                 status_counts[peer.status.value] += 1
 
             return {
-                'total_peers': len(self.peers),
-                'status_breakdown': dict(status_counts),
-                'strategy': self.strategy,
-                'timeout_ms': self.timeout_ms,
-                'peers': [
+                "total_peers": len(self.peers),
+                "status_breakdown": dict(status_counts),
+                "strategy": self.strategy,
+                "timeout_ms": self.timeout_ms,
+                "peers": [
                     {
-                        'instance_id': peer.peer_info.instance_id,
-                        'instance_name': peer.peer_info.instance_name,
-                        'address': f"{peer.peer_info.address}:{peer.peer_info.port}",
-                        'status': peer.status.value,
-                        'total_requests': peer.total_requests,
-                        'success_rate': (
+                        "instance_id": peer.peer_info.instance_id,
+                        "instance_name": peer.peer_info.instance_name,
+                        "address": f"{peer.peer_info.address}:{peer.peer_info.port}",
+                        "status": peer.status.value,
+                        "total_requests": peer.total_requests,
+                        "success_rate": (
                             peer.successful_requests / peer.total_requests * 100
-                            if peer.total_requests > 0 else 0
+                            if peer.total_requests > 0
+                            else 0
                         ),
-                        'avg_response_time_ms': (
+                        "avg_response_time_ms": (
                             sum(peer.response_times) / len(peer.response_times)
-                            if peer.response_times else 0
-                        )
+                            if peer.response_times
+                            else 0
+                        ),
                     }
                     for peer in self.peers.values()
-                ]
+                ],
             }

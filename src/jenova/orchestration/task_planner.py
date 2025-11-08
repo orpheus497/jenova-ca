@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class TaskStatus(Enum):
     """Status of a task in the plan."""
+
     PENDING = "pending"
     READY = "ready"
     IN_PROGRESS = "in_progress"
@@ -31,6 +32,7 @@ class TaskStatus(Enum):
 
 class TaskPriority(Enum):
     """Priority levels for tasks."""
+
     LOW = 1
     MEDIUM = 2
     HIGH = 3
@@ -66,11 +68,13 @@ class Task:
             "error": self.error,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Task':
+    def from_dict(cls, data: Dict[str, Any]) -> "Task":
         """Create task from dictionary."""
         task = cls(
             id=data["id"],
@@ -118,8 +122,8 @@ class TaskPlan:
             if task.status == TaskStatus.PENDING:
                 # Check if all dependencies are completed
                 if all(
-                    self.tasks.get(dep_id) and
-                    self.tasks[dep_id].status == TaskStatus.COMPLETED
+                    self.tasks.get(dep_id)
+                    and self.tasks[dep_id].status == TaskStatus.COMPLETED
                     for dep_id in task.dependencies
                 ):
                     ready.append(task)
@@ -135,8 +139,8 @@ class TaskPlan:
             if task.status == TaskStatus.PENDING:
                 # Check if any dependency is not completed
                 has_incomplete_deps = any(
-                    self.tasks.get(dep_id) and
-                    self.tasks[dep_id].status != TaskStatus.COMPLETED
+                    self.tasks.get(dep_id)
+                    and self.tasks[dep_id].status != TaskStatus.COMPLETED
                     for dep_id in task.dependencies
                 )
                 if has_incomplete_deps:
@@ -165,12 +169,12 @@ class TaskPlan:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'TaskPlan':
+    def from_dict(cls, data: Dict[str, Any]) -> "TaskPlan":
         """Create plan from dictionary."""
         plan = cls(
             id=data["id"],
             description=data["description"],
-            metadata=data.get("metadata", {})
+            metadata=data.get("metadata", {}),
         )
 
         if data.get("created_at"):
@@ -206,7 +210,9 @@ class TaskPlanner:
         self.plans: Dict[str, TaskPlan] = {}
         self._task_counter = 0
 
-    def plan_task(self, description: str, metadata: Optional[Dict[str, Any]] = None) -> TaskPlan:
+    def plan_task(
+        self, description: str, metadata: Optional[Dict[str, Any]] = None
+    ) -> TaskPlan:
         """
         Create a task plan from a description.
 
@@ -218,11 +224,7 @@ class TaskPlanner:
             TaskPlan with decomposed tasks and dependencies
         """
         plan_id = f"plan_{self._generate_id()}"
-        plan = TaskPlan(
-            id=plan_id,
-            description=description,
-            metadata=metadata or {}
-        )
+        plan = TaskPlan(id=plan_id, description=description, metadata=metadata or {})
 
         # If LLM is available, use it for intelligent decomposition
         if self.llm:
@@ -238,7 +240,7 @@ class TaskPlanner:
                 description=task_data["description"],
                 priority=task_data.get("priority", TaskPriority.MEDIUM),
                 dependencies=set(task_data.get("dependencies", [])),
-                metadata=task_data.get("metadata", {})
+                metadata=task_data.get("metadata", {}),
             )
             plan.add_task(task)
 
@@ -281,34 +283,70 @@ class TaskPlanner:
 
         # Pattern-based decomposition
         if "test" in description_lower or "testing" in description_lower:
-            tasks.extend([
-                {"description": "Set up test environment", "priority": TaskPriority.HIGH},
-                {"description": "Write test cases", "priority": TaskPriority.MEDIUM},
-                {"description": "Run tests", "priority": TaskPriority.MEDIUM},
-                {"description": "Analyze test results", "priority": TaskPriority.MEDIUM},
-            ])
+            tasks.extend(
+                [
+                    {
+                        "description": "Set up test environment",
+                        "priority": TaskPriority.HIGH,
+                    },
+                    {
+                        "description": "Write test cases",
+                        "priority": TaskPriority.MEDIUM,
+                    },
+                    {"description": "Run tests", "priority": TaskPriority.MEDIUM},
+                    {
+                        "description": "Analyze test results",
+                        "priority": TaskPriority.MEDIUM,
+                    },
+                ]
+            )
         elif "deploy" in description_lower or "deployment" in description_lower:
-            tasks.extend([
-                {"description": "Build application", "priority": TaskPriority.HIGH},
-                {"description": "Run pre-deployment tests", "priority": TaskPriority.HIGH},
-                {"description": "Deploy to staging", "priority": TaskPriority.MEDIUM},
-                {"description": "Verify staging deployment", "priority": TaskPriority.MEDIUM},
-                {"description": "Deploy to production", "priority": TaskPriority.LOW},
-            ])
+            tasks.extend(
+                [
+                    {"description": "Build application", "priority": TaskPriority.HIGH},
+                    {
+                        "description": "Run pre-deployment tests",
+                        "priority": TaskPriority.HIGH,
+                    },
+                    {
+                        "description": "Deploy to staging",
+                        "priority": TaskPriority.MEDIUM,
+                    },
+                    {
+                        "description": "Verify staging deployment",
+                        "priority": TaskPriority.MEDIUM,
+                    },
+                    {
+                        "description": "Deploy to production",
+                        "priority": TaskPriority.LOW,
+                    },
+                ]
+            )
         elif "refactor" in description_lower or "restructure" in description_lower:
-            tasks.extend([
-                {"description": "Analyze current code structure", "priority": TaskPriority.HIGH},
-                {"description": "Identify refactoring opportunities", "priority": TaskPriority.MEDIUM},
-                {"description": "Apply refactoring changes", "priority": TaskPriority.MEDIUM},
-                {"description": "Update tests", "priority": TaskPriority.MEDIUM},
-                {"description": "Verify functionality", "priority": TaskPriority.HIGH},
-            ])
+            tasks.extend(
+                [
+                    {
+                        "description": "Analyze current code structure",
+                        "priority": TaskPriority.HIGH,
+                    },
+                    {
+                        "description": "Identify refactoring opportunities",
+                        "priority": TaskPriority.MEDIUM,
+                    },
+                    {
+                        "description": "Apply refactoring changes",
+                        "priority": TaskPriority.MEDIUM,
+                    },
+                    {"description": "Update tests", "priority": TaskPriority.MEDIUM},
+                    {
+                        "description": "Verify functionality",
+                        "priority": TaskPriority.HIGH,
+                    },
+                ]
+            )
         else:
             # Generic decomposition
-            tasks.append({
-                "description": description,
-                "priority": TaskPriority.MEDIUM
-            })
+            tasks.append({"description": description, "priority": TaskPriority.MEDIUM})
 
         return tasks
 
@@ -318,7 +356,7 @@ class TaskPlanner:
         description: str,
         dependencies: Optional[List[str]] = None,
         priority: TaskPriority = TaskPriority.MEDIUM,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Optional[str]:
         """
         Add a task to an existing plan.
@@ -343,7 +381,7 @@ class TaskPlanner:
             description=description,
             priority=priority,
             dependencies=set(dependencies or []),
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         plan.add_task(task)
@@ -514,12 +552,16 @@ class TaskPlanner:
         for task in plan.tasks.values():
             for dep in task.dependencies:
                 if dep not in plan.tasks:
-                    raise ValueError(f"Task {task.id} depends on non-existent task {dep}")
+                    raise ValueError(
+                        f"Task {task.id} depends on non-existent task {dep}"
+                    )
 
         # Check for circular dependencies
         for task_id in plan.tasks:
             if self._has_circular_dependency(plan, task_id):
-                raise ValueError(f"Circular dependency detected starting from task {task_id}")
+                raise ValueError(
+                    f"Circular dependency detected starting from task {task_id}"
+                )
 
     def get_plan(self, plan_id: str) -> Optional[TaskPlan]:
         """Get a plan by ID."""
@@ -540,9 +582,13 @@ class TaskPlanner:
             return {"error": "Plan not found"}
 
         total = len(plan.tasks)
-        completed = sum(1 for t in plan.tasks.values() if t.status == TaskStatus.COMPLETED)
+        completed = sum(
+            1 for t in plan.tasks.values() if t.status == TaskStatus.COMPLETED
+        )
         failed = sum(1 for t in plan.tasks.values() if t.status == TaskStatus.FAILED)
-        in_progress = sum(1 for t in plan.tasks.values() if t.status == TaskStatus.IN_PROGRESS)
+        in_progress = sum(
+            1 for t in plan.tasks.values() if t.status == TaskStatus.IN_PROGRESS
+        )
         pending = sum(1 for t in plan.tasks.values() if t.status == TaskStatus.PENDING)
 
         return {
@@ -575,7 +621,7 @@ class TaskPlanner:
             return False
 
         try:
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 json.dump(plan.to_dict(), f, indent=2)
             logger.info(f"Saved plan to {filepath}")
             return True
@@ -594,7 +640,7 @@ class TaskPlanner:
             Plan ID if successful, None otherwise
         """
         try:
-            with open(filepath, 'r') as f:
+            with open(filepath, "r") as f:
                 data = json.load(f)
 
             plan = TaskPlan.from_dict(data)

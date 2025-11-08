@@ -23,30 +23,48 @@ class ProactiveEngine:
         """Generates a proactive suggestion for the user based on current cognitive state."""
         # Get unverified assumptions
         unverified_assumptions = self.cortex.get_all_nodes_by_type(
-            'assumption', username)
+            "assumption", username
+        )
         unverified_assumptions = [
-            a.content for a in unverified_assumptions if a.metadata.get('status') == 'unverified']
+            a.content
+            for a in unverified_assumptions
+            if a.metadata.get("status") == "unverified"
+        ]
 
         # Get underdeveloped nodes (low centrality)
         self.cortex._calculate_centrality()  # Ensure centrality is up-to-date
-        underdeveloped_nodes = [node for node in self.cortex.get_all_nodes_by_type(
-            'insight', username) if node.metadata.get('centrality', 0) < 0.5]
+        underdeveloped_nodes = [
+            node
+            for node in self.cortex.get_all_nodes_by_type("insight", username)
+            if node.metadata.get("centrality", 0) < 0.5
+        ]
         underdeveloped_content = [
             # Limit to a few
-            node.content for node in underdeveloped_nodes[:3]]
+            node.content
+            for node in underdeveloped_nodes[:3]
+        ]
 
         # Get high-potential nodes (high centrality, potential for meta-insights)
-        high_potential_nodes = [node for node in self.cortex.get_all_nodes_by_type(
-            'insight', username) if node.metadata.get('centrality', 0) > 1.5]
+        high_potential_nodes = [
+            node
+            for node in self.cortex.get_all_nodes_by_type("insight", username)
+            if node.metadata.get("centrality", 0) > 1.5
+        ]
         high_potential_content = [
             # Limit to a few
-            node.content for node in high_potential_nodes[:3]]
+            node.content
+            for node in high_potential_nodes[:3]
+        ]
 
         # Get recent suggestions to avoid repetition
         recent_suggestions = self.cortex.get_all_nodes_by_type(
-            'proactive_suggestion', username)
-        recent_suggestions_content = [s.content for s in recent_suggestions if (
-            datetime.now() - datetime.fromisoformat(s.timestamp)).days < 1]
+            "proactive_suggestion", username
+        )
+        recent_suggestions_content = [
+            s.content
+            for s in recent_suggestions
+            if (datetime.now() - datetime.fromisoformat(s.timestamp)).days < 1
+        ]
 
         prompt = f"""Based on the following information about the user's cognitive graph, generate a single, concise, and engaging proactive suggestion or question for the user. The goal is to encourage deeper exploration, verify assumptions, or address underdeveloped areas of knowledge.
 
@@ -62,13 +80,11 @@ Suggestion:"""
 
         if self.ui_logger:
             with self.ui_logger.thinking_process("Generating proactive suggestion..."):
-                suggestion = self.llm.generate(
-                    prompt, temperature=0.7, stop=["\n\n"])
+                suggestion = self.llm.generate(prompt, temperature=0.7, stop=["\n\n"])
         else:
-            suggestion = self.llm.generate(
-                prompt, temperature=0.7, stop=["\n\n"])
+            suggestion = self.llm.generate(prompt, temperature=0.7, stop=["\n\n"])
 
         if suggestion and suggestion not in recent_suggestions_content:
-            self.cortex.add_node('proactive_suggestion', suggestion, username)
+            self.cortex.add_node("proactive_suggestion", suggestion, username)
             return suggestion
         return None

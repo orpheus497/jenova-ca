@@ -21,6 +21,7 @@ from dataclasses import dataclass
 @dataclass
 class Suggestion:
     """A proactive suggestion for the user."""
+
     content: str
     reason: str
     confidence: float
@@ -88,13 +89,15 @@ class PersonalizationEngine:
         if style == "concise":
             # For concise style, try to shorten without losing key information
             # In a full implementation, would use summarization
-            lines = response.split('\n')
+            lines = response.split("\n")
             # Keep only essential lines (not empty, not just transitional)
             essential = [
-                line for line in lines
-                if line.strip() and not line.strip().lower().startswith(('so', 'therefore', 'thus'))
+                line
+                for line in lines
+                if line.strip()
+                and not line.strip().lower().startswith(("so", "therefore", "thus"))
             ]
-            return '\n'.join(essential[:5])  # Limit to 5 key lines
+            return "\n".join(essential[:5])  # Limit to 5 key lines
 
         elif style == "detailed":
             # For detailed style, response is already good
@@ -153,21 +156,23 @@ class PersonalizationEngine:
             return suggestions
 
         # Get semantic analysis from context
-        semantic = context.get('semantic_analysis')
+        semantic = context.get("semantic_analysis")
         if not semantic:
             return suggestions
 
         # Suggest commands based on intent
-        if semantic.intent.value == 'question':
+        if semantic.intent.value == "question":
             # If user asks questions frequently, suggest memory commands
             if self.user_profile.stats.questions_asked > 10:
-                if not self._command_used_recently('/memory-insight'):
-                    suggestions.append(Suggestion(
-                        content="Try /memory-insight to discover patterns in your past questions",
-                        reason="You've asked many questions - insights might help",
-                        confidence=0.8,
-                        category="command"
-                    ))
+                if not self._command_used_recently("/memory-insight"):
+                    suggestions.append(
+                        Suggestion(
+                            content="Try /memory-insight to discover patterns in your past questions",
+                            reason="You've asked many questions - insights might help",
+                            confidence=0.8,
+                            category="command",
+                        )
+                    )
 
         # Suggest topics based on discussion patterns
         top_topics = self.user_profile.get_top_topics(limit=3)
@@ -175,33 +180,39 @@ class PersonalizationEngine:
             current_topic = semantic.topics[0] if semantic.topics else None
             if current_topic and current_topic not in [t for t, _ in top_topics]:
                 # New topic - suggest related topics from history
-                suggestions.append(Suggestion(
-                    content=f"This relates to {top_topics[0][0]} which you've discussed {top_topics[0][1]} times",
-                    reason="Connecting to your past interests",
-                    confidence=0.7,
-                    category="topic"
-                ))
+                suggestions.append(
+                    Suggestion(
+                        content=f"This relates to {top_topics[0][0]} which you've discussed {top_topics[0][1]} times",
+                        reason="Connecting to your past interests",
+                        confidence=0.7,
+                        category="topic",
+                    )
+                )
 
         # Suggest expertise adjustment
         if self._should_adjust_expertise(semantic):
             current_level = self.user_profile.preferences.expertise_level
             if current_level == "intermediate":
-                suggestions.append(Suggestion(
-                    content="You seem comfortable with advanced concepts - consider updating your expertise level to 'advanced' in /profile",
-                    reason="Your vocabulary and questions indicate higher expertise",
-                    confidence=0.6,
-                    category="tip"
-                ))
+                suggestions.append(
+                    Suggestion(
+                        content="You seem comfortable with advanced concepts - consider updating your expertise level to 'advanced' in /profile",
+                        reason="Your vocabulary and questions indicate higher expertise",
+                        confidence=0.6,
+                        category="tip",
+                    )
+                )
 
         # Suggest learning mode if disabled but user shows learning behavior
         if not self.user_profile.preferences.learning_mode:
             if len(self.user_profile.corrections) > 5:
-                suggestions.append(Suggestion(
-                    content="Enable learning mode to help JENOVA adapt better to your preferences",
-                    reason="You've provided corrections that could improve the system",
-                    confidence=0.75,
-                    category="tip"
-                ))
+                suggestions.append(
+                    Suggestion(
+                        content="Enable learning mode to help JENOVA adapt better to your preferences",
+                        reason="You've provided corrections that could improve the system",
+                        confidence=0.75,
+                        category="tip",
+                    )
+                )
 
         # Sort by confidence
         suggestions.sort(key=lambda s: s.confidence, reverse=True)
@@ -232,16 +243,30 @@ class PersonalizationEngine:
         # Check vocabulary sophistication
         vocab_size = len(self.user_profile.vocabulary)
         technical_terms = sum(
-            1 for kw in semantic_analysis.keywords
-            if kw in {'algorithm', 'optimization', 'architecture', 'implementation',
-                     'refactor', 'paradigm', 'abstraction', 'encapsulation'}
+            1
+            for kw in semantic_analysis.keywords
+            if kw
+            in {
+                "algorithm",
+                "optimization",
+                "architecture",
+                "implementation",
+                "refactor",
+                "paradigm",
+                "abstraction",
+                "encapsulation",
+            }
         )
 
         current_level = self.user_profile.preferences.expertise_level
 
         # Suggest upgrade if:
         # - Intermediate user with large vocabulary and technical terms
-        if current_level == "intermediate" and vocab_size > 500 and technical_terms >= 2:
+        if (
+            current_level == "intermediate"
+            and vocab_size > 500
+            and technical_terms >= 2
+        ):
             return True
 
         # - Beginner user with moderate vocabulary
@@ -301,7 +326,7 @@ class PersonalizationEngine:
         if not self.user_profile:
             return None
 
-        semantic = context.get('semantic_analysis')
+        semantic = context.get("semantic_analysis")
         if not semantic:
             return None
 
@@ -310,11 +335,13 @@ class PersonalizationEngine:
             return "You've asked 10+ questions. Consider using /insight to develop insights from this conversation."
 
         # Pattern: New topic - suggest related memory search
-        if semantic.topics and semantic.topics[0] not in [t for t, _ in self.user_profile.get_top_topics()]:
+        if semantic.topics and semantic.topics[0] not in [
+            t for t, _ in self.user_profile.get_top_topics()
+        ]:
             return f"New topic detected: {semantic.topics[0]}. Use memory search to find related past discussions."
 
         # Pattern: Complex query - suggest breaking it down
-        if semantic.rhetorical_elements.get('complexity') == 'complex':
+        if semantic.rhetorical_elements.get("complexity") == "complex":
             return "Complex query detected. Consider breaking it into smaller questions for better results."
 
         return None
@@ -337,13 +364,17 @@ class PersonalizationEngine:
         # Adjust based on expertise level
         if self.user_profile.preferences.expertise_level == "expert":
             # Experts want more results, higher precision
-            adapted['max_results'] = adapted.get('max_results', 5) + 3
-            adapted['similarity_threshold'] = max(adapted.get('similarity_threshold', 0.7), 0.8)
+            adapted["max_results"] = adapted.get("max_results", 5) + 3
+            adapted["similarity_threshold"] = max(
+                adapted.get("similarity_threshold", 0.7), 0.8
+            )
 
         elif self.user_profile.preferences.expertise_level == "beginner":
             # Beginners want fewer, more relevant results
-            adapted['max_results'] = min(adapted.get('max_results', 5), 3)
-            adapted['similarity_threshold'] = adapted.get('similarity_threshold', 0.7) - 0.1
+            adapted["max_results"] = min(adapted.get("max_results", 5), 3)
+            adapted["similarity_threshold"] = (
+                adapted.get("similarity_threshold", 0.7) - 0.1
+            )
 
         return adapted
 

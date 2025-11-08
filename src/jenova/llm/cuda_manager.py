@@ -19,11 +19,12 @@ import subprocess
 @dataclass
 class CUDAInfo:
     """Information about CUDA availability and capabilities."""
+
     available: bool
     device_count: int
     device_name: Optional[str] = None
     total_memory: Optional[int] = None  # In MB
-    free_memory: Optional[int] = None   # In MB
+    free_memory: Optional[int] = None  # In MB
     compute_capability: Optional[Tuple[int, int]] = None
     driver_version: Optional[str] = None
     cuda_version: Optional[str] = None
@@ -57,9 +58,12 @@ class CUDAManager:
         # Try PyTorch first (most common)
         try:
             import torch
+
             if torch.cuda.is_available():
                 device_count = torch.cuda.device_count()
-                device_name = torch.cuda.get_device_name(0) if device_count > 0 else None
+                device_name = (
+                    torch.cuda.get_device_name(0) if device_count > 0 else None
+                )
 
                 # Get memory info for first device
                 total_memory = None
@@ -67,8 +71,13 @@ class CUDAManager:
                 if device_count > 0:
                     try:
                         props = torch.cuda.get_device_properties(0)
-                        total_memory = props.total_memory // (1024 * 1024)  # Convert to MB
-                        free_memory = (torch.cuda.memory_reserved(0) - torch.cuda.memory_allocated(0)) // (1024 * 1024)
+                        total_memory = props.total_memory // (
+                            1024 * 1024
+                        )  # Convert to MB
+                        free_memory = (
+                            torch.cuda.memory_reserved(0)
+                            - torch.cuda.memory_allocated(0)
+                        ) // (1024 * 1024)
                     except Exception as e:
                         # Unable to query CUDA device properties, keep None values
                         pass
@@ -79,8 +88,12 @@ class CUDAManager:
                     device_name=device_name,
                     total_memory=total_memory,
                     free_memory=free_memory,
-                    compute_capability=torch.cuda.get_device_capability(0) if device_count > 0 else None,
-                    cuda_version=torch.version.cuda
+                    compute_capability=(
+                        torch.cuda.get_device_capability(0)
+                        if device_count > 0
+                        else None
+                    ),
+                    cuda_version=torch.version.cuda,
                 )
 
                 if self.file_logger:
@@ -99,17 +112,20 @@ class CUDAManager:
         # Try nvidia-smi as fallback
         try:
             result = subprocess.run(
-                ['nvidia-smi', '--query-gpu=name,memory.total,memory.free,driver_version',
-                 '--format=csv,noheader,nounits'],
+                [
+                    "nvidia-smi",
+                    "--query-gpu=name,memory.total,memory.free,driver_version",
+                    "--format=csv,noheader,nounits",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
             )
 
             if result.returncode == 0:
-                lines = result.stdout.strip().split('\n')
+                lines = result.stdout.strip().split("\n")
                 if lines:
-                    parts = lines[0].split(',')
+                    parts = lines[0].split(",")
                     if len(parts) >= 4:
                         self._cuda_info = CUDAInfo(
                             available=True,
@@ -117,7 +133,7 @@ class CUDAManager:
                             device_name=parts[0].strip(),
                             total_memory=int(float(parts[1].strip())),
                             free_memory=int(float(parts[2].strip())),
-                            driver_version=parts[3].strip()
+                            driver_version=parts[3].strip(),
                         )
 
                         if self.file_logger:
@@ -143,7 +159,9 @@ class CUDAManager:
         info = self.detect_cuda()
         return info.available
 
-    def get_recommended_layers(self, model_size_gb: float, safety_margin: float = 0.8) -> int:
+    def get_recommended_layers(
+        self, model_size_gb: float, safety_margin: float = 0.8
+    ) -> int:
         """
         Calculate recommended GPU layers based on available VRAM.
 
@@ -239,7 +257,9 @@ class CUDAManager:
             lines.append(f"  Free VRAM: {info.free_memory}MB")
 
         if info.compute_capability:
-            lines.append(f"  Compute: {info.compute_capability[0]}.{info.compute_capability[1]}")
+            lines.append(
+                f"  Compute: {info.compute_capability[0]}.{info.compute_capability[1]}"
+            )
 
         if info.driver_version:
             lines.append(f"  Driver: {info.driver_version}")

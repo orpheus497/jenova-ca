@@ -21,6 +21,7 @@ from dataclasses import dataclass
 @dataclass
 class EditOperation:
     """Represents a single edit operation."""
+
     file_path: str
     old_content: str
     new_content: str
@@ -32,6 +33,7 @@ class EditOperation:
 @dataclass
 class FileEdit:
     """Represents all edits for a single file."""
+
     file_path: str
     original_content: str
     modified_content: str
@@ -51,7 +53,9 @@ class FileEditor:
     - Permission validation
     """
 
-    def __init__(self, sandbox_path: Optional[str] = None, ui_logger=None, file_logger=None):
+    def __init__(
+        self, sandbox_path: Optional[str] = None, ui_logger=None, file_logger=None
+    ):
         """
         Initialize file editor.
 
@@ -99,14 +103,16 @@ class FileEditor:
             return None
 
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 return f.read()
         except Exception as e:
             if self.file_logger:
                 self.file_logger.log_error(f"Error reading {file_path}: {e}")
             return None
 
-    def write_file(self, file_path: str, content: str, create_backup: bool = True) -> bool:
+    def write_file(
+        self, file_path: str, content: str, create_backup: bool = True
+    ) -> bool:
         """
         Write content to file with backup.
 
@@ -132,7 +138,7 @@ class FileEditor:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
             # Write file
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(content)
 
             if self.file_logger:
@@ -157,6 +163,7 @@ class FileEditor:
         """
         try:
             import shutil
+
             backup_path = f"{file_path}.backup"
             shutil.copy2(file_path, backup_path)
 
@@ -170,7 +177,9 @@ class FileEditor:
                 self.file_logger.log_error(f"Error creating backup: {e}")
             return None
 
-    def generate_diff(self, original: str, modified: str, file_path: str = "file") -> str:
+    def generate_diff(
+        self, original: str, modified: str, file_path: str = "file"
+    ) -> str:
         """
         Generate unified diff between original and modified content.
 
@@ -190,13 +199,14 @@ class FileEditor:
             modified_lines,
             fromfile=f"a/{file_path}",
             tofile=f"b/{file_path}",
-            lineterm=''
+            lineterm="",
         )
 
-        return ''.join(diff)
+        return "".join(diff)
 
-    def apply_edit(self, file_path: str, old_text: str, new_text: str,
-                   preview: bool = False) -> Optional[str]:
+    def apply_edit(
+        self, file_path: str, old_text: str, new_text: str, preview: bool = False
+    ) -> Optional[str]:
         """
         Apply edit to file with optional preview.
 
@@ -227,8 +237,9 @@ class FileEditor:
 
         return f"Error: Failed to write {file_path}"
 
-    def apply_line_edit(self, file_path: str, line_num: int, new_line: str,
-                       preview: bool = False) -> Optional[str]:
+    def apply_line_edit(
+        self, file_path: str, line_num: int, new_line: str, preview: bool = False
+    ) -> Optional[str]:
         """
         Edit specific line in file.
 
@@ -251,11 +262,11 @@ class FileEditor:
             return f"Error: Line {line_num} out of range (1-{len(lines)})"
 
         # Preserve line ending
-        if lines[line_num - 1].endswith('\n'):
-            new_line = new_line.rstrip('\n') + '\n'
+        if lines[line_num - 1].endswith("\n"):
+            new_line = new_line.rstrip("\n") + "\n"
 
         lines[line_num - 1] = new_line
-        new_content = ''.join(lines)
+        new_content = "".join(lines)
 
         if preview:
             return self.generate_diff(content, new_content, file_path)
@@ -266,8 +277,9 @@ class FileEditor:
 
         return f"Error: Failed to write {file_path}"
 
-    def insert_lines(self, file_path: str, line_num: int, lines: List[str],
-                    preview: bool = False) -> Optional[str]:
+    def insert_lines(
+        self, file_path: str, line_num: int, lines: List[str], preview: bool = False
+    ) -> Optional[str]:
         """
         Insert lines at specified position.
 
@@ -290,10 +302,10 @@ class FileEditor:
             return f"Error: Line {line_num} out of range (0-{len(file_lines)})"
 
         # Ensure lines have proper endings
-        insert_lines = [line if line.endswith('\n') else line + '\n' for line in lines]
+        insert_lines = [line if line.endswith("\n") else line + "\n" for line in lines]
 
         new_lines = file_lines[:line_num] + insert_lines + file_lines[line_num:]
-        new_content = ''.join(new_lines)
+        new_content = "".join(new_lines)
 
         if preview:
             return self.generate_diff(content, new_content, file_path)
@@ -304,8 +316,9 @@ class FileEditor:
 
         return f"Error: Failed to write {file_path}"
 
-    def delete_lines(self, file_path: str, start_line: int, end_line: int,
-                    preview: bool = False) -> Optional[str]:
+    def delete_lines(
+        self, file_path: str, start_line: int, end_line: int, preview: bool = False
+    ) -> Optional[str]:
         """
         Delete lines from file.
 
@@ -327,8 +340,8 @@ class FileEditor:
         if start_line < 1 or end_line > len(lines) or start_line > end_line:
             return f"Error: Invalid line range {start_line}-{end_line}"
 
-        new_lines = lines[:start_line-1] + lines[end_line:]
-        new_content = ''.join(new_lines)
+        new_lines = lines[: start_line - 1] + lines[end_line:]
+        new_content = "".join(new_lines)
 
         if preview:
             return self.generate_diff(content, new_content, file_path)
@@ -340,8 +353,14 @@ class FileEditor:
 
         return f"Error: Failed to write {file_path}"
 
-    def find_and_replace(self, file_path: str, pattern: str, replacement: str,
-                        regex: bool = False, preview: bool = False) -> Optional[str]:
+    def find_and_replace(
+        self,
+        file_path: str,
+        pattern: str,
+        replacement: str,
+        regex: bool = False,
+        preview: bool = False,
+    ) -> Optional[str]:
         """
         Find and replace in file.
 

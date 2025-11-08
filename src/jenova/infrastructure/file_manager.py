@@ -37,7 +37,7 @@ class FileManager:
         self.lock_timeout = 30.0  # seconds
 
     @contextmanager
-    def atomic_write(self, filepath: str, mode: str = 'w'):
+    def atomic_write(self, filepath: str, mode: str = "w"):
         """
         Context manager for atomic file writes.
 
@@ -61,23 +61,21 @@ class FileManager:
         # Create temporary file in same directory as target
         # This ensures atomic rename works (same filesystem)
         temp_fd, temp_path = tempfile.mkstemp(
-            dir=filepath.parent,
-            prefix=f'.{filepath.name}.',
-            suffix='.tmp'
+            dir=filepath.parent, prefix=f".{filepath.name}.", suffix=".tmp"
         )
 
         try:
             # Close the file descriptor, we'll use the path
             os.close(temp_fd)
-            
+
             # Open temp file with requested mode
             with open(temp_path, mode) as f:
                 yield f
-            
+
             # Atomically replace target file
             # os.replace is atomic on POSIX systems
             os.replace(temp_path, filepath)
-            
+
             if self.file_logger:
                 self.file_logger.log_info(f"Atomically wrote: {filepath}")
 
@@ -113,7 +111,7 @@ class FileManager:
         """
         lock_path = f"{filepath}.lock"
         lock = filelock.FileLock(lock_path, timeout=timeout or self.lock_timeout)
-        
+
         try:
             with lock:
                 yield
@@ -138,10 +136,12 @@ class FileManager:
             ValueError: If data is not serializable
             IOError: If write fails
         """
-        with self.atomic_write(filepath, 'w') as f:
+        with self.atomic_write(filepath, "w") as f:
             json.dump(data, f, indent=indent, ensure_ascii=False)
 
-    def read_json_safe(self, filepath: str, default: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def read_json_safe(
+        self, filepath: str, default: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """
         Safely read JSON file with fallback.
 
@@ -153,20 +153,22 @@ class FileManager:
             Parsed JSON data or default value
         """
         filepath = Path(filepath)
-        
+
         if not filepath.exists():
             return default if default is not None else {}
 
         try:
             with self.file_lock(str(filepath)):
-                with open(filepath, 'r') as f:
+                with open(filepath, "r") as f:
                     return json.load(f)
         except (json.JSONDecodeError, IOError) as e:
             if self.file_logger:
                 self.file_logger.log_warning(f"Failed to read {filepath}: {e}")
             return default if default is not None else {}
 
-    def backup_file(self, filepath: str, backup_suffix: str = '.backup') -> Optional[str]:
+    def backup_file(
+        self, filepath: str, backup_suffix: str = ".backup"
+    ) -> Optional[str]:
         """
         Create a backup of a file.
 
@@ -178,12 +180,12 @@ class FileManager:
             Path to backup file or None if source doesn't exist
         """
         filepath = Path(filepath)
-        
+
         if not filepath.exists():
             return None
 
         backup_path = Path(str(filepath) + backup_suffix)
-        
+
         try:
             shutil.copy2(filepath, backup_path)
             if self.file_logger:
@@ -206,7 +208,7 @@ class FileManager:
             True if successful, False otherwise
         """
         filepath = Path(filepath)
-        
+
         if not filepath.exists():
             return True
 
@@ -214,15 +216,15 @@ class FileManager:
             # Create backup if requested
             if backup:
                 self.backup_file(str(filepath))
-            
+
             # Delete file
             filepath.unlink()
-            
+
             if self.file_logger:
                 self.file_logger.log_info(f"Deleted: {filepath}")
-            
+
             return True
-            
+
         except IOError as e:
             if self.file_logger:
                 self.file_logger.log_error(f"Failed to delete {filepath}: {e}")
@@ -239,7 +241,7 @@ class FileManager:
             True if directory exists or was created successfully
         """
         dirpath = Path(dirpath)
-        
+
         try:
             dirpath.mkdir(parents=True, exist_ok=True)
             return True
@@ -262,7 +264,7 @@ class FileManager:
         """
         src_path = Path(src)
         dst_path = Path(dst)
-        
+
         if not src_path.exists():
             if self.file_logger:
                 self.file_logger.log_error(f"Source file does not exist: {src}")
@@ -276,15 +278,15 @@ class FileManager:
         try:
             # Ensure destination directory exists
             dst_path.parent.mkdir(parents=True, exist_ok=True)
-            
+
             # Atomic move/rename
             os.replace(src_path, dst_path)
-            
+
             if self.file_logger:
                 self.file_logger.log_info(f"Moved {src} to {dst}")
-            
+
             return True
-            
+
         except IOError as e:
             if self.file_logger:
                 self.file_logger.log_error(f"Failed to move {src} to {dst}: {e}")
@@ -303,7 +305,7 @@ class FileManager:
             True if successful, False otherwise
         """
         filepath = Path(filepath)
-        
+
         if not filepath.exists() and not create:
             if self.file_logger:
                 self.file_logger.log_error(f"File does not exist: {filepath}")
@@ -312,20 +314,20 @@ class FileManager:
         try:
             # Ensure directory exists
             filepath.parent.mkdir(parents=True, exist_ok=True)
-            
+
             # Use file lock to prevent concurrent appends
             with self.file_lock(str(filepath)):
-                with open(filepath, 'a') as f:
+                with open(filepath, "a") as f:
                     f.write(content)
-            
+
             return True
-            
+
         except IOError as e:
             if self.file_logger:
                 self.file_logger.log_error(f"Failed to append to {filepath}: {e}")
             return False
 
-    def read_lines(self, filepath: str, encoding: str = 'utf-8') -> Optional[list[str]]:
+    def read_lines(self, filepath: str, encoding: str = "utf-8") -> Optional[list[str]]:
         """
         Safely read all lines from a file.
 
@@ -337,13 +339,13 @@ class FileManager:
             List of lines or None if file doesn't exist
         """
         filepath = Path(filepath)
-        
+
         if not filepath.exists():
             return None
 
         try:
             with self.file_lock(str(filepath)):
-                with open(filepath, 'r', encoding=encoding) as f:
+                with open(filepath, "r", encoding=encoding) as f:
                     return f.readlines()
         except IOError as e:
             if self.file_logger:
@@ -361,7 +363,7 @@ class FileManager:
             File size in bytes or None if file doesn't exist
         """
         filepath = Path(filepath)
-        
+
         if not filepath.exists():
             return None
 
@@ -370,7 +372,9 @@ class FileManager:
         except IOError:
             return None
 
-    def list_files(self, directory: str, pattern: str = '*', recursive: bool = False) -> list[Path]:
+    def list_files(
+        self, directory: str, pattern: str = "*", recursive: bool = False
+    ) -> list[Path]:
         """
         List files in a directory.
 
@@ -383,7 +387,7 @@ class FileManager:
             List of matching file paths
         """
         directory = Path(directory)
-        
+
         if not directory.exists():
             return []
 

@@ -43,7 +43,7 @@ def load_configuration(ui_logger=None, file_logger=None) -> Dict[str, Any]:
 
     # Load YAML files
     try:
-        with open(main_config_path, 'r') as f:
+        with open(main_config_path, "r") as f:
             main_config_data = yaml.safe_load(f) or {}
     except Exception as e:
         raise RuntimeError(f"Failed to parse main_config.yaml: {e}")
@@ -52,7 +52,7 @@ def load_configuration(ui_logger=None, file_logger=None) -> Dict[str, Any]:
     persona_data = {}
     if persona_config_path.exists():
         try:
-            with open(persona_config_path, 'r') as f:
+            with open(persona_config_path, "r") as f:
                 persona_data = yaml.safe_load(f) or {}
         except Exception as e:
             if ui_logger:
@@ -64,7 +64,7 @@ def load_configuration(ui_logger=None, file_logger=None) -> Dict[str, Any]:
 
     # Merge persona into main config
     if persona_data:
-        main_config_data['persona'] = persona_data
+        main_config_data["persona"] = persona_data
 
     # Validate with Pydantic
     try:
@@ -83,8 +83,8 @@ def load_configuration(ui_logger=None, file_logger=None) -> Dict[str, Any]:
     except ValidationError as e:
         error_msg = "Configuration validation failed:\n"
         for error in e.errors():
-            field = " -> ".join(str(x) for x in error['loc'])
-            message = error['msg']
+            field = " -> ".join(str(x) for x in error["loc"])
+            message = error["msg"]
             error_msg += f"  • {field}: {message}\n"
 
         if ui_logger:
@@ -107,4 +107,4 @@ def get_default_config() -> Dict[str, Any]:
     return default_config.model_dump()
 
 
-__all__ = ['load_configuration', 'get_default_config', 'JenovaConfig']
+__all__ = ["load_configuration", "get_default_config", "JenovaConfig"]

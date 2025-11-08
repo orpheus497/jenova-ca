@@ -20,6 +20,7 @@ import logging
 
 try:
     import magic
+
     HAS_MAGIC = True
 except ImportError:
     HAS_MAGIC = False
@@ -27,6 +28,7 @@ except ImportError:
 
 try:
     import validators as val_lib
+
     HAS_VALIDATORS = True
 except ImportError:
     HAS_VALIDATORS = False
@@ -37,6 +39,7 @@ logger = logging.getLogger(__name__)
 
 class ValidationError(Exception):
     """Raised when input validation fails."""
+
     pass
 
 
@@ -54,22 +57,37 @@ class PathValidator:
 
     # Patterns that indicate path traversal attempts
     TRAVERSAL_PATTERNS = [
-        r'\.\.',  # Any occurrence of ..
-        r'~',  # Home directory expansion
-        r'\$',  # Environment variable expansion
-        r'%',  # Windows environment variable (e.g., %TEMP%)
+        r"\.\.",  # Any occurrence of ..
+        r"~",  # Home directory expansion
+        r"\$",  # Environment variable expansion
+        r"%",  # Windows environment variable (e.g., %TEMP%)
     ]
 
     # Default allowed file extensions
     DEFAULT_ALLOWED_EXTENSIONS = {
         # Text and documents
-        '.txt', '.md', '.rst', '.pdf', '.doc', '.docx',
+        ".txt",
+        ".md",
+        ".rst",
+        ".pdf",
+        ".doc",
+        ".docx",
         # Code and config
-        '.py', '.js', '.ts', '.json', '.yaml', '.yml', '.toml', '.ini', '.xml',
+        ".py",
+        ".js",
+        ".ts",
+        ".json",
+        ".yaml",
+        ".yml",
+        ".toml",
+        ".ini",
+        ".xml",
         # Data
-        '.csv', '.tsv', '.jsonl',
+        ".csv",
+        ".tsv",
+        ".jsonl",
         # Logs
-        '.log',
+        ".log",
     }
 
     # Maximum path length (prevents buffer overflow in some C libraries)
@@ -166,7 +184,9 @@ class PathValidator:
             # Check containment before resolution (prevent symlink escape)
             try:
                 # Use os.path.commonpath for initial check
-                common = Path(os.path.commonpath([str(path_obj), str(self.sandbox_root)]))
+                common = Path(
+                    os.path.commonpath([str(path_obj), str(self.sandbox_root)])
+                )
                 if common != self.sandbox_root:
                     raise ValidationError(
                         f"Path outside sandbox: {path} (sandbox: {self.sandbox_root})"
@@ -236,15 +256,15 @@ class FileValidator:
 
     # Allowed MIME types (if python-magic available)
     DEFAULT_ALLOWED_MIMES = {
-        'text/plain',
-        'text/markdown',
-        'text/x-python',
-        'text/x-script.python',
-        'application/json',
-        'application/pdf',
-        'application/yaml',
-        'application/x-yaml',
-        'text/yaml',
+        "text/plain",
+        "text/markdown",
+        "text/x-python",
+        "text/x-script.python",
+        "application/json",
+        "application/pdf",
+        "application/yaml",
+        "application/x-yaml",
+        "text/yaml",
     }
 
     def __init__(
@@ -353,14 +373,10 @@ class InputValidator:
         max_len = max_length if max_length is not None else self.max_length
 
         if len(value) < min_length:
-            raise ValidationError(
-                f"String too short: {len(value)} < {min_length}"
-            )
+            raise ValidationError(f"String too short: {len(value)} < {min_length}")
 
         if len(value) > max_len:
-            raise ValidationError(
-                f"String too long: {len(value)} > {max_len}"
-            )
+            raise ValidationError(f"String too long: {len(value)} > {max_len}")
 
         if pattern:
             if not re.match(pattern, value):
@@ -382,7 +398,9 @@ class InputValidator:
             ValidationError: If validation fails
         """
         if not HAS_VALIDATORS:
-            logger.warning("URL validation requested but validators library not available")
+            logger.warning(
+                "URL validation requested but validators library not available"
+            )
             return url
 
         if not val_lib.url(url):
@@ -404,7 +422,9 @@ class InputValidator:
             ValidationError: If validation fails
         """
         if not HAS_VALIDATORS:
-            logger.warning("Email validation requested but validators library not available")
+            logger.warning(
+                "Email validation requested but validators library not available"
+            )
             return email
 
         if not val_lib.email(email):
