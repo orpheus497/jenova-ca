@@ -10,10 +10,23 @@ class BuildProtoCommand(build_py):
 
     def run(self):
         """Run proto compilation before standard build."""
-        print("Compiling Protocol Buffers...")
-        result = subprocess.run([sys.executable, "build_proto.py"], cwd=".")
-        if result.returncode != 0:
-            sys.exit(result.returncode)
+        # Check if grpcio-tools is available (needed for proto compilation)
+        try:
+            import grpc_tools
+            print("Compiling Protocol Buffers...")
+            result = subprocess.run([sys.executable, "build_proto.py"], cwd=".")
+            if result.returncode != 0:
+                print("WARNING: Protocol Buffer compilation failed.")
+                print("         Proto files will be compiled on first import if needed.")
+                print("         This is not a fatal error for installation.")
+            else:
+                print("✓ Protocol Buffers compiled successfully")
+        except ImportError:
+            print("INFO: grpcio-tools not yet installed, skipping proto compilation.")
+            print("      Proto files will be compiled automatically on first import.")
+            print("      This is normal during initial installation.")
+
+        # Continue with standard build regardless of proto compilation result
         build_py.run(self)
 
 
@@ -22,10 +35,23 @@ class DevelopProtoCommand(develop):
 
     def run(self):
         """Run proto compilation before development install."""
-        print("Compiling Protocol Buffers for development...")
-        result = subprocess.run([sys.executable, "build_proto.py"], cwd=".")
-        if result.returncode != 0:
-            sys.exit(result.returncode)
+        # Check if grpcio-tools is available (needed for proto compilation)
+        try:
+            import grpc_tools
+            print("Compiling Protocol Buffers for development...")
+            result = subprocess.run([sys.executable, "build_proto.py"], cwd=".")
+            if result.returncode != 0:
+                print("WARNING: Protocol Buffer compilation failed.")
+                print("         Proto files will be compiled on first import if needed.")
+                print("         This is not a fatal error for installation.")
+            else:
+                print("✓ Protocol Buffers compiled successfully")
+        except ImportError:
+            print("INFO: grpcio-tools not yet installed, skipping proto compilation.")
+            print("      Proto files will be compiled automatically on first import.")
+            print("      This is normal during initial installation.")
+
+        # Continue with development install regardless of proto compilation result
         develop.run(self)
 
 
