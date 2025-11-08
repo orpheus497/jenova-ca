@@ -11,10 +11,11 @@ model:
   threads: -1
 
   # GPU layers to offload
-  # PERFORMANCE OPTIMIZATION: 20 layers for better GPU utilization
-  # 7B model typically has ~32 layers, offloading 20 should be safe for 4GB VRAM
-  # Reduce to 12-16 if crashes occur, increase to -1 for all layers if stable
-  gpu_layers: 20
+  # Options: -1 (all layers), 0 (CPU only), 1-32 (specific count), 'auto' (detect)
+  # RECOMMENDED: Use 'auto' for automatic detection based on available VRAM
+  # Previous default was 20 for 4GB VRAM systems (GTX 1650 Ti)
+  # Auto-detection provides optimal settings for all hardware tiers
+  gpu_layers: auto
 
   # Lock model in RAM to prevent swapping
   # SAFE DEFAULT: false (allows system to manage memory)
@@ -62,6 +63,14 @@ hardware:
 
   # Enable real-time health monitoring
   enable_health_monitor: true
+
+  # PyTorch GPU Access (NEW in v5.1.2)
+  # Enable GPU access for PyTorch (used by sentence-transformers for embeddings)
+  # Trade-off: Shares VRAM with main LLM, but provides 5-10x faster embeddings
+  # RECOMMENDED: Keep false on 4GB VRAM systems (preserves VRAM for main LLM)
+  # RECOMMENDED: Set true on 6GB+ VRAM systems (significant embedding speedup)
+  # Default: false (all VRAM reserved for main LLM via llama-cpp-python)
+  pytorch_gpu_enabled: false
 
 memory:
   preload_memories: true

@@ -755,6 +755,96 @@ def print_system_info(resources: SystemResources):
     print(f"{'='*60}\n")
 
 
+def recommend_gpu_layers(vram_mb: int = None, model_size_gb: float = 7.0) -> int:
+    """
+    Recommend optimal GPU layer offloading based on available VRAM.
+
+    This function provides intelligent defaults for gpu_layers configuration
+    across different hardware tiers. It balances performance (more GPU layers)
+    with stability (avoiding VRAM exhaustion).
+
+    Args:
+        vram_mb: Available VRAM in MB. Auto-detected if None.
+        model_size_gb: Model size in GB (default 7.0 for 7B Q4 models).
+
+    Returns:
+        Recommended GPU layers:
+        - -1: All layers (12GB+ VRAM)
+        - 0: CPU only (<2GB VRAM or no GPU)
+        - N: Specific layer count (2-32, based on VRAM tier)
+
+    Heuristic:
+        - 7B Q4 model typically has ~32 layers
+        - Each layer requires ~125-150MB VRAM (varies by quantization)
+        - Reserve 500MB for KV cache (context storage)
+        - Reserve 20% safety margin for memory fragmentation
+        - Lower tiers use conservative estimates to prevent OOM crashes
+
+    Examples:
+        >>> recommend_gpu_layers(12288)  # 12GB VRAM
+        -1  # All layers
+        >>> recommend_gpu_layers(4096)   # 4GB VRAM
+        20  # Conservative for stability
+        >>> recommend_gpu_layers(0)      # No GPU
+        0   # CPU only
+    """
+    if vram_mb is None:
+        # Auto-detect VRAM using HardwareDetector
+        try:
+            detector = HardwareDetector()
+            if detector.gpu_devices and 'vram_mb' in detector.gpu_devices[0]:
+                vram_mb = detector.gpu_devices[0]['vram_mb']
+            else:
+                # No GPU detected or VRAM info unavailable
+                return 0
+        except Exception:
+            # Detection failed, default to CPU
+            return 0
+
+    # Estimate total layer count based on model size
+    # These are typical values for common model families
+    if model_size_gb <= 2:
+        total_layers = 24  # TinyLlama, small models
+    elif model_size_gb <= 4:
+        total_layers = 28  # 3B models (Phi, StableLM)
+    elif model_size_gb <= 8:
+        total_layers = 32  # 7B models (Llama, Mistral, Gemma)
+    else:
+        total_layers = 40  # 13B+ models
+
+    # VRAM allocation strategy
+    reserved_for_cache_mb = 500  # KV cache for context window
+    safety_margin = 0.20  # 20% safety margin for fragmentation/overhead
+    available_for_layers = vram_mb * (1 - safety_margin) - reserved_for_cache_mb
+
+    # Estimate MB per layer (varies by quantization)
+    # Q4 quantization: ~125MB/layer for 7B models
+    # Larger models: ~150MB/layer
+    mb_per_layer = 150 if model_size_gb > 7 else 125
+
+    # Calculate theoretical maximum layers we could fit
+    calculated_layers = int(available_for_layers / mb_per_layer)
+    calculated_layers = max(0, min(calculated_layers, total_layers))
+
+    # Tier-based recommendations (conservative for stability)
+    # These override calculations to provide tested, stable defaults
+    if vram_mb >= 12288:  # 12GB+ (RTX 3060 12GB, RTX 4070, etc.)
+        return -1  # All layers - plenty of VRAM
+    elif vram_mb >= 8192:  # 8GB (RTX 3070, RTX 4060 Ti, etc.)
+        return min(total_layers, 32)  # Near-maximum for 7B models
+    elif vram_mb >= 6144:  # 6GB (RTX 2060, GTX 1660 Ti, etc.)
+        return min(total_layers, 24)  # 75% of layers for 7B
+    elif vram_mb >= 4096:  # 4GB (GTX 1650 Ti, RTX 3050 Mobile, etc.)
+        # Conservative default tested on GTX 1650 Ti
+        # Can go higher (24+) but 20 is stable across configs
+        return min(calculated_layers, 20)
+    elif vram_mb >= 2048:  # 2GB (Older GPUs, integrated graphics)
+        # Very conservative - minimal GPU offload
+        return min(calculated_layers, 12)
+    else:  # <2GB or detection failed
+        return 0  # CPU only - not worth the GPU overhead
+
+
 if __name__ == "__main__":
     # Test hardware detection
     detector = HardwareDetector()

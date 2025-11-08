@@ -11,7 +11,7 @@ Ensures all configuration values are valid before the system starts.
 
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -42,12 +42,24 @@ class ModelConfig(BaseModel):
         ge=-1,
         description="CPU threads (-1=auto, 0=all, N=specific)"
     )
-    gpu_layers: int = Field(
-        default=0,
-        ge=-1,
-        le=128,
-        description="GPU layers to offload (-1=auto, 0=CPU only, N=specific)"
+    gpu_layers: Union[int, str] = Field(
+        default='auto',
+        description="GPU layers to offload (-1=all, 0=CPU only, 1-128=specific, 'auto'=detect)"
     )
+
+    @field_validator('gpu_layers')
+    @classmethod
+    def validate_gpu_layers(cls, v: Union[int, str]) -> Union[int, str]:
+        """Validate gpu_layers accepts int or 'auto'."""
+        if isinstance(v, str):
+            if v.lower() != 'auto':
+                raise ValueError("gpu_layers string value must be 'auto'")
+            return v.lower()
+        if isinstance(v, int):
+            if v < -1 or v > 128:
+                raise ValueError("gpu_layers int value must be between -1 and 128")
+            return v
+        raise ValueError("gpu_layers must be int or 'auto'")
     mlock: bool = Field(
         default=False,
         description="Lock model in RAM (requires sufficient memory)"
@@ -122,6 +134,10 @@ class HardwareConfig(BaseModel):
     enable_health_monitor: bool = Field(
         default=True,
         description="Enable real-time health monitoring"
+    )
+    pytorch_gpu_enabled: bool = Field(
+        default=False,
+        description="Enable GPU access for PyTorch (embeddings). Shares VRAM with LLM."
     )
 
 

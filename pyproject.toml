@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jenova-ai"
-version = "5.0.0"
+version = "5.1.1"
 authors = [
     {name = "orpheus497"}
 ]
 description = "The JENOVA Cognitive Architecture with distributed computing, LAN-based resource pooling, and self-optimizing cognitive processes."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.14"
 license = {text = "MIT"}
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -47,3 +47,16 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[project.optional-dependencies]
+web = ["requests>=2.32.3", "beautifulsoup4>=4.12.3"]
+browser = ["playwright>=1.50.0"]
+dev = [
+    "autopep8>=2.3.1",
+    "isort>=5.13.2",
+    "pylint>=3.3.2",
+    "pytest>=8.3.4",
+    "pytest-cov>=6.0.0",
+    "pip-audit>=2.7.3",
+]
+all = ["jenova-ai[web,browser]"]
