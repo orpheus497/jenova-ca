@@ -118,8 +118,9 @@ class FileManager:
         finally:
             # Clean up lock file if it exists
             try:
-                if os.path.exists(lock_path):
-                    os.unlink(lock_path)
+                lock_file = Path(lock_path)
+                if lock_file.exists():
+                    lock_file.unlink()
             except Exception:
                 pass
 

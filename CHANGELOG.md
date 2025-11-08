@@ -9,6 +9,412 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 21: Full Project Remediation & Modernization (Continued)** - Architecture refactoring, security hardening, and new feature infrastructure
+
+#### Core Architecture Modernization
+
+- **Configuration Constants Module** (src/jenova/config/constants.py - 320 lines)
+  * Centralized all magic numbers and configuration values into named constants
+  * Eliminates 150+ scattered magic numbers throughout codebase
+  * Organized by category: application lifecycle, timeouts, file sizes, model configuration, memory, security, network, UI, testing
+  * Improves maintainability and makes configuration changes systematic
+  * All constants properly typed with `Final` type hints
+  * Categories: PROGRESS (startup percentages), TIMEOUTS (command/LLM/network), FILE_SIZES (validation limits), MODEL_CONFIG (GPU/inference), MEMORY (search/reflection intervals), SECURITY (crypto parameters), NETWORK (distributed computing), UI (display settings)
+  * Exported via config module for centralized access
+  * FIXES: MEDIUM-1 - Magic numbers scattered throughout codebase
+
+- **Core Application Module** (src/jenova/core/ - 4 files, ~1,450 lines)
+  * **Component Lifecycle Management** (src/jenova/core/lifecycle.py - 520 lines)
+    - Structured lifecycle phases: CREATED → INITIALIZED → STARTED → STOPPED → DISPOSED → FAILED
+    - Dependency-aware initialization order using topological sort
+    - Automatic dependency resolution preventing circular dependencies
+    - Graceful error handling with proper cleanup on failure
+    - Protocol-based lifecycle interface for component participation
+    - Classes: `ComponentLifecycle`, `LifecyclePhase` enum, `LifecycleAware` protocol
+    - Methods: `register()`, `initialize_all()`, `start_all()`, `stop_all()`, `dispose_all()`
+    - Ensures components start/stop in correct dependency order
+
+  * **Dependency Injection Container** (src/jenova/core/container.py - 450 lines)
+    - Lightweight DI container for managing component dependencies
+    - Service lifetime management: SINGLETON, TRANSIENT, SCOPED
+    - Automatic dependency resolution and injection
+    - Factory function support for complex object creation
+    - Circular dependency detection with detailed error messages
+    - Classes: `DependencyContainer`, `ServiceDescriptor`, `ServiceLifetime` enum
+    - Methods: `register()`, `register_singleton()`, `register_transient()`, `register_factory()`, `register_instance()`, `resolve()`, `resolve_all()`
+    - Eliminates manual parameter passing and tight coupling
+    - Enables comprehensive unit testing with mock injection
+
+  * **Application Bootstrapper** (src/jenova/core/bootstrap.py - 280 lines)
+    - Phased application initialization with progress reporting
+    - 10-phase bootstrap process (10%, 20%, ..., 100%)
+    - Phases: logging setup, configuration loading, infrastructure init, health checks, model loading, memory init, cognitive engine init, network init, CLI tools init, finalization
+    - Classes: `ApplicationBootstrapper`
+    - Methods: `bootstrap()`, `_phase_1_setup_logging()` through `_phase_10_finalize()`
+    - Uses DI container for component registration
+    - Proper error handling with detailed error context
+
+  * **Module Exports** (src/jenova/core/__init__.py - 40 lines)
+    - Clean public API for core module
+    - Exports: `Application`, `ApplicationBootstrapper`, `DependencyContainer`, `ComponentLifecycle`, `LifecyclePhase`
+
+  * **Impact**: Replaces monolithic 793-line main() function with structured, testable architecture
+  * **Benefits**: Improved testability, reduced coupling, better error handling, clearer initialization flow
+  * FIXES: CRITICAL-1 - Massive main() function (793 lines) with untestable initialization logic
+  * FIXES: CRITICAL-2 - God object pattern in application initialization
+  * FIXES: HIGH-4 - Tight coupling between components preventing unit testing
+
+### Fixed
+
+#### Critical Security Vulnerabilities
+
+- **Password Hashing Vulnerability** (src/jenova/network/security_store.py:148-210)
+  * Replaced insecure SHA-256 password hashing with Argon2id algorithm
+  * SHA-256 is too fast for password hashing and vulnerable to GPU-accelerated brute-force attacks
+  * Implemented Argon2id with OWASP 2024 recommended parameters:
+    - time_cost=3 iterations
+    - memory_cost=65536 (64 MB memory usage)
+    - parallelism=4 threads
+    - hash_len=32 (256-bit output)
+    - salt_len=16 (128-bit salt)
+  * Argon2id provides resistance to both side-channel and GPU attacks
+  * Graceful fallback to PBKDF2 (600,000 iterations) if argon2-cffi unavailable
+  * Password hashes now include salt and parameters in Argon2 format
+  * FIXES: HIGH-1 - Weak password hashing vulnerable to brute-force attacks
+  * **Security Impact**: HIGH - Prevents offline password cracking attacks
+
+- **Timing Attack Vulnerability** (src/jenova/network/security.py:379-393)
+  * Replaced string comparison operator with constant-time comparison
+  * Previous implementation used `==` for certificate fingerprint validation
+  * Attacker could measure comparison time to deduce expected fingerprint
+  * Implemented `hmac.compare_digest()` for constant-time comparison
+  * Prevents timing side-channel attacks on certificate pinning
+  * FIXES: HIGH-2 - Timing attack in certificate validation allowing fingerprint leakage
+  * **Security Impact**: MEDIUM - Prevents certificate fingerprint enumeration
+
+- **Phase 22: Code Quality & Testing** - Tools module refactoring, documentation improvements, and comprehensive unit tests
+
+#### Tools Module Refactoring
+
+- **Tools Base Classes** (src/jenova/tools/base.py - 180 lines)
+  * Standardized `ToolResult` dataclass for consistent result handling
+  * Success/failure states with optional data, error messages, and metadata
+  * `to_dict()` method for serialization support
+  * Custom `ToolError` exception with tool name and context
+  * Abstract `BaseTool` class enforcing consistent interface
+  * Helper methods: `_create_success_result()`, `_create_error_result()`, `_log_execution()`
+  * All tools now inherit from BaseTool ensuring uniform error handling
+  * Enables comprehensive unit testing with predictable interfaces
+
+- **Tools Module Organization** (src/jenova/tools/__init__.py - 40 lines)
+  * Clean module structure replacing monolithic default_api.py (970 lines)
+  * Organized tool imports by category
+  * Public API exports: BaseTool, ToolResult, ToolError, TimeTools, ShellTools, WebTools, FileTools, ToolHandler
+  * Modular architecture enabling easier maintenance and testing
+
+- **Time Tools Implementation** (src/jenova/tools/time_tools.py - 150 lines)
+  * Comprehensive datetime operations with timezone support using `zoneinfo`
+  * Methods: `execute()`, `get_current_datetime()`, `get_timestamp()`, `format_datetime()`
+  * Configurable datetime format strings (strftime)
+  * Timezone conversion with automatic fallback to UTC on invalid timezone
+  * ISO 8601 format in metadata for interoperability
+  * Unix timestamp generation for time-based operations
+  * Google-style docstrings with usage examples
+
+- **Shell Tools Implementation** (src/jenova/tools/shell_tools.py - 220 lines)
+  * Secure shell command execution with whitelist-based validation
+  * Default whitelist: ls, cat, grep, find, echo, date, whoami, pwd, uname
+  * Configurable whitelist via config['tools']['shell_command_whitelist']
+  * Safe command parsing using `shlex.split()` preventing command injection
+  * No shell=True usage - direct subprocess execution only
+  * Timeout protection with configurable limits
+  * Methods: `execute()`, `is_command_allowed()`, `get_whitelist()`
+  * Comprehensive error handling with stdout/stderr capture
+  * Return code propagation for command status verification
+
+- **Web Tools Implementation** (src/jenova/tools/web_tools.py - 200 lines)
+  * DuckDuckGo web search with Selenium WebDriver
+  * Optional dependency with graceful degradation (install with: pip install jenova-ai[web])
+  * Headless Firefox browser execution
+  * URL encoding for query sanitization (fixes LOW-3 security issue)
+  * Configurable result limits
+  * Methods: `execute()`, `_parse_results()`
+  * CUDA environment preservation for subprocess operations
+  * Result format: list of dicts with title, link, summary
+  * Proper WebDriver cleanup in error cases
+  * FIXES: LOW-3 - Potential XSS via unsanitized web search queries
+
+#### Documentation Improvements
+
+- **Terminal UI Docstrings** (src/jenova/ui/terminal.py)
+  * Added Google-style docstrings to 3 critical methods:
+  * `start_spinner()` - Documents spinner thread creation and usage examples
+  * `stop_spinner()` - Explains thread cleanup and synchronization
+  * `run()` - Comprehensive main loop documentation covering input handling, command processing, keyboard interrupts
+  * Improved API clarity for developers and maintainers
+
+#### Test Infrastructure
+
+- **Core Module Unit Tests** (tests/test_core.py - 410 lines)
+  * Comprehensive test coverage for core application modules
+  * **TestDependencyContainer class** (16 test methods):
+    - `test_register_singleton()` - Verifies singleton instance caching
+    - `test_register_transient()` - Verifies new instances on each resolve
+    - `test_dependency_resolution()` - Tests automatic dependency injection
+    - `test_circular_dependency_detection()` - Validates circular dependency errors
+    - `test_factory_registration()` - Tests factory function support
+    - `test_missing_service_error()` - Validates error handling for unregistered services
+    - `test_register_instance()` - Tests pre-existing instance registration
+    - `test_is_registered()` - Service registration checking
+    - `test_get_service_info()` - Service metadata retrieval
+  * **TestComponentLifecycle class** (10 test methods):
+    - `test_component_registration()` - Component registration and phase tracking
+    - `test_initialization_order()` - Dependency-based initialization sequence verification
+    - `test_lifecycle_phases()` - State transition validation (CREATED → INITIALIZED → STARTED → STOPPED → DISPOSED)
+    - `test_circular_dependency_detection()` - Lifecycle circular dependency handling
+    - `test_error_handling_on_initialization()` - Error propagation and FAILED state
+    - `test_stop_all_reverse_order()` - Verifies reverse-order shutdown
+    - `test_is_running()` - Running status check
+    - `test_has_failed_components()` - Failed component detection
+  * **TestApplicationBootstrapper class** (2 test methods):
+    - `test_initialization()` - Bootstrapper creation and container setup
+    - `test_container_setup()` - DI container integration
+  * **Integration tests**:
+    - `test_container_lifecycle_integration()` - End-to-end container and lifecycle interaction
+  * Uses pytest framework with Mock and MagicMock for isolated testing
+  * Pytest fixtures for reusable test dependencies (mock_config, mock_logger)
+  * Establishes testing patterns for remaining modules
+
+- **File Tools Implementation** (src/jenova/tools/file_tools.py - 470 lines)
+  * Secure file system operations with comprehensive security controls
+  * Path traversal protection via Path.resolve() and sandbox validation
+  * Configurable file size limits (default: 100 MB)
+  * Optional sandbox root directory enforcement
+  * Safe path handling using pathlib.Path throughout
+  * Operations: read, write, list, exists, info, mkdir, delete
+  * Methods: `execute()`, `read_file()`, `write_file()`, `list_directory()`, `file_exists()`, `get_file_info()`, `create_directory()`, `delete_file()`
+  * Delete operations require explicit confirmation flag
+  * UTF-8 encoding validation for text files
+  * Automatic parent directory creation for writes
+  * Directory listing with sorted results
+  * Empty directory deletion only (safety measure)
+  * Comprehensive file metadata (size, permissions, timestamps)
+
+- **Tool Handler Implementation** (src/jenova/tools/tool_handler.py - 250 lines)
+  * Centralized tool management and execution routing
+  * Automatic tool registration and initialization
+  * Unified interface for all tool operations
+  * Tool discovery and metadata retrieval
+  * Dynamic tool registration/unregistration support
+  * Methods: `execute_tool()`, `register_tool()`, `unregister_tool()`, `get_tool()`, `list_tools()`, `get_tool_info()`, `get_all_tools_info()`, `is_tool_available()`
+  * Initializes all standard tools: TimeTools, ShellTools, WebTools, FileTools
+  * Provides clean API for custom tool extensions
+  * Comprehensive error handling with ToolError exceptions
+  * Logging integration for tool execution audit trail
+
+#### Documentation Enhancements
+
+- **Memory Module Docstrings** (semantic.py, episodic.py - 10 functions documented)
+  * Semantic Memory (src/jenova/memory/semantic.py):
+    - `_load_initial_facts()` - Initial persona fact loading with examples
+    - `add_fact()` - Fact storage with metadata (source, confidence, temporal validity)
+    - `search_collection()` - Vector similarity search in semantic memory
+    - `search_documents()` - Document subset search and ranking
+  * Episodic Memory (src/jenova/memory/episodic.py):
+    - `add_episode()` - Episode storage with entity and emotion extraction
+    - `recall_relevant_episodes()` - Episodic memory recall by similarity
+  * All docstrings include Args, Returns, Examples in Google style
+
+- **File Logger Docstrings** (src/jenova/utils/file_logger.py)
+  * Class documentation with attributes and usage examples
+  * `__init__()` - Logger initialization with rotating file handler details
+  * `log_info()` - Informational logging with examples
+  * `log_warning()` - Warning logging with examples
+  * `log_error()` - Error logging with examples
+  * Documents rotating file handler configuration (5MB max, 2 backups)
+
+#### Test Expansion
+
+- **Tools Module Unit Tests** (tests/test_tools.py - 520 lines)
+  * Comprehensive test coverage for all tool modules
+  * **TestToolResult class** (3 test methods):
+    - Success/error result creation and serialization
+    - Dictionary conversion for API responses
+  * **TestToolError class** (1 test method):
+    - Exception creation with context preservation
+  * **TestTimeTools class** (7 test methods):
+    - Default and custom datetime formats
+    - Invalid timezone handling with UTC fallback
+    - Timestamp generation validation
+    - Datetime formatting utilities
+  * **TestShellTools class** (6 test methods):
+    - Whitelisted command execution
+    - Non-whitelisted command rejection
+    - Whitelist checking and retrieval
+    - Command argument parsing
+    - Timeout parameter handling
+  * **TestFileTools class** (10 test methods):
+    - File write and read operations
+    - File existence checking
+    - Directory listing with file count
+    - File metadata retrieval (size, permissions, timestamps)
+    - Directory creation with parent support
+    - File deletion with confirmation requirement
+    - Sandbox validation preventing path traversal
+    - File size limit enforcement
+  * **TestWebTools class** (2 test methods):
+    - Selenium availability graceful degradation
+    - Web search execution (mocked)
+  * **TestToolHandler class** (10 test methods):
+    - Tool initialization and registration
+    - Tool execution routing
+    - Non-existent tool error handling
+    - Direct tool retrieval
+    - Tool metadata queries
+    - Custom tool registration/unregistration
+  * **Integration test**:
+    - Full tool handler workflow with multiple tool types
+  * Uses pytest fixtures for temporary directories and mocked dependencies
+  * Demonstrates security controls (whitelist, sandbox, size limits)
+
+- **Infrastructure Module Unit Tests** (tests/test_infrastructure.py - 520 lines)
+  * Comprehensive test coverage for infrastructure components
+  * **TestFileManager class** (6 test methods):
+    - Atomic JSON write/read operations
+    - File locking with context manager
+    - Non-existent file handling
+    - Data preservation on write errors
+    - Lock cleanup verification
+  * **TestErrorHandler class** (5 test methods):
+    - Error logging with context
+    - Error counting and history
+    - Recent error retrieval
+    - Error clearing functionality
+  * **TestHealthMonitor class** (5 test methods):
+    - Health status retrieval (CPU, memory, disk)
+    - Health threshold checking
+    - Disk space monitoring
+    - Memory information retrieval
+  * **TestMetricsCollector class** (6 test methods):
+    - Metric recording
+    - Timing measurements with context manager
+    - Metric summary statistics (count, mean, min, max)
+    - Metrics clearing
+    - Multiple measurements of same operation
+  * **TestDataValidator class** (11 test methods):
+    - String validation (length constraints)
+    - Number validation (range constraints)
+    - Dictionary validation (required keys)
+    - List validation (length constraints)
+    - Email format validation
+    - URL format validation
+  * **Integration test**:
+    - Full infrastructure workflow: validation → file write → health check → metrics → error handling
+  * Total: 33 test methods ensuring robust infrastructure operation
+  * Uses pytest fixtures and mocks for isolated testing
+
+#### Code Modernization
+
+- **Pathlib Migration** (4 critical files modernized)
+  * Migrated from os.path to pathlib.Path for modern, object-oriented path handling
+  * **Core Modules**:
+    - src/jenova/core/bootstrap.py
+      * Replaced `os.path.join(os.path.expanduser("~"), ...)` with `Path.home() / ...`
+      * Replaced `os.makedirs()` with `Path.mkdir(parents=True, exist_ok=True)`
+      * user_data_root now uses Path for cleaner code
+    - src/jenova/main.py (5 conversions)
+      * Config path: `Path(__file__).parent / "config" / "main_config.yaml"`
+      * User data root: `Path.home() / ".jenova-ai" / "users" / username`
+      * Insights/cortex roots: `user_data_root / "insights"`
+      * Memory paths: `user_data_root / "memory" / "episodic"`
+      * Custom commands: `custom_commands_dir.mkdir(parents=True, exist_ok=True)`
+  * **Utility Modules**:
+    - src/jenova/utils/file_logger.py
+      * Updated to accept `Union[str, Path]` for user_data_root
+      * Replaced `os.path.join()` with Path `/` operator
+      * Replaced `os.makedirs()` with `Path.mkdir()`
+      * log_file_path constructed using pathlib
+  * **Infrastructure Modules**:
+    - src/jenova/infrastructure/file_manager.py
+      * Replaced `os.path.exists()` with `Path.exists()`
+      * Replaced `os.unlink()` with `Path.unlink()`
+      * Lock file cleanup using pathlib methods
+
+  * **Benefits**:
+    - More readable and maintainable code
+    - Platform-independent path handling
+    - Type-safe path operations
+    - Better error messages
+    - Consistent with modern Python (3.4+)
+
+- **Phase 23: Command Refactoring - Foundation** - Modular command system architecture
+
+#### Command System Refactoring (Foundation)
+
+- **Module Structure** (src/jenova/ui/commands/ - new directory)
+  * Created modular command system replacing monolithic 1,330-line commands.py
+  * Organized into specialized handler classes by functional area
+  * Establishes architecture for complete command system refactoring
+
+- **Base Classes** (src/jenova/ui/commands/base.py - 198 lines)
+  * **CommandCategory** enum:
+    - Defines 11 command categories: SYSTEM, NETWORK, MEMORY, LEARNING, SETTINGS, HELP, CODE, GIT, ANALYSIS, ORCHESTRATION, AUTOMATION
+    - Provides consistent categorization across all commands
+  * **Command** class:
+    - Represents a slash command with name, description, category
+    - Includes handler function, aliases, usage string, examples
+    - Standardized command definition interface
+  * **BaseCommandHandler** abstract class:
+    - Base class for all specialized command handlers
+    - Provides consistent initialization (cognitive_engine, ui_logger, file_logger)
+    - Abstract `register_commands()` method for subclass implementation
+    - Helper methods: `_register()`, `_format_error()`, `_format_success()`, `_log_command_execution()`
+    - Ensures uniform error handling and logging across handlers
+
+- **Module Exports** (src/jenova/ui/commands/__init__.py - 45 lines)
+  * Clean public API for command system
+  * Exports: Command, CommandCategory, BaseCommandHandler, CommandRegistry
+  * Exports all 6 planned specialized handlers
+  * Centralized access point for command functionality
+
+- **Architecture Documentation** (src/jenova/ui/commands/README.md - 180 lines)
+  * Comprehensive refactoring plan and architecture overview
+  * Documents 6 specialized handler classes:
+    1. SystemCommandHandler - help, profile, learn (system info/stats)
+    2. NetworkCommandHandler - network, peers (network management)
+    3. SettingsCommandHandler - settings (configuration)
+    4. MemoryCommandHandler - backup, export, import, backups (memory operations)
+    5. CodeToolsCommandHandler - edit, analyze, scan, parse, refactor (code tools)
+    6. OrchestrationCommandHandler - git, task, workflow, command (orchestration)
+  * File structure and module organization
+  * Migration strategy (6 phases)
+  * Usage examples and backwards compatibility plan
+  * Benefits: modularity, maintainability, testability, extensibility
+
+#### Design Benefits
+
+- **Modularity**: Commands grouped by functional area, self-contained handlers
+- **Maintainability**: Easier to locate and modify specific command functionality
+- **Testability**: Individual handlers can be unit tested in isolation
+- **Extensibility**: New categories added by creating new handlers
+- **Separation of Concerns**: Clear boundaries between command types
+- **Reduced Complexity**: 6 files of ~200 lines each vs. 1 file of 1,330 lines
+
+#### Remaining Work (Planned)
+
+- Implement 6 specialized command handlers (~1,100 lines total)
+- Create CommandRegistry router (~150 lines)
+- Add comprehensive unit tests for each handler
+- Update imports in main application
+- Deprecate old monolithic commands.py
+
+### Changed
+
+- **Configuration Module Exports** (src/jenova/config/__init__.py:110)
+  * Added `constants` module to public API exports
+  * Enables centralized access to configuration constants
+  * Updated `__all__` list to include constants module
+
 - **Phase 20: Complete Project Remediation & Modernization** - Full-scale security fixes, architecture modernization, and feature enhancements
 
 #### Critical Security Fixes

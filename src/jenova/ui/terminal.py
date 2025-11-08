@@ -190,18 +190,59 @@ class TerminalUI:
         sys.stdout.flush()
 
     def start_spinner(self):
+        """
+        Start the loading spinner in a separate thread.
+
+        Creates and starts a daemon thread that displays an animated spinner
+        to indicate that processing is in progress.
+
+        Example:
+            >>> terminal = TerminalUI(engine, logger, username)
+            >>> terminal.start_spinner()
+            >>> # Long-running operation here
+            >>> terminal.stop_spinner()
+        """
         self._spinner_running = True
         self._spinner_thread = threading.Thread(target=self._spinner)
         self._spinner_thread.daemon = True
         self._spinner_thread.start()
 
     def stop_spinner(self):
+        """
+        Stop the loading spinner and clean up the spinner thread.
+
+        Signals the spinner thread to stop, waits for it to finish, and
+        cleans up the thread reference.
+
+        Example:
+            >>> terminal = TerminalUI(engine, logger, username)
+            >>> terminal.start_spinner()
+            >>> # Long-running operation here
+            >>> terminal.stop_spinner()
+        """
         self._spinner_running = False
         if self._spinner_thread and self._spinner_thread.is_alive():
             self._spinner_thread.join()
         self._spinner_thread = None
 
     def run(self):
+        """
+        Start the main terminal interaction loop.
+
+        This is the main entry point for the terminal UI. It displays the banner,
+        enters the main input loop, and handles user input until the user exits.
+
+        The loop handles:
+            - User text input and command execution
+            - Assumption verification prompts
+            - Special commands (starting with /)
+            - Keyboard interrupts (Ctrl+C)
+            - End-of-file (Ctrl+D)
+
+        Example:
+            >>> terminal = TerminalUI(engine, logger, username)
+            >>> terminal.run()  # Blocks until user exits
+        """
         if self.logger:
             self.logger.banner(BANNER, ATTRIBUTION)
             self.logger.info("Initialized and Ready.")

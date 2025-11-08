@@ -96,6 +96,20 @@ class SemanticMemory:
                 )
 
     def _load_initial_facts(self, initial_facts):
+        """
+        Load initial persona facts into semantic memory.
+
+        Populates the semantic memory with foundational facts about the AI's
+        identity, capabilities, and persona. These facts are marked with high
+        confidence and attributed to the "jenova" user.
+
+        Args:
+            initial_facts: List of fact strings to load, or None
+
+        Example:
+            >>> facts = ["I am JENOVA, a cognitive AI assistant"]
+            >>> semantic._load_initial_facts(facts)
+        """
         if not initial_facts:
             return
         if self.ui_logger:
@@ -114,6 +128,30 @@ class SemanticMemory:
         temporal_validity: str = None,
         doc_id: str = None,
     ):
+        """
+        Add a fact to semantic memory with metadata.
+
+        Stores a fact in the ChromaDB collection with associated metadata
+        including source, confidence level, and temporal validity. If metadata
+        is not provided, the LLM analyzes the fact to extract it.
+
+        Args:
+            fact: The fact statement to store
+            username: Username associated with this fact
+            source: Optional source of the fact (e.g., "user", "web", "inference")
+            confidence: Optional confidence level (0.0 to 1.0)
+            temporal_validity: Optional temporal scope (e.g., "timeless", "until 2025")
+            doc_id: Optional document ID (auto-generated if not provided)
+
+        Example:
+            >>> semantic.add_fact(
+            ...     "Paris is the capital of France",
+            ...     "user123",
+            ...     source="user",
+            ...     confidence=1.0,
+            ...     temporal_validity="timeless"
+            ... )
+        """
         if not source or not confidence or not temporal_validity:
             prompt = f"""Analyze the following fact and extract the source, confidence level (a float between 0 and 1), and temporal validity (e.g., "timeless", "until 2025", "for the next 2 hours"). Respond with a JSON object containing "source", "confidence", and "temporal_validity".
 
@@ -158,6 +196,26 @@ JSON Response:"""
     def search_collection(
         self, query: str, username: str, n_results: int = 3
     ) -> list[tuple[str, float]]:
+        """
+        Search semantic memory for facts relevant to a query.
+
+        Performs vector similarity search in the ChromaDB collection to find
+        facts most relevant to the query, filtered by username.
+
+        Args:
+            query: Search query string
+            username: Filter results to this username
+            n_results: Maximum number of results to return (default: 3)
+
+        Returns:
+            List of tuples containing (fact_text, distance_score)
+            where lower distance indicates higher similarity
+
+        Example:
+            >>> results = semantic.search_collection("capital of France", "user123", n_results=5)
+            >>> for fact, distance in results:
+            ...     print(f"{fact} (score: {distance})")
+        """
         if self.collection.count() == 0:
             return []
         n_results = min(n_results, self.collection.count())
@@ -171,6 +229,27 @@ JSON Response:"""
     def search_documents(
         self, query: str, documents: list[str], n_results: int = 3
     ) -> list[tuple[str, float]]:
+        """
+        Search a specific list of documents for relevance to queries.
+
+        Performs vector similarity search on a provided set of documents
+        rather than the entire collection. Useful for filtering or
+        re-ranking a subset of facts.
+
+        Args:
+            query: Search query string
+            documents: List of document texts to search within
+            n_results: Maximum number of results to return (default: 3)
+
+        Returns:
+            List of tuples containing (document_text, distance_score)
+            sorted by relevance (lowest distance first)
+
+        Example:
+            >>> docs = ["Paris is in France", "London is in England"]
+            >>> results = semantic.search_documents("French capital", docs, n_results=1)
+            >>> print(results[0][0])  # "Paris is in France"
+        """
         if not documents:
             return []
         n_results = min(n_results, len(documents))
