@@ -306,8 +306,10 @@ class BackgroundTaskManager:
                 if not line:
                     break
                 task.append_stdout(line.rstrip(), self._max_output_lines)
-        except Exception:
-            pass  # Process may have terminated
+        except (OSError, ValueError, UnicodeDecodeError) as e:
+            # Process terminated or I/O error occurred
+            # This is expected when process exits
+            logger.debug(f"Stopped reading stdout for task {task.task_id}: {type(e).__name__}")
 
         # Read stderr (outside lock - I/O operation)
         try:
@@ -316,8 +318,10 @@ class BackgroundTaskManager:
                 if not line:
                     break
                 task.append_stderr(line.rstrip(), self._max_output_lines)
-        except Exception:
-            pass  # Process may have terminated
+        except (OSError, ValueError, UnicodeDecodeError) as e:
+            # Process terminated or I/O error occurred
+            # This is expected when process exits
+            logger.debug(f"Stopped reading stderr for task {task.task_id}: {type(e).__name__}")
 
     def stop(self, task_id: int, timeout: float = 5.0) -> bool:
         """
