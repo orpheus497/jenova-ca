@@ -182,8 +182,10 @@ class WebTools(BaseTool):
             if driver:
                 try:
                     driver.quit()
-                except Exception:
-                    pass
+                except (RuntimeError, OSError, ConnectionError) as e:
+                    # Suppress cleanup errors but log for debugging
+                    # Common during browser crashes or network issues
+                    logger.debug(f"Browser cleanup failed (non-critical): {type(e).__name__}: {e}")
 
             # Restore CUDA environment
             if original_cuda_visible:

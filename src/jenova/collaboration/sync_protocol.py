@@ -159,7 +159,9 @@ class SyncProtocol:
 
                 return True
 
-            except Exception:
+            except (OSError, socket.error, PermissionError) as e:
+                # Handle socket creation, binding, or permission errors
+                logger.error(f"Failed to start sync protocol on port {self.port}: {type(e).__name__}: {e}")
                 self.running = False
                 if self.socket:
                     self.socket.close()
@@ -277,9 +279,10 @@ class SyncProtocol:
                         (self.broadcast_address, self.port)
                     )
 
-            except Exception:
-                # Continue on error
-                pass
+            except (json.JSONEncodeError, OSError, socket.error) as e:
+                # Continue on transient errors (encoding, network issues)
+                # Log for debugging but don't crash the send loop
+                logger.debug(f"Failed to send sync message: {type(e).__name__}: {e}")
 
     def _receive_loop(self) -> None:
         """Receive loop thread function."""
@@ -309,9 +312,10 @@ class SyncProtocol:
                 # Dispatch to handlers
                 self._dispatch_message(message)
 
-            except Exception:
-                # Continue on error
-                pass
+            except (json.JSONDecodeError, KeyError, ValueError, UnicodeDecodeError) as e:
+                # Continue on malformed messages (invalid JSON, missing fields, encoding errors)
+                # Log for debugging but don't crash the receive loop
+                logger.debug(f"Failed to process received sync message: {type(e).__name__}: {e}")
 
     def _dispatch_message(self, message: SyncMessage) -> None:
         """
@@ -325,9 +329,10 @@ class SyncProtocol:
             for handler in handlers:
                 try:
                     handler(message)
-                except Exception:
-                    # Continue on handler error
-                    pass
+                except (ValueError, TypeError, RuntimeError) as e:
+                    # Continue on handler errors but log them
+                    # Prevents one faulty handler from breaking message processing
+                    logger.warning(f"Message handler failed for {message.message_type}: {type(e).__name__}: {e}")
 
 
 class SyncClient:

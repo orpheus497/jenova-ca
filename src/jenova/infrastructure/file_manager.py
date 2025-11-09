@@ -83,8 +83,11 @@ class FileManager:
             # Clean up temp file on error
             try:
                 os.unlink(temp_path)
-            except Exception:
-                pass
+            except (FileNotFoundError, PermissionError, OSError) as cleanup_error:
+                # Temp file cleanup failed but this is non-critical
+                # Log for debugging
+                if self.file_logger:
+                    self.file_logger.log_debug(f"Temp file cleanup failed: {type(cleanup_error).__name__}: {cleanup_error}")
             raise e
 
     @contextmanager
@@ -121,8 +124,11 @@ class FileManager:
                 lock_file = Path(lock_path)
                 if lock_file.exists():
                     lock_file.unlink()
-            except Exception:
-                pass
+            except (FileNotFoundError, PermissionError, OSError) as e:
+                # Lock file cleanup failed but this is non-critical
+                # File will be cleaned up eventually or on next lock attempt
+                if self.file_logger:
+                    self.file_logger.log_debug(f"Lock file cleanup failed: {type(e).__name__}: {e}")
 
     def write_json_atomic(self, filepath: str, data: Dict[str, Any], indent: int = 2):
         """

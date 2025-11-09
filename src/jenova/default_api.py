@@ -126,9 +126,10 @@ def web_search(query: str) -> list[dict] | str:
         if driver:
             try:
                 driver.quit()
-            except Exception:
-                # Suppress cleanup errors
-                pass
+            except (RuntimeError, OSError, ConnectionError) as e:
+                # Suppress cleanup errors but log them for debugging
+                # Common exceptions: driver already closed, connection lost, OS resource issues
+                logger.debug(f"Browser driver cleanup failed (non-critical): {type(e).__name__}: {e}")
 
 
 class FileTools:

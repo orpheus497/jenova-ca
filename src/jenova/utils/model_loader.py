@@ -71,7 +71,10 @@ def get_optimal_thread_count(configured_threads):
         try:
             physical_cores = multiprocessing.cpu_count() // 2
             return max(1, physical_cores)
-        except Exception:
+        except (OSError, NotImplementedError) as e:
+            # CPU detection failed - use safe fallback
+            # This can happen on some systems or in containers
+            logger.debug(f"CPU auto-detection failed: {type(e).__name__}, using fallback")
             return 4  # Safe fallback
     elif configured_threads == 0:
         # Use all available threads
@@ -145,8 +148,10 @@ def load_llm_model(config, file_logger=None, ui_logger=None):
 
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-    except Exception:
-        pass  # Not critical if torch isn't available
+    except (ImportError, RuntimeError) as e:
+        # PyTorch not available or CUDA error - not critical for CPU-only mode
+        # This is expected when PyTorch isn't installed or CUDA is unavailable
+        logger.debug(f"GPU cache clear skipped: {type(e).__name__}")
 
     # Single loading attempt - no complex fallbacks
     try:

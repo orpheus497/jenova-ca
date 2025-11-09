@@ -159,8 +159,10 @@ class CodebaseMapper:
                         functions = structure.functions
                         imports = set(structure.imports)
 
-                except Exception:
-                    pass
+                except (SyntaxError, ValueError, UnicodeDecodeError, ImportError) as e:
+                    # File has syntax errors, invalid structure, or encoding issues
+                    # Continue with basic file info without detailed structure
+                    logger.debug(f"Could not parse {file_path}: {type(e).__name__}")
 
             return FileInfo(
                 path=file_path,
@@ -352,7 +354,9 @@ class CodebaseMapper:
                                 {"file": file_path, "line": i, "content": line.strip()}
                             )
 
-                except Exception:
+                except (FileNotFoundError, PermissionError, UnicodeDecodeError, OSError) as e:
+                    # File unreadable or encoding issues - skip this file
+                    logger.debug(f"Cannot read {file_path} for symbol search: {type(e).__name__}")
                     continue
 
         return references
