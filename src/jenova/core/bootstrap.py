@@ -35,8 +35,9 @@ Example:
 import getpass
 import os
 import queue
+import time
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from jenova.config import load_configuration
 from jenova.config.constants import (
@@ -105,6 +106,7 @@ class ApplicationBootstrapper:
         self.message_queue = queue.Queue()
         self.ui_logger: Optional[UILogger] = None
         self.file_logger: Optional[FileLogger] = None
+        self.start_time: float = 0.0
 
     def bootstrap(self) -> DependencyContainer:
         """
@@ -116,6 +118,9 @@ class ApplicationBootstrapper:
         Raises:
             RuntimeError: If any bootstrap phase fails
         """
+        # Track startup time
+        self.start_time = time.time()
+
         try:
             self._phase_1_setup_logging()
             self._phase_2_load_configuration()
@@ -747,5 +752,122 @@ class ApplicationBootstrapper:
             PROGRESS_COMPLETE
         )
 
-        self.ui_logger.system_message("\n✓ JENOVA initialized successfully")
+        # Calculate total startup time
+        total_time = time.time() - self.start_time
+
+        # Verify critical components
+        critical_components = [
+            'config', 'ui_logger', 'file_logger',
+            'error_handler', 'health_monitor', 'metrics',
+            'model_manager', 'llm', 'llm_interface',
+            'embeddings', 'memory_manager',
+            'cognitive_engine', 'rag_system'
+        ]
+
+        missing_components: List[str] = []
+        for component in critical_components:
+            try:
+                self.container.resolve(component)
+            except (KeyError, RuntimeError):
+                missing_components.append(component)
+
+        # Warn if critical components are missing
+        if missing_components:
+            warning = f"Warning: Missing critical components: {', '.join(missing_components)}"
+            self.ui_logger.warning(warning)
+            self.file_logger.log_warning(warning)
+
+        # Get component inventory
+        optional_components = [
+            'security_manager', 'peer_manager', 'rpc_client', 'rpc_server',
+            'discovery_service', 'distributed_llm', 'distributed_memory',
+            'file_editor', 'git_interface', 'task_planner'
+        ]
+
+        active_components = []
+        for component in optional_components:
+            try:
+                self.container.resolve(component)
+                active_components.append(component)
+            except (KeyError, RuntimeError):
+                pass
+
+        # Get final health snapshot
+        try:
+            health_monitor = self.container.resolve('health_monitor')
+            health = health_monitor.get_health_snapshot()
+            health_status = health.status.value
+        except (KeyError, RuntimeError):
+            health_status = "unknown"
+
+        # Get metrics summary
+        try:
+            metrics = self.container.resolve('metrics')
+            bootstrap_stats = metrics.get_stats("bootstrap_health_check")
+            model_load_stats = metrics.get_stats("bootstrap_model_load")
+        except (KeyError, RuntimeError):
+            bootstrap_stats = None
+            model_load_stats = None
+
+        # Display startup banner
+        self.ui_logger.system_message("\n" + "="*60)
+        self.ui_logger.system_message("  JENOVA Cognitive Architecture - Initialized Successfully")
+        self.ui_logger.system_message("="*60)
+        self.ui_logger.system_message(f"  Username: {self.username}")
+        self.ui_logger.system_message(f"  Startup Time: {total_time:.2f}s")
+        self.ui_logger.system_message(f"  Health Status: {health_status}")
+        self.ui_logger.system_message(f"  Critical Components: {len(critical_components) - len(missing_components)}/{len(critical_components)}")
+        self.ui_logger.system_message(f"  Optional Components: {len(active_components)}/{len(optional_components)}")
+
+        # Show network status if available
+        if 'peer_manager' in active_components:
+            self.ui_logger.system_message("  Network: Enabled")
+        else:
+            self.ui_logger.system_message("  Network: Disabled")
+
+        self.ui_logger.system_message("="*60 + "\n")
+
+        # Log detailed summary
+        summary_lines = [
+            "="*60,
+            "Bootstrap Finalization Summary",
+            "="*60,
+            f"Total Startup Time: {total_time:.2f}s",
+            f"Username: {self.username}",
+            f"User Data Root: {self.user_data_root}",
+            f"Health Status: {health_status}",
+            "",
+            f"Critical Components ({len(critical_components) - len(missing_components)}/{len(critical_components)}):",
+        ]
+
+        for component in critical_components:
+            status = "✓" if component not in missing_components else "✗"
+            summary_lines.append(f"  {status} {component}")
+
+        summary_lines.extend([
+            "",
+            f"Optional Components ({len(active_components)}/{len(optional_components)}):",
+        ])
+
+        for component in optional_components:
+            status = "✓" if component in active_components else "-"
+            summary_lines.append(f"  {status} {component}")
+
+        if bootstrap_stats:
+            summary_lines.extend([
+                "",
+                "Performance Metrics:",
+                f"  Health Check: {bootstrap_stats.avg_time:.2f}s",
+            ])
+
+        if model_load_stats:
+            summary_lines.append(f"  Model Load: {model_load_stats.avg_time:.2f}s")
+
+        summary_lines.append("="*60)
+
+        # Log summary to file
+        for line in summary_lines:
+            self.file_logger.log_info(line)
+
+        # Final success message
         self.file_logger.log_info("Application bootstrap completed successfully")
