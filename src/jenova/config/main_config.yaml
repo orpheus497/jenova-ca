@@ -189,3 +189,173 @@ network:
     # Strategy: 'local_first', 'load_balanced', 'fastest', 'parallel_voting', 'round_robin'
     strategy: 'load_balanced'
     timeout_ms: 5000  # RPC timeout in milliseconds
+
+# Phase 24: Adaptive Context Window Management
+context_window:
+  # Maximum tokens allowed in context window
+  max_tokens: 4096
+  # Start compression at this percentage full (0.0-1.0)
+  compression_threshold: 0.8
+  # Drop items below this priority score (0.0-1.0)
+  min_priority_score: 0.3
+  # Weights for relevance calculation (must sum to 1.0)
+  relevance_weights:
+    semantic_similarity: 0.4  # 40% - keyword/semantic overlap with query
+    recency: 0.3              # 30% - how recently item was added
+    frequency: 0.2            # 20% - how often item is accessed
+    user_priority: 0.1        # 10% - user-specified importance
+  # Compression settings
+  compression:
+    strategy: hybrid  # extractive, abstractive, or hybrid
+    target_ratio: 0.3  # Compress to 30% of original size
+
+# Phase 25: Self-Optimization Engine
+self_optimization:
+  # Enable autonomous parameter optimization
+  enabled: false  # Opt-in feature (requires performance tracking)
+  # Performance database path (relative to user data directory)
+  performance_db_path: "optimization/performance.db"
+  # Auto-optimization settings
+  auto_optimize:
+    enabled: false  # Automatically optimize parameters periodically
+    interval_runs: 50  # Run optimization every N task executions
+    min_data_points: 20  # Minimum data points before optimization
+  # Bayesian optimization settings
+  optimization:
+    max_iterations: 30  # Maximum optimization iterations per task type
+    exploration_weight: 0.1  # Balance exploration vs exploitation (0.0-1.0)
+    convergence_tolerance: 0.001  # Improvement threshold for convergence
+  # Task classification
+  task_classification:
+    auto_detect: true  # Automatically detect task types
+    confidence_threshold: 0.6  # Minimum confidence for classification
+  # Parameter search space (will be bounded by model capabilities)
+  parameter_space:
+    temperature:
+      min: 0.0
+      max: 1.0
+    top_p:
+      min: 0.0
+      max: 1.0
+    max_tokens:
+      min: 128
+      max: 2048
+
+# Phase 26: Plugin Architecture
+plugins:
+  # Enable plugin system
+  enabled: false  # Opt-in feature (requires explicit user activation)
+  # Plugin directories (relative to user data directory)
+  plugins_dir: "plugins"
+  sandbox_dir: "plugin_sandboxes"
+  # Auto-load settings
+  auto_load:
+    enabled: false  # Automatically load plugins on startup
+    whitelist: []  # List of plugin IDs to auto-load (empty = all discovered)
+  # Default resource limits (can be overridden per plugin in manifest)
+  default_limits:
+    max_cpu_seconds: 30  # Maximum CPU time per plugin call
+    max_memory_mb: 256  # Maximum memory per plugin
+    max_file_size_mb: 10  # Maximum file size for plugin file operations
+  # Security settings
+  security:
+    require_explicit_permissions: true  # Plugins must declare all permissions
+    allow_network_access: false  # Global network access toggle
+    sandbox_enforcement: strict  # strict, moderate, or permissive
+  # Rate limiting (global defaults, can be overridden per plugin)
+  rate_limits:
+    llm_calls_per_minute: 10  # LLM API calls per plugin
+    memory_queries_per_minute: 30  # Memory queries per plugin
+    api_calls_per_minute: 60  # Total API calls per plugin
+
+# Phase 27: Emotional Intelligence Layer
+emotional_intelligence:
+  # Enable emotion detection and empathetic responses
+  enabled: false  # Opt-in feature (requires explicit user activation)
+  # Emotion detection settings
+  detection:
+    min_intensity_threshold: 0.3  # Minimum intensity to trigger emotional response (0.0-1.0)
+    confidence_threshold: 0.6  # Minimum confidence for emotion detection (0.0-1.0)
+    detect_in_system_messages: false  # Apply detection to system messages (not recommended)
+  # State management
+  state_tracking:
+    enabled: true  # Track emotional state across conversation
+    history_length: 20  # Number of turns to maintain in emotional history
+    trend_detection_window: 5  # Number of recent turns for trend analysis
+  # Response generation
+  empathetic_responses:
+    enabled: true  # Generate empathetic response prefixes
+    use_empathetic_prefix: true  # Add empathetic prefix to responses
+    adjust_llm_parameters: true  # Adjust temperature/tokens based on emotion
+    include_context_in_prompt: true  # Add emotional context to system prompt
+    max_prefix_variants: 4  # Number of prefix variations to rotate through
+
+# Phase 29: Conversation Branching
+conversation_branching:
+  # Enable conversation branching and exploration
+  enabled: false  # Opt-in feature (requires explicit user activation)
+  # Branch management settings
+  branch_management:
+    auto_save_enabled: true  # Automatically save branches to disk
+    save_path: "branches"  # Directory for branch state files (relative to user data)
+    max_branches: 50  # Maximum number of branches (prevents unbounded growth)
+    auto_prune_old: false  # Automatically delete old unused branches
+    prune_age_days: 30  # Age threshold for auto-pruning (days)
+  # Branch visualization settings
+  visualization:
+    max_tree_depth: 5  # Maximum depth for tree rendering (prevents overwhelming output)
+    show_turn_counts: true  # Show turn counts in branch tree
+    show_timestamps: true  # Show creation timestamps in branch info
+    max_timeline_turns: 20  # Maximum turns to show in timeline view
+  # Branch navigation
+  navigation:
+    enable_suggestions: true  # Suggest branches when user might want to branch
+    suggestion_triggers:
+      - long_conversation  # After N turns without branching
+      - alternative_question  # When user asks "what if" or similar
+    suggestion_threshold_turns: 10  # Suggest branching after N turns
+  # Turn history settings
+  history:
+    max_turns_per_branch: 1000  # Maximum turns per branch (prevents memory issues)
+    include_metadata: true  # Store metadata with each turn (tokens, duration, etc.)
+    compress_old_turns: false  # Compress old turn data to save space
+
+# Phase 30: Multi-User Collaboration
+multi_user_collaboration:
+  # Enable multi-user collaboration over LAN
+  enabled: false  # Opt-in feature (requires explicit user activation)
+  # Network settings
+  network:
+    port: 5000  # UDP port for LAN communication
+    broadcast_address: "255.255.255.255"  # LAN broadcast address
+    max_message_size: 65536  # Maximum UDP message size (bytes)
+    heartbeat_interval: 30  # Heartbeat interval (seconds)
+  # Session management
+  session_management:
+    max_participants: 20  # Maximum participants per session
+    idle_timeout: 300  # Idle timeout in seconds (5 minutes)
+    auto_kick_idle: false  # Automatically kick idle users
+    session_timeout: 3600  # Session timeout in seconds (1 hour)
+  # Collaboration modes
+  collaboration:
+    default_mode: sequential  # Default mode: sequential, concurrent, or moderated
+    allow_mode_change: true  # Allow changing mode after session creation
+    turn_timeout: 120  # Turn timeout in sequential mode (seconds)
+    auto_release_turn: true  # Auto-release turn after timeout
+  # Moderation settings
+  moderation:
+    require_approval_for_viewers: false  # Viewers' contributions require approval
+    require_approval_for_contributors: false  # Contributors' contributions require approval
+    auto_approve_timeout: 300  # Auto-approve after timeout (seconds, 0 = never)
+    max_pending_contributions: 100  # Maximum pending contributions per session
+  # Access control
+  access_control:
+    enforce_permissions: true  # Enforce role-based permissions
+    allow_custom_roles: true  # Allow custom role permissions
+    default_viewer_readonly: true  # Viewers are read-only by default
+  # Synchronization
+  synchronization:
+    sync_interval: 1  # State synchronization interval (seconds)
+    max_sync_retries: 3  # Maximum sync retry attempts
+    sync_timeout: 5  # Synchronization timeout (seconds)
+    broadcast_updates: true  # Broadcast updates to all participants

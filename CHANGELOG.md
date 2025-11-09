@@ -9,6 +9,958 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 25: Self-Optimization Engine** - Autonomous parameter tuning with Bayesian optimization
+
+#### Self-Optimization Engine
+
+- **Performance Database** (src/jenova/optimization/performance_db.py - 410 lines)
+  * SQLite-based metrics storage for optimization data
+  * **Schema tables**:
+    - `task_runs` - Individual task executions with parameters and metrics
+    - `parameter_sets` - Unique parameter combinations with aggregate statistics
+    - `metrics` - Detailed metrics per run (response_time, quality, etc.)
+    - `optimizations` - Optimization run history and convergence data
+  * **PerformanceDB** class:
+    - `record_task_run()` - Record task execution with parameters and quality score
+    - `get_best_parameters()` - Retrieve parameters with highest metric value
+    - `get_parameter_performance_history()` - Historical performance for specific parameters
+    - `get_optimization_stats()` - Comprehensive statistics for task type
+    - `record_optimization()` - Record optimization run results
+    - `get_all_parameter_sets()` - All parameter configurations with stats
+  * Features:
+    - Automatic parameter set aggregation (avg quality, duration, success rate)
+    - Support for additional custom metrics
+    - Context manager support for safe resource handling
+    - Indexed queries for fast retrieval
+
+- **Bayesian Optimizer** (src/jenova/optimization/bayesian_optimizer.py - 490 lines)
+  * Gaussian Process-based parameter optimization
+  * Expected Improvement acquisition function
+  * **BayesianOptimizer** class:
+    - `optimize()` - Run Bayesian optimization for n iterations
+    - `_acquisition_function()` - Expected Improvement for exploration/exploitation balance
+    - `_predict_gp()` - Gaussian Process mean and std prediction using RBF kernel
+    - `_select_next_point()` - Intelligent next parameter selection
+    - `get_convergence_metrics()` - Optimization convergence statistics
+    - `get_observations()` - All evaluated parameter/value pairs
+  * **Algorithm**:
+    - RBF (Radial Basis Function) kernel for GP modeling
+    - L-BFGS-B optimization for acquisition function
+    - Multiple random restarts to avoid local optima
+    - Automatic convergence detection
+  * **Benefits**:
+    - Faster than grid search (fewer evaluations needed)
+    - Intelligent exploration vs exploitation balance
+    - Converges to optimal parameters efficiently
+
+- **Self-Tuner** (src/jenova/optimization/self_tuner.py - 620 lines)
+  * Autonomous parameter optimization orchestrator
+  * **SelfTuner** class:
+    - `optimize_parameters()` - Run Bayesian optimization for task type
+    - `record_performance()` - Record task execution metrics
+    - `get_optimal_parameters()` - Retrieve current best parameters for task
+    - `apply_optimal_parameters()` - Apply optimal parameters to active config
+    - `a_b_test()` - A/B test two parameter sets with statistical comparison
+    - `auto_adjust()` - Auto-adjust parameters based on user feedback
+    - `get_optimization_history()` - Historical parameter performance
+    - `get_statistics()` - Comprehensive optimization statistics
+  * **Parameter search space**:
+    - temperature: 0.0-1.0 (creativity control)
+    - top_p: 0.0-1.0 (nucleus sampling)
+    - max_tokens: 128-2048 (response length)
+  * **Features**:
+    - Per-task-type parameter optimization
+    - User feedback integration ("too_creative", "too_boring", etc.)
+    - Automatic parameter adjustment based on feedback
+    - Performance history tracking and analysis
+  * **Evaluation**: Heuristic-based quality scoring (production would use real task evaluation)
+
+- **Task Classifier** (src/jenova/optimization/task_classifier.py - 200 lines)
+  * Automatic task type detection for parameter selection
+  * **TaskClassifier** class:
+    - `classify_task()` - Classify query into task type
+    - `classify_with_confidence()` - Classification with confidence score
+    - `get_task_characteristics()` - Optimal parameter ranges for task type
+  * **Task types**:
+    - `general_qa` - General questions (temp: 0.6-0.8, tokens: 256-512)
+    - `code_generation` - Programming (temp: 0.2-0.4, tokens: 512-1024)
+    - `summarization` - Text condensing (temp: 0.2-0.4, tokens: 128-256)
+    - `analysis` - Evaluation (temp: 0.3-0.5, tokens: 512-1024)
+    - `creative_writing` - Narrative (temp: 0.8-1.0, tokens: 512-1536)
+  * **Classification method**: Keyword matching with scoring (production could use ML classifier)
+
+- **Comprehensive Test Suite** (tests/test_self_optimization.py - 380 lines)
+  * **TestPerformanceDB** class (10 test methods):
+    - Database initialization and schema creation
+    - Task run recording
+    - Best parameter retrieval
+    - Performance history tracking
+    - Optimization statistics
+    - Optimization run recording
+    - Additional metrics support
+    - Parameter set aggregation
+    - Context manager functionality
+    - Empty database handling
+  * **TestBayesianOptimizer** class (8 test methods):
+    - Optimizer initialization
+    - Random parameter sampling
+    - Simple function optimization
+    - Acquisition function computation
+    - Gaussian Process prediction
+    - Convergence detection
+    - Convergence metrics
+    - Observation retrieval
+  * **TestTaskClassifier** class (8 test methods):
+    - Code generation task detection
+    - Summarization task detection
+    - Analysis task detection
+    - Creative writing detection
+    - General QA default fallback
+    - Confidence scoring
+    - Task characteristics retrieval
+  * **TestSelfTuner** class (10 test methods):
+    - Tuner initialization
+    - Performance recording
+    - Optimal parameter retrieval
+    - A/B testing
+    - Auto-adjustment based on feedback
+    - Optimization history
+    - Parameter optimization
+    - Parameter application
+  * **TestIntegration** class (2 integration tests):
+    - Full optimization workflow
+    - Feedback-driven optimization loop
+
+- **Configuration** (src/jenova/config/main_config.yaml)
+  * **self_optimization** section:
+    - `enabled: false` - Opt-in feature requiring performance tracking
+    - `performance_db_path` - Database location
+    - `auto_optimize` settings - Automatic periodic optimization
+    - `optimization` parameters - Bayesian optimization config
+    - `task_classification` - Auto-detect settings
+    - `parameter_space` - Search bounds for each parameter
+
+- **Dependencies** (requirements.txt)
+  * Added `scipy>=1.13.0,<2.0.0` - Bayesian optimization and scientific computing (BSD-3-Clause)
+
+#### Benefits
+
+- **Autonomous Improvement**: System learns optimal parameters without manual tuning
+- **Task-Specific Optimization**: Different parameters for different task types
+- **Efficient Search**: Bayesian optimization finds optimum faster than grid/random search
+- **User Feedback Integration**: Adapts based on user satisfaction signals
+- **Data-Driven**: All decisions backed by performance metrics
+- **Production-Ready**: Comprehensive error handling, testing, and configuration
+
+- **Phase 26: Plugin Architecture** - Extensible plugin system with sandboxed execution
+
+#### Plugin Architecture
+
+- **Plugin Schema** (src/jenova/plugins/plugin_schema.py - 150 lines)
+  * Pydantic-based manifest validation for type safety
+  * **PluginPermission** enum:
+    - `memory:read` / `memory:write` - Memory system access
+    - `tools:register` / `commands:register` - Extension registration
+    - `file:read` / `file:write` - Sandboxed file operations
+    - `llm:inference` - LLM text generation
+    - `network:access` - Network operations
+  * **ResourceLimits** model:
+    - `max_cpu_seconds` - CPU time limit per call (1-300s, default 30s)
+    - `max_memory_mb` - Memory limit (64-2048 MB, default 256 MB)
+    - `max_file_size_mb` - Max file size (1-100 MB, default 10 MB)
+  * **PluginManifest** model:
+    - Full validation with regex patterns (ID, version)
+    - Dependency specification with version constraints
+    - Permission declaration
+    - Resource limits configuration
+  * **validate_version_compatibility()** - Semantic version checking
+
+- **Plugin API** (src/jenova/plugins/plugin_api.py - 420 lines)
+  * Safe API interface for plugin interactions
+  * **RateLimiter** class:
+    - Time-window based rate limiting (default: 60 calls/60s)
+    - Per-plugin tracking with thread safety
+    - Automatic call expiration outside window
+  * **PluginAPI** class:
+    - `register_tool()` / `unregister_tool()` - Custom tool registration
+    - `register_command()` / `unregister_command()` - Command handler registration
+    - `query_memory()` - Read-only memory access (rate-limited: 30 calls/60s)
+    - `add_insight()` - Controlled memory write
+    - `generate_text()` - LLM access (rate-limited: 10 calls/60s, max 512 tokens)
+    - `read_file()` / `write_file()` - Sandboxed file I/O with path traversal prevention
+    - `get_config()` - Plugin-specific configuration
+    - `log()` - Integrated logging (info, warning, error)
+    - `get_stats()` - API usage statistics
+  * **Security features**:
+    - Permission checking on all operations
+    - Path traversal prevention using resolve() and prefix validation
+    - Rate limiting for expensive operations
+    - Resource tracking (API call counts)
+    - Sandbox directory enforcement
+
+- **Plugin Sandbox** (src/jenova/plugins/plugin_sandbox.py - 390 lines)
+  * Security enforcement layer for isolated execution
+  * **ResourceMonitor** class:
+    - CPU time tracking with process_time()
+    - Memory limit enforcement using resource.setrlimit()
+    - Resource usage collection (cpu_time, wall_time, memory_mb)
+  * **ImportWhitelist** class:
+    - Safe module allowlist (typing, json, math, datetime, pathlib, etc.)
+    - Forbidden module blocklist (os, sys, subprocess, socket, eval, pickle, etc.)
+    - Special allowance for numpy/scipy (optimization needs)
+  * **SandboxedFileIO** class:
+    - Path validation within sandbox directory
+    - Path traversal prevention
+    - File read/write/list operations
+  * **PluginSandbox** class:
+    - `execute()` - Run function with resource monitoring and error capture
+    - `validate_import()` - Check import whitelist
+    - `get_stats()` - Execution statistics
+  * **Security enforcement**:
+    - CPU time limits (configurable, default 30s)
+    - Memory limits (configurable, default 256 MB)
+    - No network access
+    - No subprocess execution
+    - Import restrictions
+    - Sandboxed file system
+
+- **Plugin Manager** (src/jenova/plugins/plugin_manager.py - 680 lines)
+  * Plugin lifecycle orchestration
+  * **PluginState** enum: unloaded, loaded, initialized, active, failed
+  * **PluginInfo** class:
+    - Tracks manifest, module, API, sandbox, state, errors
+  * **PluginManager** class:
+    - `discover_plugins()` - Find plugins in directory, validate manifests
+    - `load_plugin()` - Load module with dependency resolution
+    - `initialize_plugin()` - Create API and sandbox, call initialize()
+    - `activate_plugin()` - Start plugin operation
+    - `deactivate_plugin()` - Stop plugin operation
+    - `unload_plugin()` - Cleanup and remove plugin
+    - `get_plugin_info()` - Detailed plugin information
+    - `list_plugins()` - List plugins with optional state filter
+    - `get_all_registered_tools()` - Aggregate tools from all active plugins
+    - `get_all_registered_commands()` - Aggregate commands from all active plugins
+    - `get_statistics()` - System-wide plugin statistics
+  * **Features**:
+    - Automatic dependency resolution and loading
+    - Version compatibility checking
+    - Thread-safe operations with RLock
+    - Error tracking per plugin
+    - Lifecycle hooks: initialize(), activate(), deactivate(), cleanup()
+
+- **Example Plugin** (examples/plugins/example_plugin/)
+  * Demonstration plugin showing all capabilities
+  * **plugin.yaml** - Manifest with permissions and resource limits
+  * **__init__.py** (320 lines):
+    - Lifecycle handlers (initialize, activate, deactivate, cleanup)
+    - Tool registration (example_tool, word_count, search_and_summarize)
+    - Command registration (/example, /stats)
+    - Memory integration and LLM usage examples
+    - File I/O demonstration
+  * **README.md** - Complete documentation and development guide
+
+- **Module Exports** (src/jenova/plugins/__init__.py - 70 lines)
+  * Clean API surface with all public classes
+  * Organized imports by component
+
+- **Comprehensive Test Suite** (tests/test_plugins.py - 650 lines)
+  * **TestPluginSchema** class (7 test methods):
+    - Permission enum values
+    - ResourceLimits defaults and validation
+    - PluginDependency model
+    - PluginManifest validation
+    - Plugin ID regex validation
+    - Version compatibility checking
+  * **TestRateLimiter** class (3 test methods):
+    - Rate limit initialization
+    - Rate limit enforcement
+    - Separate key tracking
+  * **TestPluginAPI** class (7 test methods):
+    - API initialization
+    - Tool registration with permission checks
+    - Command registration
+    - Sandboxed file operations
+    - Path traversal prevention
+    - Statistics retrieval
+  * **TestResourceMonitor** class (2 test methods):
+    - Monitor initialization
+    - Start/stop monitoring cycle
+  * **TestImportWhitelist** class (3 test methods):
+    - Safe module allowance
+    - Forbidden module blocking
+    - Scientific library allowance
+  * **TestSandboxedFileIO** class (3 test methods):
+    - File write and read
+    - Path traversal prevention
+    - Directory listing
+  * **TestPluginSandbox** class (5 test methods):
+    - Sandbox initialization
+    - Successful execution
+    - Error handling
+    - Execution statistics
+    - Import validation
+  * **TestPluginManager** class (7 test methods):
+    - Manager initialization
+    - Plugin discovery
+    - Complete lifecycle (load, init, activate, deactivate, unload)
+    - Plugin listing with state filters
+    - Plugin info retrieval
+    - System statistics
+  * **TestIntegration** class (1 integration test):
+    - End-to-end workflow with tool registration and file I/O
+
+- **Dependencies** (requirements.txt)
+  * Added `PyYAML>=6.0.1,<7.0.0` - Plugin manifest parsing (MIT)
+
+#### Benefits
+
+- **Extensibility**: Third-party plugins extend JENOVA without core modification
+- **Security**: Sandboxed execution with permission-based access control
+- **Resource Safety**: CPU and memory limits prevent resource exhaustion
+- **Plugin Isolation**: Each plugin runs in isolated sandbox with own file system
+- **Developer Friendly**: Clear API, example plugin, comprehensive documentation
+- **Production-Ready**: Thread-safe, comprehensive error handling, full test coverage
+- **Flexible Permissions**: Granular control over plugin capabilities
+- **Rate Limiting**: Prevents API abuse and resource overconsumption
+
+- **Phase 27: Emotional Intelligence Layer** - Emotion detection and empathetic response generation
+
+#### Emotional Intelligence Layer
+
+- **Emotion Detector** (src/jenova/emotional/emotion_detector.py - 470 lines)
+  * Keyword-based emotion detection with intensity scoring
+  * **EmotionType** enum (9 emotion types):
+    - Primary emotions: joy, sadness, anger, fear, surprise, disgust, trust, anticipation
+    - Neutral state for non-emotional content
+  * **EmotionDetection** dataclass:
+    - `primary_emotion` - Dominant detected emotion
+    - `intensity` - Emotion strength (0.0-1.0)
+    - `all_emotions` - All detected emotions with scores
+    - `confidence` - Detection confidence (0.0-1.0)
+    - `keywords_matched` - Triggering keywords
+  * **EmotionDetector** class:
+    - `detect()` - Analyze text and detect emotions
+    - `get_emotion_summary()` - Human-readable detection summary
+  * **Detection features**:
+    - Curated keyword lists per emotion (400+ keywords total)
+    - Weighted scoring (keywords have base intensity 0.5-0.95)
+    - Intensifier support ("very", "extremely" boost scores by 1.2-1.5x)
+    - Diminisher support ("slightly", "somewhat" reduce scores to 0.5-0.7x)
+    - Negation handling (flips emotion polarity with -0.5x multiplier)
+    - Multi-word keyword matching
+    - Confidence scoring based on emotion separation
+
+- **Emotional State Manager** (src/jenova/emotional/state_manager.py - 340 lines)
+  * Tracks emotional state across conversation turns
+  * **EmotionalMoment** dataclass:
+    - Timestamp, detection, message, turn number
+  * **EmotionalTrend** dataclass:
+    - Emotion, direction (increasing/decreasing/stable), strength, duration
+  * **EmotionalStateManager** class:
+    - `update()` - Record emotion detection for turn
+    - `get_current_state()` - Current emotion, intensity, baseline, trends
+    - `detect_recent_trend()` - Identify emotional trends using linear regression
+    - `get_emotional_context()` - Human-readable context summary
+    - `get_history_summary()` - Recent emotion history
+    - `reset()` - Clear emotional state
+    - `get_stats()` - Comprehensive statistics
+  * **Features**:
+    - Configurable history length (default: 20 turns)
+    - Emotional baseline calculation (average across conversation)
+    - Trend detection with linear regression (slope analysis)
+    - Turn-by-turn tracking with timestamps
+    - Automatic history pruning when limit exceeded
+
+- **Empathetic Response Generator** (src/jenova/emotional/response_generator.py - 370 lines)
+  * Generates emotionally-aware responses
+  * **ResponseTone** enum (7 tone types):
+    - supportive, encouraging, calming, celebratory, validating, neutral, gentle
+  * **EmpatheticResponseGenerator** class:
+    - `select_tone()` - Choose appropriate response tone for emotion
+    - `get_empathetic_prefix()` - Add empathetic opening to response
+    - `adjust_response_parameters()` - LLM parameter tuning for emotion
+    - `get_response_strategy()` - Strategic guidelines per emotion
+    - `build_system_prompt_addition()` - System prompt emotional context
+    - `generate_empathetic_wrapper()` - Wrap response with empathy
+  * **Emotion-to-tone mapping**:
+    - Joy → Celebratory | Sadness → Supportive | Anger → Calming
+    - Fear → Calming | Surprise → Encouraging | Disgust → Validating
+    - Trust → Encouraging | Anticipation → Encouraging | Neutral → Neutral
+  * **Empathetic prefixes** (60+ curated phrases):
+    - Joy: "I'm glad you're feeling positive!", "That's wonderful!"
+    - Sadness: "I understand you're going through a difficult time."
+    - Anger: "I understand your frustration.", "Your feelings are valid."
+    - Fear: "It's okay to feel anxious.", "Let's work through this together."
+  * **Response strategies** (specific guidelines per emotion):
+    - Sadness: Validate feelings, offer support, avoid toxic positivity
+    - Anger: Acknowledge without judgment, use calm language
+    - Fear: Provide reassurance, break down concerns, offer steps forward
+  * **LLM parameter adjustments**:
+    - Joy: Higher temperature (0.8) for enthusiasm
+    - Sadness/Fear: Lower temperature (0.5) for controlled support
+    - Anger: Lowest temperature (0.4) for calm, measured responses
+    - High intensity: Further reduce temperature, limit tokens
+
+- **Module Exports** (src/jenova/emotional/__init__.py - 60 lines)
+  * Clean API surface with all public classes
+  * Organized imports by component
+
+- **Comprehensive Test Suite** (tests/test_emotional_intelligence.py - 520 lines)
+  * **TestEmotionDetector** class (14 test methods):
+    - Detector initialization
+    - Joy, sadness, anger, fear detection
+    - Intensifier boost and diminisher reduction
+    - Negation handling
+    - Empty and neutral text handling
+    - Multiple emotion detection
+    - Keyword matching tracking
+    - Confidence scoring
+    - Emotion summary generation
+  * **TestEmotionalStateManager** class (11 test methods):
+    - Manager initialization and state updates
+    - History tracking and length limits
+    - Current state retrieval
+    - Baseline calculation
+    - Recent trend detection
+    - Emotional context generation
+    - History summary
+    - State reset
+    - Statistics retrieval
+  * **TestEmpatheticResponseGenerator** class (13 test methods):
+    - Generator initialization
+    - Tone selection for all emotions
+    - Low intensity handling
+    - Empathetic prefix generation
+    - Response parameter adjustments
+    - High intensity parameter tuning
+    - Response strategy retrieval
+    - System prompt building
+    - Empathetic response wrapping
+  * **TestIntegration** class (3 integration tests):
+    - Full detection-to-response workflow
+    - Emotional trend detection over conversation
+    - Multi-emotion conversation handling
+
+#### Benefits
+
+- **Emotion Awareness**: Detects user emotions from text input
+- **Contextual Tracking**: Maintains emotional state across conversation
+- **Empathetic Responses**: Adjusts tone and language based on emotion
+- **Trend Detection**: Identifies emotional patterns over time
+- **Flexible Detection**: Handles intensifiers, diminishers, negation
+- **Production-Ready**: Comprehensive testing and error handling
+- **Extensible**: Easy to add emotions, keywords, or response strategies
+- **Privacy-Focused**: All processing local, no external emotion detection APIs
+
+- **Phase 28: Knowledge Graph Visualization** - Offline graph visualization and analysis
+
+#### Knowledge Graph Visualization
+
+- **Graph Exporter** (src/jenova/visualization/graph_exporter.py - 440 lines)
+  * Export cortex knowledge graph to multiple formats
+  * **Supported formats**:
+    - GraphML (XML-based, standard format for graph tools)
+    - DOT (Graphviz format with color-coded node types)
+    - JSON (node-link format with metadata)
+    - HTML (self-contained with embedded force-directed visualization)
+    - GEXF (Gephi-compatible format)
+  * **GraphExporter** class:
+    - `to_graphml()` - Export to GraphML XML format
+    - `to_dot()` - Export to Graphviz DOT format
+    - `to_json()` - Export to JSON with pretty-printing support
+    - `to_html()` - Self-contained HTML with interactive visualization
+    - `to_gexf()` - Export to GEXF format
+    - `export_subgraph()` - Export filtered subgraph
+    - `get_graph_stats()` - Graph statistics (nodes, edges, density, connectivity)
+  * **HTML visualization features**:
+    - Force-directed layout with physics simulation
+    - Interactive pan and zoom
+    - Node dragging
+    - Node click for details
+    - Color-coded by type (insight, concept, memory, goal)
+    - Edge labels with relationships
+    - 100% self-contained (no CDN, works offline)
+    - Pure JavaScript (no external libraries)
+
+- **Terminal Renderer** (src/jenova/visualization/terminal_renderer.py - 400 lines)
+  * ASCII art visualization for terminal display
+  * **TerminalRenderer** class:
+    - `render_tree()` - ASCII tree from root node with configurable depth
+    - `render_list()` - Formatted list with type grouping and edges
+    - `render_network()` - Grid-based network diagram with symbols
+    - `render_stats()` - Comprehensive statistics display
+    - `render_path()` - Show shortest path between nodes
+  * **Rendering features**:
+    - Tree view with Unicode box-drawing characters (├──, └──, │)
+    - List view grouped by node type with relationship arrows
+    - Network diagram using Bresenham's line algorithm
+    - Type symbols (I=Insight, C=Concept, M=Memory, G=Goal)
+    - Edge relationship labels
+    - Degree statistics and type distributions
+  * **Works in any terminal**: Pure ASCII, no special requirements
+
+- **Graph Analyzer** (src/jenova/visualization/graph_analyzer.py - 370 lines)
+  * Graph analysis using NetworkX algorithms (100% FOSS)
+  * **GraphAnalyzer** class:
+    - `compute_centrality()` - Betweenness, closeness, degree, PageRank, eigenvector
+    - `find_most_important_nodes()` - Top N by centrality metric
+    - `detect_communities()` - Louvain, label propagation, greedy modularity
+    - `find_all_paths()` - All simple paths between nodes
+    - `find_shortest_path()` - Shortest path with optional weighting
+    - `compute_clustering_coefficient()` - Node clustering coefficients
+    - `get_node_neighborhood()` - Nodes within radius
+    - `analyze_node_importance()` - Comprehensive importance metrics
+    - `find_bridges()` - Bridge edges (removal disconnects graph)
+    - `get_connected_components()` - Weakly connected components
+    - `compute_graph_metrics()` - Comprehensive graph-level metrics
+  * **Centrality metrics**:
+    - Betweenness: measures node importance in paths
+    - Closeness: measures average distance to all nodes
+    - Degree: measures direct connections
+    - PageRank: measures importance via link structure
+    - Eigenvector: measures influence based on connections
+  * **Community detection algorithms**:
+    - Louvain: modularity optimization (with fallback)
+    - Label propagation: fast community detection
+    - Greedy modularity: iterative modularity maximization
+
+- **Module Exports** (src/jenova/visualization/__init__.py - 45 lines)
+  * Clean API surface with all public classes
+  * Organized imports by component
+
+- **Comprehensive Test Suite** (tests/test_visualization.py - 420 lines)
+  * **TestGraphExporter** class (9 test methods):
+    - Initialization and graph setting
+    - GraphML, JSON, DOT, HTML, GEXF export
+    - Subgraph export
+    - Graph statistics
+  * **TestTerminalRenderer** class (8 test methods):
+    - Tree, list, network rendering
+    - Statistics and path rendering
+    - Nonexistent node handling
+  * **TestGraphAnalyzer** class (18 test methods):
+    - All centrality metrics
+    - Community detection algorithms
+    - Path finding (all paths, shortest path)
+    - Clustering coefficients
+    - Node neighborhoods
+    - Node importance analysis
+    - Bridge detection
+    - Connected components
+    - Comprehensive graph metrics
+  * **TestIntegration** class (2 integration tests):
+    - Complete export and analysis workflow
+    - Centrality and visualization pipeline
+
+#### Benefits
+
+- **100% Offline**: All visualization and analysis works without internet
+- **FOSS Only**: Uses NetworkX (BSD-3-Clause) for all graph algorithms
+- **Multiple Formats**: Export to industry-standard formats (GraphML, DOT, GEXF)
+- **Self-Contained HTML**: Interactive visualization with no external dependencies
+- **Terminal-Friendly**: ASCII art visualization works in any terminal
+- **Comprehensive Analysis**: Centrality, clustering, community detection
+- **Graph Insights**: Understand knowledge graph structure and key nodes
+- **Production-Ready**: Full test coverage, error handling, documentation
+- **Extensible**: Easy to add new export formats or analysis metrics
+
+- **Phase 30: Multi-User Collaboration** - LAN-based multi-user collaborative sessions
+
+#### Multi-User Collaboration
+
+- **User Session Manager** (src/jenova/collaboration/user_session.py - 460 lines)
+  * User session and profile management
+  * **UserRole** enum (4 roles):
+    - `owner` - Session creator with full control
+    - `admin` - Administrative privileges
+    - `contributor` - Can add content
+    - `viewer` - Read-only access
+  * **SessionStatus** enum (4 states):
+    - `active`, `idle`, `disconnected`, `kicked`
+  * **UserProfile** dataclass:
+    - User ID, username, display color
+    - Creation timestamp and metadata
+  * **UserSession** dataclass:
+    - Session ID, user profile, role, status
+    - Join/activity timestamps, IP address
+    - Contribution metrics (turns, messages)
+  * **UserSessionManager** class:
+    - `create_user()` - Create user profile with auto-generated color
+    - `get_user()` / `update_user()` - Profile management
+    - `create_session()` - Create user session with role
+    - `end_session()` - Terminate session
+    - `update_activity()` - Track activity with metrics
+    - `set_session_status()` - Update session status
+    - `get_active_sessions()` - Filter by active status
+    - `check_idle_sessions()` - Detect idle users (configurable timeout)
+    - `kick_session()` - Remove user with reason
+    - `get_session_stats()` / `get_all_stats()` - Comprehensive statistics
+  * Features:
+    - User profile persistence
+    - Activity tracking with timestamps
+    - Idle detection (default: 5 minutes)
+    - Session kick with reason tracking
+    - Automatic color assignment
+
+- **Collaboration Manager** (src/jenova/collaboration/collaboration_manager.py - 680 lines)
+  * Multi-user session orchestration
+  * **CollaborationMode** enum (3 modes):
+    - `sequential` - Turn-based, one user at a time
+    - `concurrent` - Multiple users simultaneously
+    - `moderated` - Requires moderator approval
+  * **ConversationState** enum:
+    - `idle`, `in_progress`, `waiting_approval`, `locked`
+  * **CollaborativeSession** dataclass:
+    - Session ID, name, description, owner
+    - Mode, state, timestamps
+    - Participant set, conversation turns
+    - Pending contributions queue
+  * **CollaborationManager** class:
+    - `create_session()` - Create collaborative session with mode
+    - `add_participant()` / `remove_participant()` - Manage participants
+    - `request_turn()` / `release_turn()` - Turn-based collaboration
+    - `add_turn()` - Add conversation turn with permission checks
+    - `approve_contribution()` / `reject_contribution()` - Moderation workflow
+    - `get_conversation_history()` - Retrieve shared history
+    - `get_session_participants()` - List participants
+    - `save_session()` - Persist to JSON
+    - `get_session_stats()` - Detailed statistics
+  * Features:
+    - Three collaboration modes
+    - Turn lock management (sequential)
+    - Moderation queue with approval workflow
+    - Shared conversation history
+    - Thread-safe with RLock
+    - JSON persistence
+
+- **Synchronization Protocol** (src/jenova/collaboration/sync_protocol.py - 540 lines)
+  * UDP-based LAN synchronization (100% offline)
+  * **MessageType** enum (16 types):
+    - Connection: connect, disconnect, heartbeat
+    - Session: create, join, leave, update
+    - Conversation: turn_add, turn_update, turn_delete
+    - Collaboration: request_turn, release_turn, grant_turn
+    - Moderation: contribution_submit, approve, reject
+    - State: state_request, state_response
+    - Error: error
+  * **SyncMessage** dataclass:
+    - Message ID, type, sender ID, timestamp
+    - Session ID, payload data
+  * **SyncProtocol** class:
+    - `start()` / `stop()` - Start/stop UDP listener
+    - `send_message()` - Queue message for broadcast
+    - `register_handler()` / `unregister_handler()` - Message handlers
+    - UDP broadcast on LAN (255.255.255.255)
+    - Separate send/receive threads
+    - Thread-safe message queue
+  * **SyncClient** class:
+    - `broadcast_turn_add()` - Broadcast conversation turn
+    - `broadcast_session_update()` - Broadcast state changes
+    - `request_turn()` - Request turn via protocol
+    - `send_heartbeat()` - Keep-alive messages
+    - Higher-level API over SyncProtocol
+  * Features:
+    - 100% LAN-based (no internet required)
+    - UDP broadcast for discovery
+    - Configurable port (default: 5000)
+    - Message handlers with callbacks
+    - Automatic JSON serialization
+    - Thread-safe operations
+
+- **Access Control** (src/jenova/collaboration/access_control.py - 380 lines)
+  * Role-based access control with fine-grained permissions
+  * **Permission** enum (14 permissions):
+    - Session: create, delete, configure
+    - User: invite, remove, promote, demote
+    - Content: add, edit, delete, view
+    - Collaboration: turn_request, turn_release
+    - Moderation: contribution_approve, contribution_reject
+    - State: read, write
+  * **ROLE_PERMISSIONS** mapping:
+    - Owner: all 14 permissions
+    - Admin: 12 permissions (no session create/delete)
+    - Contributor: 5 permissions (content_add, view, turn ops, state_read)
+    - Viewer: 2 permissions (content_view, state_read)
+  * **AccessPolicy** dataclass:
+    - Policy ID, resource ID
+    - Allowed roles set
+    - Denied/allowed user sets
+    - Metadata storage
+  * **AccessController** class:
+    - `check_permission()` - Verify role has permission
+    - `check_access()` - Verify user can access resource
+    - `create_policy()` - Create resource policy
+    - `grant_access()` / `revoke_access()` - User-specific access
+    - `add_role_to_policy()` / `remove_role_from_policy()` - Role management
+    - `grant_permission_to_role()` / `revoke_permission_from_role()` - Custom permissions
+    - `get_role_permissions()` - List role permissions
+    - `get_policy()` / `delete_policy()` - Policy management
+    - `get_stats()` - Access control statistics
+  * Features:
+    - Role-based default permissions
+    - User-specific overrides (whitelist/blacklist)
+    - Custom role permissions
+    - Resource-level policies
+    - Hierarchical access control
+
+- **Module Exports** (src/jenova/collaboration/__init__.py - 80 lines)
+  * Clean API surface with all public classes
+  * Organized imports by component
+  * Exports all dataclasses, enums, and managers
+
+- **Comprehensive Test Suite** (tests/test_collaboration.py - 720 lines)
+  * **TestUserSessionManager** class (12 test methods):
+    - Manager initialization and user creation
+    - Duplicate user handling
+    - User retrieval and updates
+    - Session creation, retrieval, termination
+    - Activity tracking and metrics
+    - Active/idle session filtering
+    - Session kicking with reasons
+    - Statistics generation
+  * **TestCollaborationManager** class (13 test methods):
+    - Manager initialization
+    - Session creation with modes
+    - Participant addition/removal
+    - Turn request/release in sequential mode
+    - Concurrent mode behavior
+    - Turn addition with permissions
+    - Moderated mode with pending queue
+    - Contribution approval/rejection
+    - Conversation history retrieval
+    - Session persistence to JSON
+  * **TestSyncProtocol** class (3 test methods):
+    - Protocol initialization
+    - Handler registration/unregistration
+    - Message queue operations
+  * **TestSyncClient** class (2 test methods):
+    - Client initialization
+    - Message creation and formatting
+  * **TestAccessController** class (10 test methods):
+    - Controller initialization
+    - Permission checks for all roles
+    - Policy creation and access checks
+    - User-specific grant/revoke
+    - Role permission customization
+    - Policy management operations
+  * **TestIntegration** class (2 integration tests):
+    - Complete sequential collaboration workflow
+    - Moderated collaboration with approval workflow
+
+#### Benefits
+
+- **Multi-User Support**: Collaborate with multiple users in real-time
+- **100% Offline**: Works entirely over LAN, no internet required
+- **FOSS Only**: Pure Python with standard library (socket, threading, json)
+- **Flexible Modes**: Sequential, concurrent, or moderated collaboration
+- **Fine-Grained Access**: Role-based permissions with user overrides
+- **Turn Management**: Sequential mode prevents conflicts
+- **Moderation Queue**: Review contributions before acceptance
+- **Activity Tracking**: Monitor user activity and contributions
+- **LAN Synchronization**: UDP broadcast for state synchronization
+- **Thread-Safe**: Proper locking for concurrent operations
+- **Persistent State**: Save/load sessions to JSON
+- **Production-Ready**: Comprehensive testing, error handling
+
+- **Phase 29: Conversation Branching** - Branch and explore multiple conversation paths
+
+#### Conversation Branching
+
+- **Branch Manager** (src/jenova/branching/branch_manager.py - 460 lines)
+  * Manages conversation branches and turn history
+  * **ConversationTurn** dataclass:
+    - Unique turn identifier with timestamp
+    - User message and assistant response
+    - Extensible metadata storage
+  * **Branch** dataclass:
+    - Unique branch identifier
+    - Parent branch tracking for hierarchy
+    - Branch point turn (divergence point)
+    - Human-readable name and description
+    - Created timestamp and turn list
+  * **BranchManager** class:
+    - `add_turn()` - Add conversation turn to current branch
+    - `create_branch()` - Create new branch from any conversation point
+    - `switch_branch()` - Switch active branch for conversation
+    - `get_current_branch()` - Retrieve current active branch
+    - `get_branch()` - Get branch by ID
+    - `list_branches()` - List all branches with metadata
+    - `get_branch_tree()` - Recursive tree structure of branches
+    - `get_conversation_history()` - Retrieve turn history with optional limit
+    - `delete_branch()` - Delete branch with optional cascade or reparenting
+    - `save_to_file()` - Persist state to JSON
+    - `load_from_file()` - Restore state from JSON
+    - `get_stats()` - Comprehensive statistics
+  * **Features**:
+    - Create branches from any conversation turn
+    - Turn copying up to branch point
+    - Automatic turn ID generation
+    - Parent-child branch relationships
+    - JSON serialization with full state
+    - Branch deletion with child reparenting
+    - Cannot delete main branch or current branch
+    - Thread-safe turn counter
+
+- **Branch Navigator** (src/jenova/branching/branch_navigator.py - 330 lines)
+  * ASCII tree visualization and navigation helpers
+  * **BranchNavigator** class:
+    - `render_tree()` - ASCII tree with Unicode box-drawing characters
+    - `render_timeline()` - Timeline view of conversation turns
+    - `render_branch_info()` - Detailed branch information display
+    - `render_stats()` - Formatted statistics display
+    - `find_branch_by_name()` - Case-insensitive branch name search
+    - `get_branch_path()` - Path from root to branch (parent chain)
+    - `render_branch_path()` - Formatted path visualization
+    - `suggest_branches()` - Branch suggestions based on turn position
+  * **Visualization features**:
+    - Unicode tree rendering (├──, └──, │)
+    - Current branch marker (*)
+    - Optional turn counts per branch
+    - Timeline with user/assistant labels
+    - Branch info with parent, turns, created time
+    - Path visualization showing hierarchy
+    - Configurable display options
+
+- **Module Exports** (src/jenova/branching/__init__.py - 55 lines)
+  * Clean API surface with all public classes
+  * Organized imports by component
+  * Exports: ConversationTurn, Branch, BranchManager, BranchNavigator
+
+- **Comprehensive Test Suite** (tests/test_branching.py - 490 lines)
+  * **TestBranchManager** class (16 test methods):
+    - Manager initialization with main branch
+    - Single and multiple turn addition
+    - Branch creation from specific turn
+    - Branch creation from end of current branch
+    - Branch switching (valid and invalid)
+    - Current branch retrieval
+    - Branch retrieval by ID
+    - Branch listing with metadata
+    - Branch tree structure
+    - Conversation history with limits
+    - Branch deletion (normal, main, current)
+    - Branch deletion with child reparenting
+    - Cascading delete with children
+    - Save and load to JSON file
+    - Loading nonexistent file
+    - Statistics retrieval
+  * **TestBranchNavigator** class (9 test methods):
+    - Navigator initialization
+    - Tree rendering with turn counts
+    - Timeline rendering with limits
+    - Branch info rendering (valid and invalid)
+    - Statistics rendering
+    - Branch name search (case-insensitive)
+    - Branch path retrieval
+    - Branch path rendering
+    - Branch suggestions by turn
+  * **TestIntegration** class (2 integration tests):
+    - Complete branching workflow (create, switch, add turns)
+    - Save, load, and navigate workflow
+
+#### Benefits
+
+- **Conversation Exploration**: Branch and explore multiple conversation paths
+- **Non-Destructive**: Try alternative directions without losing original conversation
+- **Full History**: Every branch maintains complete turn-by-turn history
+- **Easy Navigation**: Switch between branches instantly
+- **Visual Tree**: ASCII tree shows complete branch structure
+- **Persistent State**: Save and load entire branch tree to JSON
+- **Flexible Deletion**: Delete branches with automatic child reparenting
+- **Safe Defaults**: Cannot delete main or current branch
+- **Production-Ready**: Comprehensive testing, error handling, thread-safe
+- **100% Offline**: All branching logic local, no external dependencies
+
+- **Phase 24: Adaptive Context Window Management** - Intelligent context prioritization and compression
+
+#### Adaptive Context Window Management
+
+- **Context Window Manager** (src/jenova/memory/context_window_manager.py - 450 lines)
+  * Dynamic relevance scoring based on multiple factors
+  * Priority queue implementation using max-heap for efficient retrieval
+  * Automatic eviction of low-priority items when token limit exceeded
+  * **ContextItem** dataclass:
+    - Tracks priority, content, type, metadata, token count, access frequency
+    - Automatic priority negation for max-heap behavior
+  * **ContextWindowManager** class:
+    - `add_context()` - Add context with automatic prioritization and deduplication
+    - `get_optimal_context()` - Retrieve highest-relevance context for query
+    - `calculate_relevance()` - Multi-factor relevance scoring (semantic 40%, recency 30%, frequency 20%, user priority 10%)
+    - `clear_context()` - Remove all context items
+    - `get_stats()` - Context window statistics and utilization
+  * Features:
+    - Semantic similarity scoring (keyword overlap, will integrate embeddings)
+    - Recency scoring with exponential decay (7-day half-life)
+    - Access frequency tracking with logarithmic scaling
+    - Token counting approximation (~4 chars per token)
+    - Content hash-based deduplication
+    - Automatic compression threshold monitoring
+
+- **Context Compression** (src/jenova/memory/context_compression.py - 330 lines)
+  * Multiple compression strategies for flexible optimization
+  * **ContextCompressor** class:
+    - `compress_context()` - Compress to target ratio using chosen strategy
+    - `_extractive_compression()` - TF-IDF-based sentence selection
+    - `_abstractive_compression()` - LLM-generated summaries (with fallback)
+    - `_hybrid_compression()` - Combined extractive + abstractive approach
+    - `get_compression_stats()` - Detailed compression metrics
+  * **Extractive compression**:
+    - TF-IDF sentence importance scoring
+    - Stop word filtering (60+ common words)
+    - Selects most informative sentences based on term frequency
+  * **Abstractive compression**:
+    - LLM-based summarization with configurable target length
+    - Graceful fallback to extractive if LLM unavailable
+    - Low temperature (0.3) for focused summaries
+  * **Hybrid compression**:
+    - Extractive pre-filtering (1.5x target ratio)
+    - Abstractive final compression (0.5x target ratio)
+    - Balances information retention with compression ratio
+
+- **Comprehensive Test Suite** (tests/test_context_window.py - 280 lines)
+  * **TestContextWindowManager** class (12 test methods):
+    - Initialization with default and custom parameters
+    - Context addition and deduplication
+    - Token counting approximation
+    - Priority-based eviction when over limit
+    - Query-optimized context retrieval
+    - Relevance calculation validation
+    - Recency scoring verification
+    - Access frequency tracking
+    - Context clearing
+    - Type-based grouping
+    - Statistics reporting
+  * **TestContextCompressor** class (8 test methods):
+    - Extractive compression with TF-IDF
+    - Important sentence selection
+    - Compression ratio achievement
+    - Compression statistics
+    - Sentence splitting
+    - Token ization with stop word removal
+    - TF-IDF importance scoring
+    - Edge cases (empty content, no compression needed)
+  * **TestContextIntegration** class (2 integration tests):
+    - Window with compression workflow
+    - Full end-to-end context management
+  * Pytest fixtures for reusable test data
+
+- **Configuration** (src/jenova/config/main_config.yaml)
+  * **context_window** section:
+    - `max_tokens: 4096` - Maximum context window size
+    - `compression_threshold: 0.8` - Begin compression at 80% full
+    - `min_priority_score: 0.3` - Evict items below 30% relevance
+    - `relevance_weights` - Configurable scoring factors (semantic 40%, recency 30%, frequency 20%, priority 10%)
+    - `compression` settings - Strategy (hybrid) and target ratio (0.3)
+
+#### Benefits
+
+- **Intelligent Context Selection**: Automatically prioritizes most relevant information
+- **Token Efficiency**: Respects model context limits through smart eviction
+- **Compression Flexibility**: Three strategies (extractive, abstractive, hybrid) for different use cases
+- **Performance Optimization**: LRU-style access tracking improves frequently-used content retrieval
+- **Graceful Degradation**: Extractive fallback when LLM unavailable
+- **Production-Ready**: Comprehensive error handling and edge case coverage
+
 - **Phase 21: Full Project Remediation & Modernization (Continued)** - Architecture refactoring, security hardening, and new feature infrastructure
 
 #### Core Architecture Modernization
