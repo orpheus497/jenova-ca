@@ -22,8 +22,11 @@ try:
         _pytorch_gpu = _quick_config.get("hardware", {}).get(
             "pytorch_gpu_enabled", False
         )
-except Exception:
+except (FileNotFoundError, yaml.YAMLError, KeyError, ValueError) as e:
     # If config can't be loaded, default to safe mode (PyTorch on CPU)
+    # This handles: missing config file, invalid YAML, missing keys, invalid values
+    import sys
+    print(f"Warning: Could not load config ({type(e).__name__}), using CPU-only mode for PyTorch", file=sys.stderr)
     _pytorch_gpu = False
 
 if not _pytorch_gpu:

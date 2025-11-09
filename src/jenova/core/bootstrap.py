@@ -39,7 +39,17 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from jenova.config import load_configuration
-from jenova.config.constants import *
+from jenova.config.constants import (
+    PROGRESS_LOADING_CONFIG,
+    PROGRESS_INIT_INFRASTRUCTURE,
+    PROGRESS_CHECKING_HEALTH,
+    PROGRESS_LOADING_MODEL,
+    PROGRESS_INIT_MEMORY,
+    PROGRESS_INIT_COGNITIVE,
+    PROGRESS_INIT_NETWORK,
+    PROGRESS_INIT_CLI_TOOLS,
+    PROGRESS_COMPLETE,
+)
 from jenova.core.container import DependencyContainer
 from jenova.infrastructure import (
     ErrorHandler,

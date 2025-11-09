@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Replaced wildcard import with explicit imports in `src/jenova/core/bootstrap.py` (line 42)
+  * Previously: `from jenova.config.constants import *`
+  * Now: Explicit imports of 9 required constants (PROGRESS_LOADING_CONFIG, PROGRESS_INIT_INFRASTRUCTURE, etc.)
+  * Impact: Improved code clarity, eliminated namespace pollution, enhanced maintainability
+- Enhanced exception handling in `src/jenova/main.py` (line 25)
+  * Replaced bare `except Exception:` with specific exception types: FileNotFoundError, yaml.YAMLError, KeyError, ValueError
+  * Added informative warning message to stderr with exception type
+  * Impact: Better error debugging, clearer failure modes, improved user feedback
+- Audit and Blueprint Documentation Created
+  * Created `.dev-docs/01-Initial_Audit.md` - Comprehensive 600+ line audit report covering all 159 Python files
+  * Created `.dev-docs/02-Remediation_Blueprint.md` - Detailed 1,400+ line remediation plan for all identified issues
+  * Documented all findings, priorities, and implementation roadmap
+
 ### Added
 
 - **Phase 25: Self-Optimization Engine** - Autonomous parameter tuning with Bayesian optimization
