@@ -564,6 +564,204 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Production-Ready**: Full test coverage, error handling, documentation
 - **Extensible**: Easy to add new export formats or analysis metrics
 
+- **Phase 30: Multi-User Collaboration** - LAN-based multi-user collaborative sessions
+
+#### Multi-User Collaboration
+
+- **User Session Manager** (src/jenova/collaboration/user_session.py - 460 lines)
+  * User session and profile management
+  * **UserRole** enum (4 roles):
+    - `owner` - Session creator with full control
+    - `admin` - Administrative privileges
+    - `contributor` - Can add content
+    - `viewer` - Read-only access
+  * **SessionStatus** enum (4 states):
+    - `active`, `idle`, `disconnected`, `kicked`
+  * **UserProfile** dataclass:
+    - User ID, username, display color
+    - Creation timestamp and metadata
+  * **UserSession** dataclass:
+    - Session ID, user profile, role, status
+    - Join/activity timestamps, IP address
+    - Contribution metrics (turns, messages)
+  * **UserSessionManager** class:
+    - `create_user()` - Create user profile with auto-generated color
+    - `get_user()` / `update_user()` - Profile management
+    - `create_session()` - Create user session with role
+    - `end_session()` - Terminate session
+    - `update_activity()` - Track activity with metrics
+    - `set_session_status()` - Update session status
+    - `get_active_sessions()` - Filter by active status
+    - `check_idle_sessions()` - Detect idle users (configurable timeout)
+    - `kick_session()` - Remove user with reason
+    - `get_session_stats()` / `get_all_stats()` - Comprehensive statistics
+  * Features:
+    - User profile persistence
+    - Activity tracking with timestamps
+    - Idle detection (default: 5 minutes)
+    - Session kick with reason tracking
+    - Automatic color assignment
+
+- **Collaboration Manager** (src/jenova/collaboration/collaboration_manager.py - 680 lines)
+  * Multi-user session orchestration
+  * **CollaborationMode** enum (3 modes):
+    - `sequential` - Turn-based, one user at a time
+    - `concurrent` - Multiple users simultaneously
+    - `moderated` - Requires moderator approval
+  * **ConversationState** enum:
+    - `idle`, `in_progress`, `waiting_approval`, `locked`
+  * **CollaborativeSession** dataclass:
+    - Session ID, name, description, owner
+    - Mode, state, timestamps
+    - Participant set, conversation turns
+    - Pending contributions queue
+  * **CollaborationManager** class:
+    - `create_session()` - Create collaborative session with mode
+    - `add_participant()` / `remove_participant()` - Manage participants
+    - `request_turn()` / `release_turn()` - Turn-based collaboration
+    - `add_turn()` - Add conversation turn with permission checks
+    - `approve_contribution()` / `reject_contribution()` - Moderation workflow
+    - `get_conversation_history()` - Retrieve shared history
+    - `get_session_participants()` - List participants
+    - `save_session()` - Persist to JSON
+    - `get_session_stats()` - Detailed statistics
+  * Features:
+    - Three collaboration modes
+    - Turn lock management (sequential)
+    - Moderation queue with approval workflow
+    - Shared conversation history
+    - Thread-safe with RLock
+    - JSON persistence
+
+- **Synchronization Protocol** (src/jenova/collaboration/sync_protocol.py - 540 lines)
+  * UDP-based LAN synchronization (100% offline)
+  * **MessageType** enum (16 types):
+    - Connection: connect, disconnect, heartbeat
+    - Session: create, join, leave, update
+    - Conversation: turn_add, turn_update, turn_delete
+    - Collaboration: request_turn, release_turn, grant_turn
+    - Moderation: contribution_submit, approve, reject
+    - State: state_request, state_response
+    - Error: error
+  * **SyncMessage** dataclass:
+    - Message ID, type, sender ID, timestamp
+    - Session ID, payload data
+  * **SyncProtocol** class:
+    - `start()` / `stop()` - Start/stop UDP listener
+    - `send_message()` - Queue message for broadcast
+    - `register_handler()` / `unregister_handler()` - Message handlers
+    - UDP broadcast on LAN (255.255.255.255)
+    - Separate send/receive threads
+    - Thread-safe message queue
+  * **SyncClient** class:
+    - `broadcast_turn_add()` - Broadcast conversation turn
+    - `broadcast_session_update()` - Broadcast state changes
+    - `request_turn()` - Request turn via protocol
+    - `send_heartbeat()` - Keep-alive messages
+    - Higher-level API over SyncProtocol
+  * Features:
+    - 100% LAN-based (no internet required)
+    - UDP broadcast for discovery
+    - Configurable port (default: 5000)
+    - Message handlers with callbacks
+    - Automatic JSON serialization
+    - Thread-safe operations
+
+- **Access Control** (src/jenova/collaboration/access_control.py - 380 lines)
+  * Role-based access control with fine-grained permissions
+  * **Permission** enum (14 permissions):
+    - Session: create, delete, configure
+    - User: invite, remove, promote, demote
+    - Content: add, edit, delete, view
+    - Collaboration: turn_request, turn_release
+    - Moderation: contribution_approve, contribution_reject
+    - State: read, write
+  * **ROLE_PERMISSIONS** mapping:
+    - Owner: all 14 permissions
+    - Admin: 12 permissions (no session create/delete)
+    - Contributor: 5 permissions (content_add, view, turn ops, state_read)
+    - Viewer: 2 permissions (content_view, state_read)
+  * **AccessPolicy** dataclass:
+    - Policy ID, resource ID
+    - Allowed roles set
+    - Denied/allowed user sets
+    - Metadata storage
+  * **AccessController** class:
+    - `check_permission()` - Verify role has permission
+    - `check_access()` - Verify user can access resource
+    - `create_policy()` - Create resource policy
+    - `grant_access()` / `revoke_access()` - User-specific access
+    - `add_role_to_policy()` / `remove_role_from_policy()` - Role management
+    - `grant_permission_to_role()` / `revoke_permission_from_role()` - Custom permissions
+    - `get_role_permissions()` - List role permissions
+    - `get_policy()` / `delete_policy()` - Policy management
+    - `get_stats()` - Access control statistics
+  * Features:
+    - Role-based default permissions
+    - User-specific overrides (whitelist/blacklist)
+    - Custom role permissions
+    - Resource-level policies
+    - Hierarchical access control
+
+- **Module Exports** (src/jenova/collaboration/__init__.py - 80 lines)
+  * Clean API surface with all public classes
+  * Organized imports by component
+  * Exports all dataclasses, enums, and managers
+
+- **Comprehensive Test Suite** (tests/test_collaboration.py - 720 lines)
+  * **TestUserSessionManager** class (12 test methods):
+    - Manager initialization and user creation
+    - Duplicate user handling
+    - User retrieval and updates
+    - Session creation, retrieval, termination
+    - Activity tracking and metrics
+    - Active/idle session filtering
+    - Session kicking with reasons
+    - Statistics generation
+  * **TestCollaborationManager** class (13 test methods):
+    - Manager initialization
+    - Session creation with modes
+    - Participant addition/removal
+    - Turn request/release in sequential mode
+    - Concurrent mode behavior
+    - Turn addition with permissions
+    - Moderated mode with pending queue
+    - Contribution approval/rejection
+    - Conversation history retrieval
+    - Session persistence to JSON
+  * **TestSyncProtocol** class (3 test methods):
+    - Protocol initialization
+    - Handler registration/unregistration
+    - Message queue operations
+  * **TestSyncClient** class (2 test methods):
+    - Client initialization
+    - Message creation and formatting
+  * **TestAccessController** class (10 test methods):
+    - Controller initialization
+    - Permission checks for all roles
+    - Policy creation and access checks
+    - User-specific grant/revoke
+    - Role permission customization
+    - Policy management operations
+  * **TestIntegration** class (2 integration tests):
+    - Complete sequential collaboration workflow
+    - Moderated collaboration with approval workflow
+
+#### Benefits
+
+- **Multi-User Support**: Collaborate with multiple users in real-time
+- **100% Offline**: Works entirely over LAN, no internet required
+- **FOSS Only**: Pure Python with standard library (socket, threading, json)
+- **Flexible Modes**: Sequential, concurrent, or moderated collaboration
+- **Fine-Grained Access**: Role-based permissions with user overrides
+- **Turn Management**: Sequential mode prevents conflicts
+- **Moderation Queue**: Review contributions before acceptance
+- **Activity Tracking**: Monitor user activity and contributions
+- **LAN Synchronization**: UDP broadcast for state synchronization
+- **Thread-Safe**: Proper locking for concurrent operations
+- **Persistent State**: Save/load sessions to JSON
+- **Production-Ready**: Comprehensive testing, error handling
+
 - **Phase 29: Conversation Branching** - Branch and explore multiple conversation paths
 
 #### Conversation Branching

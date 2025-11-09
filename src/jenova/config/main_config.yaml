@@ -319,3 +319,43 @@ conversation_branching:
     max_turns_per_branch: 1000  # Maximum turns per branch (prevents memory issues)
     include_metadata: true  # Store metadata with each turn (tokens, duration, etc.)
     compress_old_turns: false  # Compress old turn data to save space
+
+# Phase 30: Multi-User Collaboration
+multi_user_collaboration:
+  # Enable multi-user collaboration over LAN
+  enabled: false  # Opt-in feature (requires explicit user activation)
+  # Network settings
+  network:
+    port: 5000  # UDP port for LAN communication
+    broadcast_address: "255.255.255.255"  # LAN broadcast address
+    max_message_size: 65536  # Maximum UDP message size (bytes)
+    heartbeat_interval: 30  # Heartbeat interval (seconds)
+  # Session management
+  session_management:
+    max_participants: 20  # Maximum participants per session
+    idle_timeout: 300  # Idle timeout in seconds (5 minutes)
+    auto_kick_idle: false  # Automatically kick idle users
+    session_timeout: 3600  # Session timeout in seconds (1 hour)
+  # Collaboration modes
+  collaboration:
+    default_mode: sequential  # Default mode: sequential, concurrent, or moderated
+    allow_mode_change: true  # Allow changing mode after session creation
+    turn_timeout: 120  # Turn timeout in sequential mode (seconds)
+    auto_release_turn: true  # Auto-release turn after timeout
+  # Moderation settings
+  moderation:
+    require_approval_for_viewers: false  # Viewers' contributions require approval
+    require_approval_for_contributors: false  # Contributors' contributions require approval
+    auto_approve_timeout: 300  # Auto-approve after timeout (seconds, 0 = never)
+    max_pending_contributions: 100  # Maximum pending contributions per session
+  # Access control
+  access_control:
+    enforce_permissions: true  # Enforce role-based permissions
+    allow_custom_roles: true  # Allow custom role permissions
+    default_viewer_readonly: true  # Viewers are read-only by default
+  # Synchronization
+  synchronization:
+    sync_interval: 1  # State synchronization interval (seconds)
+    max_sync_retries: 3  # Maximum sync retry attempts
+    sync_timeout: 5  # Synchronization timeout (seconds)
+    broadcast_updates: true  # Broadcast updates to all participants
