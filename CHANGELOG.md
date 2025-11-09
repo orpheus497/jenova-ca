@@ -564,6 +564,115 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Production-Ready**: Full test coverage, error handling, documentation
 - **Extensible**: Easy to add new export formats or analysis metrics
 
+- **Phase 29: Conversation Branching** - Branch and explore multiple conversation paths
+
+#### Conversation Branching
+
+- **Branch Manager** (src/jenova/branching/branch_manager.py - 460 lines)
+  * Manages conversation branches and turn history
+  * **ConversationTurn** dataclass:
+    - Unique turn identifier with timestamp
+    - User message and assistant response
+    - Extensible metadata storage
+  * **Branch** dataclass:
+    - Unique branch identifier
+    - Parent branch tracking for hierarchy
+    - Branch point turn (divergence point)
+    - Human-readable name and description
+    - Created timestamp and turn list
+  * **BranchManager** class:
+    - `add_turn()` - Add conversation turn to current branch
+    - `create_branch()` - Create new branch from any conversation point
+    - `switch_branch()` - Switch active branch for conversation
+    - `get_current_branch()` - Retrieve current active branch
+    - `get_branch()` - Get branch by ID
+    - `list_branches()` - List all branches with metadata
+    - `get_branch_tree()` - Recursive tree structure of branches
+    - `get_conversation_history()` - Retrieve turn history with optional limit
+    - `delete_branch()` - Delete branch with optional cascade or reparenting
+    - `save_to_file()` - Persist state to JSON
+    - `load_from_file()` - Restore state from JSON
+    - `get_stats()` - Comprehensive statistics
+  * **Features**:
+    - Create branches from any conversation turn
+    - Turn copying up to branch point
+    - Automatic turn ID generation
+    - Parent-child branch relationships
+    - JSON serialization with full state
+    - Branch deletion with child reparenting
+    - Cannot delete main branch or current branch
+    - Thread-safe turn counter
+
+- **Branch Navigator** (src/jenova/branching/branch_navigator.py - 330 lines)
+  * ASCII tree visualization and navigation helpers
+  * **BranchNavigator** class:
+    - `render_tree()` - ASCII tree with Unicode box-drawing characters
+    - `render_timeline()` - Timeline view of conversation turns
+    - `render_branch_info()` - Detailed branch information display
+    - `render_stats()` - Formatted statistics display
+    - `find_branch_by_name()` - Case-insensitive branch name search
+    - `get_branch_path()` - Path from root to branch (parent chain)
+    - `render_branch_path()` - Formatted path visualization
+    - `suggest_branches()` - Branch suggestions based on turn position
+  * **Visualization features**:
+    - Unicode tree rendering (├──, └──, │)
+    - Current branch marker (*)
+    - Optional turn counts per branch
+    - Timeline with user/assistant labels
+    - Branch info with parent, turns, created time
+    - Path visualization showing hierarchy
+    - Configurable display options
+
+- **Module Exports** (src/jenova/branching/__init__.py - 55 lines)
+  * Clean API surface with all public classes
+  * Organized imports by component
+  * Exports: ConversationTurn, Branch, BranchManager, BranchNavigator
+
+- **Comprehensive Test Suite** (tests/test_branching.py - 490 lines)
+  * **TestBranchManager** class (16 test methods):
+    - Manager initialization with main branch
+    - Single and multiple turn addition
+    - Branch creation from specific turn
+    - Branch creation from end of current branch
+    - Branch switching (valid and invalid)
+    - Current branch retrieval
+    - Branch retrieval by ID
+    - Branch listing with metadata
+    - Branch tree structure
+    - Conversation history with limits
+    - Branch deletion (normal, main, current)
+    - Branch deletion with child reparenting
+    - Cascading delete with children
+    - Save and load to JSON file
+    - Loading nonexistent file
+    - Statistics retrieval
+  * **TestBranchNavigator** class (9 test methods):
+    - Navigator initialization
+    - Tree rendering with turn counts
+    - Timeline rendering with limits
+    - Branch info rendering (valid and invalid)
+    - Statistics rendering
+    - Branch name search (case-insensitive)
+    - Branch path retrieval
+    - Branch path rendering
+    - Branch suggestions by turn
+  * **TestIntegration** class (2 integration tests):
+    - Complete branching workflow (create, switch, add turns)
+    - Save, load, and navigate workflow
+
+#### Benefits
+
+- **Conversation Exploration**: Branch and explore multiple conversation paths
+- **Non-Destructive**: Try alternative directions without losing original conversation
+- **Full History**: Every branch maintains complete turn-by-turn history
+- **Easy Navigation**: Switch between branches instantly
+- **Visual Tree**: ASCII tree shows complete branch structure
+- **Persistent State**: Save and load entire branch tree to JSON
+- **Flexible Deletion**: Delete branches with automatic child reparenting
+- **Safe Defaults**: Cannot delete main or current branch
+- **Production-Ready**: Comprehensive testing, error handling, thread-safe
+- **100% Offline**: All branching logic local, no external dependencies
+
 - **Phase 24: Adaptive Context Window Management** - Intelligent context prioritization and compression
 
 #### Adaptive Context Window Management

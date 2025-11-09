@@ -289,3 +289,33 @@ emotional_intelligence:
     adjust_llm_parameters: true  # Adjust temperature/tokens based on emotion
     include_context_in_prompt: true  # Add emotional context to system prompt
     max_prefix_variants: 4  # Number of prefix variations to rotate through
+
+# Phase 29: Conversation Branching
+conversation_branching:
+  # Enable conversation branching and exploration
+  enabled: false  # Opt-in feature (requires explicit user activation)
+  # Branch management settings
+  branch_management:
+    auto_save_enabled: true  # Automatically save branches to disk
+    save_path: "branches"  # Directory for branch state files (relative to user data)
+    max_branches: 50  # Maximum number of branches (prevents unbounded growth)
+    auto_prune_old: false  # Automatically delete old unused branches
+    prune_age_days: 30  # Age threshold for auto-pruning (days)
+  # Branch visualization settings
+  visualization:
+    max_tree_depth: 5  # Maximum depth for tree rendering (prevents overwhelming output)
+    show_turn_counts: true  # Show turn counts in branch tree
+    show_timestamps: true  # Show creation timestamps in branch info
+    max_timeline_turns: 20  # Maximum turns to show in timeline view
+  # Branch navigation
+  navigation:
+    enable_suggestions: true  # Suggest branches when user might want to branch
+    suggestion_triggers:
+      - long_conversation  # After N turns without branching
+      - alternative_question  # When user asks "what if" or similar
+    suggestion_threshold_turns: 10  # Suggest branching after N turns
+  # Turn history settings
+  history:
+    max_turns_per_branch: 1000  # Maximum turns per branch (prevents memory issues)
+    include_metadata: true  # Store metadata with each turn (tokens, duration, etc.)
+    compress_old_turns: false  # Compress old turn data to save space
