@@ -362,10 +362,40 @@ watch -n 1 nvidia-smi
 
 ## 5. User Guide
 
-Interaction with JENOVA is primarily through natural language.
+JENOVA provides a **rich, interactive terminal interface** powered by the `rich` library and `prompt-toolkit`. All interaction happens through the command line - there is no web UI or voice interface.
 
+### 5.0. Terminal Interface
+
+**Starting JENOVA:**
+```bash
+source venv/bin/activate
+python -m jenova.main
+```
+
+**Terminal Features:**
+- **Rich Text Formatting**: Syntax highlighting, markdown rendering, and color-coded output
+- **Interactive Prompt**: Auto-completion, command history, and multi-line input support
+- **Real-Time Metrics**: Live display of system health, memory usage, and response times
+- **Command System**: 25+ built-in commands for system control and cognitive management
+- **Health Monitoring**: Visual indicators for CPU, GPU, memory, and model status
+- **Conversation History**: Automatic saving of all interactions to episodic memory
+
+**Basic Interaction:**
 -   **User Input:** Simply type your message and press Enter.
--   **Exiting:** To quit the application, type `exit` and press Enter.
+-   **Multi-line Input:** Press `Alt+Enter` or `Esc+Enter` for new lines without submitting
+-   **Exiting:** Type `exit` and press Enter, or press `Ctrl+D`
+-   **Command Prefix:** All system commands start with `/` (e.g., `/help`, `/status`, `/health`)
+-   **Help System:** Type `/help` at any time to see available commands and usage
+
+**Visual Elements:**
+- **Color-Coded Messages**: 
+  - User input: Cyan
+  - AI responses: Green
+  - System messages: Yellow
+  - Errors: Red
+- **Progress Indicators**: Animated spinners during model loading and processing
+- **Tables and Panels**: Organized display of metrics, status, and health information
+- **Markdown Support**: AI can render formatted text, code blocks, and lists
 
 ### 5.1. Command Reference
 
