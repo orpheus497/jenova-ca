@@ -8,9 +8,9 @@
 llama-cpp-python>=0.3.0,<0.4.0
 
 # PyTorch (CUDA 12.1+ support) - Python 3.10-3.13 compatible
-# Note: torch>=2.5.1 required for Python 3.13 support
-# Upper bound prevents breaking changes in torch 2.6+
-torch>=2.5.1,<2.6.0
+# Note: torch>=2.6.0 required for security patch (CVE for torch.load with weights_only=True)
+# Supports Python 3.9-3.13
+torch>=2.6.0,<2.7.0
 
 # Vector Database and Embeddings
 # Upper bounds ensure compatibility between torch, chromadb, and sentence-transformers
@@ -46,8 +46,8 @@ filelock>=3.16.0,<4.0.0
 zeroconf>=0.140.0,<1.0.0         # mDNS service discovery (MIT License)
 grpcio>=1.69.0,<1.70.0           # gRPC framework (Apache 2.0 License)
 grpcio-tools>=1.69.0,<1.70.0     # Protocol Buffer compiler (Apache 2.0 License)
-# CRITICAL: protobuf must be <5.0.0 - protobuf 5.x breaks grpcio and many ML packages
-protobuf>=4.25.2,<5.0.0          # Protocol Buffers (BSD License)
+# CRITICAL: protobuf must be <5.0.0 for grpcio compatibility, but >=4.25.8 for security patches
+protobuf>=4.25.8,<5.0.0          # Protocol Buffers (BSD License)
 PyJWT>=2.10.0,<3.0.0             # JWT tokens (MIT License)
 
 # Phases 13-17: Enhanced CLI Capabilities (FOSS)

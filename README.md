@@ -4,6 +4,8 @@
 
 JENOVA is an evolving large language model system powered by The JENOVA Cognitive Architecture (JCA), a comprehensive cognitive framework designed by orpheus497. The architecture implements a sophisticated cognitive processing system that learns, adapts, and assists through multi-layered memory, reflective reasoning, and continuous knowledge integration.
 
+**Interface:** JENOVA is a **100% terminal-based application** with a rich, interactive command-line interface. There is no web UI or voice interface - all interaction happens through a sophisticated terminal interface powered by the `rich` library and `prompt-toolkit`.
+
 ### 1.1. What is JENOVA?
 
 JENOVA represents a comprehensive approach to building stateful, learning-capable AI systems. Unlike traditional stateless LLM deployments, JENOVA implements:
@@ -14,6 +16,7 @@ JENOVA represents a comprehensive approach to building stateful, learning-capabl
 - **Distributed Computing Architecture**: LAN-based resource pooling for parallel inference and federated memory search
 - **Continuous Learning Loop**: Reflection, insight generation, and knowledge integration capabilities
 - **Production-Ready Infrastructure**: Comprehensive error handling, timeout protection, health monitoring, and type-safe configuration
+- **Rich Terminal Interface**: Interactive CLI with real-time metrics, health monitoring, and 25+ built-in tools
 
 The architecture is designed for local deployment with full user control over models, data, and processing. All cognitive processes run locally with optional distributed computing across trusted LAN peers.
 
