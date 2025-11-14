@@ -4,6 +4,8 @@
 
 JENOVA is an evolving large language model system powered by The JENOVA Cognitive Architecture (JCA), a comprehensive cognitive framework designed by orpheus497. The architecture implements a sophisticated cognitive processing system that learns, adapts, and assists through multi-layered memory, reflective reasoning, and continuous knowledge integration.
 
+**Interface:** JENOVA is a **100% terminal-based application** with a rich, interactive command-line interface. There is no web UI or voice interface - all interaction happens through a sophisticated terminal interface powered by the `rich` library and `prompt-toolkit`.
+
 ### 1.1. What is JENOVA?
 
 JENOVA represents a comprehensive approach to building stateful, learning-capable AI systems. Unlike traditional stateless LLM deployments, JENOVA implements:
@@ -14,6 +16,7 @@ JENOVA represents a comprehensive approach to building stateful, learning-capabl
 - **Distributed Computing Architecture**: LAN-based resource pooling for parallel inference and federated memory search
 - **Continuous Learning Loop**: Reflection, insight generation, and knowledge integration capabilities
 - **Production-Ready Infrastructure**: Comprehensive error handling, timeout protection, health monitoring, and type-safe configuration
+- **Rich Terminal Interface**: Interactive CLI with real-time metrics, health monitoring, and 25+ built-in tools
 
 The architecture is designed for local deployment with full user control over models, data, and processing. All cognitive processes run locally with optional distributed computing across trusted LAN peers.
 
@@ -359,10 +362,40 @@ watch -n 1 nvidia-smi
 
 ## 5. User Guide
 
-Interaction with JENOVA is primarily through natural language.
+JENOVA provides a **rich, interactive terminal interface** powered by the `rich` library and `prompt-toolkit`. All interaction happens through the command line - there is no web UI or voice interface.
 
+### 5.0. Terminal Interface
+
+**Starting JENOVA:**
+```bash
+source venv/bin/activate
+python -m jenova.main
+```
+
+**Terminal Features:**
+- **Rich Text Formatting**: Syntax highlighting, markdown rendering, and color-coded output
+- **Interactive Prompt**: Auto-completion, command history, and multi-line input support
+- **Real-Time Metrics**: Live display of system health, memory usage, and response times
+- **Command System**: 25+ built-in commands for system control and cognitive management
+- **Health Monitoring**: Visual indicators for CPU, GPU, memory, and model status
+- **Conversation History**: Automatic saving of all interactions to episodic memory
+
+**Basic Interaction:**
 -   **User Input:** Simply type your message and press Enter.
--   **Exiting:** To quit the application, type `exit` and press Enter.
+-   **Multi-line Input:** Press `Alt+Enter` or `Esc+Enter` for new lines without submitting
+-   **Exiting:** Type `exit` and press Enter, or press `Ctrl+D`
+-   **Command Prefix:** All system commands start with `/` (e.g., `/help`, `/status`, `/health`)
+-   **Help System:** Type `/help` at any time to see available commands and usage
+
+**Visual Elements:**
+- **Color-Coded Messages**: 
+  - User input: Cyan
+  - AI responses: Green
+  - System messages: Yellow
+  - Errors: Red
+- **Progress Indicators**: Animated spinners during model loading and processing
+- **Tables and Panels**: Organized display of metrics, status, and health information
+- **Markdown Support**: AI can render formatted text, code blocks, and lists
 
 ### 5.1. Command Reference
 
