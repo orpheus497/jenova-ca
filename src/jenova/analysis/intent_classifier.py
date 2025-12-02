@@ -100,8 +100,16 @@ class IntentClassifier:
     and system operations.
     """
 
-    def __init__(self):
-        """Initialize the intent classifier with pattern rules."""
+    def __init__(self, config=None, file_logger=None):
+        """
+        Initialize the intent classifier with pattern rules.
+
+        Args:
+            config: Optional JENOVA configuration dictionary
+            file_logger: Optional file logger instance
+        """
+        self.config = config or {}
+        self.file_logger = file_logger
         self.patterns = self._build_patterns()
         self.entity_extractors = self._build_entity_extractors()
 

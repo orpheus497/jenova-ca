@@ -28,6 +28,15 @@ except ImportError:
     )
 
 
+class RPCRequestError(Exception):
+    """Custom exception for RPC request failures that aren't gRPC errors."""
+    
+    def __init__(self, message: str, error_code: str = "FAILED_REQUEST"):
+        self.message = message
+        self.error_code = error_code
+        super().__init__(message)
+
+
 class JenovaRPCClient:
     """
     gRPC client for communicating with peer JENOVA instances.
@@ -202,7 +211,7 @@ class JenovaRPCClient:
 
             # Check if request succeeded
             if not response.success:
-                raise grpc.RpcError(f"Generation failed: {response.error_message}")
+                raise RPCRequestError(f"Generation failed: {response.error_message}")
 
             # Record result with peer manager
             if self.peer_manager:
@@ -218,7 +227,22 @@ class JenovaRPCClient:
 
         except grpc.RpcError as e:
             response_time_ms = (time.time() - start_time) * 1000
-            self.file_logger.log_error(f"RPC error: {e.code()} - {e.details()}")
+            # Safely get code and details - grpc.RpcError may not have these methods
+            # when it comes from actual gRPC calls, they are subclasses with these methods
+            error_code = getattr(e, 'code', lambda: 'UNKNOWN')()
+            error_details = getattr(e, 'details', lambda: str(e))()
+            self.file_logger.log_error(f"RPC error: {error_code} - {error_details}")
+
+            if self.peer_manager and peer_id:
+                self.peer_manager.record_request_result(
+                    peer_id=peer_id, success=False, response_time_ms=response_time_ms
+                )
+
+            raise  # Let retry decorator handle it
+
+        except RPCRequestError as e:
+            response_time_ms = (time.time() - start_time) * 1000
+            self.file_logger.log_error(f"RPC request error: {e.error_code} - {e.message}")
 
             if self.peer_manager and peer_id:
                 self.peer_manager.record_request_result(
@@ -301,7 +325,7 @@ class JenovaRPCClient:
 
             # Check if request succeeded
             if not response.success:
-                raise grpc.RpcError(f"Embedding failed: {response.error_message}")
+                raise RPCRequestError(f"Embedding failed: {response.error_message}")
 
             # Record result
             if self.peer_manager:
@@ -313,7 +337,20 @@ class JenovaRPCClient:
 
         except grpc.RpcError as e:
             response_time_ms = (time.time() - start_time) * 1000
-            self.file_logger.log_error(f"RPC error: {e.code()} - {e.details()}")
+            error_code = getattr(e, 'code', lambda: 'UNKNOWN')()
+            error_details = getattr(e, 'details', lambda: str(e))()
+            self.file_logger.log_error(f"RPC error: {error_code} - {error_details}")
+
+            if self.peer_manager and peer_id:
+                self.peer_manager.record_request_result(
+                    peer_id=peer_id, success=False, response_time_ms=response_time_ms
+                )
+
+            raise
+
+        except RPCRequestError as e:
+            response_time_ms = (time.time() - start_time) * 1000
+            self.file_logger.log_error(f"RPC request error: {e.error_code} - {e.message}")
 
             if self.peer_manager and peer_id:
                 self.peer_manager.record_request_result(
@@ -394,7 +431,7 @@ class JenovaRPCClient:
 
             # Check if request succeeded
             if not response.success:
-                raise grpc.RpcError(f"Batch embedding failed: {response.error_message}")
+                raise RPCRequestError(f"Batch embedding failed: {response.error_message}")
 
             if self.peer_manager:
                 self.peer_manager.record_request_result(

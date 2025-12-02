@@ -90,14 +90,23 @@ class CodeMetrics:
     - Code quality issues detection
     """
 
-    def __init__(self):
-        """Initialize code metrics analyzer."""
+    def __init__(self, config=None, file_logger=None):
+        """
+        Initialize code metrics analyzer.
+
+        Args:
+            config: Optional JENOVA configuration dictionary
+            file_logger: Optional file logger instance
+        """
+        self.config = config or {}
+        self.file_logger = file_logger
         self.radon_available = RADON_AVAILABLE
 
-        # Thresholds for quality issues
-        self.complexity_threshold = 10
-        self.function_length_threshold = 50
-        self.maintainability_threshold = 20.0
+        # Thresholds for quality issues (can be overridden by config)
+        analysis_config = self.config.get("analysis", {}) if isinstance(self.config, dict) else {}
+        self.complexity_threshold = analysis_config.get("complexity_threshold", 10)
+        self.function_length_threshold = analysis_config.get("function_length_threshold", 50)
+        self.maintainability_threshold = analysis_config.get("maintainability_threshold", 20.0)
 
     def calculate(self, code: str, file_path: str = "inline") -> Dict:
         """
