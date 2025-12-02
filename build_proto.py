@@ -83,6 +83,19 @@ def compile_protos():
         )
         return 1
 
+    # Fix import statement in grpc file for package compatibility
+    # Generated code uses `import jenova_pb2` but needs package-relative import
+    print("Fixing import statements for package compatibility...")
+    grpc_content = pb2_grpc_file.read_text()
+    old_import = "import jenova_pb2 as jenova__pb2"
+    new_import = "from jenova.network.proto import jenova_pb2 as jenova__pb2"
+    if old_import in grpc_content:
+        grpc_content = grpc_content.replace(old_import, new_import)
+        pb2_grpc_file.write_text(grpc_content)
+        print("  Fixed: jenova_pb2_grpc.py import statement")
+    else:
+        print("  Note: Import statement already correct or not found")
+
     print("✓ Protocol Buffer compilation successful!")
     print(f"  Generated: {pb2_file.name}")
     print(f"  Generated: {pb2_grpc_file.name}")

@@ -403,6 +403,29 @@ class SecurityManager:
             del self.trusted_peers[peer_id]
             self.file_logger.log_info(f"Unpinned certificate for peer {peer_id}")
 
+    def get_ssl_context(self):
+        """
+        Get an SSL context configured with the server's certificates.
+        
+        Returns:
+            ssl.SSLContext configured for gRPC server use, or None if security is disabled
+        """
+        if not self.security_enabled:
+            return None
+        
+        import ssl
+        
+        try:
+            ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            ssl_context.load_cert_chain(
+                certfile=str(self.certificate_path),
+                keyfile=str(self.private_key_path),
+            )
+            return ssl_context
+        except Exception as e:
+            self.file_logger.log_error(f"Failed to create SSL context: {e}")
+            return None
+
     def close(self):
         """Clean up security resources."""
         # Clear password cache on shutdown

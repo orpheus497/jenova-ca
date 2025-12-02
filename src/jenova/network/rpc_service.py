@@ -11,11 +11,13 @@ This module implements the server-side gRPC service that allows peers to
 request LLM inference, embeddings, and memory search operations.
 """
 
+import platform
 import time
 from concurrent import futures
 from typing import Optional
 
 import grpc
+import psutil
 
 # Import generated protobuf modules
 try:
@@ -509,13 +511,65 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
 
     def _create_capabilities_response(self):
         """Create CapabilitiesResponse using protobuf."""
-        return jenova_pb2.CapabilitiesResponse(
+        # Build ResourceSharing message
+        sharing = jenova_pb2.ResourceSharing(
             share_llm=self.share_llm,
             share_embeddings=self.share_embeddings,
             share_memory=self.share_memory,
             max_concurrent_requests=self.max_concurrent,
-            supports_streaming=False,  # Not yet implemented
-            version="5.0.0",
+            current_load_percent=0,  # Would need actual load tracking
+        )
+        
+        # Build HardwareCapabilities message
+        try:
+            cpu_count = psutil.cpu_count(logical=False) or 1
+            cpu_threads = psutil.cpu_count(logical=True) or 1
+            memory = psutil.virtual_memory()
+            total_ram_mb = memory.total // (1024 * 1024)
+            available_ram_mb = memory.available // (1024 * 1024)
+        except Exception:
+            cpu_count = 1
+            cpu_threads = 1
+            total_ram_mb = 0
+            available_ram_mb = 0
+        
+        hardware = jenova_pb2.HardwareCapabilities(
+            cpu_cores=cpu_count,
+            cpu_threads=cpu_threads,
+            total_ram_mb=total_ram_mb,
+            available_ram_mb=available_ram_mb,
+            platform=platform.system().lower(),
+            architecture=platform.machine(),
+        )
+        
+        # Get model info if available
+        models = []
+        model_config = self.config.get("model", {})
+        if model_config:
+            gpu_layers_config = model_config.get("gpu_layers", 0)
+            gpu_layers = gpu_layers_config if isinstance(gpu_layers_config, int) else 0
+            
+            models.append(jenova_pb2.ModelInfo(
+                model_name=model_config.get("model_path", "unknown"),
+                model_type="llm",
+                context_size=model_config.get("context_size", 4096),
+                gpu_layers=gpu_layers,
+                available=True,
+            ))
+            models.append(jenova_pb2.ModelInfo(
+                model_name=model_config.get("embedding_model", "all-MiniLM-L6-v2"),
+                model_type="embedding",
+                available=True,
+            ))
+        
+        return jenova_pb2.CapabilitiesResponse(
+            instance_id=self.config.get("instance_id", "unknown"),
+            instance_name=self.config.get("instance_name", "jenova-instance"),
+            hardware=hardware,
+            models=models,
+            sharing=sharing,
+            jenova_version="6.0.0",
+            protocol_version="1.0",
         )
 
     def _create_metrics_response(self):

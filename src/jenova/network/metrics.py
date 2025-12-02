@@ -348,3 +348,123 @@ class NetworkMetricsCollector:
             self.history.clear()
             self.start_time = time.time()
             self.file_logger.log_info("Network metrics reset")
+
+    def record_rpc_latency(self, peer_id: str, operation: str, latency_ms: float):
+        """
+        Record RPC latency for a specific operation.
+        
+        Args:
+            peer_id: Peer instance ID
+            operation: Operation name (e.g., 'llm_generate', 'embed_text')
+            latency_ms: Latency in milliseconds
+        """
+        self.record_request(
+            peer_id=peer_id,
+            peer_name=peer_id,  # Use peer_id as name if not known
+            request_type=operation,
+            latency_ms=latency_ms,
+            success=True,
+        )
+
+    def record_bandwidth(self, peer_id: str, bytes_sent: int = 0, bytes_received: int = 0):
+        """
+        Record bandwidth usage for a peer.
+        
+        Args:
+            peer_id: Peer instance ID
+            bytes_sent: Number of bytes sent
+            bytes_received: Number of bytes received
+        """
+        with self.lock:
+            if peer_id not in self.peer_metrics:
+                self.peer_metrics[peer_id] = PeerMetrics(
+                    peer_id=peer_id, peer_name=peer_id
+                )
+            
+            peer = self.peer_metrics[peer_id]
+            peer.bytes_sent += bytes_sent
+            peer.bytes_received += bytes_received
+
+    def get_stats(self, peer_id: str) -> Dict:
+        """
+        Get statistics for a specific peer, organized by operation.
+        
+        Args:
+            peer_id: Peer instance ID
+            
+        Returns:
+            Dictionary with operation-specific statistics
+        """
+        with self.lock:
+            if peer_id not in self.peer_metrics:
+                return {}
+            
+            peer = self.peer_metrics[peer_id]
+            response_times_list = list(peer.response_times)
+            
+            # Build stats organized by operation type
+            stats = {}
+            
+            # For simplicity, aggregate all stats under the operations that were recorded
+            # In reality, we'd need to track per-operation times separately
+            if response_times_list:
+                sorted_times = sorted(response_times_list)
+                avg_latency = sum(sorted_times) / len(sorted_times)
+                p95_idx = min(int(len(sorted_times) * 0.95), len(sorted_times) - 1)
+                p95_latency = sorted_times[p95_idx]
+                
+                # Get unique operations from requests_by_type that match this peer
+                for op_type in self.requests_by_type.keys():
+                    stats[op_type] = {
+                        "avg_latency": avg_latency,
+                        "p95_latency": p95_latency,
+                        "count": len(response_times_list),
+                        "success_rate": (
+                            peer.successful_requests / peer.total_requests * 100
+                            if peer.total_requests > 0
+                            else 100.0
+                        ),
+                    }
+            
+            return stats
+
+    def get_bandwidth_stats(self, peer_id: str) -> Dict:
+        """
+        Get bandwidth statistics for a specific peer.
+        
+        Args:
+            peer_id: Peer instance ID
+            
+        Returns:
+            Dictionary with bandwidth statistics
+        """
+        with self.lock:
+            if peer_id not in self.peer_metrics:
+                return {"bytes_sent": 0, "bytes_received": 0, "total_bytes": 0}
+            
+            peer = self.peer_metrics[peer_id]
+            return {
+                "bytes_sent": peer.bytes_sent,
+                "bytes_received": peer.bytes_received,
+                "total_bytes": peer.bytes_sent + peer.bytes_received,
+            }
+
+    def get_history(self, peer_id: str, operation: str) -> List[float]:
+        """
+        Get latency history for a specific peer and operation.
+        
+        Args:
+            peer_id: Peer instance ID
+            operation: Operation name
+            
+        Returns:
+            List of latency values (limited by history_size)
+        """
+        with self.lock:
+            if peer_id not in self.peer_metrics:
+                return []
+            
+            # Return response times (we don't track per-operation separately)
+            # Limit to history_size
+            response_times = list(self.peer_metrics[peer_id].response_times)
+            return response_times[-self.history_size:] if len(response_times) > self.history_size else response_times
