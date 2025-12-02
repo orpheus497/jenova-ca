@@ -31,17 +31,21 @@ class CommandRegistry:
         self,
         cognitive_engine: Any,
         ui_logger: Any,
-        file_logger: Any = None,
-        **kwargs
+        file_logger: Optional[Any] = None,
+        **kwargs: Any
     ):
         """
         Initialize command registry.
 
         Args:
-            cognitive_engine: Cognitive engine instance
-            ui_logger: UI logger instance
-            file_logger: File logger instance
-            **kwargs: Additional dependencies to pass to handlers
+            cognitive_engine: CognitiveEngine instance that provides AI capabilities.
+                              Used for AI-assisted command execution.
+            ui_logger: UILogger instance for displaying output to the user.
+                       Must have methods like info(), warning(), error(), success().
+            file_logger: Optional FileLogger instance for logging to files.
+                         Must have methods like log_info(), log_warning(), log_error().
+            **kwargs: Additional dependencies to pass to command handlers.
+                      Common kwargs include: config (dict), memory_search, llm_interface.
         """
         self.cognitive_engine = cognitive_engine
         self.ui_logger = ui_logger
