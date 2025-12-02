@@ -16,7 +16,7 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from jenova.network.discovery import PeerInfo
 
@@ -77,6 +77,19 @@ class PeerConnection:
     failed_requests: int = 0
     response_times: List[float] = field(default_factory=list)
     max_response_times: int = 100  # Keep last 100 response times
+
+
+def _peer_info_from_dict(data: Dict) -> PeerInfo:
+    """Convert a dictionary to PeerInfo object for backward compatibility."""
+    import time
+    return PeerInfo(
+        instance_id=data.get("id", data.get("instance_id", "")),
+        instance_name=data.get("name", data.get("instance_name", "")),
+        address=data.get("host", data.get("address", "")),
+        port=data.get("port", 50051),
+        properties=data,
+        last_seen=data.get("last_seen", time.time()) if isinstance(data.get("last_seen"), (int, float)) else time.time(),
+    )
 
 
 class PeerManager:
@@ -143,13 +156,17 @@ class PeerManager:
 
         self.file_logger.log_info("Peer manager stopped")
 
-    def add_peer(self, peer_info: PeerInfo):
+    def add_peer(self, peer_info: Union[PeerInfo, Dict]):
         """
         Add a new peer.
 
         Args:
-            peer_info: Information about the discovered peer
+            peer_info: Information about the discovered peer (PeerInfo or dict)
         """
+        # Support both PeerInfo objects and dicts for backward compatibility
+        if isinstance(peer_info, dict):
+            peer_info = _peer_info_from_dict(peer_info)
+        
         with self.peers_lock:
             if peer_info.instance_id not in self.peers:
                 connection = PeerConnection(
@@ -398,3 +415,185 @@ class PeerManager:
                     for peer in self.peers.values()
                 ],
             }
+
+    def get_active_peers(self) -> List[Dict]:
+        """
+        Get list of active (connected or degraded) peers.
+        
+        Returns:
+            List of peer dictionaries with their details
+        """
+        with self.peers_lock:
+            return [
+                {
+                    "id": peer.peer_info.instance_id,
+                    "instance_id": peer.peer_info.instance_id,
+                    "instance_name": peer.peer_info.instance_name,
+                    "host": peer.peer_info.address,
+                    "port": peer.peer_info.port,
+                    "status": peer.status.value,
+                    "health": peer.status.value if peer.status in [PeerStatus.CONNECTED] else "degraded" if peer.status == PeerStatus.DEGRADED else "unhealthy",
+                    "load": peer.capabilities.current_load_percent if peer.capabilities else 0,
+                    "latency_ms": sum(peer.response_times) / len(peer.response_times) if peer.response_times else 0,
+                    "capabilities": [
+                        cap for cap in ["llm", "embeddings", "memory"]
+                        if peer.capabilities and getattr(peer.capabilities, f"share_{cap if cap != 'embeddings' else 'embeddings'}", False)
+                    ] if peer.capabilities else [],
+                    "last_seen": peer.peer_info.last_seen,
+                }
+                for peer in self.peers.values()
+                if peer.status in [PeerStatus.CONNECTED, PeerStatus.DEGRADED]
+            ]
+
+    def get_peer(self, peer_id: str) -> Optional[Dict]:
+        """
+        Get peer details by ID as a dictionary.
+        
+        Args:
+            peer_id: The peer instance ID
+            
+        Returns:
+            Peer details dictionary or None if not found
+        """
+        with self.peers_lock:
+            if peer_id not in self.peers:
+                return None
+            peer = self.peers[peer_id]
+            return {
+                "id": peer.peer_info.instance_id,
+                "instance_id": peer.peer_info.instance_id,
+                "instance_name": peer.peer_info.instance_name,
+                "host": peer.peer_info.address,
+                "port": peer.peer_info.port,
+                "status": peer.status.value,
+                "health": peer.peer_info.properties.get("health", "unknown"),
+                "load": peer.capabilities.current_load_percent if peer.capabilities else peer.peer_info.properties.get("load", 0),
+                "latency_ms": sum(peer.response_times) / len(peer.response_times) if peer.response_times else peer.peer_info.properties.get("latency_ms", 0),
+                "capabilities": peer.peer_info.properties.get("capabilities", []),
+                "last_seen": peer.peer_info.last_seen,
+            }
+
+    def update_peer_health(self, peer_id: str, health_status: str):
+        """
+        Update the health status of a peer.
+        
+        Args:
+            peer_id: The peer instance ID
+            health_status: Health status ('healthy', 'degraded', 'unhealthy')
+        """
+        with self.peers_lock:
+            if peer_id in self.peers:
+                peer = self.peers[peer_id]
+                # Store health in properties
+                peer.peer_info.properties["health"] = health_status
+                # Update status based on health
+                if health_status == "healthy":
+                    peer.status = PeerStatus.CONNECTED
+                elif health_status == "degraded":
+                    peer.status = PeerStatus.DEGRADED
+                elif health_status == "unhealthy":
+                    peer.status = PeerStatus.FAILED
+                self.file_logger.log_info(
+                    f"Updated peer {peer_id} health to: {health_status}"
+                )
+
+    def update_peer_load(self, peer_id: str, load_percent: float):
+        """
+        Update the load percentage of a peer.
+        
+        Args:
+            peer_id: The peer instance ID
+            load_percent: Load percentage (0.0 - 1.0)
+        """
+        with self.peers_lock:
+            if peer_id in self.peers:
+                peer = self.peers[peer_id]
+                # Store load in properties and capabilities
+                peer.peer_info.properties["load"] = load_percent
+                if peer.capabilities:
+                    peer.capabilities.current_load_percent = int(load_percent * 100)
+                self.file_logger.log_info(
+                    f"Updated peer {peer_id} load to: {load_percent}"
+                )
+
+    def select_peer(self, strategy: Optional[str] = None) -> Optional[Dict]:
+        """
+        Select a peer based on the given strategy.
+        
+        Args:
+            strategy: Selection strategy ('load_balanced', 'fastest', 'round_robin')
+                     If None, uses the configured default strategy.
+        
+        Returns:
+            Selected peer details dictionary or None if no peers available
+        """
+        with self.peers_lock:
+            active_peers = [
+                peer for peer in self.peers.values()
+                if peer.status in [PeerStatus.CONNECTED, PeerStatus.DEGRADED]
+            ]
+            
+            if not active_peers:
+                return None
+            
+            effective_strategy = strategy or self.strategy
+            
+            if effective_strategy == "load_balanced":
+                # Select peer with lowest load
+                selected = min(
+                    active_peers,
+                    key=lambda p: p.capabilities.current_load_percent if p.capabilities else float('inf')
+                )
+            elif effective_strategy == "fastest":
+                # Select peer with lowest latency
+                selected = min(
+                    active_peers,
+                    key=lambda p: sum(p.response_times) / len(p.response_times) if p.response_times else float('inf')
+                )
+            else:
+                # Default: round-robin (just take the first one)
+                selected = active_peers[0]
+            
+            return {
+                "id": selected.peer_info.instance_id,
+                "host": selected.peer_info.address,
+                "port": selected.peer_info.port,
+            }
+
+    def get_peers_with_capability(self, capability: str) -> List[Dict]:
+        """
+        Get peers that have a specific capability.
+        
+        Args:
+            capability: Capability to filter by ('llm', 'embeddings', 'memory')
+            
+        Returns:
+            List of peer dictionaries with the specified capability
+        """
+        with self.peers_lock:
+            result = []
+            for peer in self.peers.values():
+                # Check capabilities from the PeerCapabilities dataclass
+                has_capability = False
+                if peer.capabilities:
+                    if capability == "llm" and peer.capabilities.share_llm:
+                        has_capability = True
+                    elif capability == "embeddings" and peer.capabilities.share_embeddings:
+                        has_capability = True
+                    elif capability == "memory" and peer.capabilities.share_memory:
+                        has_capability = True
+                
+                # Also check properties for backwards compatibility
+                if not has_capability and "capabilities" in peer.peer_info.properties:
+                    if capability in peer.peer_info.properties.get("capabilities", []):
+                        has_capability = True
+                
+                if has_capability:
+                    result.append({
+                        "id": peer.peer_info.instance_id,
+                        "instance_id": peer.peer_info.instance_id,
+                        "instance_name": peer.peer_info.instance_name,
+                        "host": peer.peer_info.address,
+                        "port": peer.peer_info.port,
+                    })
+            return result
