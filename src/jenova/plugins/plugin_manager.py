@@ -13,7 +13,7 @@ deactivation, and cleanup with dependency resolution.
 
 import importlib.util
 import yaml
-from typing import Dict, List, Any, Optional, Set
+from typing import Dict, List, Any, Optional, Set, Callable
 from pathlib import Path
 from enum import Enum
 import threading

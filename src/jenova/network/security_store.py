@@ -186,12 +186,12 @@ class SecureCredentialStore:
             # Fallback to PBKDF2 if argon2-cffi not available
             # This maintains security while ensuring graceful degradation
             import os
-            from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
+            from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
             from cryptography.hazmat.primitives import hashes
             from cryptography.hazmat.backends import default_backend
 
             salt = os.urandom(32)  # 256-bit salt
-            kdf = PBKDF2(
+            kdf = PBKDF2HMAC(
                 algorithm=hashes.SHA256(),
                 length=32,
                 salt=salt,

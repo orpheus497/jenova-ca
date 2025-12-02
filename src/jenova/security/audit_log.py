@@ -303,3 +303,7 @@ def get_default_audit_logger() -> AuditLogger:
     if _default_audit_logger is None:
         _default_audit_logger = AuditLogger()
     return _default_audit_logger
+
+
+# Alias for backward compatibility
+SecurityAuditLogger = AuditLogger
