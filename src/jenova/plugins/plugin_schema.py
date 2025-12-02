@@ -12,7 +12,7 @@ Pydantic for type-safe configuration.
 """
 
 from typing import List, Dict, Optional, Any
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from enum import Enum
 
 
@@ -36,9 +36,7 @@ class ResourceLimits(BaseModel):
     max_memory_mb: int = Field(default=256, ge=64, le=2048)
     max_file_size_mb: int = Field(default=10, ge=1, le=100)
 
-    class Config:
-        """Pydantic config."""
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class PluginDependency(BaseModel):
@@ -47,9 +45,7 @@ class PluginDependency(BaseModel):
     plugin: str = Field(..., min_length=1)
     version: str = Field(default=">=1.0.0")
 
-    class Config:
-        """Pydantic config."""
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class PluginManifest(BaseModel):
@@ -69,16 +65,16 @@ class PluginManifest(BaseModel):
     """
 
     # Required fields
-    id: str = Field(..., min_length=1, max_length=64, regex=r"^[a-z0-9_]+$")
+    id: str = Field(..., min_length=1, max_length=64, pattern=r"^[a-z0-9_]+$")
     name: str = Field(..., min_length=1, max_length=128)
-    version: str = Field(..., regex=r"^\d+\.\d+\.\d+$")
+    version: str = Field(..., pattern=r"^\d+\.\d+\.\d+$")
     author: str = Field(..., min_length=1)
     description: str = Field(..., min_length=1, max_length=512)
     entry_point: str = Field(..., min_length=1)
 
     # Version compatibility
-    jenova_min_version: str = Field(..., regex=r"^\d+\.\d+\.\d+$")
-    jenova_max_version: Optional[str] = Field(None, regex=r"^\d+\.\d+\.\d+$")
+    jenova_min_version: str = Field(..., pattern=r"^\d+\.\d+\.\d+$")
+    jenova_max_version: Optional[str] = Field(None, pattern=r"^\d+\.\d+\.\d+$")
 
     # Optional fields
     homepage: Optional[str] = None
@@ -98,26 +94,26 @@ class PluginManifest(BaseModel):
     # Additional metadata
     tags: List[str] = Field(default_factory=list)
 
-    class Config:
-        """Pydantic config."""
-        extra = "forbid"
-        use_enum_values = True
+    model_config = ConfigDict(extra="forbid", use_enum_values=True)
 
-    @validator("id")
+    @field_validator("id")
+    @classmethod
     def validate_id(cls, v):
         """Validate plugin ID format."""
         if v.startswith("_") or v.endswith("_"):
             raise ValueError("Plugin ID cannot start or end with underscore")
         return v
 
-    @validator("permissions")
+    @field_validator("permissions")
+    @classmethod
     def validate_permissions(cls, v):
         """Validate permissions are unique."""
         if len(v) != len(set(v)):
             raise ValueError("Permissions must be unique")
         return v
 
-    @validator("entry_point")
+    @field_validator("entry_point")
+    @classmethod
     def validate_entry_point(cls, v):
         """Validate entry point format."""
         if "." not in v:

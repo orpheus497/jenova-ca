@@ -658,13 +658,11 @@ def main():
                     discovery_service = JenovaDiscoveryService(
                         config=config,
                         file_logger=file_logger,
-                        peer_manager=peer_manager,
-                        rpc_port=rpc_port,
+                        port=rpc_port,
                     )
 
                     # Start discovery (mDNS advertising + browsing)
-                    discovery_service.start_advertising()
-                    discovery_service.start_browsing()
+                    discovery_service.start()
 
                     # Initialize distributed LLM interface
                     distributed_llm = DistributedLLMInterface(
@@ -904,8 +902,7 @@ def main():
             # Phase 8: Network layer cleanup
             if discovery_service:
                 file_logger.log_info("Stopping discovery service...")
-                discovery_service.stop_advertising()
-                discovery_service.stop_browsing()
+                discovery_service.stop()
 
             if rpc_server:
                 file_logger.log_info("Stopping RPC server...")

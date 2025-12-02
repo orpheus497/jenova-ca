@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import jenova_pb2 as jenova__pb2
+from jenova.network.proto import jenova_pb2 as jenova__pb2
 
 
 class JenovaRPCStub(object):
