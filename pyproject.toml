@@ -47,10 +47,10 @@ dependencies = [
 
     # Distributed Computing & LAN Networking
     "zeroconf>=0.140.0,<1.0.0",
-    "grpcio>=1.69.0,<1.70.0",
-    "grpcio-tools>=1.69.0,<1.70.0",
-    # CRITICAL: protobuf<5.0.0 for grpcio compatibility, >=4.25.8 for security
-    "protobuf>=4.25.8,<5.0.0",
+    "grpcio>=1.69.0,<2.0.0",
+    "grpcio-tools>=1.69.0,<2.0.0",
+    # protobuf>=5.26.1 required by grpcio-tools 1.69.0+
+    "protobuf>=5.26.1,<6.0.0",
     "PyJWT>=2.10.0,<3.0.0",
 
     # CLI Enhancement Tools
@@ -93,7 +93,7 @@ dependencies = [
     "opentelemetry-sdk>=1.27.0,<2.0.0",  # OpenTelemetry SDK
     "opentelemetry-instrumentation>=0.48b0,<1.0.0",  # Auto-instrumentation
     "opentelemetry-exporter-prometheus>=0.48b0,<1.0.0",  # Prometheus integration
-    "opentelemetry-exporter-jaeger>=1.27.0,<2.0.0",  # Jaeger tracing
+    "opentelemetry-exporter-jaeger>=1.21.0,<2.0.0",  # Jaeger tracing
     "typing-extensions>=4.12.0,<5.0.0",  # Enhanced type hints
     "aiocache>=0.12.3,<1.0.0",  # Async caching
     "jsonschema-specifications>=2024.10.1,<2025.0.0",  # JSON schema specs

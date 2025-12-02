@@ -44,10 +44,10 @@ filelock>=3.16.0,<4.0.0
 # Phase 8: Distributed Computing & LAN Networking (FOSS)
 # Updated 2025-11-08 for security patches and stability improvements
 zeroconf>=0.140.0,<1.0.0         # mDNS service discovery (MIT License)
-grpcio>=1.69.0,<1.70.0           # gRPC framework (Apache 2.0 License)
-grpcio-tools>=1.69.0,<1.70.0     # Protocol Buffer compiler (Apache 2.0 License)
-# CRITICAL: protobuf must be <5.0.0 for grpcio compatibility, but >=4.25.8 for security patches
-protobuf>=4.25.8,<5.0.0          # Protocol Buffers (BSD License)
+grpcio>=1.69.0,<2.0.0            # gRPC framework (Apache 2.0 License)
+grpcio-tools>=1.69.0,<2.0.0      # Protocol Buffer compiler (Apache 2.0 License)
+# protobuf>=5.26.1 required by grpcio-tools 1.69.0+
+protobuf>=5.26.1,<6.0.0          # Protocol Buffers (BSD License)
 PyJWT>=2.10.0,<3.0.0             # JWT tokens (MIT License)
 
 # Phases 13-17: Enhanced CLI Capabilities (FOSS)
@@ -96,7 +96,7 @@ opentelemetry-api>=1.27.0,<2.0.0 # OpenTelemetry API (Apache 2.0 License)
 opentelemetry-sdk>=1.27.0,<2.0.0 # OpenTelemetry SDK (Apache 2.0 License)
 opentelemetry-instrumentation>=0.48b0,<1.0.0 # Auto-instrumentation (Apache 2.0 License)
 opentelemetry-exporter-prometheus>=0.48b0,<1.0.0 # Prometheus integration (Apache 2.0 License)
-opentelemetry-exporter-jaeger>=1.27.0,<2.0.0 # Jaeger tracing (Apache 2.0 License)
+opentelemetry-exporter-jaeger>=1.21.0,<2.0.0 # Jaeger tracing (Apache 2.0 License)
 
 # Enhanced Type Hints & Async
 typing-extensions>=4.12.0,<5.0.0 # Enhanced type hints (PSF-2.0 License)
