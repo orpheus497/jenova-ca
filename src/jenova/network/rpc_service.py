@@ -546,11 +546,14 @@ class JenovaRPCServicer(jenova_pb2_grpc.JenovaRPCServicer):
         models = []
         model_config = self.config.get("model", {})
         if model_config:
+            gpu_layers_config = model_config.get("gpu_layers", 0)
+            gpu_layers = gpu_layers_config if isinstance(gpu_layers_config, int) else 0
+            
             models.append(jenova_pb2.ModelInfo(
                 model_name=model_config.get("model_path", "unknown"),
                 model_type="llm",
                 context_size=model_config.get("context_size", 4096),
-                gpu_layers=model_config.get("gpu_layers", 0) if isinstance(model_config.get("gpu_layers"), int) else 0,
+                gpu_layers=gpu_layers,
                 available=True,
             ))
             models.append(jenova_pb2.ModelInfo(

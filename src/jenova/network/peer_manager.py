@@ -88,7 +88,7 @@ def _peer_info_from_dict(data: Dict) -> PeerInfo:
         address=data.get("host", data.get("address", "")),
         port=data.get("port", 50051),
         properties=data,
-        last_seen=data.get("last_seen", time.time()) if isinstance(data.get("last_seen"), (int, float)) else time.time(),
+        last_seen=data.get("last_seen") if isinstance(data.get("last_seen"), (int, float)) else time.time(),
     )
 
 
@@ -437,7 +437,7 @@ class PeerManager:
                     "latency_ms": sum(peer.response_times) / len(peer.response_times) if peer.response_times else 0,
                     "capabilities": [
                         cap for cap in ["llm", "embeddings", "memory"]
-                        if peer.capabilities and getattr(peer.capabilities, f"share_{cap if cap != 'embeddings' else 'embeddings'}", False)
+                        if peer.capabilities and getattr(peer.capabilities, f"share_{cap}", False)
                     ] if peer.capabilities else [],
                     "last_seen": peer.peer_info.last_seen,
                 }
