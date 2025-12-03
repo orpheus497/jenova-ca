@@ -275,6 +275,9 @@ class SecurityManager:
 
         Returns:
             Tuple of (private_key, certificate_chain) as bytes
+            
+        Raises:
+            RuntimeError: If password cannot be obtained
         """
         try:
             # Read the encrypted private key
@@ -283,6 +286,8 @@ class SecurityManager:
 
             # Get the password and decrypt the private key
             password = self.credential_store.get_master_password(prompt=False)
+            if password is None:
+                raise RuntimeError("Failed to obtain master password for SSL credentials")
             
             # Load and decrypt the private key
             private_key_obj = serialization.load_pem_private_key(
@@ -437,10 +442,16 @@ class SecurityManager:
             ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
             # Get the master password for encrypted private key
             password = self.credential_store.get_master_password(prompt=False)
+            if password is None:
+                self.file_logger.log_error("Failed to obtain master password for SSL context")
+                return None
+            
+            # Convert password to string for ssl.load_cert_chain
+            password_str = password.decode('utf-8') if isinstance(password, bytes) else password
             ssl_context.load_cert_chain(
                 certfile=str(self.certificate_path),
                 keyfile=str(self.private_key_path),
-                password=password.decode('utf-8') if isinstance(password, bytes) else password,
+                password=password_str,
             )
             return ssl_context
         except Exception as e:
