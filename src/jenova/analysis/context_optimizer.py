@@ -40,17 +40,24 @@ class ContextOptimizer:
     - Cache-aware optimization
     """
 
-    def __init__(self, max_tokens: int = 4096, reserve_tokens: int = 512):
+    def __init__(self, config=None, file_logger=None, max_tokens: int = 4096, reserve_tokens: int = 512):
         """
         Initialize context optimizer.
 
         Args:
+            config: Optional JENOVA configuration dictionary
+            file_logger: Optional file logger instance
             max_tokens: Maximum context window size
             reserve_tokens: Tokens to reserve for response generation
         """
-        self.max_tokens = max_tokens
-        self.reserve_tokens = reserve_tokens
-        self.available_tokens = max_tokens - reserve_tokens
+        self.config = config or {}
+        self.file_logger = file_logger
+        
+        # Get token limits from config if available
+        analysis_config = self.config.get("analysis", {}) if isinstance(self.config, dict) else {}
+        self.max_tokens = analysis_config.get("max_context_tokens", max_tokens)
+        self.reserve_tokens = analysis_config.get("reserve_tokens", reserve_tokens)
+        self.available_tokens = self.max_tokens - self.reserve_tokens
 
     def estimate_tokens(self, text: str) -> int:
         """

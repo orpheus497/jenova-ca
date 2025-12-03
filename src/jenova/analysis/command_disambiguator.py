@@ -53,16 +53,23 @@ class CommandDisambiguator:
     - Context-based scoring
     """
 
-    def __init__(self, threshold: float = 0.3, max_suggestions: int = 5):
+    def __init__(self, config=None, file_logger=None, threshold: float = 0.3, max_suggestions: int = 5):
         """
         Initialize the command disambiguator.
 
         Args:
+            config: Optional JENOVA configuration dictionary
+            file_logger: Optional file logger instance
             threshold: Minimum similarity score to consider a match (0.0-1.0)
             max_suggestions: Maximum number of suggestions to return
         """
-        self.threshold = threshold
-        self.max_suggestions = max_suggestions
+        self.config = config or {}
+        self.file_logger = file_logger
+        
+        # Get threshold from config if available
+        analysis_config = self.config.get("analysis", {}) if isinstance(self.config, dict) else {}
+        self.threshold = analysis_config.get("disambiguator_threshold", threshold)
+        self.max_suggestions = analysis_config.get("max_suggestions", max_suggestions)
         self.command_history: List[str] = []
         self.command_frequency: Dict[str, int] = {}
 

@@ -116,17 +116,24 @@ class SecurityScanner:
     """
 
     def __init__(
-        self, config_file: Optional[str] = None, profile: Optional[str] = None
+        self, config=None, file_logger=None, config_file: Optional[str] = None, profile: Optional[str] = None
     ):
         """
         Initialize the security scanner.
 
         Args:
+            config: Optional JENOVA configuration dictionary
+            file_logger: Optional file logger instance
             config_file: Path to Bandit configuration file (.bandit)
             profile: Bandit profile to use (e.g., 'bandit', 'django')
         """
-        self.config_file = config_file
-        self.profile = profile
+        self.config = config or {}
+        self.file_logger = file_logger
+        
+        # Get security config from JENOVA config if available
+        analysis_config = self.config.get("analysis", {}) if isinstance(self.config, dict) else {}
+        self.config_file = config_file or analysis_config.get("security_config_file")
+        self.profile = profile or analysis_config.get("security_profile")
         self._validate_bandit()
 
     def _validate_bandit(self) -> None:
