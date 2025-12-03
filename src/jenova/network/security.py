@@ -277,8 +277,26 @@ class SecurityManager:
             Tuple of (private_key, certificate_chain) as bytes
         """
         try:
+            # Read the encrypted private key
             with open(self.private_key_path, "rb") as f:
-                private_key = f.read()
+                encrypted_key_pem = f.read()
+
+            # Get the password and decrypt the private key
+            password = self.credential_store.get_master_password(prompt=False)
+            
+            # Load and decrypt the private key
+            private_key_obj = serialization.load_pem_private_key(
+                encrypted_key_pem,
+                password=password,
+                backend=default_backend()
+            )
+            
+            # Serialize the private key without encryption for gRPC
+            private_key = private_key_obj.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.TraditionalOpenSSL,
+                encryption_algorithm=serialization.NoEncryption()
+            )
 
             with open(self.certificate_path, "rb") as f:
                 certificate_chain = f.read()
@@ -417,9 +435,12 @@ class SecurityManager:
         
         try:
             ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            # Get the master password for encrypted private key
+            password = self.credential_store.get_master_password(prompt=False)
             ssl_context.load_cert_chain(
                 certfile=str(self.certificate_path),
                 keyfile=str(self.private_key_path),
+                password=password.decode('utf-8') if isinstance(password, bytes) else password,
             )
             return ssl_context
         except Exception as e:
