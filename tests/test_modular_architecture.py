@@ -2,7 +2,8 @@
 # Copyright (c) 2024, orpheus497. All rights reserved.
 #
 # The JENOVA Cognitive Architecture is licensed under the MIT License.
-# A copy of the license can be found in the LICENSE file in the root directory of this source tree.
+# A copy of the license can be found in the LICENSE file in the root
+# directory of this source tree.
 
 """
 Tests for the modular JENOVA Cognitive Architecture.
@@ -11,23 +12,16 @@ These tests verify that the pluggable interfaces and CognitiveArchitecture
 work correctly with both default and custom implementations.
 """
 
+from typing import Any, Dict, List, Optional
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, MagicMock, patch
-from typing import List, Optional, Dict, Any
 
-from jenova.core.interfaces.base import (
-    LLMAdapter,
-    EmbeddingProvider,
-    MemoryBackend,
-    MemoryEntry,
-    MemoryType,
-    SearchResult,
-    Logger,
-    CognitiveComponent,
-    KnowledgeGraph,
-)
 from jenova.core.architecture import CognitiveArchitecture, CognitiveConfig
-
+from jenova.core.interfaces.base import (CognitiveComponent, EmbeddingProvider,
+                                         KnowledgeGraph, LLMAdapter, Logger,
+                                         MemoryBackend, MemoryEntry,
+                                         MemoryType, SearchResult)
 
 # =============================================================================
 # Mock Implementations for Testing
@@ -54,7 +48,8 @@ class MockLLM:
             "max_tokens": max_tokens,
         })
         # Return a canned response or custom response if set
-        return self.responses.get(prompt, f"Mock response to: {prompt[:50]}...")
+        return self.responses.get(prompt,
+                                  f"Mock response to: {prompt[:50]}...")
 
     def generate_with_context(
         self,
@@ -310,11 +305,13 @@ class TestMemoryBackend:
         ))
 
         # Search by type
-        semantic_results = memory.search("query", memory_type=MemoryType.SEMANTIC)
+        semantic_results = memory.search(
+            "query", memory_type=MemoryType.SEMANTIC)
         assert len(semantic_results) == 1
         assert semantic_results[0].entry.memory_type == MemoryType.SEMANTIC
 
-        episodic_results = memory.search("query", memory_type=MemoryType.EPISODIC)
+        episodic_results = memory.search(
+            "query", memory_type=MemoryType.EPISODIC)
         assert len(episodic_results) == 1
         assert episodic_results[0].entry.memory_type == MemoryType.EPISODIC
 
@@ -356,7 +353,9 @@ class TestCognitiveArchitecture:
         mock_arch.think("Hello", user="alice")
 
         # Check memory was stored
-        assert mock_arch.memory.count(memory_type=MemoryType.EPISODIC, user="alice") == 1
+        assert mock_arch.memory.count(
+            memory_type=MemoryType.EPISODIC,
+            user="alice") == 1
 
     def test_think_updates_history(self, mock_arch):
         """Test that think updates conversation history."""
@@ -379,7 +378,9 @@ class TestCognitiveArchitecture:
         """Test memory retrieval."""
         # Store some memories first
         mock_arch.remember("Python is a programming language", user="alice")
-        mock_arch.remember("JavaScript is used for web development", user="alice")
+        mock_arch.remember(
+            "JavaScript is used for web development",
+            user="alice")
 
         # Retrieve
         context = mock_arch.retrieve("programming", user="alice")
@@ -400,7 +401,10 @@ class TestCognitiveArchitecture:
     def test_remember_different_types(self, mock_arch):
         """Test storing different memory types."""
         mock_arch.remember("A fact", user="alice", memory_type="semantic")
-        mock_arch.remember("A procedure", user="alice", memory_type="procedural")
+        mock_arch.remember(
+            "A procedure",
+            user="alice",
+            memory_type="procedural")
 
         assert mock_arch.memory.count(memory_type=MemoryType.SEMANTIC) == 1
         assert mock_arch.memory.count(memory_type=MemoryType.PROCEDURAL) == 1
@@ -448,7 +452,8 @@ class TestCognitiveArchitecture:
         alice_history = mock_arch.get_history("alice")
         bob_history = mock_arch.get_history("bob")
 
-        assert "Alice" in str(alice_history) or "alice" in str(alice_history).lower()
+        assert "Alice" in str(alice_history) or "alice" in str(
+            alice_history).lower()
         assert "Bob" in str(bob_history) or "bob" in str(bob_history).lower()
 
 

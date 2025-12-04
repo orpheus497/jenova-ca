@@ -2,7 +2,8 @@
 # Copyright (c) 2024, orpheus497. All rights reserved.
 #
 # The JENOVA Cognitive Architecture is licensed under the MIT License.
-# A copy of the license can be found in the LICENSE file in the root directory of this source tree.
+# A copy of the license can be found in the LICENSE file in the root
+# directory of this source tree.
 
 """
 Core interfaces for the JENOVA Cognitive Architecture.
@@ -31,25 +32,10 @@ Example:
     >>> architecture = CognitiveArchitecture(llm=MyLLM())
 """
 
-from jenova.core.interfaces.base import (
-    # LLM Interfaces
-    LLMAdapter,
-    EmbeddingProvider,
-    # Memory Interfaces
-    MemoryBackend,
-    MemoryEntry,
-    MemoryType,
-    SearchResult,
-    # Logging Interface
-    Logger,
-    # Configuration Interface
-    ConfigProvider,
-    # Cognitive Component Interfaces
-    CognitiveComponent,
-    ReasoningEngine,
-    InsightGenerator,
-    KnowledgeGraph,
-)
+from jenova.core.interfaces.base import (  # LLM Interfaces; Memory Interfaces; Logging Interface; Configuration Interface; Cognitive Component Interfaces
+    CognitiveComponent, ConfigProvider, EmbeddingProvider, InsightGenerator,
+    KnowledgeGraph, LLMAdapter, Logger, MemoryBackend, MemoryEntry, MemoryType,
+    ReasoningEngine, SearchResult)
 
 __all__ = [
     # LLM Interfaces

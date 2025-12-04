@@ -2,7 +2,8 @@
 # Copyright (c) 2024, orpheus497. All rights reserved.
 #
 # The JENOVA Cognitive Architecture is licensed under the MIT License.
-# A copy of the license can be found in the LICENSE file in the root directory of this source tree.
+# A copy of the license can be found in the LICENSE file in the root
+# directory of this source tree.
 
 """
 JENOVA Cognitive Architecture - Main Entry Point
@@ -44,20 +45,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from jenova.core.interfaces import (
-    CognitiveComponent,
-    ConfigProvider,
-    EmbeddingProvider,
-    InsightGenerator,
-    KnowledgeGraph,
-    LLMAdapter,
-    Logger,
-    MemoryBackend,
-    MemoryEntry,
-    MemoryType,
-    ReasoningEngine,
-    SearchResult,
-)
+from jenova.core.interfaces import (CognitiveComponent, ConfigProvider,
+                                    EmbeddingProvider, InsightGenerator,
+                                    KnowledgeGraph, LLMAdapter, Logger,
+                                    MemoryBackend, MemoryEntry, MemoryType,
+                                    ReasoningEngine, SearchResult)
 
 
 @dataclass
@@ -211,13 +203,11 @@ class CognitiveArchitecture(CognitiveComponent):
 
         # Import default implementations
         # These are lazy imports to avoid circular dependencies
-        from jenova.core.adapters import (
-            create_default_llm,
-            create_default_memory,
-            create_default_embedding,
-            create_default_cortex,
-            create_default_logger,
-        )
+        from jenova.core.adapters import (create_default_cortex,
+                                          create_default_embedding,
+                                          create_default_llm,
+                                          create_default_logger,
+                                          create_default_memory)
 
         # Create components
         logger = create_default_logger()
@@ -394,7 +384,10 @@ class CognitiveArchitecture(CognitiveComponent):
         n_results = n_results or self.config.max_context_items
 
         if memory_types is None:
-            memory_types = [MemoryType.SEMANTIC, MemoryType.EPISODIC, MemoryType.PROCEDURAL]
+            memory_types = [
+                MemoryType.SEMANTIC,
+                MemoryType.EPISODIC,
+                MemoryType.PROCEDURAL]
 
         all_results: List[SearchResult] = []
 
@@ -507,7 +500,8 @@ class CognitiveArchitecture(CognitiveComponent):
             Insight ID
         """
         if self._insight_gen:
-            return self._insight_gen.store_insight(insight, topic, user, metadata)
+            return self._insight_gen.store_insight(
+                insight, topic, user, metadata)
 
         # Fallback: Store as semantic memory
         if self._memory:
@@ -583,9 +577,11 @@ class CognitiveArchitecture(CognitiveComponent):
         if self._memory:
             try:
                 count = self._memory.count()
-                health["components"]["memory"] = {"available": True, "entries": count}
+                health["components"]["memory"] = {
+                    "available": True, "entries": count}
             except Exception as e:
-                health["components"]["memory"] = {"available": False, "error": str(e)}
+                health["components"]["memory"] = {
+                    "available": False, "error": str(e)}
                 health["healthy"] = False
 
         if self._cortex:

@@ -2,7 +2,8 @@
 # Copyright (c) 2024, orpheus497. All rights reserved.
 #
 # The JENOVA Cognitive Architecture is licensed under the MIT License.
-# A copy of the license can be found in the LICENSE file in the root directory of this source tree.
+# A copy of the license can be found in the LICENSE file in the root
+# directory of this source tree.
 
 """
 Default adapters for the JENOVA Cognitive Architecture.
@@ -19,17 +20,9 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from jenova.core.interfaces import (
-    EmbeddingProvider,
-    KnowledgeGraph,
-    LLMAdapter,
-    Logger,
-    MemoryBackend,
-    MemoryEntry,
-    MemoryType,
-    SearchResult,
-)
-
+from jenova.core.interfaces import (EmbeddingProvider, KnowledgeGraph,
+                                    LLMAdapter, Logger, MemoryBackend,
+                                    MemoryEntry, MemoryType, SearchResult)
 
 # =============================================================================
 # Logger Adapter
@@ -44,9 +37,8 @@ class DefaultLogger:
         self._logger = logging.getLogger(name)
         if not self._logger.handlers:
             handler = logging.StreamHandler()
-            handler.setFormatter(
-                logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-            )
+            handler.setFormatter(logging.Formatter(
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
             self._logger.addHandler(handler)
             self._logger.setLevel(logging.INFO)
 
@@ -56,7 +48,11 @@ class DefaultLogger:
     def warning(self, message: str, **kwargs) -> None:
         self._logger.warning(message, extra=kwargs)
 
-    def error(self, message: str, error: Optional[Exception] = None, **kwargs) -> None:
+    def error(
+            self,
+            message: str,
+            error: Optional[Exception] = None,
+            **kwargs) -> None:
         if error:
             self._logger.error(message, exc_info=error, extra=kwargs)
         else:
@@ -98,7 +94,8 @@ class SentenceTransformerProvider:
         return self.embed(query)[0]
 
 
-def create_default_embedding(model_name: str = "all-MiniLM-L6-v2") -> EmbeddingProvider:
+def create_default_embedding(
+        model_name: str = "all-MiniLM-L6-v2") -> EmbeddingProvider:
     """Create a default embedding provider using sentence-transformers."""
     return SentenceTransformerProvider(model_name)
 
@@ -111,7 +108,11 @@ def create_default_embedding(model_name: str = "all-MiniLM-L6-v2") -> EmbeddingP
 class LlamaCppAdapter:
     """LLM adapter for llama-cpp-python models."""
 
-    def __init__(self, model_path: str, logger: Optional[Logger] = None, **kwargs):
+    def __init__(
+            self,
+            model_path: str,
+            logger: Optional[Logger] = None,
+            **kwargs):
         from llama_cpp import Llama
 
         self._logger = logger
@@ -316,20 +317,19 @@ class ChromaDBBackend:
         search_results = []
         if results["documents"] and results["documents"][0]:
             for i, doc in enumerate(results["documents"][0]):
-                metadata = results["metadatas"][0][i] if results["metadatas"] else {}
+                metadata = results["metadatas"][0][i] if results["metadatas"] else {
+                }
                 distance = results["distances"][0][i] if results["distances"] else 0.0
 
                 # Convert distance to score (lower distance = higher score)
                 score = 1.0 / (1.0 + distance)
 
                 entry = MemoryEntry(
-                    id=results["ids"][0][i],
-                    content=doc,
-                    memory_type=MemoryType(metadata.get("memory_type", "semantic")),
-                    user=metadata.get("user", ""),
-                    metadata=metadata,
-                    timestamp=metadata.get("timestamp", ""),
-                )
+                    id=results["ids"][0][i], content=doc, memory_type=MemoryType(
+                        metadata.get(
+                            "memory_type", "semantic")), user=metadata.get(
+                        "user", ""), metadata=metadata, timestamp=metadata.get(
+                        "timestamp", ""), )
 
                 search_results.append(SearchResult(
                     entry=entry,

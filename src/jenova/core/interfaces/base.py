@@ -2,7 +2,8 @@
 # Copyright (c) 2024, orpheus497. All rights reserved.
 #
 # The JENOVA Cognitive Architecture is licensed under the MIT License.
-# A copy of the license can be found in the LICENSE file in the root directory of this source tree.
+# A copy of the license can be found in the LICENSE file in the root
+# directory of this source tree.
 
 """
 Base interface definitions for the JENOVA Cognitive Architecture.
@@ -23,19 +24,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import (
-    Any,
-    Dict,
-    Generic,
-    List,
-    Optional,
-    Protocol,
-    Tuple,
-    TypeVar,
-    Union,
-    runtime_checkable,
-)
-
+from typing import (Any, Dict, Generic, List, Optional, Protocol, Tuple,
+                    TypeVar, Union, runtime_checkable)
 
 # =============================================================================
 # Type Variables
@@ -323,7 +313,10 @@ class MemoryBackend(ABC):
         pass
 
     @abstractmethod
-    def count(self, memory_type: Optional[MemoryType] = None, user: Optional[str] = None) -> int:
+    def count(
+            self,
+            memory_type: Optional[MemoryType] = None,
+            user: Optional[str] = None) -> int:
         """
         Count entries in memory.
 
@@ -351,7 +344,10 @@ class MemoryBackend(ABC):
         """
         return [self.store(entry) for entry in entries]
 
-    def clear(self, memory_type: Optional[MemoryType] = None, user: Optional[str] = None) -> int:
+    def clear(
+            self,
+            memory_type: Optional[MemoryType] = None,
+            user: Optional[str] = None) -> int:
         """
         Clear entries from memory.
 
@@ -362,7 +358,8 @@ class MemoryBackend(ABC):
         Returns:
             Number of entries deleted
         """
-        raise NotImplementedError("Bulk clear not implemented for this backend")
+        raise NotImplementedError(
+            "Bulk clear not implemented for this backend")
 
 
 # =============================================================================
@@ -404,7 +401,11 @@ class Logger(Protocol):
         """Log a warning message."""
         ...
 
-    def error(self, message: str, error: Optional[Exception] = None, **kwargs) -> None:
+    def error(
+            self,
+            message: str,
+            error: Optional[Exception] = None,
+            **kwargs) -> None:
         """Log an error message."""
         ...
 

@@ -2,7 +2,8 @@
 # Copyright (c) 2024, orpheus497. All rights reserved.
 #
 # The JENOVA Cognitive Architecture is licensed under the MIT License.
-# A copy of the license can be found in the LICENSE file in the root directory of this source tree.
+# A copy of the license can be found in the LICENSE file in the root
+# directory of this source tree.
 
 """
 JENOVA Cognitive Architecture
@@ -56,24 +57,10 @@ See jenova.core for detailed documentation and interfaces.
 """
 
 # Primary API - For modular integration
-from jenova.core import (
-    # Main Architecture
-    CognitiveArchitecture,
-    CognitiveConfig,
-    # Interfaces for custom implementations
-    LLMAdapter,
-    EmbeddingProvider,
-    MemoryBackend,
-    MemoryEntry,
-    MemoryType,
-    SearchResult,
-    KnowledgeGraph,
-    ReasoningEngine,
-    InsightGenerator,
-    CognitiveComponent,
-    Logger,
-    ConfigProvider,
-)
+from jenova.core import (  # Main Architecture; Interfaces for custom implementations
+    CognitiveArchitecture, CognitiveComponent, CognitiveConfig, ConfigProvider,
+    EmbeddingProvider, InsightGenerator, KnowledgeGraph, LLMAdapter, Logger,
+    MemoryBackend, MemoryEntry, MemoryType, ReasoningEngine, SearchResult)
 
 __all__ = [
     # === Primary API ===

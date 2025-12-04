@@ -54,34 +54,18 @@ Interfaces (for custom implementations):
     - KnowledgeGraph: Custom knowledge graph implementation
 """
 
-# Core Architecture - Main entry point for modular use
-from jenova.core.architecture import CognitiveArchitecture, CognitiveConfig
-
 # Full Application - For running as standalone application
 from jenova.core.application import Application
+# Core Architecture - Main entry point for modular use
+from jenova.core.architecture import CognitiveArchitecture, CognitiveConfig
 from jenova.core.bootstrap import ApplicationBootstrapper
 from jenova.core.container import DependencyContainer
-from jenova.core.lifecycle import ComponentLifecycle, LifecyclePhase
-
 # Interfaces - For custom implementations
-from jenova.core.interfaces import (
-    # LLM Interfaces
-    LLMAdapter,
-    EmbeddingProvider,
-    # Memory Interfaces
-    MemoryBackend,
-    MemoryEntry,
-    MemoryType,
-    SearchResult,
-    # Component Interfaces
-    CognitiveComponent,
-    ReasoningEngine,
-    InsightGenerator,
-    KnowledgeGraph,
-    # Utility Interfaces
-    Logger,
-    ConfigProvider,
-)
+from jenova.core.interfaces import (  # LLM Interfaces; Memory Interfaces; Component Interfaces; Utility Interfaces
+    CognitiveComponent, ConfigProvider, EmbeddingProvider, InsightGenerator,
+    KnowledgeGraph, LLMAdapter, Logger, MemoryBackend, MemoryEntry, MemoryType,
+    ReasoningEngine, SearchResult)
+from jenova.core.lifecycle import ComponentLifecycle, LifecyclePhase
 
 __all__ = [
     # === Primary API ===
