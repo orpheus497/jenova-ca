@@ -7,6 +7,126 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.0.0] - 2025-12-04
+
+### Added
+
+- **Modular Pluggable Cognitive Architecture** - Complete refactor to enable external integration
+  
+  The JENOVA Cognitive Architecture can now be used as a pluggable component in any AI application.
+
+  #### Core Architecture (`jenova.core`)
+  
+  - **CognitiveArchitecture** class - Main entry point for external integration
+    - `think()` - Process queries through the full cognitive cycle
+    - `retrieve()` - Search multi-layered memory for relevant context
+    - `remember()` - Store information in memory
+    - `reflect()` - Trigger deep reflection on the knowledge graph
+    - `learn_insight()` - Manually store insights
+    - `get_history()` / `clear_history()` - Manage conversation history
+    - `health_check()` - Monitor component health
+  
+  - **CognitiveConfig** dataclass - Configuration management
+    - `memory_cache_size` - Items to cache (default: 100)
+    - `insight_interval` - Generate insights every N turns (default: 5)
+    - `assumption_interval` - Generate assumptions every N turns (default: 7)
+    - `max_context_items` - Maximum context for RAG (default: 10)
+    - `rerank_enabled` - Enable LLM-based re-ranking (default: True)
+    - `llm_timeout` - LLM timeout in seconds (default: 120)
+
+  #### Pluggable Interfaces (`jenova.core.interfaces`)
+  
+  - **LLMAdapter** protocol - Wrap any LLM (OpenAI, Anthropic, local models)
+    - `generate()` - Generate text from prompt
+    - `generate_with_context()` - RAG-style generation with context
+  
+  - **EmbeddingProvider** protocol - Use any embedding model
+    - `embed()` - Generate embeddings for text(s)
+    - `embed_query()` - Embed a query for similarity search
+    - `dimension` property - Embedding dimensionality
+  
+  - **MemoryBackend** abstract class - Use any vector store (ChromaDB, Pinecone, Weaviate)
+    - `store()` - Store a memory entry
+    - `search()` - Search for relevant memories
+    - `get()` / `delete()` - Entry management
+    - `count()` - Count entries with optional filters
+  
+  - **KnowledgeGraph** abstract class - Custom knowledge graph implementations
+    - `add_node()` / `add_link()` - Graph construction
+    - `get_node()` / `get_neighbors()` - Graph traversal
+    - `reflect()` - Deep reflection on graph structure
+  
+  - **ReasoningEngine** abstract class - Custom cognitive cycles
+    - `think()` - Full cognitive processing
+    - `plan()` - Generate execution plan
+    - `execute()` - Execute plan with context
+  
+  - **InsightGenerator** abstract class - Custom insight generation
+    - `generate_insight()` - Extract insights from conversation
+    - `store_insight()` - Store insights in knowledge base
+    - `get_relevant_insights()` - Retrieve relevant insights
+  
+  - **Logger** protocol - Integrate with any logging framework
+  - **ConfigProvider** protocol - Load configuration from any source
+
+  #### Default Adapters (`jenova.core.adapters`)
+  
+  - **DefaultLogger** - Python logging wrapper
+  - **SentenceTransformerProvider** - sentence-transformers embedding adapter
+  - **LlamaCppAdapter** - llama-cpp-python LLM adapter
+  - **ChromaDBBackend** - ChromaDB memory backend
+  - **CortexAdapter** - Existing Cortex knowledge graph wrapper
+  
+  Factory functions for quick setup:
+  - `create_default_logger()`
+  - `create_default_embedding(model_name)`
+  - `create_default_llm(model_path, logger)`
+  - `create_default_memory(persist_directory, embedding_provider)`
+  - `create_default_cortex(cortex_root, llm, logger)`
+
+  #### Data Classes
+  
+  - **MemoryEntry** - Universal format for memory storage
+    - `id`, `content`, `memory_type`, `user`, `metadata`, `timestamp`, `embedding`
+  
+  - **MemoryType** enum - Memory layer types
+    - `EPISODIC`, `SEMANTIC`, `PROCEDURAL`, `INSIGHT`, `ASSUMPTION`
+  
+  - **SearchResult** - Memory search results
+    - `entry`, `score`, `distance`
+
+### Changed
+
+- **Package exports** - `jenova` and `jenova.core` now export the modular API
+- **Version** - Bumped to 7.0.0 to reflect major architectural enhancement
+- **Description** - Updated project description to reflect modular nature
+
+### Documentation
+
+- **MODULAR_INTEGRATION.md** - Comprehensive integration guide with examples
+  - Quick start guide
+  - Core concepts (cognitive cycle, memory layers, knowledge graph)
+  - Custom LLM integration examples
+  - Custom memory backend examples
+  - Custom embedding provider examples
+  - API reference
+  - Best practices
+  - Migration guide from previous versions
+
+### Testing
+
+- **test_modular_architecture.py** - 26 new tests covering:
+  - Interface compliance tests (LLMAdapter, EmbeddingProvider, MemoryBackend)
+  - CognitiveArchitecture functionality tests
+  - CognitiveConfig validation tests
+  - Error handling tests
+  - Integration tests
+
+### Attribution
+
+- Modular architecture designed and implemented by **Claude (Anthropic AI Assistant)** under guidance from **orpheus497**
+- The JENOVA Cognitive Architecture (JCA) created by **orpheus497**
+
 ## [6.0.0] - 2025-11-13
 
 ### Documentation
