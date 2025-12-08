@@ -32,6 +32,7 @@ dependencies = [
     "selenium",
     "webdriver-manager",
     "requests",
+    "networkx",
 ]
 
 [project.urls]
