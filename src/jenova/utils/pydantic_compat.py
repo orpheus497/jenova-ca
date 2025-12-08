@@ -7,6 +7,10 @@ try:
     import pydantic
     import pydantic_settings
     
+    # Add BaseSettings directly to the module for direct attribute access
+    # This handles both direct imports and __getattr__ calls
+    pydantic.BaseSettings = pydantic_settings.BaseSettings
+    
     # Store original __getattr__ if it exists
     original_getattr = getattr(pydantic, '__getattr__', None)
     
@@ -22,8 +26,16 @@ try:
     # Replace __getattr__ in the module
     pydantic.__getattr__ = patched_getattr
     
-    # Also add BaseSettings directly to the module for direct attribute access
-    pydantic.BaseSettings = pydantic_settings.BaseSettings
+    # Also patch _getattr_migration if it exists (Pydantic v2)
+    if hasattr(pydantic, '_getattr_migration'):
+        original_getattr_migration = pydantic._getattr_migration
+        
+        def patched_getattr_migration(attr_name):
+            if attr_name == 'BaseSettings':
+                return pydantic_settings.BaseSettings
+            return original_getattr_migration(attr_name)
+        
+        pydantic._getattr_migration = patched_getattr_migration
     
 except (ImportError, AttributeError):
     pass  # If pydantic-settings isn't available, let the error occur naturally
@@ -46,3 +58,29 @@ try:
             os.environ[key] = default_value
 except Exception:
     pass  # If environment patching fails, continue anyway
+
+##Block purpose: Create ChromaDB client compatibility wrapper
+##Different ChromaDB versions use different APIs for creating persistent clients
+def create_chromadb_client(path: str):
+    """
+    Create a ChromaDB client with compatibility for different API versions.
+    
+    Args:
+        path: Directory path where the database will be stored
+        
+    Returns:
+        ChromaDB client instance
+    """
+    try:
+        import chromadb
+        # Try PersistentClient first (ChromaDB 0.3.23+)
+        if hasattr(chromadb, 'PersistentClient'):
+            return chromadb.PersistentClient(path=path)
+        # Fallback to Client with Settings (older versions)
+        elif hasattr(chromadb, 'Client'):
+            from chromadb.config import Settings
+            return chromadb.Client(settings=Settings(persist_directory=path))
+        else:
+            raise AttributeError("ChromaDB client API not found")
+    except Exception as e:
+        raise RuntimeError(f"Failed to create ChromaDB client: {e}") from e

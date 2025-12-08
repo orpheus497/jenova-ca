@@ -2,6 +2,7 @@ import os
 import json
 ##Block purpose: Import Pydantic compatibility fix before ChromaDB import
 from jenova.utils.pydantic_compat import *  # noqa: F401, F403
+from jenova.utils.pydantic_compat import create_chromadb_client
 
 import chromadb
 from datetime import datetime
@@ -20,7 +21,7 @@ class SemanticMemory:
         self.llm = llm
         os.makedirs(self.db_path, exist_ok=True)
         
-        client = chromadb.PersistentClient(path=self.db_path)
+        client = create_chromadb_client(path=self.db_path)
         self.embedding_function = CustomEmbeddingFunction(model=embedding_model, model_name=config['model']['embedding_model'])
         
         try:
