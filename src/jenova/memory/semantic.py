@@ -2,7 +2,7 @@ import os
 import json
 ##Block purpose: Import Pydantic compatibility fix before ChromaDB import
 from jenova.utils.pydantic_compat import *  # noqa: F401, F403
-from jenova.utils.pydantic_compat import create_chromadb_client
+from jenova.utils.pydantic_compat import create_chromadb_client, get_or_create_collection_with_embedding
 
 import chromadb
 from datetime import datetime
@@ -24,35 +24,8 @@ class SemanticMemory:
         client = create_chromadb_client(path=self.db_path)
         self.embedding_function = CustomEmbeddingFunction(model=embedding_model, model_name=config['model']['embedding_model'])
         
-        try:
-            self.collection = client.get_or_create_collection(name="semantic_facts", embedding_function=self.embedding_function)
-        except ValueError as e:
-            if "Embedding function conflict" in str(e):
-                self.ui_logger.system_message("Embedding function conflict detected. Recreating collection and migrating data...")
-                self.file_logger.log_warning("Embedding function conflict detected. Recreating collection 'semantic_facts' and migrating data.")
-                
-                try:
-                    old_collection = client.get_collection(name="semantic_facts")
-                    data = old_collection.get(include=["documents", "metadatas"])
-                    
-                    client.delete_collection(name="semantic_facts")
-                    self.collection = client.get_or_create_collection(name="semantic_facts", embedding_function=self.embedding_function)
-                    
-                    if data['ids']:
-                        self.collection.add(
-                            ids=data['ids'],
-                            documents=data['documents'],
-                            metadatas=data['metadatas']
-                        )
-                    self.ui_logger.system_message("Data migration successful.")
-                    self.file_logger.log_info("Data migration to new collection successful.")
-
-                except Exception as migration_error:
-                    self.file_logger.log_error(f"Error during data migration: {migration_error}")
-                    self.ui_logger.system_message("Error: Failed to migrate data during collection recreation. Data may be lost.")
-
-            else:
-                raise e
+        # Use the compatibility helper which handles embedding function issues
+        self.collection = get_or_create_collection_with_embedding(client, name="semantic_facts", embedding_function=self.embedding_function)
         
         try:
             self._load_initial_facts(config['persona']['initial_facts'])

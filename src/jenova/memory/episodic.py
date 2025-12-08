@@ -1,6 +1,6 @@
 ##Block purpose: Import Pydantic compatibility fix before ChromaDB import
 from jenova.utils.pydantic_compat import *  # noqa: F401, F403
-from jenova.utils.pydantic_compat import create_chromadb_client
+from jenova.utils.pydantic_compat import create_chromadb_client, get_or_create_collection_with_embedding
 
 import os
 import json
@@ -23,7 +23,7 @@ class EpisodicMemory:
         
         client = create_chromadb_client(path=self.db_path)
         self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=config['model']['embedding_model'])
-        self.collection = client.get_or_create_collection(name="episodic_episodes", embedding_function=self.embedding_function)
+        self.collection = get_or_create_collection_with_embedding(client, name="episodic_episodes", embedding_function=self.embedding_function)
 
     def add_episode(self, summary: str, username: str, entities: list = None, emotion: str = None, timestamp: str = None):
         if not timestamp:

@@ -1,6 +1,6 @@
 ##Block purpose: Import Pydantic compatibility fix before ChromaDB import
 from jenova.utils.pydantic_compat import *  # noqa: F401, F403
-from jenova.utils.pydantic_compat import create_chromadb_client
+from jenova.utils.pydantic_compat import create_chromadb_client, get_or_create_collection_with_embedding
 
 import os
 import json
@@ -22,7 +22,7 @@ class ProceduralMemory:
         
         client = create_chromadb_client(path=self.db_path)
         self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=config['model']['embedding_model'])
-        self.collection = client.get_or_create_collection(name="procedural_steps", embedding_function=self.embedding_function)
+        self.collection = get_or_create_collection_with_embedding(client, name="procedural_steps", embedding_function=self.embedding_function)
 
     def add_procedure(self, procedure: str, username: str, goal: str = None, steps: list = None, context: str = None):
         if not goal or not steps or not context:
