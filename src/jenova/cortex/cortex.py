@@ -2,13 +2,19 @@ import os
 import json
 from datetime import datetime
 import uuid
+from .graph_metrics import GraphMetrics
+from .clustering import AdvancedClustering
 
+##Class purpose: The Cortex is the central hub of the AI's cognitive architecture
+##It manages a graph of interconnected cognitive nodes, including insights,
+##memories, and assumptions, fostering a deep, evolving understanding
 class Cortex:
     """
     The Cortex is the central hub of the AI's cognitive architecture.
     It manages a graph of interconnected cognitive nodes, including insights,
     memories, and assumptions, fostering a deep, evolving understanding.
     """
+    ##Function purpose: Initialize Cortex with configuration, loggers, LLM interface, and data directory
     def __init__(self, config, ui_logger, file_logger, llm, cortex_root):
         self.config = config
         self.ui_logger = ui_logger
@@ -21,6 +27,10 @@ class Cortex:
         self.graph = self._load_graph()
         self.reflection_cycle_count = 0
         self.json_grammar = self._load_grammar()
+        
+        # Initialize advanced clustering and graph metrics modules
+        self.clustering = AdvancedClustering(config)
+        self.graph_metrics = GraphMetrics(config)
 
     def _load_grammar(self):
         """Loads the JSON grammar from the llama.cpp submodule."""
@@ -133,11 +143,12 @@ Emotion JSON:"""
         self._save_graph()
         self.ui_logger.info(f"Node {node_id} updated.")
 
+    ##Function purpose: Performs a deep reflection on the cognitive graph with advanced metrics and clustering
     def reflect(self, user: str) -> list[str]:
         """
         Performs a deep reflection on the cognitive graph. This process analyzes
         the graph to find patterns, infer relationships, generate new links,
-        and create meta-insights.
+        create meta-insights, and calculate comprehensive graph metrics.
         """
         messages = []
         messages.append(f"Initiating deep reflection for user '{user}'...")
@@ -147,10 +158,64 @@ Emotion JSON:"""
             messages.append("Insufficient data for a meaningful reflection.")
             return messages
 
+        ##Block purpose: Initial reflection pass
         self._calculate_centrality()
         self._link_orphans(user_nodes)
         self._link_external_information(user_nodes)
         self._generate_meta_insights(user_nodes)
+
+        ##Block purpose: Iterative deepening for complex patterns (if enabled)
+        reflection_config = self.config.get('cortex', {}).get('reflection', {})
+        iterative_enabled = reflection_config.get('iterative_deepening', False)
+        max_iterations = reflection_config.get('max_iterations', 2)
+        
+        if iterative_enabled and len(user_nodes) > 20:  # Only for larger graphs
+            messages.append(f"Performing iterative reflection analysis (up to {max_iterations} iterations)...")
+            
+            ##Block purpose: Iterative analysis loop
+            for iteration in range(1, max_iterations + 1):
+                messages.append(f"Iteration {iteration}/{max_iterations}...")
+                
+                ##Block purpose: Recalculate centrality after changes
+                self._calculate_centrality()
+                
+                ##Block purpose: Find newly created orphans from previous iteration
+                updated_user_nodes = [n for n in self.graph["nodes"].values() if n.get("user") == user]
+                new_orphans = [node for node in updated_user_nodes if node['metadata']['centrality'] == 0]
+                if new_orphans:
+                    self._link_orphans(new_orphans)
+                
+                ##Block purpose: Generate additional meta-insights from new connections
+                self._generate_meta_insights(updated_user_nodes)
+                
+                ##Block purpose: Check if significant changes occurred
+                if iteration < max_iterations:
+                    # Continue if new links were created in this iteration
+                    # This is a simple heuristic - could be enhanced
+                    break  # For now, do one iteration to avoid performance issues
+
+        # Calculate comprehensive graph metrics
+        metrics_config = self.config.get('cortex', {}).get('metrics', {})
+        if metrics_config.get('enabled', True):
+            try:
+                all_metrics = self.graph_metrics.calculate_all_metrics(self.graph, user)
+                if all_metrics:
+                    # Log key metrics
+                    clustering_info = all_metrics.get('clustering', {})
+                    modularity_info = all_metrics.get('modularity', {})
+                    density_info = all_metrics.get('density', {})
+                    
+                    if clustering_info.get('average_coefficient'):
+                        messages.append(f"Graph clustering coefficient: {clustering_info['average_coefficient']}")
+                    if modularity_info.get('modularity'):
+                        messages.append(f"Graph modularity: {modularity_info['modularity']} ({modularity_info.get('num_communities', 0)} communities)")
+                    if density_info.get('density'):
+                        messages.append(f"Graph density: {density_info['density']} ({density_info.get('num_nodes', 0)} nodes, {density_info.get('num_edges', 0)} edges)")
+                    
+                    # Store metrics in file logger for detailed analysis
+                    self.file_logger.log_info(f"Graph metrics: {json.dumps(all_metrics, indent=2)}")
+            except Exception as e:
+                self.file_logger.log_error(f"Error calculating graph metrics: {e}")
 
         self.reflection_cycle_count += 1
         pruning_config = self.config.get('cortex', {}).get('pruning', {})
@@ -180,21 +245,81 @@ Emotion JSON:"""
             if node_id in self.graph["nodes"]:
                 self.graph["nodes"][node_id]["metadata"]["centrality"] = count
 
+    ##Function purpose: Identifies nodes with few links and attempts to create new connections using batch processing
     def _link_orphans(self, user_nodes: list):
-        """Identifies nodes with few links and attempts to create new connections."""
+        """
+        Identifies orphan nodes (nodes with centrality 0) and links them to related nodes.
+        Uses batch processing with semantic pre-filtering for efficiency.
+        """
         orphan_nodes = [node for node in user_nodes if node['metadata']['centrality'] == 0]
 
         if len(orphan_nodes) < 2:
             return
 
-        for orphan in orphan_nodes:
-            other_nodes = [node for node in user_nodes if node['id'] != orphan['id']]
-            if not other_nodes:
-                continue
+        # Batch process orphans: group them and find candidates more efficiently
+        other_nodes = [node for node in user_nodes if node['metadata']['centrality'] > 0]
+        
+        if not other_nodes:
+            return
 
-            node_contents = "\n".join([f"- Node {i+1} (ID: {node['id']}): {node['content']}" for i, node in enumerate(other_nodes)])
+        # Process orphans in batches to reduce LLM calls
+        batch_size = 3  # Process 3 orphans at a time
+        for i in range(0, len(orphan_nodes), batch_size):
+            batch_orphans = orphan_nodes[i:i + batch_size]
+            
+            # Create batch prompt for multiple orphans
+            orphan_contents = "\n".join([f"- Orphan {j+1} (ID: {orphan['id']}): {orphan['content']}" 
+                                         for j, orphan in enumerate(batch_orphans)])
+            
+            node_contents = "\n".join([f"- Node {j+1} (ID: {node['id']}): {node['content']}" 
+                                      for j, node in enumerate(other_nodes[:50])])  # Limit to 50 nodes for efficiency
 
-            prompt = f"""Analyze the following 'orphan' node and the list of other nodes. Your task is to identify which nodes from the list are strongly related to the orphan node. 
+            prompt = f"""Analyze the following orphan nodes and the list of other nodes. For each orphan, identify which nodes from the list are strongly related. 
+
+Orphan Nodes:
+{orphan_contents}
+
+List of other nodes:
+{node_contents}
+
+Respond with a valid JSON array where each element corresponds to an orphan node (in order) and contains: {{"orphan_id": "<id>", "relevant_node_ids": ["<node_id_1>", "<node_id_2>"], "relationship": "<relationship_type>"}}. Relationship types: 'elaborates_on', 'conflicts_with', 'related_to', 'develops', 'summarizes'. Do not include any other text.
+
+JSON Response:"""
+
+            response_str = self.llm.generate(prompt, temperature=0.3, grammar=self.json_grammar)
+            
+            try:
+                response_data = json.loads(response_str)
+                # Handle both list and single object responses
+                if isinstance(response_data, dict):
+                    response_data = [response_data]
+                
+                for response_item in response_data:
+                    orphan_id = response_item.get('orphan_id')
+                    target_ids = response_item.get('relevant_node_ids', [])
+                    relationship = response_item.get('relationship')
+
+                    if orphan_id and target_ids and relationship:
+                        # Find the orphan node
+                        orphan = next((n for n in batch_orphans if n['id'] == orphan_id), None)
+                        if orphan:
+                            for target_id in target_ids:
+                                if target_id in self.graph["nodes"]:
+                                    self.add_link(orphan_id, target_id, relationship)
+                                    self.ui_logger.info(f"Linked orphan node {orphan_id} to {target_id}")
+            except (json.JSONDecodeError, KeyError, ValueError) as e:
+                self.file_logger.log_error(f"Failed to link orphan batch. Invalid JSON response: {response_str}. Error: {e}")
+                # Fallback to individual processing for this batch
+                for orphan in batch_orphans:
+                    self._link_orphan_individual(orphan, other_nodes)
+    
+    ##Function purpose: Fallback method to link a single orphan node individually
+    def _link_orphan_individual(self, orphan: dict, other_nodes: list):
+        """Fallback method for linking a single orphan when batch processing fails."""
+        node_contents = "\n".join([f"- Node {i+1} (ID: {node['id']}): {node['content']}" 
+                                  for i, node in enumerate(other_nodes[:30])])
+
+        prompt = f"""Analyze the following 'orphan' node and the list of other nodes. Your task is to identify which nodes from the list are strongly related to the orphan node. 
 
 Orphan Node: "{orphan['content']}"
 
@@ -205,21 +330,20 @@ Respond with a valid JSON object containing a list of related node IDs and the r
 
 JSON Response:"""
 
-            response_str = self.llm.generate(prompt, temperature=0.3, grammar=self.json_grammar)
-            
-            try:
-                response_data = json.loads(response_str)
-                target_ids = response_data.get('relevant_node_ids', [])
-                relationship = response_data.get('relationship')
+        response_str = self.llm.generate(prompt, temperature=0.3, grammar=self.json_grammar)
+        
+        try:
+            response_data = json.loads(response_str)
+            target_ids = response_data.get('relevant_node_ids', [])
+            relationship = response_data.get('relationship')
 
-                if target_ids and relationship:
-                    for target_id in target_ids:
-                        if target_id in self.graph["nodes"]:
-                            self.add_link(orphan['id'], target_id, relationship)
-                            self.ui_logger.info(f"Linked orphan node {orphan['id']} to {target_id}")
-            except (json.JSONDecodeError, KeyError, ValueError) as e:
-                self.file_logger.log_error(f"Failed to link orphan node {orphan['id']}. Invalid JSON response: {response_str}. Error: {e}")
-                continue
+            if target_ids and relationship:
+                for target_id in target_ids:
+                    if target_id in self.graph["nodes"]:
+                        self.add_link(orphan['id'], target_id, relationship)
+                        self.ui_logger.info(f"Linked orphan node {orphan['id']} to {target_id}")
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            self.file_logger.log_error(f"Failed to link orphan node {orphan['id']}. Invalid JSON response: {response_str}. Error: {e}")
 
     def _link_external_information(self, user_nodes: list):
         """Links insights to external information and finds relationships between external sources."""
@@ -436,32 +560,31 @@ JSON Response:"""
         words = text.split()
         return [' '.join(words[i:i + chunk_size]) for i in range(0, len(words), chunk_size)]
 
+    ##Function purpose: Analyzes clusters of nodes using advanced clustering algorithms to generate higher-level meta-insights
     def _generate_meta_insights(self, user_nodes: list):
-        """Analyzes clusters of nodes to generate higher-level meta-insights."""
-        user_node_ids = {node['id'] for node in user_nodes}
-        adj = {node_id: [] for node_id in user_node_ids}
-        for link in self.graph['links']:
-            if link['source'] in user_node_ids and link['target'] in user_node_ids:
-                adj[link['source']].append(link['target'])
-                adj[link['target']].append(link['source'])
-
-        visited = set()
-        clusters = []
-        for node_id in user_node_ids:
-            if node_id not in visited:
-                cluster = []
-                q = [node_id]
-                visited.add(node_id)
-                while q:
-                    curr = q.pop(0)
-                    cluster.append(curr)
-                    for neighbor in adj.get(curr, []):
-                        if neighbor not in visited:
-                            visited.add(neighbor)
-                            q.append(neighbor)
-                clusters.append(cluster)
-
-        for cluster in clusters:
+        """
+        Uses advanced clustering algorithms to identify meaningful clusters of nodes,
+        then generates meta-insights from high-quality clusters.
+        """
+        if len(user_nodes) < 3:
+            return
+        
+        # Use advanced clustering to detect communities
+        clusters, quality_metrics = self.clustering.detect_communities(self.graph, user_nodes)
+        
+        # Log clustering quality metrics
+        if quality_metrics:
+            self.file_logger.log_info(f"Clustering quality: modularity={quality_metrics.get('modularity', 0)}, "
+                                     f"clusters={quality_metrics.get('num_clusters', 0)}, "
+                                     f"avg_size={quality_metrics.get('average_cluster_size', 0)}")
+        
+        # Identify pattern clusters for meta-insight generation
+        pattern_clusters = self.clustering.identify_pattern_clusters(self.graph, user_nodes)
+        
+        # Use pattern clusters if available, otherwise use all clusters
+        clusters_to_process = pattern_clusters if pattern_clusters else clusters
+        
+        for cluster in clusters_to_process:
             if len(cluster) < 3:
                 continue
 
@@ -470,7 +593,7 @@ JSON Response:"""
             meta_insight_exists = False
             for node_id in cluster:
                 node = self.get_node(node_id)
-                if node['type'] == 'meta-insight':
+                if node and node['type'] == 'meta-insight':
                     # Check if this meta-insight links to all nodes in the current cluster
                     linked_nodes = {link['target'] for link in self.graph['links'] if link['source'] == node_id}
                     if linked_nodes == cluster_set:
@@ -479,7 +602,10 @@ JSON Response:"""
             if meta_insight_exists:
                 continue
 
-            linked_nodes_content = [self.get_node(node_id)['content'] for node_id in cluster]
+            linked_nodes_content = [self.get_node(node_id)['content'] for node_id in cluster if self.get_node(node_id)]
+            if not linked_nodes_content:
+                continue
+                
             content_str = "\n".join([f"- {content}" for content in linked_nodes_content])
 
             prompt = f"""Analyze the following collection of related insights. Your task is to synthesize them into a single, novel, and higher-level 'meta-insight'. A meta-insight is a new conclusion, pattern, or theme that emerges from the combination of the existing insights, but is not explicitly stated in any of them. Do not simply summarize the related insights. The meta-insight should be a new piece of knowledge.

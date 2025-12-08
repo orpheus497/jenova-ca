@@ -4,13 +4,14 @@ from datetime import datetime
 
 class AssumptionManager:
     """Manages the lifecycle of assumptions about the user."""
-    def __init__(self, config, ui_logger, file_logger, user_data_root, cortex, llm):
+    def __init__(self, config, ui_logger, file_logger, user_data_root, cortex, llm, integration_layer=None):
         self.config = config
         self.ui_logger = ui_logger
         self.file_logger = file_logger
         self.assumptions_file = os.path.join(user_data_root, 'assumptions.json')
         self.cortex = cortex
         self.llm = llm
+        self.integration_layer = integration_layer  # Optional integration layer for Cortex-Memory feedback
         self.assumptions = self._load_assumptions()
 
     def _load_assumptions(self):
@@ -58,6 +59,14 @@ class AssumptionManager:
         
         node_id = self.cortex.add_node('assumption', assumption_content, username, linked_to=linked_to)
         new_assumption['cortex_id'] = node_id
+
+        ##Block purpose: Provide feedback from Cortex to Memory (if integration layer available)
+        integration_config = self.config.get('cortex', {}).get('integration', {})
+        if integration_config.get('cortex_to_memory_feedback', False) and self.integration_layer:
+            try:
+                self.integration_layer.feedback_cortex_to_memory(node_id, username)
+            except Exception as e:
+                self.file_logger.log_error(f"Error providing Cortex-to-Memory feedback for assumption {node_id}: {e}")
 
         self.assumptions[status].append(new_assumption)
         self._save_assumptions()
@@ -116,7 +125,16 @@ Result:'''
                 node_id = self.cortex.add_node('assumption', assumption['content'], username)
                 assumption['cortex_id'] = node_id
                 linked_to_cortex_id.append(node_id)
-            self.cortex.add_node('insight', assumption['content'], username, linked_to=linked_to_cortex_id)
+            insight_node_id = self.cortex.add_node('insight', assumption['content'], username, linked_to=linked_to_cortex_id)
+            
+            ##Block purpose: Provide feedback from Cortex to Memory for new insight (if integration layer available)
+            integration_config = self.config.get('cortex', {}).get('integration', {})
+            if integration_config.get('cortex_to_memory_feedback', False) and self.integration_layer:
+                try:
+                    self.integration_layer.feedback_cortex_to_memory(insight_node_id, username)
+                except Exception as e:
+                    self.file_logger.log_error(f"Error providing Cortex-to-Memory feedback for converted insight {insight_node_id}: {e}")
+            
             self.ui_logger.system_message("Assumption confirmed and converted to insight.")
         else:
             self.assumptions['false'].append(assumption)

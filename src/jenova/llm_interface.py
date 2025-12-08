@@ -1,10 +1,17 @@
+##Script function and purpose: LLM Interface for The JENOVA Cognitive Architecture
+##This module handles all interactions with the underlying language model, including model loading, context optimization, and text generation
+
 import os
 import glob
 import importlib.resources
+from typing import Optional, List, Dict, Any
 from llama_cpp import Llama
+from llama_cpp.llama_grammar import LlamaGrammar
 
+##Class purpose: Manages LLM model loading, configuration, and text generation
 class LLMInterface:
-    def __init__(self, config, ui_logger, file_logger):
+    ##Function purpose: Initialize the LLM interface with configuration and loggers
+    def __init__(self, config: Dict[str, Any], ui_logger, file_logger) -> None:
         self.config = config
         self.ui_logger = ui_logger
         self.file_logger = file_logger
@@ -12,7 +19,8 @@ class LLMInterface:
         self.system_prompt = self._build_system_prompt()
         self.model = self._load_model()
     
-    def _detect_optimal_threads(self, configured_threads):
+    ##Function purpose: Detect and configure optimal thread count based on system capabilities
+    def _detect_optimal_threads(self, configured_threads: Optional[int]) -> int:
         """Detect optimal thread count for the system."""
         cpu_count = os.cpu_count()
         if cpu_count is None:
@@ -39,13 +47,15 @@ class LLMInterface:
         
         return configured_threads
 
-    def close(self):
+    ##Function purpose: Clean up LLM resources on shutdown
+    def close(self) -> None:
         """Cleans up the LLM resources."""
         if self.model:
             # The Llama object from llama-cpp-python does not have an explicit close() method.
             # Resources are released when the object is garbage collected.
             self.file_logger.log_info("LLM model resources released.")
 
+    ##Function purpose: Build the system prompt from persona configuration
     def _build_system_prompt(self) -> str:
         """Builds a robust, persistent system prompt to ground the AI."""
         persona = self.config['persona']
@@ -62,7 +72,8 @@ You must follow these directives:
 Answer the user's query directly and factually. Do not be evasive. If you do not know an answer, say so and explain why. Do not output role-playing prefixes like 'User:'. Do not output your internal plan or reasoning.""".strip()
         return prompt
 
-    def _load_model(self):
+    ##Function purpose: Load and configure the LLM model with optimal settings
+    def _load_model(self) -> Llama:
         if not self.model_path or not os.path.exists(self.model_path) or os.path.isdir(self.model_path):
             self.ui_logger.info("Model path not configured or invalid. Searching for a model in the 'models/' directory...")
             self.file_logger.log_info("Model path not configured. Searching for models.")
@@ -144,7 +155,8 @@ Answer the user's query directly and factually. Do not be evasive. If you do not
             verbose=False
         )
 
-    def generate(self, prompt: str, stop: list = None, temperature: float = None, grammar: str = None, thinking_process=None) -> str:
+    ##Function purpose: Generate text response from the LLM with specified parameters
+    def generate(self, prompt: str, stop: Optional[List[str]] = None, temperature: Optional[float] = None, grammar: Optional[LlamaGrammar] = None, thinking_process: Optional[Any] = None) -> str:
         """Generates a response from the LLM.
         
         Args:

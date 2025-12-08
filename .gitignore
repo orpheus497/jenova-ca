@@ -48,6 +48,12 @@ htmlcov/
 .hypothesis/
 .mypy_cache/
 
+# Test artifacts
+tests/.pytest_cache/
+tests/__pycache__/
+tests/*.pyc
+tests/temp_*/
+
 # IDEs
 .idea/
 .vscode/
@@ -81,7 +87,7 @@ Thumbs.db
 !/docs/.gitkeep
 
 # Development planning and status docs (for AI agent collaboration)
-.dev-docs/
+.devdocs/
 
 # Unnecessary vendored code
 /llama.cpp/

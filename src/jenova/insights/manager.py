@@ -5,7 +5,7 @@ from .concerns import ConcernManager
 
 class InsightManager:
     """Manages the creation, storage, and retrieval of topical insights."""
-    def __init__(self, config, ui_logger, file_logger, insights_root, llm, cortex, memory_search):
+    def __init__(self, config, ui_logger, file_logger, insights_root, llm, cortex, memory_search, integration_layer=None):
         self.config = config
         self.ui_logger = ui_logger
         self.file_logger = file_logger
@@ -13,6 +13,7 @@ class InsightManager:
         self.llm = llm
         self.cortex = cortex
         self.memory_search = memory_search
+        self.integration_layer = integration_layer  # Optional integration layer for Cortex-Memory feedback
         os.makedirs(self.insights_root, exist_ok=True)
         self.concern_manager = ConcernManager(config, ui_logger, file_logger, insights_root, self.llm)
 
@@ -32,6 +33,14 @@ class InsightManager:
             else:
                 node_id = self.cortex.add_node('insight', insight_content, username, linked_to=linked_to)
                 self.file_logger.log_info(f"Created new insight node: {node_id}")
+            
+            ##Block purpose: Provide feedback from Cortex to Memory (if integration layer available)
+            integration_config = self.config.get('cortex', {}).get('integration', {})
+            if integration_config.get('cortex_to_memory_feedback', False) and self.integration_layer:
+                try:
+                    self.integration_layer.feedback_cortex_to_memory(node_id, username)
+                except Exception as e:
+                    self.file_logger.log_error(f"Error providing Cortex-to-Memory feedback for insight {node_id}: {e}")
             
             user_insights_dir = os.path.join(self.insights_root, username)
             topic_dir = os.path.join(user_insights_dir, topic)
@@ -62,7 +71,9 @@ class InsightManager:
 
     def get_relevant_insights(self, query: str, username: str, max_insights: int = 3) -> list[str]:
         """Uses semantic search to find the most relevant insights for a given query."""
-        return self.memory_search.search_insights(query, username, max_insights)
+        insight_results = self.memory_search.search_insights(query, username, max_insights)
+        # Extract documents from (doc, distance) tuples
+        return [doc for doc, dist in insight_results]
 
     def get_all_insights(self, username: str) -> list[dict]:
         """Retrieves all insights from the insights directory for a specific user."""
