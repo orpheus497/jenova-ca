@@ -1,5 +1,8 @@
 import os
 import json
+##Block purpose: Import Pydantic compatibility fix before ChromaDB import
+from jenova.utils.pydantic_compat import *  # noqa: F401, F403
+
 import chromadb
 from datetime import datetime
 from importlib import resources

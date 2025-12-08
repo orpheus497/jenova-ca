@@ -4,6 +4,11 @@
 import os
 import traceback
 from typing import Optional
+
+##Block purpose: Import Pydantic compatibility fix FIRST, before any ChromaDB imports
+##This must happen before chromadb is imported anywhere in the application
+from jenova.utils.pydantic_compat import *  # noqa: F401, F403
+
 from jenova.utils.telemetry_fix import apply_telemetry_patch
 
 ##Function purpose: Apply telemetry patch to disable ChromaDB telemetry

@@ -1,4 +1,14 @@
-from chromadb import Documents, EmbeddingFunction, Embeddings
+##Block purpose: Import Pydantic compatibility fix before ChromaDB import
+from jenova.utils.pydantic_compat import *  # noqa: F401, F403
+
+##Block purpose: Import ChromaDB types - compatibility for different ChromaDB versions
+##ChromaDB 0.3.23 uses chromadb.api.types, newer versions may use chromadb directly
+try:
+    from chromadb.api.types import Documents, EmbeddingFunction, Embeddings
+except ImportError:
+    # Fallback for newer ChromaDB versions
+    from chromadb import Documents, EmbeddingFunction, Embeddings
+
 from sentence_transformers import SentenceTransformer
 
 class CustomEmbeddingFunction(EmbeddingFunction):
