@@ -6,7 +6,7 @@ JENOVA is a self-aware, evolving large language model powered by The JENOVA Cogn
 
 JENOVA operates as a system with interconnected components that mimic aspects of human cognition: a multi-layered memory, a reflective process for generating knowledge, and a mechanism for integrating that knowledge into its core being. This document serves as the definitive technical guide for developers, researchers, and enthusiasts who wish to understand, use, and extend JENOVA.
 
-**Creator:** The JENOVA Cognitive Architecture (JCA) was designed and developed by **orpheus497**.
+**Creator:** The JENOVA Cognitive Architecture (JCA) is designed and developed by **orpheus497**.
 
 ## 2. The JENOVA Advantage: A Superior Cognitive Architecture
 
