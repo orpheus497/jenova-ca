@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.0.4] - 2025-12-08
 
+### Added
+- **Dependency:** Added `networkx` to project dependencies for graph analysis and clustering algorithms.
+
 ### Changed
 - **Documentation Update:** Updated README.md to use present tense consistently throughout, removing references to past development iterations to focus on current capabilities.
 - **Operational Verification:** Verified all module imports, dependencies, and interlinking between components to ensure operational correctness.
