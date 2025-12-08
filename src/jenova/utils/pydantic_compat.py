@@ -83,58 +83,85 @@ def create_chromadb_client(path: str):
         else:
             raise AttributeError("ChromaDB client API not found")
         
-        # Patch create_collection to ensure _embedding_function is set in private attrs
+        # Patch create_collection to ensure all private attributes are set
         original_create_collection = client.create_collection
         
-        def patched_create_collection(*args, **kwargs):
-            collection = original_create_collection(*args, **kwargs)
-            # Ensure _embedding_function is set in __pydantic_private__
-            if hasattr(collection, '__pydantic_private__'):
-                private_attrs = collection.__pydantic_private__
-                embedding_func = kwargs.get('embedding_function')
-                if embedding_func is not None:
-                    private_attrs['_embedding_function'] = embedding_func
-                    # Also set embedding_function if it exists as a field
-                    if 'embedding_function' not in private_attrs:
-                        private_attrs['embedding_function'] = embedding_func
-                elif '_embedding_function' not in private_attrs:
-                    # Set to None if not provided
-                    private_attrs['_embedding_function'] = None
-            return collection
+        def make_create_collection_patcher(client_instance):
+            def patched_create_collection(*args, **kwargs):
+                collection = original_create_collection(*args, **kwargs)
+                # Ensure all private attributes are set in __pydantic_private__
+                if hasattr(collection, '__pydantic_private__'):
+                    private_attrs = collection.__pydantic_private__
+                    
+                    # Set _embedding_function
+                    embedding_func = kwargs.get('embedding_function')
+                    if embedding_func is not None:
+                        private_attrs['_embedding_function'] = embedding_func
+                        if 'embedding_function' not in private_attrs:
+                            private_attrs['embedding_function'] = embedding_func
+                    elif '_embedding_function' not in private_attrs:
+                        private_attrs['_embedding_function'] = None
+                    
+                    # Set _client (the client that created this collection)
+                    if '_client' not in private_attrs:
+                        private_attrs['_client'] = client_instance
+                    
+                    # Set _name
+                    name = kwargs.get('name') or (args[0] if args else None)
+                    if name and '_name' not in private_attrs:
+                        private_attrs['_name'] = name
+                    
+                    # Ensure all other attributes exist
+                    _ensure_collection_attributes(collection)
+                return collection
+            return patched_create_collection
         
-        client.create_collection = patched_create_collection
+        client.create_collection = make_create_collection_patcher(client)
         
-        # Also patch get_collection to ensure _embedding_function exists
+        # Also patch get_collection to ensure all private attributes exist
         original_get_collection = client.get_collection
         
-        def patched_get_collection(*args, **kwargs):
-            collection = original_get_collection(*args, **kwargs)
-            # Ensure _embedding_function exists in __pydantic_private__
-            if hasattr(collection, '__pydantic_private__'):
-                private_attrs = collection.__pydantic_private__
-                if '_embedding_function' not in private_attrs:
-                    # Try to get it from the collection's attributes
-                    try:
-                        if hasattr(collection, 'embedding_function'):
-                            private_attrs['_embedding_function'] = collection.embedding_function
-                        else:
-                            private_attrs['_embedding_function'] = None
-                    except Exception:
-                        private_attrs['_embedding_function'] = None
-            return collection
+        def make_get_collection_patcher(client_instance):
+            def patched_get_collection(*args, **kwargs):
+                collection = original_get_collection(*args, **kwargs)
+                # Ensure all private attributes exist in __pydantic_private__
+                if hasattr(collection, '__pydantic_private__'):
+                    private_attrs = collection.__pydantic_private__
+                    
+                    # Set _client (the client that retrieved this collection)
+                    if '_client' not in private_attrs:
+                        private_attrs['_client'] = client_instance
+                    
+                    # Ensure all other attributes exist
+                    _ensure_collection_attributes(collection)
+                return collection
+            return patched_get_collection
         
-        client.get_collection = patched_get_collection
+        client.get_collection = make_get_collection_patcher(client)
         
         return client
     except Exception as e:
         raise RuntimeError(f"Failed to create ChromaDB client: {e}") from e
 
-##Block purpose: Helper function to ensure _embedding_function exists in Collection's private attributes
-##This prevents AttributeError when ChromaDB tries to access _embedding_function internally
-def _ensure_embedding_function(collection):
-    """Ensure _embedding_function exists in collection's __pydantic_private__ dictionary."""
+##Block purpose: Helper function to ensure all Collection private attributes exist
+##This prevents AttributeError when ChromaDB tries to access private attributes internally
+##Pydantic v2 requires all private attributes to be explicitly set in __pydantic_private__
+def _ensure_collection_attributes(collection):
+    """
+    Ensure all private attributes that ChromaDB Collection might access exist in __pydantic_private__.
+    
+    ChromaDB Collection accesses these private attributes internally:
+    - _embedding_function: The embedding function for the collection
+    - _client: The ChromaDB client instance
+    - _name: The collection name
+    - _id: The collection ID
+    
+    This function ensures all of these exist before any operation.
+    """
     if hasattr(collection, '__pydantic_private__'):
         private_attrs = collection.__pydantic_private__
+        
+        # Ensure _embedding_function exists
         if '_embedding_function' not in private_attrs:
             try:
                 if hasattr(collection, 'embedding_function'):
@@ -143,6 +170,55 @@ def _ensure_embedding_function(collection):
                     private_attrs['_embedding_function'] = None
             except Exception:
                 private_attrs['_embedding_function'] = None
+        
+        # Ensure _client exists (critical - used by add, query, get, etc.)
+        if '_client' not in private_attrs:
+            try:
+                # Try to get it from public attributes or model fields
+                if hasattr(collection, 'client'):
+                    private_attrs['_client'] = collection.client
+                elif hasattr(collection, '_client'):
+                    # Try direct access (might work if it's a model field)
+                    try:
+                        private_attrs['_client'] = object.__getattribute__(collection, '_client')
+                    except AttributeError:
+                        # If it doesn't exist, we need to get it from the collection's creation context
+                        # Collections are created with a client, so we should be able to find it
+                        private_attrs['_client'] = None
+                else:
+                    private_attrs['_client'] = None
+            except Exception:
+                private_attrs['_client'] = None
+        
+        # Ensure _name exists
+        if '_name' not in private_attrs:
+            try:
+                if hasattr(collection, 'name'):
+                    private_attrs['_name'] = collection.name
+                elif hasattr(collection, '_name'):
+                    try:
+                        private_attrs['_name'] = object.__getattribute__(collection, '_name')
+                    except AttributeError:
+                        private_attrs['_name'] = None
+                else:
+                    private_attrs['_name'] = None
+            except Exception:
+                private_attrs['_name'] = None
+        
+        # Ensure _id exists
+        if '_id' not in private_attrs:
+            try:
+                if hasattr(collection, 'id'):
+                    private_attrs['_id'] = collection.id
+                elif hasattr(collection, '_id'):
+                    try:
+                        private_attrs['_id'] = object.__getattribute__(collection, '_id')
+                    except AttributeError:
+                        private_attrs['_id'] = None
+                else:
+                    private_attrs['_id'] = None
+            except Exception:
+                private_attrs['_id'] = None
 
 ##Block purpose: Patch ChromaDB Collection class to handle missing _embedding_function gracefully
 ##Pydantic v2 raises AttributeError when accessing missing private attributes, but ChromaDB expects None
@@ -155,7 +231,7 @@ try:
         original_validate = Collection._validate_embedding_set
         
         def patched_validate_embedding_set(self, ids, embeddings, metadatas, documents):
-            _ensure_embedding_function(self)
+            _ensure_collection_attributes(self)
             return original_validate(self, ids, embeddings, metadatas, documents)
         
         Collection._validate_embedding_set = patched_validate_embedding_set
@@ -172,7 +248,7 @@ try:
             # Use a lambda with default argument to capture the original method properly
             def create_patcher(original):
                 def patched_method(self, *args, **kwargs):
-                    _ensure_embedding_function(self)
+                    _ensure_collection_attributes(self)
                     return original(self, *args, **kwargs)
                 return patched_method
             

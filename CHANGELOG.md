@@ -11,12 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - (Add new features for the next version here)
 
 ### Fixed
-- **Pydantic v2 Compatibility:** Fixed a critical `AttributeError: 'Collection' object has no attribute '_embedding_function'` error that occurred when ChromaDB's Collection class tried to access `_embedding_function` internally. Pydantic v2 raises AttributeError when accessing missing private attributes, but ChromaDB expects None. Implemented comprehensive patching in `pydantic_compat.py` to:
-  - Patch ChromaDB client's `create_collection` and `get_collection` methods to ensure `_embedding_function` is always set in collections' `__pydantic_private__` dictionary
-  - Patch Collection class's `_validate_embedding_set` method to handle missing `_embedding_function` gracefully
-  - Comprehensively patch all Collection methods (`add`, `query`, `get`, `count`, `update`, `delete`, `upsert`, `modify`, `peek`) to ensure `_embedding_function` exists before any operation that might access it internally
-  - Created `_ensure_embedding_function()` helper function to centralize the logic for ensuring the attribute exists
-  - Ensure collections created or retrieved always have the embedding function properly initialized, preventing AttributeError during any ChromaDB collection operation
+- **Pydantic v2 Compatibility:** Fixed critical `AttributeError` errors that occurred when ChromaDB's Collection class tried to access private attributes internally. Pydantic v2 raises AttributeError when accessing missing private attributes in `__pydantic_private__`, but ChromaDB expects these attributes to exist. Implemented comprehensive patching in `pydantic_compat.py` to:
+  - **Fixed `_embedding_function` AttributeError:** Patch ChromaDB client's `create_collection` and `get_collection` methods to ensure `_embedding_function` is always set in collections' `__pydantic_private__` dictionary
+  - **Fixed `_client` AttributeError:** Ensure `_client` (the ChromaDB client instance) is always set in `__pydantic_private__` when collections are created or retrieved, as ChromaDB methods like `add()`, `query()`, `get()` access `self._client` internally
+  - **Comprehensive Attribute Coverage:** Created `_ensure_collection_attributes()` helper function that ensures all private attributes (`_embedding_function`, `_client`, `_name`, `_id`) exist before any operation
+  - **Method-Level Patching:** Comprehensively patch all Collection methods (`add`, `query`, `get`, `count`, `update`, `delete`, `upsert`, `modify`, `peek`) and `_validate_embedding_set` to ensure all private attributes exist before any operation that might access them internally
+  - **Client-Level Patching:** Patch `create_collection` and `get_collection` at the client level to set `_client` and other attributes immediately upon collection creation/retrieval
+  - **Collection Class-Level Patching:** Patch Collection class methods at module import time to ensure compatibility across all ChromaDB operations, regardless of how collections are accessed
   - All patches are applied at module import time, ensuring compatibility across all ChromaDB operations
   - Verified all memory modules (episodic, semantic, procedural) properly import the compatibility module before ChromaDB imports
 
