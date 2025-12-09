@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Encoding Issues:** Fixed UTF-8 encoding in subprocess communication between Go and Python
-- **Go Version Compatibility:** Updated Go version requirements to 1.21+ with proper toolchain specification
+- **Go Version Compatibility:** Updated Go version requirements to 1.24+ with proper toolchain specification
 
 ## [3.0.5] - 2025-12-09
 
