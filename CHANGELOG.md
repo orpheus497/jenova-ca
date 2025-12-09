@@ -13,6 +13,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - (Add fixes for the next version here)
 
+## [3.1.0] - 2025-12-09
+
+### Added
+- **Bubble Tea Terminal UI:** Complete redesign of the terminal interface using the [Bubble Tea](https://github.com/charmbracelet/bubbletea) TUI framework written in Go. This major enhancement provides:
+  - **Modern, Responsive Interface:** Smooth, flicker-free rendering with rich colors and formatting
+  - **Real-time Viewport:** Automatic scrolling chat viewport for seamless conversation flow
+  - **Loading Indicators:** Animated spinners with visual feedback for long-running operations
+  - **Go-Python IPC:** Robust JSON-based communication protocol over stdin/stdout between Go TUI and Python backend
+  - **Full Command Support:** All existing JENOVA commands (`/help`, `/insight`, `/reflect`, etc.) work seamlessly in the new UI
+  - **Build System:** New `build_tui.sh` script for compiling the Go TUI binary
+  - **Dual UI Mode:** Environment variable `JENOVA_UI` allows switching between classic (prompt-toolkit) and Bubble Tea UIs
+- **Go Module Integration:** Added `tui/` directory with Go module for the Bubble Tea UI implementation
+  - Go 1.24+ support with proper module configuration (`go.mod`, `go.sum`)
+  - Dependencies: charmbracelet/bubbletea, charmbracelet/bubbles, charmbracelet/lipgloss
+- **BubbleTeaUI Wrapper:** New Python wrapper class (`src/jenova/ui/bubbletea.py`) for managing Go TUI process lifecycle and IPC
+- **Documentation:** Comprehensive Bubble Tea UI documentation in `README_BUBBLETEA.md` with building and usage instructions
+- **Demo Script:** Added `demo_ui.py` for testing and demonstrating the new UI capabilities
+
+### Changed
+- **Main Entry Point:** Enhanced `main_bubbletea.py` as the primary entry point for the Bubble Tea UI mode
+- **UI Architecture:** Separated UI rendering (Go) from cognitive processing (Python) for better performance and maintainability
+- **Documentation Updates:** Updated README.md to prominently feature the new Bubble Tea UI as the default interface
+- **Installation Guide:** Updated installation instructions to include Go dependency and TUI build step
+
+### Fixed
+- **Encoding Issues:** Fixed UTF-8 encoding in subprocess communication between Go and Python
+- **Go Version Compatibility:** Updated Go version requirements to 1.24+ with proper toolchain specification
+
 ## [3.0.5] - 2025-12-09
 
 ### Fixed

@@ -74,7 +74,7 @@ Successfully redesigned the entire JENOVA Cognitive Architecture UI from the gro
 - ✅ Passed code review with all issues addressed
 - ✅ No security vulnerabilities (CodeQL scan passed)
 - ✅ Fixed encoding bug in message sending
-- ✅ Corrected Go version requirement (1.21+)
+- ✅ Corrected Go version requirement (1.24+)
 - ✅ Clean, well-documented code
 
 ## Technical Architecture
@@ -123,7 +123,7 @@ Successfully redesigned the entire JENOVA Cognitive Architecture UI from the gro
 ### ✅ Completed
 - TUI builds successfully
 - Basic message passing verified
-- Go 1.21 compatibility confirmed
+- Go 1.24 compatibility confirmed
 - No security vulnerabilities
 - Code review passed
 
@@ -154,7 +154,7 @@ JENOVA_UI=classic ./jenova
 
 ## Next Steps for Users
 
-1. Install Go 1.21+ if not already installed
+1. Install Go 1.24+ if not already installed
 2. Run `./build_tui.sh` to build the TUI
 3. Start JENOVA with `./jenova`
 4. Enjoy the beautiful new interface!
