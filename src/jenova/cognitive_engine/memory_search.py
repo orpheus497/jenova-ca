@@ -255,6 +255,7 @@ class MemorySearch:
         """Calculate recency score based on temporal decay (0-1, higher is more recent)."""
         ##Block purpose: Check cache first if cache manager is available
         if self.cache_manager:
+            # CacheManager is imported at module level, use it directly
             cache_key = CacheManager.make_key('recency', username, mem_type, doc[:100])
             cached_score = self.cache_manager.recency_cache.get(cache_key)
             if cached_score is not None:
@@ -295,9 +296,9 @@ class MemorySearch:
                 recency_score = min(max(recency_score, 0.0), 1.0)  # Clamp to [0, 1]
                 
                 ##Block purpose: Cache result if cache manager is available
+                # CacheManager is imported at module level, use it directly
                 if hasattr(self, 'cache_manager') and self.cache_manager:
                     try:
-                        from jenova.utils.cache import CacheManager
                         cache_key = CacheManager.make_key('recency', username, mem_type, doc[:100])
                         self.cache_manager.recency_cache.set(cache_key, recency_score)
                     except Exception:

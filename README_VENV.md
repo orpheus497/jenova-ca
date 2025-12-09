@@ -86,3 +86,17 @@ If you encounter issues:
 - All fixes are applied to the chromadb installation in the venv
 - The fixes are compatible with Pydantic 2.12
 
+## Fixed Issues
+
+The following ChromaDB compatibility issues have been resolved:
+
+1. **Non-annotated attributes**: Added type annotations for `chroma_coordinator_host` and `chroma_logservice_port`
+2. **Optional type annotations**: Fixed port fields (`chroma_server_http_port`, `chroma_server_grpc_port`, `clickhouse_port`) to use `Optional[str]` instead of `str = None`
+3. **Missing imports**: Added `Optional` import to chromadb's config.py
+4. **Attribute access errors**: Fixed `chroma_server_nofile` access to handle missing attributes gracefully using `getattr()`
+5. **Environment variable validation**: Fixed pydantic v2 validation errors for empty string integer fields
+
+## Additional Fixes
+
+- Fixed `CacheManager` UnboundLocalError in `memory_search.py` by removing redundant local import
+

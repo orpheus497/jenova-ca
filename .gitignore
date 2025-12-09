@@ -10,6 +10,12 @@ __pycache__/
 venv/
 ENV/
 env/
+# Virtual environment activation scripts and config
+pyvenv.cfg
+activate
+activate.csh
+activate.fish
+Activate.ps1
 
 # Distribution / packaging
 .Python
@@ -25,8 +31,11 @@ sdist/
 var/
 wheels/
 *.egg-info/
+src/*.egg-info/
 .installed.cfg
 *.egg
+# Setuptools build artifacts
+src/jenova_ai.egg-info/
 
 # PyInstaller
 *.manifest
@@ -68,6 +77,10 @@ Thumbs.db
 # User-specific data and logs
 .jenova-ai/
 /users/
+
+# ChromaDB compatibility fixes (applied to installed packages, not source)
+# Note: fix_chromadb_compat.py is kept as a utility script
+# Patched chromadb files in venv/ are ignored via venv/ above
 
 # LLM models - ignore all GGUF files in models/, but keep the directory
 /models/*

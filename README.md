@@ -127,13 +127,57 @@ JENOVA is designed for continuous improvement. The insights generated during its
 
 *   **Data Preparation (`finetune/train.py`):** This script gathers all the `.json` insight files from `~/.jenova-ai/users/<username>/insights/` and transforms them into a `finetune_train.jsonl` file. The script is configurable and can be used to generate a dataset for fine-tuning a model in a separate program.
 
-## 4. System-Wide Installation
+## 4. Installation
+
+JENOVA can be installed either system-wide (for administrators) or in a virtual environment (recommended for development and Python 3.14 compatibility).
+
+### 4.1. Virtual Environment Installation (Recommended)
+
+For Python 3.14 compatibility and isolated dependency management, use the virtual environment setup:
+
+1.  **Prerequisites:**
+    *   A Linux-based operating system.
+    *   `git`, `python3` (3.10+), and `python3-pip` must be installed.
+    *   A C++ compiler (like `g++`) is required for the `llama-cpp-python` dependency. On Debian/Ubuntu, this can be installed with `sudo apt-get install build-essential`.
+
+2.  **Clone the Repository:**
+    ```bash
+    git clone https://github.com/orpheus497/jenova-ai.git
+    cd jenova-ai
+    ```
+
+3.  **Run the Setup Script:**
+    The setup script creates a virtual environment, installs all dependencies, and applies ChromaDB compatibility fixes automatically:
+    ```bash
+    ./setup_venv.sh
+    ```
+
+4.  **Activate the Virtual Environment:**
+    ```bash
+    source venv/bin/activate
+    ```
+
+5.  **Download a Model:**
+    JENOVA requires a GGUF-formatted model. Download one and place it in the `models/` directory:
+    ```bash
+    mkdir -p models
+    wget -P models/ https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q8_0.gguf
+    ```
+
+6.  **Run JENOVA:**
+    ```bash
+    jenova
+    ```
+    Or if the package isn't installed in the venv:
+    ```bash
+    PYTHONPATH=/path/to/jenova-ca/src:$PYTHONPATH python -m jenova.main
+    ```
+
+**Note:** The virtual environment setup automatically applies ChromaDB compatibility fixes for Python 3.14 and Pydantic 2.12. See `README_VENV.md` for detailed information about these fixes.
+
+### 4.2. System-Wide Installation
 
 JENOVA is designed to be installed once on a system by an administrator and then be available to all users, while keeping each user's data completely separate and private.
-
-### 4.1. For Administrators
-
-To install JENOVA on the system, you must run the installation script with root privileges.
 
 1.  **Prerequisites:**
     *   A Linux-based operating system.
@@ -159,15 +203,24 @@ To install JENOVA on the system, you must run the installation script with root 
     sudo ./install.sh
     ```
 
-### 4.2. For Users
+### 4.3. For Users
 
-Once an administrator has installed JENOVA, no further setup is required. You can start interacting with the AI immediately.
+Once JENOVA is installed (either via venv or system-wide), you can start interacting with the AI immediately.
 
-*   **Running the Application:** Simply open your terminal and type the command:
-    ```bash
-    jenova
-    ```
+*   **Running the Application:** 
+    - If using venv: Activate it first (`source venv/bin/activate`), then run `jenova`
+    - If system-wide: Simply open your terminal and type `jenova`
 *   **User-Specific Data:** The first time you run the application, a private directory will be created at `~/.jenova-ai/users/<your_username>/`. All of your conversations, memories, and learned insights will be stored here, inaccessible to other users.
+
+### 4.4. ChromaDB Compatibility Notes
+
+JENOVA includes compatibility fixes for ChromaDB when running on Python 3.14 with Pydantic 2.12. These fixes are automatically applied when using the virtual environment setup script. The fixes address:
+
+- Missing type annotations in ChromaDB's Settings class
+- Pydantic v2 compatibility issues with BaseSettings
+- Environment variable validation for optional fields
+
+See `README_VENV.md` for detailed information about these compatibility fixes.
 
 ## 5. User Guide
 
@@ -209,13 +262,19 @@ JENOVA responds to a set of powerful commands that act as direct instructions fo
 │       ├── insights/         # Manages saving and loading learned insights
 │       ├── memory/           # Manages the different memory types (ChromaDB)
 │       ├── ui/               # The terminal user interface
-│       ├── utils/            # Utility scripts and patches
+│       ├── utils/            # Utility scripts and patches (including pydantic_compat.py)
 │       ├── __init__.py
 │       ├── llm_interface.py  # Handles all interaction with llama.cpp
 │       └── main.py           # Main application entry point
-├── install.sh            # Installation script
+├── venv/                 # Virtual environment (created by setup_venv.sh, ignored by git)
+├── install.sh            # System-wide installation script
+├── setup_venv.sh         # Virtual environment setup script (recommended)
+├── fix_chromadb_compat.py # ChromaDB compatibility fix utility
 ├── requirements.txt      # Python dependencies
-└── setup.py              # Package definition and entry point
+├── pyproject.toml        # Modern Python package configuration
+├── setup.py              # Package definition and entry point
+├── README.md             # This file - main documentation
+└── README_VENV.md        # Virtual environment setup guide
 ```
 
 ### 6.2. Configuration Files
