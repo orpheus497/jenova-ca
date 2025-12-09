@@ -17,11 +17,58 @@ try:
         def find_spec(self, name, path, target=None):
             if name == 'chromadb.config' and 'chromadb.config' not in sys.modules:
                 # Find the original spec using the default finder
+                # Skip custom finders to avoid recursion by checking class name
                 for finder in sys.meta_path:
-                    if finder is not self and hasattr(finder, 'find_spec'):
-                        spec = finder.find_spec(name, path, target)
-                        if spec and spec.origin and os.path.exists(spec.origin):
-                            # Read and patch the source
+                    # Skip self and other custom finders
+                    if finder is self:
+                        continue
+                    # Skip other custom finders by checking class name
+                    finder_class_name = finder.__class__.__name__ if hasattr(finder, '__class__') else ''
+                    if finder_class_name in ('ChromaDBConfigFinder', 'ChromaDBMainPatcher'):
+                        continue
+                    if not hasattr(finder, 'find_spec'):
+                        continue
+                    spec = finder.find_spec(name, path, target)
+                    if spec and spec.loader:
+                        original_loader = spec.loader
+                        
+                        # Create a patched loader that calls model_rebuild() after Settings is defined
+                        class PatchedConfigLoader:
+                            def __init__(self, original_loader):
+                                self.original_loader = original_loader
+                            
+                            def create_module(self, spec):
+                                return None
+                            
+                            def exec_module(self, module):
+                                # Load the module normally
+                                self.original_loader.exec_module(module)
+                                
+                                # After module is loaded, patch Settings to call model_rebuild()
+                                # Ensure Optional is imported first (needed for forward refs)
+                                import typing
+                                # Ensure Optional is available
+                                if not hasattr(typing, 'Optional'):
+                                    from typing import Optional
+                                
+                                if hasattr(module, 'Settings'):
+                                    Settings = module.Settings
+                                    if hasattr(Settings, 'model_rebuild'):
+                                        # Call model_rebuild() immediately after Settings is defined
+                                        # Note: We don't patch __new__ as it interferes with Pydantic's instantiation
+                                        # The fix_chromadb_compat.py script handles model_rebuild() in chromadb's source
+                                        try:
+                                            import typing
+                                            if not hasattr(typing, 'Optional'):
+                                                from typing import Optional
+                                            Settings.model_rebuild()
+                                        except Exception:
+                                            pass
+                        
+                        spec.loader = PatchedConfigLoader(original_loader)
+                        
+                        # Also try source patching if origin exists
+                        if spec.origin and os.path.exists(spec.origin):
                             try:
                                 with open(spec.origin, 'r', encoding='utf-8') as f:
                                     source = f.read()
@@ -36,18 +83,35 @@ try:
                                     )
                                     
                                     # Create a new loader that uses the patched source
-                                    class PatchedLoader(importlib.machinery.SourceFileLoader):
+                                    class PatchedSourceLoader(importlib.machinery.SourceFileLoader):
                                         def get_data(self, path):
                                             if path == spec.origin:
                                                 return source.encode('utf-8')
                                             return super().get_data(path)
+                                        
+                                        def exec_module(self, module):
+                                            super().exec_module(module)
+                                            # After loading, call model_rebuild()
+                                            # Ensure Optional is imported first
+                                            import typing
+                                            if hasattr(module, 'Settings'):
+                                                Settings = module.Settings
+                                                if hasattr(Settings, 'model_rebuild'):
+                                                    try:
+                                                        # Force import of Optional if not already imported
+                                                        if not hasattr(typing, 'Optional'):
+                                                            from typing import Optional
+                                                        Settings.model_rebuild()
+                                                    except Exception:
+                                                        pass
                                     
-                                    spec.loader = PatchedLoader(spec.name, spec.origin)
-                                return spec
+                                    spec.loader = PatchedSourceLoader(spec.name, spec.origin)
                             except Exception:
-                                return spec
-                        elif spec:
-                            return spec
+                                pass
+                        
+                        return spec
+                    elif spec:
+                        return spec
             return None
     
     # Install the custom finder at the beginning of meta_path
@@ -58,14 +122,163 @@ try:
 except Exception:
     pass  # If patching fails, continue with other methods
 
+##Block purpose: Patch chromadb main module to delay Settings instantiation until after patching
+##This fixes Pydantic 2.12 forward reference issues by ensuring Settings.model_rebuild() is called
+try:
+    import sys
+    import importlib.util
+    import importlib.machinery
+    
+    class ChromaDBMainPatcher:
+        """Patches chromadb.__init__ to delay Settings instantiation"""
+        def find_spec(self, name, path, target=None):
+            if name == 'chromadb' and 'chromadb' not in sys.modules:
+                # Find the original spec
+                # Skip custom finders to avoid recursion by checking class name
+                for finder in sys.meta_path:
+                    # Skip self and other custom finders
+                    if finder is self:
+                        continue
+                    # Skip other custom finders by checking class name
+                    finder_class_name = finder.__class__.__name__ if hasattr(finder, '__class__') else ''
+                    if finder_class_name in ('ChromaDBConfigFinder', 'ChromaDBMainPatcher'):
+                        continue
+                    if not hasattr(finder, 'find_spec'):
+                        continue
+                    spec = finder.find_spec(name, path, target)
+                    if spec and spec.loader:
+                        original_loader = spec.loader
+                        
+                        class PatchedChromaDBLoader:
+                            def __init__(self, original_loader):
+                                self.original_loader = original_loader
+                            
+                            def create_module(self, spec):
+                                return None
+                            
+                            def exec_module(self, module):
+                                # First, ensure chromadb.config is loaded and patched
+                                if 'chromadb.config' not in sys.modules:
+                                    import chromadb.config
+                                
+                                # Patch Settings.model_rebuild() if needed
+                                # Ensure Optional is imported first
+                                import typing
+                                if not hasattr(typing, 'Optional'):
+                                    from typing import Optional
+                                
+                                try:
+                                    from chromadb.config import Settings
+                                    if hasattr(Settings, 'model_rebuild'):
+                                        try:
+                                            Settings.model_rebuild()
+                                        except Exception:
+                                            pass
+                                except Exception:
+                                    pass
+                                
+                                # Patch chromadb's __init__.py to wrap Settings instantiation
+                                # This ensures model_rebuild() is called before Settings() is instantiated
+                                try:
+                                    import os
+                                    chromadb_init_path = os.path.join(os.path.dirname(module.__file__), '__init__.py')
+                                    if os.path.exists(chromadb_init_path):
+                                        with open(chromadb_init_path, 'r') as f:
+                                            source = f.read()
+                                        
+                                        # Patch __settings = chromadb.config.Settings() to delay instantiation
+                                        if '__settings = chromadb.config.Settings()' in source:
+                                            patched_line = '''try:
+    __settings = chromadb.config.Settings()
+except Exception:
+    # Ensure model_rebuild() is called before retrying
+    import typing
+    if not hasattr(typing, 'Optional'):
+        from typing import Optional
+    chromadb.config.Settings.model_rebuild()
+    __settings = chromadb.config.Settings()'''
+                                            source = source.replace('__settings = chromadb.config.Settings()', patched_line)
+                                            
+                                            # Create a patched loader that uses the modified source
+                                            class PatchedInitLoader(importlib.machinery.SourceFileLoader):
+                                                def get_data(self, path):
+                                                    if path == chromadb_init_path:
+                                                        return source.encode('utf-8')
+                                                    return super().get_data(path)
+                                            
+                                            # Replace the loader
+                                            import importlib.machinery
+                                            self.original_loader = PatchedInitLoader(module.__name__, chromadb_init_path)
+                                except Exception:
+                                    pass
+                                
+                                # Now load chromadb normally
+                                self.original_loader.exec_module(module)
+                                
+                                # After module is loaded, ensure Settings is rebuilt
+                                try:
+                                    from chromadb.config import Settings
+                                    if hasattr(Settings, 'model_rebuild'):
+                                        try:
+                                            if not hasattr(typing, 'Optional'):
+                                                from typing import Optional
+                                            Settings.model_rebuild()
+                                        except Exception:
+                                            pass
+                                except Exception:
+                                    pass
+                        
+                        spec.loader = PatchedChromaDBLoader(original_loader)
+                        return spec
+            return None
+    
+    # Install patcher if chromadb hasn't been imported
+    if 'chromadb' not in sys.modules:
+        patcher = ChromaDBMainPatcher()
+        sys.meta_path.insert(0, patcher)
+except Exception:
+    pass  # If patching fails, continue with other methods
+
 ##Block purpose: Apply Pydantic compatibility fix before any ChromaDB imports
 try:
     import pydantic
     import pydantic_settings
+    import pydantic.errors
     
     # Add BaseSettings directly to the module for direct attribute access
     # This handles both direct imports and __getattr__ calls
     pydantic.BaseSettings = pydantic_settings.BaseSettings
+    
+    # Patch BaseSettings.__init__ to automatically call model_rebuild() if validation fails
+    # This fixes the "Settings is not fully defined" error in chromadb
+    original_basesettings_init = pydantic_settings.BaseSettings.__init__
+    
+    def patched_basesettings_init(self, *args, **kwargs):
+        """Patched __init__ that calls model_rebuild() if validation fails"""
+        try:
+            return original_basesettings_init(self, *args, **kwargs)
+        except pydantic.errors.PydanticUserError as e:
+            # Check if this is the "not fully defined" error
+            error_msg = str(e).lower()
+            if 'not fully defined' in error_msg or 'define `optional`' in error_msg:
+                # Try to call model_rebuild() and retry
+                if hasattr(self.__class__, 'model_rebuild'):
+                    try:
+                        import typing
+                        if not hasattr(typing, 'Optional'):
+                            from typing import Optional
+                        self.__class__.model_rebuild()
+                        # Retry initialization
+                        return original_basesettings_init(self, *args, **kwargs)
+                    except Exception:
+                        pass
+            # Re-raise if we can't fix it
+            raise
+    
+    # Only patch if not already patched
+    if not hasattr(pydantic_settings.BaseSettings, '_jenova_init_patched'):
+        pydantic_settings.BaseSettings.__init__ = patched_basesettings_init
+        pydantic_settings.BaseSettings._jenova_init_patched = True
     
     # Store original __getattr__ if it exists
     original_getattr = getattr(pydantic, '__getattr__', None)
@@ -460,11 +673,71 @@ def _ensure_collection_attributes(collection):
             except Exception:
                 private_attrs['_id'] = None
 
+
+##Block purpose: Patch Pydantic Settings to auto-rebuild on class definition
+##This fixes forward reference issues in chromadb's Settings class
+try:
+    import pydantic_settings
+    from typing import TYPE_CHECKING
+    
+    if TYPE_CHECKING:
+        pass
+    
+    # Patch BaseSettings metaclass to auto-rebuild after class definition
+    original_basesettings_init_subclass = None
+    if hasattr(pydantic_settings.BaseSettings, '__init_subclass__'):
+        original_basesettings_init_subclass = pydantic_settings.BaseSettings.__init_subclass__
+    
+    @classmethod
+    def patched_init_subclass(cls, **kwargs):
+        """Patched __init_subclass__ that calls model_rebuild() after class definition"""
+        if original_basesettings_init_subclass:
+            original_basesettings_init_subclass(**kwargs)
+        # Call model_rebuild() to resolve forward references
+        # Ensure Optional is imported first
+        import typing
+        if not hasattr(typing, 'Optional'):
+            from typing import Optional
+        if hasattr(cls, 'model_rebuild'):
+            try:
+                # Call model_rebuild() immediately to resolve forward references
+                cls.model_rebuild()
+                # Also try to rebuild with all forward refs resolved
+                import sys
+                # Give a moment for all imports to complete
+                cls.model_rebuild()
+            except Exception:
+                # If model_rebuild fails, try again after a brief delay
+                try:
+                    import time
+                    time.sleep(0.01)
+                    cls.model_rebuild()
+                except Exception:
+                    pass
+    
+    # Only patch if not already patched
+    if not hasattr(pydantic_settings.BaseSettings, '_jenova_patched'):
+        pydantic_settings.BaseSettings.__init_subclass__ = patched_init_subclass
+        pydantic_settings.BaseSettings._jenova_patched = True
+except Exception:
+    pass  # If patching fails, continue with other methods
+
 ##Block purpose: Patch ChromaDB Collection class to handle missing _embedding_function gracefully
 ##Pydantic v2 raises AttributeError when accessing missing private attributes, but ChromaDB expects None
 try:
     import chromadb
     from chromadb.api.models.Collection import Collection
+    
+    # After chromadb is imported, ensure Settings is rebuilt
+    try:
+        from chromadb.config import Settings
+        if hasattr(Settings, 'model_rebuild'):
+            try:
+                Settings.model_rebuild()
+            except Exception:
+                pass
+    except Exception:
+        pass
     
     # Patch Collection's _validate_embedding_set to handle missing _embedding_function
     if hasattr(Collection, '_validate_embedding_set'):
