@@ -1,6 +1,15 @@
 #!/usr/bin/python3
 import sys
-from jenova.main import main
+import os
+
+# Check if we should use the Bubble Tea UI
+USE_BUBBLETEA = os.environ.get('JENOVA_UI', 'bubbletea').lower() == 'bubbletea'
+
+if USE_BUBBLETEA:
+    from jenova.main_bubbletea import main
+else:
+    from jenova.main import main
+
 if __name__ == '__main__':
     if sys.argv[0].endswith('.exe'):
         sys.argv[0] = sys.argv[0][:-4]
