@@ -110,3 +110,6 @@ pylint_report.txt
 
 # Old codebase (pre-Phase 7 remediation)
 /jenovaold/
+
+# Go TUI binary
+/tui/jenova-tui

@@ -8,6 +8,20 @@ JENOVA operates as a system with interconnected components that mimic aspects of
 
 **Creator:** The JENOVA Cognitive Architecture (JCA) is designed and developed by **orpheus497**.
 
+## 1.1. Modern Terminal UI with Bubble Tea
+
+JENOVA now features a **beautiful, modern terminal interface** built with [Bubble Tea](https://github.com/charmbracelet/bubbletea), a powerful TUI framework for Go. The new UI provides:
+
+- **Responsive, smooth rendering** with rich colors and formatting
+- **Real-time chat viewport** with automatic scrolling
+- **Loading indicators** with animated spinners
+- **Clean separation of concerns** - Go handles UI rendering, Python handles the cognitive engine
+- **All existing commands** work seamlessly (`/help`, `/insight`, `/reflect`, etc.)
+
+The Bubble Tea UI communicates with the Python backend via a JSON-based IPC protocol over stdin/stdout pipes, ensuring efficient and reliable message passing.
+
+For detailed information about the UI, building instructions, and architecture, see [README_BUBBLETEA.md](README_BUBBLETEA.md).
+
 ## 2. The JENOVA Advantage: A Superior Cognitive Architecture
 
 ### 2.1. Beyond Statelessness: The Problem with General Systems
@@ -138,6 +152,7 @@ For Python 3.14 compatibility and isolated dependency management, use the virtua
 1.  **Prerequisites:**
     *   A Linux-based operating system.
     *   `git`, `python3` (3.10+), and `python3-pip` must be installed.
+    *   `go` (1.21+) is required for building the Bubble Tea UI.
     *   A C++ compiler (like `g++`) is required for the `llama-cpp-python` dependency. On Debian/Ubuntu, this can be installed with `sudo apt-get install build-essential`.
 
 2.  **Clone the Repository:**
@@ -164,14 +179,24 @@ For Python 3.14 compatibility and isolated dependency management, use the virtua
     wget -P models/ https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q8_0.gguf
     ```
 
-6.  **Run JENOVA:**
+6.  **Build the Bubble Tea UI:**
+    ```bash
+    ./build_tui.sh
+    ```
+
+7.  **Run JENOVA:**
     ```bash
     jenova
     ```
     Or if the package isn't installed in the venv:
     ```bash
-    PYTHONPATH=/path/to/jenova-ca/src:$PYTHONPATH python -m jenova.main
+    PYTHONPATH=/path/to/jenova-ca/src:$PYTHONPATH python -m jenova.main_bubbletea
     ```
+
+To use the classic terminal UI instead:
+```bash
+JENOVA_UI=classic jenova
+```
 
 **Note:** The virtual environment setup automatically applies ChromaDB compatibility fixes for Python 3.14 and Pydantic 2.12. See `README_VENV.md` for detailed information about these fixes.
 
@@ -182,6 +207,7 @@ JENOVA is designed to be installed once on a system by an administrator and then
 1.  **Prerequisites:**
     *   A Linux-based operating system.
     *   `git`, `python3`, and `python3-pip` must be installed.
+    *   `go` (1.21+) is required for building the Bubble Tea UI.
     *   A C++ compiler (like `g++`) is required for the `llama-cpp-python` dependency. On Debian/Ubuntu, this can be installed with `sudo apt-get install build-essential`.
 
 2.  **Clone the Repository:**
@@ -197,7 +223,12 @@ JENOVA is designed to be installed once on a system by an administrator and then
     wget -P models/ https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q8_0.gguf
     ```
 
-4.  **Run the Installation Script:**
+4.  **Build the Bubble Tea UI:**
+    ```bash
+    ./build_tui.sh
+    ```
+
+5.  **Run the Installation Script:**
     Execute the script with `sudo`. It will handle the installation of all dependencies and make the `jenova` command available system-wide.
     ```bash
     sudo ./install.sh
