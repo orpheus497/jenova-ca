@@ -15,7 +15,7 @@ The new Bubble Tea UI provides:
 
 ## Building the UI
 
-The Bubble Tea UI requires Go 1.20 or later to be installed. To build the TUI:
+The Bubble Tea UI requires Go 1.21 or later to be installed. To build the TUI:
 
 ```bash
 ./build_tui.sh
@@ -131,7 +131,7 @@ Run the build script:
 
 ### Go not installed
 
-Install Go 1.20 or later:
+Install Go 1.21 or later:
 - Ubuntu/Debian: `sudo apt install golang-go`
 - Fedora: `sudo dnf install golang`
 - macOS: `brew install go`

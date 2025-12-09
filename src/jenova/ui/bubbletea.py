@@ -46,7 +46,7 @@ class BubbleTeaUI:
         try:
             json_msg = json.dumps(message)
             if self.tui_process and self.tui_process.stdin:
-                self.tui_process.stdin.write(json_msg + "\n")
+                self.tui_process.stdin.write((json_msg + "\n").encode('utf-8'))
                 self.tui_process.stdin.flush()
         except Exception as e:
             self.logger.info(f"Error sending message to TUI: {e}")

@@ -7,7 +7,7 @@ echo "Building JENOVA Bubble Tea TUI..."
 
 # Check if Go is installed
 if ! command -v go &> /dev/null; then
-    echo "Error: Go is not installed. Please install Go 1.20 or later."
+    echo "Error: Go is not installed. Please install Go 1.21 or later."
     exit 1
 fi
 

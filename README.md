@@ -152,7 +152,7 @@ For Python 3.14 compatibility and isolated dependency management, use the virtua
 1.  **Prerequisites:**
     *   A Linux-based operating system.
     *   `git`, `python3` (3.10+), and `python3-pip` must be installed.
-    *   `go` (1.20+) is required for building the Bubble Tea UI.
+    *   `go` (1.21+) is required for building the Bubble Tea UI.
     *   A C++ compiler (like `g++`) is required for the `llama-cpp-python` dependency. On Debian/Ubuntu, this can be installed with `sudo apt-get install build-essential`.
 
 2.  **Clone the Repository:**
@@ -207,7 +207,7 @@ JENOVA is designed to be installed once on a system by an administrator and then
 1.  **Prerequisites:**
     *   A Linux-based operating system.
     *   `git`, `python3`, and `python3-pip` must be installed.
-    *   `go` (1.20+) is required for building the Bubble Tea UI.
+    *   `go` (1.21+) is required for building the Bubble Tea UI.
     *   A C++ compiler (like `g++`) is required for the `llama-cpp-python` dependency. On Debian/Ubuntu, this can be installed with `sudo apt-get install build-essential`.
 
 2.  **Clone the Repository:**
