@@ -2,6 +2,62 @@
 ##ChromaDB versions may try to import BaseSettings from pydantic, but Pydantic v2 moved it to pydantic-settings
 ##This module ensures compatibility by making BaseSettings available from pydantic before any ChromaDB imports
 
+##Block purpose: Patch chromadb config.py source before import to add missing type annotations
+##This fixes the non-annotated attribute error in chromadb's Settings class
+##Note: This must run BEFORE any chromadb imports
+try:
+    import sys
+    import importlib.util
+    import importlib.machinery
+    import os
+    import site
+    
+    class ChromaDBConfigFinder:
+        """Custom MetaPathFinder that patches chromadb.config before loading it"""
+        def find_spec(self, name, path, target=None):
+            if name == 'chromadb.config' and 'chromadb.config' not in sys.modules:
+                # Find the original spec using the default finder
+                for finder in sys.meta_path:
+                    if finder is not self and hasattr(finder, 'find_spec'):
+                        spec = finder.find_spec(name, path, target)
+                        if spec and spec.origin and os.path.exists(spec.origin):
+                            # Read and patch the source
+                            try:
+                                with open(spec.origin, 'r', encoding='utf-8') as f:
+                                    source = f.read()
+                                
+                                # Patch chroma_coordinator_host to have a type annotation
+                                if 'chroma_coordinator_host = ' in source and 'chroma_coordinator_host:' not in source:
+                                    import re
+                                    source = re.sub(
+                                        r'(\s+)chroma_coordinator_host\s*=\s*"localhost"',
+                                        r'\1chroma_coordinator_host: str = "localhost"',
+                                        source
+                                    )
+                                    
+                                    # Create a new loader that uses the patched source
+                                    class PatchedLoader(importlib.machinery.SourceFileLoader):
+                                        def get_data(self, path):
+                                            if path == spec.origin:
+                                                return source.encode('utf-8')
+                                            return super().get_data(path)
+                                    
+                                    spec.loader = PatchedLoader(spec.name, spec.origin)
+                                return spec
+                            except Exception:
+                                return spec
+                        elif spec:
+                            return spec
+            return None
+    
+    # Install the custom finder at the beginning of meta_path
+    if 'chromadb.config' not in sys.modules:
+        # Insert at the beginning so it's checked first
+        finder = ChromaDBConfigFinder()
+        sys.meta_path.insert(0, finder)
+except Exception:
+    pass  # If patching fails, continue with other methods
+
 ##Block purpose: Apply Pydantic compatibility fix before any ChromaDB imports
 try:
     import pydantic
@@ -40,18 +96,202 @@ try:
 except (ImportError, AttributeError):
     pass  # If pydantic-settings isn't available, let the error occur naturally
 
+##Block purpose: Patch Pydantic's model construction to allow non-annotated attributes in BaseSettings
+##This fixes compatibility issues with chromadb's Settings class which has non-annotated attributes
+try:
+    import pydantic
+    import pydantic_settings
+    import pydantic.errors
+    import inspect
+    import typing
+    
+    # Patch pydantic's inspect_namespace to automatically annotate non-annotated attributes
+    # in classes that inherit from BaseSettings (for chromadb compatibility)
+    if hasattr(pydantic._internal._model_construction, 'inspect_namespace'):
+        from pydantic._internal._model_construction import inspect_namespace as original_inspect_namespace
+        
+        def patched_inspect_namespace(namespace, raw_annotations, config_wrapper, class_vars, base_field_names):
+            """
+            Patched version of inspect_namespace that automatically adds type annotations
+            for non-annotated attributes. This fixes compatibility with chromadb's Settings class.
+            """
+            # Check if we're likely dealing with a BaseSettings class
+            # by checking the calling frame's module name
+            is_basesettings_context = False
+            try:
+                import sys
+                # Check multiple frames to find chromadb context
+                for i in range(1, 5):  # Check up to 4 frames up
+                    try:
+                        frame = sys._getframe(i)
+                        if frame:
+                            module_name = frame.f_globals.get('__name__', '')
+                            file_path = frame.f_code.co_filename
+                            # Check if we're in chromadb.config or similar BaseSettings context
+                            if 'chromadb' in module_name or 'chromadb' in file_path:
+                                is_basesettings_context = True
+                                break
+                    except (ValueError, AttributeError):
+                        break
+            except (AttributeError, ValueError):
+                pass
+            
+            # Also check __bases__ if available
+            if not is_basesettings_context and '__bases__' in namespace:
+                bases = namespace['__bases__']
+                for base in bases:
+                    if inspect.isclass(base):
+                        mro = inspect.getmro(base)
+                        if any('BaseSettings' in str(b.__name__) for b in mro if hasattr(b, '__name__')):
+                            is_basesettings_context = True
+                            break
+            
+            # Check __module__ in namespace
+            if not is_basesettings_context and '__module__' in namespace:
+                module_name = namespace.get('__module__', '')
+                if 'chromadb' in str(module_name):
+                    is_basesettings_context = True
+            
+            # Auto-annotate non-annotated simple assignments
+            # This helps with BaseSettings classes that have non-annotated attributes
+            annotations = dict(raw_annotations) if raw_annotations else {}
+            needs_update = False
+            
+            # Always auto-annotate non-annotated simple assignments in BaseSettings context
+            # or when we detect chromadb module
+            if is_basesettings_context:
+                for key, value in namespace.items():
+                    # Skip special attributes, already annotated ones, and class vars
+                    if key.startswith('__') or key in annotations or key in class_vars:
+                        continue
+                    
+                    # Skip callables (methods, functions)
+                    if callable(value):
+                        continue
+                    
+                    # Auto-annotate based on value type using proper type objects
+                    if isinstance(value, str):
+                        annotations[key] = typing.Optional[str]
+                        needs_update = True
+                    elif isinstance(value, int):
+                        annotations[key] = typing.Optional[int]
+                        needs_update = True
+                    elif isinstance(value, bool):
+                        annotations[key] = typing.Optional[bool]
+                        needs_update = True
+                    elif isinstance(value, float):
+                        annotations[key] = typing.Optional[float]
+                        needs_update = True
+                    elif isinstance(value, (list, tuple)):
+                        annotations[key] = typing.Optional[list]
+                        needs_update = True
+                    elif isinstance(value, dict):
+                        annotations[key] = typing.Optional[dict]
+                        needs_update = True
+                    else:
+                        # Default to Any for unknown types
+                        annotations[key] = typing.Any
+                        needs_update = True
+            
+            # Update raw_annotations if we added any
+            if needs_update:
+                if raw_annotations is not None:
+                    raw_annotations.update(annotations)
+                else:
+                    raw_annotations = annotations
+                
+                # Also update __annotations__ in namespace if it exists
+                if '__annotations__' in namespace:
+                    namespace['__annotations__'].update(annotations)
+                else:
+                    namespace['__annotations__'] = annotations.copy()
+            
+            # Call original function with updated annotations
+            # Wrap in try-except to handle PydanticUserError for chromadb compatibility
+            try:
+                return original_inspect_namespace(namespace, raw_annotations, config_wrapper, class_vars, base_field_names)
+            except pydantic.errors.PydanticUserError as e:
+                # If the error is about non-annotated attributes, try to auto-annotate them
+                error_msg = str(e).lower()
+                if 'non-annotated attribute' in error_msg or 'missing annotation' in error_msg:
+                    # Extract the attribute name from the error message
+                    import re
+                    attr_match = re.search(r"`?(\w+)\s*=", error_msg)
+                    
+                    # Add annotations for ALL non-annotated attributes in the namespace
+                    # This is a workaround for chromadb's Settings class
+                    for key, value in list(namespace.items()):
+                        if key.startswith('__') or key in annotations or key in class_vars or callable(value):
+                            continue
+                        
+                        # Auto-annotate based on value type
+                        if isinstance(value, str):
+                            annotations[key] = typing.Optional[str]
+                        elif isinstance(value, int):
+                            annotations[key] = typing.Optional[int]
+                        elif isinstance(value, bool):
+                            annotations[key] = typing.Optional[bool]
+                        elif isinstance(value, float):
+                            annotations[key] = typing.Optional[float]
+                        elif isinstance(value, (list, tuple)):
+                            annotations[key] = typing.Optional[list]
+                        elif isinstance(value, dict):
+                            annotations[key] = typing.Optional[dict]
+                        else:
+                            annotations[key] = typing.Any
+                    
+                    # Update raw_annotations
+                    if raw_annotations is not None:
+                        raw_annotations.update(annotations)
+                    else:
+                        raw_annotations = annotations
+                    
+                    # Update __annotations__ in namespace
+                    if '__annotations__' in namespace:
+                        namespace['__annotations__'].update(annotations)
+                    else:
+                        namespace['__annotations__'] = annotations.copy()
+                    
+                    # Retry with updated annotations (up to 3 times to handle multiple attributes)
+                    try:
+                        return original_inspect_namespace(namespace, raw_annotations, config_wrapper, class_vars, base_field_names)
+                    except pydantic.errors.PydanticUserError as e2:
+                        # If still failing after annotation, it might be a different issue
+                        # Check if it's still about non-annotated attributes
+                        if 'non-annotated attribute' in str(e2).lower():
+                            # Try one more time with even more aggressive annotation
+                            for key, value in list(namespace.items()):
+                                if not key.startswith('__') and key not in annotations and key not in class_vars and not callable(value):
+                                    annotations[key] = typing.Any
+                            if raw_annotations is not None:
+                                raw_annotations.update(annotations)
+                            if '__annotations__' in namespace:
+                                namespace['__annotations__'].update(annotations)
+                            return original_inspect_namespace(namespace, raw_annotations, config_wrapper, class_vars, base_field_names)
+                        raise
+                else:
+                    # Re-raise if not about annotations
+                    raise
+        
+        # Replace the function
+        pydantic._internal._model_construction.inspect_namespace = patched_inspect_namespace
+except (ImportError, AttributeError):
+    pass  # If patching fails, let the error occur naturally
+
 ##Block purpose: Patch ChromaDB Settings to handle None values for optional configuration fields
 ##ChromaDB 1.3.5+ has strict validation that requires strings, but these fields should be optional
+##Note: We don't set empty strings for integer fields as pydantic v2 will fail to parse them
 try:
     import os
-    # Set default values for ChromaDB Settings fields that may be None
-    # These environment variables will be used by ChromaDB's Settings class
+    # Remove integer fields if they're set to empty strings (pydantic v2 can't parse them)
+    # This must happen BEFORE chromadb imports to prevent validation errors
+    for int_key in ['CHROMA_SERVER_HTTP_PORT', 'CHROMA_SERVER_GRPC_PORT', 'CLICKHOUSE_PORT']:
+        if int_key in os.environ and os.environ[int_key] == '':
+            del os.environ[int_key]
+    # Only set string defaults if not already set, and only for string fields
     chromadb_env_defaults = {
-        'CHROMA_SERVER_HOST': '',
-        'CHROMA_SERVER_HTTP_PORT': '',
-        'CHROMA_SERVER_GRPC_PORT': '',
-        'CLICKHOUSE_HOST': '',
-        'CLICKHOUSE_PORT': '',
+        'CHROMA_SERVER_HOST': '',  # String field, empty is OK
+        'CLICKHOUSE_HOST': '',  # String field, empty is OK
     }
     for key, default_value in chromadb_env_defaults.items():
         if key not in os.environ:
