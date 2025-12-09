@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - (Add new features for the next version here)
 
 ### Fixed
+- (Add fixes for the next version here)
+
+## [3.0.5] - 2025-12-09
+
+### Fixed
 - **Pydantic v2 Compatibility:** Fixed critical `AttributeError` errors that occurred when ChromaDB's Collection class tried to access private attributes internally. Pydantic v2 raises AttributeError when accessing missing private attributes in `__pydantic_private__`, but ChromaDB expects these attributes to exist. Implemented comprehensive patching in `pydantic_compat.py` to:
   - **Fixed `_embedding_function` AttributeError:** Patch ChromaDB client's `create_collection` and `get_collection` methods to ensure `_embedding_function` is always set in collections' `__pydantic_private__` dictionary
   - **Fixed `_client` AttributeError:** Ensure `_client` (the ChromaDB client instance) is always set in `__pydantic_private__` when collections are created or retrieved, as ChromaDB methods like `add()`, `query()`, `get()` access `self._client` internally
