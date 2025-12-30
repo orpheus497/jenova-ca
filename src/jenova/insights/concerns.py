@@ -1,8 +1,13 @@
+##Script function and purpose: Concern Manager for The JENOVA Cognitive Architecture
+##This module manages the lifecycle of concerns (topic categories) for organizing insights
+
 import os
 import json
 
+##Class purpose: Manages concern topics for grouping and organizing insights
 class ConcernManager:
     """Manages the lifecycle of concerns, including their creation, updating, and interlinking."""
+    ##Function purpose: Initialize concern manager with configuration and storage paths
     def __init__(self, config, ui_logger, file_logger, insights_root, llm):
         self.config = config
         self.ui_logger = ui_logger
@@ -12,6 +17,7 @@ class ConcernManager:
         self.concerns = self._load_concerns()
         self.llm = llm
 
+    ##Function purpose: Load concerns from persistent JSON file
     def _load_concerns(self):
         """Loads the concerns from the concerns.json file."""
         if os.path.exists(self.concerns_file):
@@ -23,6 +29,7 @@ class ConcernManager:
                 return {}
         return {}
 
+    ##Function purpose: Save concerns to persistent JSON file
     def _save_concerns(self):
         """Saves the concerns to the concerns.json file."""
         try:
@@ -32,10 +39,12 @@ class ConcernManager:
             # self.file_logger.log_error(f"Error saving concerns file: {e}")
             pass
 
+    ##Function purpose: Return list of all existing concern topics
     def get_all_concerns(self) -> list[str]:
         """Returns a list of all existing concern topics."""
         return list(self.concerns.keys())
 
+    ##Function purpose: Use LLM to find best matching concern or create new one
     def find_or_create_concern(self, insight_content: str, existing_topics: list) -> str:
         """Uses an LLM to find the most relevant concern for an insight, or creates a new one."""
         try:
@@ -60,6 +69,7 @@ Relevant Topic:'''
             # self.file_logger.log_error(f"Error finding or creating concern: {e}")
             return self._create_new_concern(insight_content) # Fallback to creating a new concern
 
+    ##Function purpose: Create a new concern topic based on insight content
     def _create_new_concern(self, insight_content: str) -> str:
         """Creates a new concern based on the insight content."""
         prompt = f'''Create a short, one or two-word topic for the following insight:
@@ -77,6 +87,7 @@ Topic:'''
             # self.file_logger.log_error(f"Error creating new concern: {e}")
             return "general"
 
+    ##Function purpose: Deprecated - reorganization is handled by Cortex.reflect
     def reorganize_insights(self, all_insights: list) -> list:
         """DEPRECATED: This method is no longer used. Reorganization is handled by Cortex.reflect."""
         self.file_logger.log_warning("ConcernManager.reorganize_insights is deprecated and should not be called.")

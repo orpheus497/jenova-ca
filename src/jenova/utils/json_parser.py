@@ -1,5 +1,9 @@
+##Script function and purpose: JSON Parser Utility for The JENOVA Cognitive Architecture
+##This module extracts JSON objects from LLM responses that may contain extra text
+
 import json
 
+##Function purpose: Extract JSON object or array from string, even if embedded in other text
 def extract_json(json_str: str) -> dict | list:
     """Extracts a JSON object or array from a string, even if it's embedded in other text."""
     # Common case: JSON is wrapped in markdown backticks
