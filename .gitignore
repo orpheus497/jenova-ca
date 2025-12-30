@@ -100,7 +100,7 @@ Thumbs.db
 !/docs/.gitkeep
 
 # Development planning and status docs (for AI agent collaboration)
-.devdocs/
+# .devdocs/ is now tracked per NON-NEGOTIABLE RULES for code documentation
 
 # Unnecessary vendored code
 /llama.cpp/
