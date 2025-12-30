@@ -241,7 +241,6 @@ func (m model) View() string {
 }
 
 // Function purpose: Listen for JSON messages from Python backend via stdin
-// Listen for messages from Python backend via stdin
 func listenForMessages(program *tea.Program) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
