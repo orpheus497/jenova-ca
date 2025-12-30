@@ -1,8 +1,11 @@
+##Script function and purpose: Cognitive Graph Data Structures for The JENOVA Cognitive Architecture
+##This module defines dataclass structures for nodes and links in the cognitive graph
 
 from dataclasses import dataclass, field
 from datetime import datetime
 import uuid
 
+##Class purpose: Represents a single node in the cognitive graph with metadata
 @dataclass
 class CognitiveNode:
     """Represents a single node in the cognitive graph."""
@@ -13,6 +16,7 @@ class CognitiveNode:
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     metadata: dict = field(default_factory=dict)
 
+##Class purpose: Represents a directed link between two nodes with relationship type
 @dataclass
 class CognitiveLink:
     """Represents a directed link between two nodes in the cognitive graph."""

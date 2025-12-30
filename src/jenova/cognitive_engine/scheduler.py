@@ -1,9 +1,13 @@
+##Script function and purpose: Cognitive Scheduler for The JENOVA Cognitive Architecture
+##This module schedules cognitive tasks based on conversation context and configurable intervals
 
 from datetime import datetime
 
+##Class purpose: Schedules cognitive functions based on turn count and context
 class CognitiveScheduler:
     """Schedules cognitive functions based on the current context."""
 
+    ##Function purpose: Initialize scheduler with configuration and cognitive components
     def __init__(self, config, cortex, insight_manager):
         self.config = config
         self.cortex = cortex
@@ -15,6 +19,7 @@ class CognitiveScheduler:
             "reflect": None,
         }
 
+    ##Function purpose: Determine which cognitive tasks should run based on context
     def get_cognitive_tasks(self, turn_count: int, user_input: str, username: str) -> list:
         """
         Determines which cognitive tasks to run based on the current context.
@@ -46,6 +51,7 @@ class CognitiveScheduler:
 
         return tasks
 
+    ##Function purpose: Check if a task should run based on turn count and interval
     def _should_run(self, task_name: str, turn_count: int, interval: int) -> bool:
         """
         Checks if a task should be run based on the turn count and the last execution time.

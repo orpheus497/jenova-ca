@@ -1,3 +1,6 @@
+##Script function and purpose: Cortex Module for The JENOVA Cognitive Architecture
+##This module implements the central cognitive hub managing interconnected nodes of insights, memories, and assumptions
+
 import os
 import json
 from datetime import datetime
@@ -32,6 +35,7 @@ class Cortex:
         self.clustering = AdvancedClustering(config)
         self.graph_metrics = GraphMetrics(config)
 
+    ##Function purpose: Load the JSON grammar for structured LLM outputs
     def _load_grammar(self):
         """Loads the JSON grammar from the llama.cpp submodule."""
         grammar_path = os.path.join(os.getcwd(), "llama.cpp", "grammars", "json.gbnf")
@@ -43,6 +47,7 @@ class Cortex:
         self.ui_logger.system_message("JSON grammar file not found at " + grammar_path)
         return None
 
+    ##Function purpose: Load cognitive graph from persistent file storage
     def _load_graph(self):
         """Loads the cognitive graph from a file."""
         if os.path.exists(self.graph_file):
@@ -50,11 +55,13 @@ class Cortex:
                 return json.load(f)
         return {"nodes": {}, "links": []}
 
+    ##Function purpose: Save cognitive graph to persistent file storage
     def _save_graph(self):
         """Saves the cognitive graph to a file."""
         with open(self.graph_file, 'w', encoding='utf-8') as f:
             json.dump(self.graph, f, indent=4)
 
+    ##Function purpose: Add a new node to the cognitive graph with emotion analysis
     def add_node(self, node_type: str, content: str, user: str, linked_to: list = None, metadata: dict = None):
         """Adds a new node to the cognitive graph."""
         node_id = str(uuid.uuid4())
@@ -97,6 +104,7 @@ Emotion JSON:"""
         self.ui_logger.info(f"New {node_type} node created: {node_id} (Emotions: {emotions})")
         return node_id
 
+    ##Function purpose: Add a directed link between two nodes in the cognitive graph
     def add_link(self, source_id: str, target_id: str, relationship: str):
         """Adds a directed link between two nodes in the graph."""
         new_link = {
@@ -108,10 +116,12 @@ Emotion JSON:"""
         self.graph["links"].append(new_link)
         self._save_graph()
 
+    ##Function purpose: Retrieve a node by its unique identifier
     def get_node(self, node_id: str):
         """Retrieves a node by its ID."""
         return self.graph["nodes"].get(node_id)
 
+    ##Function purpose: Retrieve all nodes of a specific type, optionally filtered by user
     def get_all_nodes_by_type(self, node_type: str, user: str = None):
         """Retrieves all nodes of a specific type, optionally filtered by user."""
         nodes = []
@@ -123,6 +133,7 @@ Emotion JSON:"""
                     nodes.append(node)
         return nodes
 
+    ##Function purpose: Update an existing node's content or links
     def update_node(self, node_id: str, content: str = None, linked_to: list = None):
         """Updates an existing node in the cognitive graph."""
         if node_id not in self.graph["nodes"]:
@@ -412,6 +423,7 @@ Relationship JSON:"""
                     self.file_logger.log_error(f"Failed to link external sources {node1['id']} and {node2['id']}. Invalid JSON response: {response_str}. Error: {e}")
                     continue
 
+    ##Function purpose: Develop an existing insight by generating a more detailed version
     def develop_insight(self, insight_id: str, user: str) -> list[str]:
         """Develops an existing insight by generating a more detailed version."""
         messages = []
@@ -430,6 +442,7 @@ Relationship JSON:"""
             messages.append(f"Developed insight {insight_id} into {new_insight_id}")
         return messages
 
+    ##Function purpose: Process documents from docs folder, chunk them, and integrate insights into the graph
     def develop_insights_from_docs(self, user: str) -> list[str]:
         """
         Reads documents from the docs folder, chunks them, develops insights,
@@ -543,6 +556,7 @@ JSON Response:"""
 
         return messages
 
+    ##Function purpose: Load processed documents tracker from persistent storage
     def _load_processed_docs(self):
         """Loads the processed documents tracker from a file."""
         if os.path.exists(self.processed_docs_file):
@@ -550,11 +564,13 @@ JSON Response:"""
                 return json.load(f)
         return {}
 
+    ##Function purpose: Save processed documents tracker to persistent storage
     def _save_processed_docs(self):
         """Saves the processed documents tracker to a file."""
         with open(self.processed_docs_file, 'w', encoding='utf-8') as f:
             json.dump(self.processed_docs, f, indent=4)
 
+    ##Function purpose: Split text into chunks of specified word count for processing
     def _chunk_text(self, text: str, chunk_size: int = 512) -> list[str]:
         """Splits text into chunks of a specified size."""
         words = text.split()
@@ -661,6 +677,7 @@ Meta-Insight:"""
         messages.append(f"Pruned {len(nodes_to_prune)} nodes from the cognitive graph.")
         return messages
 
+    ##Function purpose: Dynamically update relationship weights based on impact on graph evolution
     def _update_relationship_weights(self) -> list[str]:
         """Dynamically updates the relationship weights based on their impact on the graph."""
         messages = []

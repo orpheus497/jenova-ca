@@ -1,10 +1,15 @@
+##Script function and purpose: Insight Manager for The JENOVA Cognitive Architecture
+##This module manages creation, storage, and retrieval of topical insights
+
 import os
 import json
 from datetime import datetime
 from .concerns import ConcernManager
 
+##Class purpose: Manages lifecycle of insights including creation, storage, and retrieval
 class InsightManager:
     """Manages the creation, storage, and retrieval of topical insights."""
+    ##Function purpose: Initialize insight manager with configuration and required components
     def __init__(self, config, ui_logger, file_logger, insights_root, llm, cortex, memory_search, integration_layer=None):
         self.config = config
         self.ui_logger = ui_logger
@@ -17,6 +22,7 @@ class InsightManager:
         os.makedirs(self.insights_root, exist_ok=True)
         self.concern_manager = ConcernManager(config, ui_logger, file_logger, insights_root, self.llm)
 
+    ##Function purpose: Save an insight, finding or creating a concern for it
     def save_insight(self, insight_content: str, username: str, topic: str = None, linked_to: list = None, insight_data: dict = None):
         """Saves an insight, finding or creating a concern for it, and adds it to the Cortex."""
         self.file_logger.log_info(f"Attempting to save insight for user '{username}'. Content: '{insight_content}'")
@@ -64,17 +70,20 @@ class InsightManager:
             self.file_logger.log_error(f"Error saving insight: {e}")
             self.ui_logger.system_message("An error occurred while saving the insight.")
 
+    ##Function purpose: Deprecated - reorganization is handled by Cortex.reflect
     def reorganize_insights(self, username: str) -> list[str]:
         """DEPRECATED: This method is no longer used. Reorganization is handled by Cortex.reflect."""
         self.file_logger.log_warning("InsightManager.reorganize_insights is deprecated and should not be called.")
         return ["This function is deprecated."]
 
+    ##Function purpose: Use semantic search to find most relevant insights for a query
     def get_relevant_insights(self, query: str, username: str, max_insights: int = 3) -> list[str]:
         """Uses semantic search to find the most relevant insights for a given query."""
         insight_results = self.memory_search.search_insights(query, username, max_insights)
         # Extract documents from (doc, distance) tuples
         return [doc for doc, dist in insight_results]
 
+    ##Function purpose: Retrieve all insights from the insights directory for a user
     def get_all_insights(self, username: str) -> list[dict]:
         """Retrieves all insights from the insights directory for a specific user."""
         self.file_logger.log_info(f"Getting all insights for user '{username}'")
@@ -102,6 +111,7 @@ class InsightManager:
         self.file_logger.log_info(f"Found {len(all_insights)} insights for user '{username}'")
         return all_insights
 
+    ##Function purpose: Retrieve cortex_id of the most recently saved insight
     def get_latest_insight_id(self, username: str) -> str | None:
         """Retrieves the cortex_id of the most recently saved insight for a specific user."""
         all_insights = self.get_all_insights(username)

@@ -1,9 +1,14 @@
+##Script function and purpose: Assumption Manager for The JENOVA Cognitive Architecture
+##This module manages the lifecycle of user assumptions including creation, verification, and resolution
+
 import os
 import json
 from datetime import datetime
 
+##Class purpose: Manages lifecycle of assumptions about users
 class AssumptionManager:
     """Manages the lifecycle of assumptions about the user."""
+    ##Function purpose: Initialize assumption manager with configuration and components
     def __init__(self, config, ui_logger, file_logger, user_data_root, cortex, llm, integration_layer=None):
         self.config = config
         self.ui_logger = ui_logger
@@ -14,6 +19,7 @@ class AssumptionManager:
         self.integration_layer = integration_layer  # Optional integration layer for Cortex-Memory feedback
         self.assumptions = self._load_assumptions()
 
+    ##Function purpose: Load assumptions from persistent JSON file
     def _load_assumptions(self):
         """Loads assumptions from the assumptions.json file."""
         if os.path.exists(self.assumptions_file):
@@ -25,6 +31,7 @@ class AssumptionManager:
                 return {"verified": [], "unverified": [], "true": [], "false": []}
         return {"verified": [], "unverified": [], "true": [], "false": []}
 
+    ##Function purpose: Save assumptions to persistent JSON file
     def _save_assumptions(self):
         """Saves assumptions to the assumptions.json file."""
         try:
@@ -34,6 +41,7 @@ class AssumptionManager:
             self.file_logger.log_error(f"Error saving assumptions file: {e}")
             pass
 
+    ##Function purpose: Add a new assumption, avoiding duplicates
     def add_assumption(self, assumption_content: str, username: str, status: str = 'unverified', linked_to: list = None) -> str:
         """Adds a new assumption, avoiding duplicates."""
         # Check for duplicates across all statuses
@@ -73,10 +81,12 @@ class AssumptionManager:
 
         return node_id
 
+    ##Function purpose: Return all assumptions grouped by status
     def get_all_assumptions(self) -> dict:
         """Returns all assumptions."""
         return self.assumptions
 
+    ##Function purpose: Get an unverified assumption and generate verification question
     def get_assumption_to_verify(self, username: str):
         """Gets an unverified assumption and generates a question to verify it."""
         unverified = self.assumptions.get('unverified', [])
@@ -98,6 +108,7 @@ Your question to the user:'''
             self.file_logger.log_error(f"Error generating assumption verification question: {e}")
             return None, None
 
+    ##Function purpose: Move assumption to true or false list based on user response
     def resolve_assumption(self, assumption, user_response: str, username: str):
         """Moves an assumption to the 'true' or 'false' list based on user response."""
         prompt = f'''Analyze the user's response to determine if it confirms or denies the assumption. Respond with "true" or "false".
@@ -148,6 +159,7 @@ Result:'''
                 break
         self._save_assumptions()
 
+    ##Function purpose: Update an existing assumption's content
     def update_assumption(self, old_assumption_content: str, new_assumption_content: str, username: str):
         """Updates an existing assumption."""
         for status in ['verified', 'unverified', 'true', 'false']:

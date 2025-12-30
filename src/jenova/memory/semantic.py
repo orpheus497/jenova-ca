@@ -1,3 +1,6 @@
+##Script function and purpose: Semantic Memory for The JENOVA Cognitive Architecture
+##This module manages fact-based knowledge storage with confidence levels and temporal validity
+
 import os
 import json
 ##Block purpose: Import Pydantic compatibility fix before ChromaDB import
@@ -12,7 +15,9 @@ import uuid
 from jenova.utils.json_parser import extract_json
 from jenova.utils.embedding import CustomEmbeddingFunction
 
+##Class purpose: Manages semantic memory storing facts with confidence and validity metadata
 class SemanticMemory:
+    ##Function purpose: Initialize semantic memory with database, embedding model, and initial facts
     def __init__(self, config, ui_logger, file_logger, db_path, llm, embedding_model):
         self.config = config
         self.ui_logger = ui_logger
@@ -33,6 +38,7 @@ class SemanticMemory:
             self.file_logger.log_error(f"Failed to load initial facts into semantic memory: {e}")
             self.ui_logger.system_message("Warning: Could not load initial facts into semantic memory. The AI's persona may be incomplete.")
 
+    ##Function purpose: Load predefined facts into semantic memory during initialization
     def _load_initial_facts(self, initial_facts):
         if not initial_facts: return
         self.ui_logger.info("Loading initial facts into semantic memory...")
@@ -41,6 +47,7 @@ class SemanticMemory:
         self.ui_logger.info("Initial facts loaded.")
 
 
+    ##Function purpose: Add a new fact to semantic memory with automatic metadata extraction
     def add_fact(self, fact: str, username: str, source: str = None, confidence: float = None, temporal_validity: str = None, doc_id: str = None):
         if not source or not confidence or not temporal_validity:
             prompt = f'''Analyze the following fact and extract the source, confidence level (a float between 0 and 1), and temporal validity (e.g., "timeless", "until 2025", "for the next 2 hours"). Respond with a JSON object containing "source", "confidence", and "temporal_validity".
@@ -77,6 +84,7 @@ JSON Response:'''
             self.file_logger.log_error(f"Failed to add fact to semantic memory: {e}")
 
 
+    ##Function purpose: Search semantic memory collection for facts matching the query
     def search_collection(self, query: str, username: str, n_results: int = 3) -> list[tuple[str, float]]:
         if self.collection.count() == 0: return []
         n_results = min(n_results, self.collection.count())
@@ -84,6 +92,7 @@ JSON Response:'''
         if not results['documents']: return []
         return list(zip(results['documents'][0], results['distances'][0]))
 
+    ##Function purpose: Search semantic memory using provided document list for cross-referencing
     def search_documents(self, query: str, documents: list[str], n_results: int = 3) -> list[tuple[str, float]]:
         if not documents: return []
         n_results = min(n_results, len(documents))
