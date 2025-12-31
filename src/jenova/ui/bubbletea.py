@@ -1,3 +1,6 @@
+##Script function and purpose: Bubble Tea UI Wrapper for The JENOVA Cognitive Architecture
+##This module provides a bridge between the Python backend and the Go-based Bubble Tea TUI
+
 """
 Bubble Tea UI wrapper for JENOVA Cognitive Architecture.
 This module provides a bridge between the Python backend and the Go-based Bubble Tea TUI.
@@ -13,12 +16,14 @@ from jenova.ui.logger import UILogger
 from jenova.cognitive_engine.engine import CognitiveEngine
 
 
+##Class purpose: Wraps Go Bubble Tea TUI and manages Python-Go IPC
 class BubbleTeaUI:
     """
     Wrapper for the Bubble Tea terminal UI.
     Manages communication between Python backend and Go TUI process.
     """
 
+    ##Function purpose: Initialize UI wrapper with engine and communication channels
     def __init__(self, cognitive_engine: CognitiveEngine, logger: UILogger):
         self.engine = cognitive_engine
         self.logger = logger
@@ -34,6 +39,7 @@ class BubbleTeaUI:
         if not os.path.exists(self.tui_path):
             raise FileNotFoundError(f"TUI binary not found at {self.tui_path}. Please build it first.")
 
+    ##Function purpose: Send a JSON message to the TUI process
     def send_message(self, msg_type: str, content: str = "", data: Optional[Dict[str, Any]] = None):
         """Send a message to the TUI."""
         message = {
@@ -51,6 +57,7 @@ class BubbleTeaUI:
         except Exception as e:
             self.logger.info(f"Error sending message to TUI: {e}")
 
+    ##Function purpose: Read messages from TUI stdout in separate thread
     def read_messages(self):
         """Read messages from the TUI in a separate thread."""
         if not self.tui_process or not self.tui_process.stdout:
@@ -93,6 +100,7 @@ class BubbleTeaUI:
             self.send_message("system_message", f"Error: {e}")
             self.send_message("stop_loading")
 
+    ##Function purpose: Handle slash commands from user input
     def _handle_command(self, user_input: str):
         """Handle user commands."""
         command, *args = user_input.lower().split(' ', 1)
@@ -129,6 +137,7 @@ class BubbleTeaUI:
         finally:
             self.send_message("stop_loading")
 
+    ##Function purpose: Display help information to user
     def _show_help(self):
         """Display help information."""
         help_text = """
@@ -160,6 +169,7 @@ exit or quit - Exit the application
         """
         self.send_message("help", help_text)
 
+    ##Function purpose: Send multiple messages to TUI
     def _send_messages(self, messages):
         """Send multiple messages to the TUI."""
         if messages:
@@ -168,6 +178,7 @@ exit or quit - Exit the application
             for msg in messages:
                 self.send_message("system_message", str(msg))
 
+    ##Function purpose: Handle assumption verification flow
     def _verify_assumption(self):
         """Handle assumption verification."""
         assumption, question = self.engine.verify_assumptions(self.username)
@@ -175,6 +186,7 @@ exit or quit - Exit the application
             self.send_message("system_message", f"Verification: {question}")
             # Note: Full verification flow would require more complex state management
 
+    ##Function purpose: Handle insight development command
     def _develop_insight(self, args):
         """Handle insight development."""
         try:
@@ -187,6 +199,7 @@ exit or quit - Exit the application
         except Exception as e:
             self.send_message("system_message", f"Error: {e}")
 
+    ##Function purpose: Start TUI process and main message processing loop
     def run(self):
         """Start the TUI and process messages."""
         try:

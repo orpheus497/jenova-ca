@@ -1,3 +1,6 @@
+##Script function and purpose: Terminal UI for The JENOVA Cognitive Architecture
+##This module provides the command-line interface using prompt_toolkit with rich text formatting
+
 import os
 import getpass
 import threading
@@ -23,7 +26,9 @@ BANNER = """
 """
 ATTRIBUTION = "Designed and Developed by orpheus497 - https://github.com/orpheus497"
 
+##Class purpose: Provides interactive terminal interface for conversing with JENOVA
 class TerminalUI:
+    ##Function purpose: Initialize terminal UI with cognitive engine and logging components
     def __init__(self, cognitive_engine: CognitiveEngine, logger: UILogger):
         self.engine = cognitive_engine
         self.logger = logger
@@ -40,6 +45,7 @@ class TerminalUI:
         # Configure logger to use the queue for non-blocking updates
         self.logger.message_queue = self.message_queue
 
+    ##Function purpose: Display animated loading spinner while processing
     def _spinner(self):
         spinner_chars = itertools.cycle(['   ', '.  ', '.. ', '...'])
         color_code = '\033[93m' # Yellow color
@@ -53,12 +59,14 @@ class TerminalUI:
         sys.stdout.write('\r' + ' ' * 5 + '\r')
         sys.stdout.flush()
 
+    ##Function purpose: Start the loading spinner in a separate thread
     def start_spinner(self):
         self._spinner_running = True
         self._spinner_thread = threading.Thread(target=self._spinner)
         self._spinner_thread.daemon = True
         self._spinner_thread.start()
 
+    ##Function purpose: Stop the loading spinner and clean up
     def stop_spinner(self):
         self._spinner_running = False
         if self._spinner_thread and self._spinner_thread.is_alive():
@@ -67,6 +75,7 @@ class TerminalUI:
 
 
 
+    ##Function purpose: Run the main interactive loop for user input and responses
     def run(self):
         self.logger.banner(BANNER, ATTRIBUTION)
         self.logger.info("Initialized and Ready.")
@@ -137,6 +146,7 @@ class TerminalUI:
                 self.logger.system_message(f"An unexpected error occurred in the UI loop: {e}")
                 self.logger.process_queued_messages()
 
+    ##Function purpose: Process and log returned messages from engine operations
     def _process_and_log_messages(self, returned_messages):
         if returned_messages:
             processed_messages = []
@@ -153,6 +163,7 @@ class TerminalUI:
                 for msg in processed_messages:
                     self.logger.system_message(msg)
 
+    ##Function purpose: Handle user commands and route to appropriate handlers
     def _handle_command(self, user_input: str):
         """Handles user commands."""
         command, *args = user_input.lower().split(' ', 1)
@@ -251,6 +262,7 @@ class TerminalUI:
 
         self._process_and_log_messages(returned_messages)
 
+    ##Function purpose: Display comprehensive help with all available commands
     def _show_help(self):
         """Displays a detailed list of available commands and their functions."""
         self.logger.help_message("\n[bold bright_cyan]╔═══════════════════════════════════════════════════════════════════════════════╗[/bold bright_cyan]")
@@ -342,6 +354,7 @@ class TerminalUI:
         self.logger.help_message("[bold bright_cyan]║  freely to manage JENOVA's cognitive processes.                              ║[/bold bright_cyan]")
         self.logger.help_message("[bold bright_cyan]╚═══════════════════════════════════════════════════════════════════════════════╝[/bold bright_cyan]\n")
 
+    ##Function purpose: Handle the /verify command for assumption verification
     def _verify_assumption(self):
         """Handles the /verify command."""
         self.start_spinner()
@@ -370,6 +383,7 @@ class TerminalUI:
             if assumption: # Only set verifying_assumption if there's an actual assumption
                 self.verifying_assumption = assumption
 
+    ##Function purpose: Handle the /develop_insight command for insight development or document learning
     def _develop_insight(self, args: list):
         """Handles the /develop_insight command."""
         self.start_spinner()
@@ -399,6 +413,7 @@ class TerminalUI:
 
 
 
+    ##Function purpose: Handle the /learn_procedure command for interactive procedure learning
     def _learn_procedure(self, args: list):
         """Handles the /learn_procedure command interactively."""
         self.logger.system_message("Initiating interactive procedure learning...")

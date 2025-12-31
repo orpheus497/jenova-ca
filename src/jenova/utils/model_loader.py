@@ -1,6 +1,10 @@
+##Script function and purpose: Model Loader Utility for The JENOVA Cognitive Architecture
+##This module loads SentenceTransformer embedding models with automatic device detection
+
 from sentence_transformers import SentenceTransformer
 import torch
 
+##Function purpose: Load SentenceTransformer model with automatic GPU/CPU detection
 def load_embedding_model(model_name: str, device: str = None):
     """
     Loads the SentenceTransformer model with automatic device detection.

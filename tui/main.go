@@ -1,3 +1,6 @@
+// Script function and purpose: Bubble Tea TUI for The JENOVA Cognitive Architecture
+// This module provides a modern terminal UI using the Bubble Tea framework in Go
+
 package main
 
 import (
@@ -15,14 +18,14 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Message types for IPC with Python backend
+// Message purpose: Define IPC message types for communication with Python backend
 type Message struct {
 	Type    string                 `json:"type"`
 	Content string                 `json:"content,omitempty"`
 	Data    map[string]interface{} `json:"data,omitempty"`
 }
 
-// Styles
+// Block purpose: Define lipgloss styles for terminal UI elements
 var (
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
@@ -54,6 +57,7 @@ var (
 			Foreground(lipgloss.Color("#888888"))
 )
 
+// Model purpose: Define the application state model for Bubble Tea
 type model struct {
 	viewport    viewport.Model
 	textarea    textarea.Model
@@ -67,6 +71,7 @@ type model struct {
 	pythonInput io.Writer
 }
 
+// Function purpose: Create and return initial model with default configuration
 func initialModel(pythonInput io.Writer) model {
 	ta := textarea.New()
 	ta.Placeholder = "Type your message or command..."
@@ -92,6 +97,7 @@ func initialModel(pythonInput io.Writer) model {
 	}
 }
 
+// Function purpose: Initialize Bubble Tea commands on startup
 func (m model) Init() tea.Cmd {
 	return tea.Batch(
 		textarea.Blink,
@@ -99,6 +105,7 @@ func (m model) Init() tea.Cmd {
 	)
 }
 
+// Function purpose: Handle messages and update model state
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var (
 		tiCmd tea.Cmd
@@ -195,12 +202,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(tiCmd, vpCmd, spCmd)
 }
 
+// Function purpose: Update viewport content with chat messages
 func (m *model) updateViewport() {
 	content := strings.Join(m.messages, "\n")
 	m.viewport.SetContent(content)
 	m.viewport.GotoBottom()
 }
 
+// Function purpose: Render the terminal UI view
 func (m model) View() string {
 	if !m.ready {
 		return "\n  Initializing..."
@@ -231,7 +240,7 @@ func (m model) View() string {
 	return strings.Join(sections, "\n")
 }
 
-// Listen for messages from Python backend via stdin
+// Function purpose: Listen for JSON messages from Python backend via stdin
 func listenForMessages(program *tea.Program) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
@@ -243,6 +252,7 @@ func listenForMessages(program *tea.Program) {
 	}
 }
 
+// Function purpose: Main entry point that initializes and runs the Bubble Tea program
 func main() {
 	// Create a pipe to communicate with Python
 	// Python reads from our stdout, we read from stdin

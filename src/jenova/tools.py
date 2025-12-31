@@ -1,13 +1,18 @@
+##Script function and purpose: Tool Functions for The JENOVA Cognitive Architecture
+##This module provides utility functions that JENOVA can use including datetime and shell commands
+
 import datetime
 import subprocess
 import shlex
 
+##Function purpose: Return the current date and time in ISO 8601 format
 def get_current_datetime() -> str:
     """
     Returns the current date and time in ISO 8601 format.
     """
     return datetime.datetime.now().isoformat()
 
+##Function purpose: Execute a shell command and return the result safely
 def execute_shell_command(command: str, description: str) -> dict:
     """
     Executes a shell command and returns the result.

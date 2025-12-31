@@ -1,16 +1,22 @@
+##Script function and purpose: Proactive Engine for The JENOVA Cognitive Architecture
+##This module generates proactive suggestions by analyzing the cognitive graph state
+
 from datetime import datetime
 
+##Class purpose: Analyzes cognitive graph to generate proactive suggestions for users
 class ProactiveEngine:
     """
     The Proactive Engine analyzes the cognitive graph to identify areas of interest
     and generates proactive suggestions or questions for the user.
     """
+    ##Function purpose: Initialize proactive engine with cortex, LLM, and logger
     def __init__(self, cortex, llm, ui_logger):
         self.cortex = cortex
         self.llm = llm
         self.ui_logger = ui_logger
         self.recent_suggestions = [] # To avoid repetition
 
+    ##Function purpose: Generate proactive suggestion based on current cognitive graph state
     def get_suggestion(self, username: str, history: list) -> str | None:
         """Generates a proactive suggestion for the user based on current cognitive state."""
         # Get unverified assumptions

@@ -1,3 +1,6 @@
+##Script function and purpose: Episodic Memory for The JENOVA Cognitive Architecture
+##This module manages autobiographical memories of specific events and interactions
+
 ##Block purpose: Import Pydantic compatibility fix before ChromaDB import
 from jenova.utils.pydantic_compat import *  # noqa: F401, F403
 from jenova.utils.pydantic_compat import create_chromadb_client, get_or_create_collection_with_embedding
@@ -12,7 +15,9 @@ import uuid
 
 from jenova.utils.json_parser import extract_json
 
+##Class purpose: Manages episodic memory storing autobiographical events and interactions
 class EpisodicMemory:
+    ##Function purpose: Initialize episodic memory with database, logging, and LLM components
     def __init__(self, config, ui_logger, file_logger, db_path, llm):
         self.config = config
         self.ui_logger = ui_logger
@@ -25,6 +30,7 @@ class EpisodicMemory:
         self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=config['model']['embedding_model'])
         self.collection = get_or_create_collection_with_embedding(client, name="episodic_episodes", embedding_function=self.embedding_function)
 
+    ##Function purpose: Add a new episode to memory with automatic entity and emotion extraction
     def add_episode(self, summary: str, username: str, entities: list = None, emotion: str = None, timestamp: str = None):
         if not timestamp:
             timestamp = datetime.now().isoformat()
@@ -61,6 +67,7 @@ JSON Response:'''
         self.collection.add(ids=[doc_id], documents=[summary], metadatas=[metadata])
         self.file_logger.log_info(f"Added episode {doc_id} to episodic memory.")
 
+    ##Function purpose: Recall relevant episodes from memory based on semantic similarity to query
     def recall_relevant_episodes(self, query: str, username: str, n_results: int = 3) -> list[tuple[str, float]]:
         if self.collection.count() == 0: return []
         n_results = min(n_results, self.collection.count())
