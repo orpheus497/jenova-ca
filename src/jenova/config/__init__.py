@@ -1,6 +1,11 @@
+##Script function and purpose: Configuration loader for The JENOVA Cognitive Architecture
+##This module loads and merges YAML configuration files (main_config.yaml and persona.yaml)
+##to create a unified configuration dictionary used throughout the system
+
 import yaml
 from pathlib import Path
 
+##Function purpose: Load and merge configuration from YAML files
 def load_configuration(ui_logger, file_logger):
     """Loads and merges configuration from YAML files."""
     try:

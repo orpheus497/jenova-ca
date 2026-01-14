@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+##Script function and purpose: TUI Integration Test for The JENOVA Cognitive Architecture
+##This script tests the Bubble Tea TUI with mock messages to verify IPC communication
+##without requiring the full JENOVA backend to be running
 """
 Simple test script for the Bubble Tea TUI.
 Tests basic message passing without requiring the full JENOVA backend.
@@ -10,6 +13,7 @@ import time
 import threading
 import sys
 
+##Function purpose: Test TUI process with mock JSON messages via stdin/stdout
 def test_tui():
     """Test the TUI with mock messages."""
     tui_path = "./tui/jenova-tui"

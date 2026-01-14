@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+##Script function and purpose: ChromaDB Compatibility Fix for The JENOVA Cognitive Architecture
+##This script patches ChromaDB's Settings class to handle Python 3.14 and Pydantic 2.12
+##compatibility issues, including missing type annotations and forward reference resolution
 """
 Runtime fix for chromadb compatibility issues with Python 3.14 and Pydantic 2.12
 This script patches chromadb's Settings class to handle missing/None values properly
@@ -8,6 +11,7 @@ import os
 import sys
 import re
 
+##Function purpose: Patch chromadb config.py for Pydantic 2.12 compatibility
 def fix_chromadb_config():
     """Fix chromadb config.py to handle Python 3.14/pydantic 2.12 compatibility"""
     # Find chromadb config.py
@@ -173,6 +177,7 @@ def fix_chromadb_config():
         print("✓ No fixes needed (already patched)")
         return True
 
+##Function purpose: Patch chromadb __init__.py to call model_rebuild() before Settings instantiation
 def fix_chromadb_init():
     """Fix chromadb __init__.py to call model_rebuild() before Settings instantiation"""
     import site

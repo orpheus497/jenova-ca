@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+##Script function and purpose: Demo UI Generator for The JENOVA Cognitive Architecture
+##This script creates a visual demonstration/screenshot of the Bubble Tea terminal UI
+##showing the layout, styling, and key features of the interface
 """
 Create a screenshot/demo of the Bubble Tea UI using a terminal emulator.
 """
@@ -7,6 +10,7 @@ import subprocess
 import time
 import json
 
+##Function purpose: Generate ASCII art demo representation of the TUI
 def create_demo_screenshot():
     """Create a visual representation of the UI."""
     

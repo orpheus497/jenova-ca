@@ -1,9 +1,13 @@
+##Script function and purpose: Fine-tuning Data Generator for The JENOVA Cognitive Architecture
+##This script converts user insights into a JSONL format suitable for fine-tuning LLMs
+##It synthesizes conversational pairs from stored insights to enable personalized model training
 
 import os
 import json
 import glob
 import argparse
 
+##Function purpose: Scan insights directory and compile into fine-tuning format
 def create_training_data(insights_dir, output_file):
     """
     Scans the user's insights directory and compiles all generated insights
@@ -50,6 +54,7 @@ def create_training_data(insights_dir, output_file):
     
     print(f"Successfully created '{output_file}' with {count} training entries.")
 
+##Function purpose: Parse command line arguments and run the training data generator
 def main():
     parser = argparse.ArgumentParser(description="Create a fine-tuning dataset from JENOVA's insights.")
     

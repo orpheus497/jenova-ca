@@ -1,4 +1,5 @@
-##Module purpose: Pydantic compatibility shim for ChromaDB
+##Script function and purpose: Pydantic Compatibility Shim for The JENOVA Cognitive Architecture
+##This module provides compatibility between ChromaDB and Pydantic v2 by patching import paths
 ##ChromaDB versions may try to import BaseSettings from pydantic, but Pydantic v2 moved it to pydantic-settings
 ##This module ensures compatibility by making BaseSettings available from pydantic before any ChromaDB imports
 

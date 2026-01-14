@@ -133,10 +133,63 @@ Approach documented in PLANS.md.
 
 ---
 
-## Pending Decisions
+### DEC-005: Package __init__.py Documentation Standard
+**Date:** 2026-01-14
+**Session:** 3
+**Author:** Claude AI Assistant
 
-### PENDING-001: Go File Commenting Convention
-**Status:** Requires Discussion
+**Context:**
+Package `__init__.py` files were empty or minimal across the codebase. A consistent approach was needed to document what each package contains.
+
+**Decision:**
+All `__init__.py` files receive a `##Script function and purpose:` header that:
+- Names the package
+- Describes the package's role in the architecture
+- Lists key modules/components contained within (using bullet points)
+
+Example format:
+```python
+##Script function and purpose: [Package Name] package for The JENOVA Cognitive Architecture
+##This package [description of purpose]
+##Key components include:
+##- Component 1 (file.py)
+##- Component 2 (file.py)
+```
+
+**Rationale:**
+- Provides immediate context for developers/AI agents navigating the codebase
+- Follows same comment style as all other files
+- Helps understand module organization at a glance
+- Consistent with NON-NEGOTIABLE RULES documentation standards
+
+**Alternatives Considered:**
+- Leave empty (rejected: missed opportunity for documentation)
+- Use docstrings (rejected: inconsistent with `##` comment standard)
+- Only list imports (rejected: doesn't explain purpose)
+
+**Outcome:**
+All 9 package `__init__.py` files documented with this standard.
+
+---
+
+## Resolved Decisions
+
+### RESOLVED-001: Go File Commenting Convention (was PENDING-001)
+**Status:** Resolved in Session 2
+**Resolution:** Use Go standard `//` comments with same purpose structure as Python files.
+
+Example:
+```go
+// Script function and purpose: [Explanation]
+// Function purpose: [Explanation]
+func functionName() {
+    // Block purpose: [Explanation]
+}
+```
+
+---
+
+## Pending Decisions
 **Context:** tui/main.go uses Go commenting conventions. Need to determine if Go style or adapted format should be used.
 
 **Proposed Options:**
