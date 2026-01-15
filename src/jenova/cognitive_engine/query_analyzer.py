@@ -350,13 +350,11 @@ Respond with a valid JSON object:
         return entity_links
     
     ##Function purpose: Filter nodes by username if username is set
-    def _get_user_filtered_nodes(self, nodes) -> List[Dict[str, Any]]:
+    def _get_user_filtered_nodes(self, nodes: Any) -> List[Dict[str, Any]]:
         """Filter nodes by username if username is provided."""
         filtered_nodes = []
         for node in nodes:
-            if self._username and node.get('user') == self._username:
-                filtered_nodes.append(node)
-            elif not self._username:
+            if not self._username or node.get('user') == self._username:
                 filtered_nodes.append(node)
         return filtered_nodes
     

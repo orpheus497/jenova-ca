@@ -56,6 +56,12 @@ fi
 GO_VERSION=$(go version | awk '{print $3}' | sed 's/go//')
 GO_MAJOR=$(echo $GO_VERSION | cut -d. -f1)
 GO_MINOR=$(echo $GO_VERSION | cut -d. -f2)
+# Validate that parsed version components are numeric
+if ! [[ "$GO_MAJOR" =~ ^[0-9]+$ ]] || ! [[ "$GO_MINOR" =~ ^[0-9]+$ ]]; then
+    echo "[ERROR] Unable to parse Go version. Found: go$GO_VERSION"
+    echo "Expected format: go1.21 or go1.21.x"
+    exit 1
+fi
 if [ "$GO_MAJOR" -lt 1 ] || ([ "$GO_MAJOR" -eq 1 ] && [ "$GO_MINOR" -lt 21 ]); then
     echo "[ERROR] Go version 1.21+ is required. Found: go$GO_VERSION"
     exit 1
