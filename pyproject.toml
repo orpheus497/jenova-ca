@@ -22,11 +22,10 @@ classifiers = [
 ]
 dependencies = [
     "llama-cpp-python",
-    "chromadb>=0.3.23",  # Our pydantic_compat module handles Pydantic v2 compatibility
+    "chromadb>=0.4.0,<0.6.0",  # Our pydantic_compat module handles Pydantic v2 compatibility
     "sentence-transformers",
     "torch",
     "rich",
-    "prompt-toolkit",
     "PyYAML",
     "numpy",
     "selenium",

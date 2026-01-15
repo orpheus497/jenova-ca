@@ -158,11 +158,16 @@ class BubbleTeaUI:
 
     ##Function purpose: Handle slash commands from user input
     def _handle_command(self, user_input: str) -> None:
-        """Handle user commands."""
+        """Handle user commands.
+        
+        Note: args is a list of individual space-separated arguments with case preserved.
+        For example, '/develop_insight NodeID_123' yields args=['NodeID_123'].
+        """
         ##Block purpose: Parse command while preserving argument case-sensitivity
         parts = user_input.split(' ', 1)
         command = parts[0].lower()
-        args = parts[1:] if len(parts) > 1 else []
+        ##Block purpose: Split remaining text into individual arguments, preserving case
+        args = parts[1].split() if len(parts) > 1 else []
         
         self.send_message("start_loading")
         
@@ -542,10 +547,13 @@ INNATE CAPABILITIES
         except Exception as e:
             print(f"Error running TUI: {e}")
         finally:
-            ##Block purpose: Clean shutdown of TUI process
-            self.running = False
-            ##Block purpose: Signal input worker thread to shut down
+            ##Block purpose: Signal input worker thread to shut down before clearing running flag
             self.input_queue.put(None)
+            ##Block purpose: Clean shutdown of TUI process and wait for worker thread
+            self.running = False
+            ##Block purpose: Join input worker thread for orderly shutdown
+            if 'input_worker_thread' in locals():
+                input_worker_thread.join(timeout=2.0)
             if self.tui_process:
                 self.tui_process.terminate()
                 self.tui_process.wait()
