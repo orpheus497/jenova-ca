@@ -135,7 +135,7 @@ class BubbleTeaUI:
                 self.procedure_data = {}
 
     ##Function purpose: Handle slash commands from user input
-    def _handle_command(self, user_input: str):
+    def _handle_command(self, user_input: str) -> None:
         """Handle user commands."""
         ##Block purpose: Parse command while preserving argument case-sensitivity
         parts = user_input.split(' ', 1)
@@ -175,7 +175,7 @@ class BubbleTeaUI:
             self.send_message("stop_loading")
 
     ##Function purpose: Display comprehensive help information with formatted sections
-    def _show_help(self):
+    def _show_help(self) -> None:
         """Display formatted help information."""
         help_text = """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
@@ -280,7 +280,7 @@ INNATE CAPABILITIES
                 self.send_message("system_message", str(msg))
 
     ##Function purpose: Start the assumption verification interactive flow
-    def _start_verify(self):
+    def _start_verify(self) -> None:
         """Start assumption verification flow."""
         assumption, question = self.engine.verify_assumptions(self.username)
         if question:
@@ -295,7 +295,7 @@ INNATE CAPABILITIES
             self.send_message("system_message", "No unverified assumptions to check.")
 
     ##Function purpose: Handle user response to assumption verification
-    def _handle_verify_response(self, user_input: str):
+    def _handle_verify_response(self, user_input: str) -> None:
         """Handle yes/no response for assumption verification."""
         response = user_input.strip().lower()
         
@@ -341,7 +341,7 @@ INNATE CAPABILITIES
             self.send_message("stop_loading")
 
     ##Function purpose: Handle insight development command with optional node_id
-    def _develop_insight(self, args: list[str]):
+    def _develop_insight(self, args: list[str]) -> None:
         """Handle insight development."""
         try:
             if args:
@@ -354,7 +354,7 @@ INNATE CAPABILITIES
             self.send_message("system_message", f"Error: {e}")
 
     ##Function purpose: Start the multi-step procedure learning interactive flow
-    def _start_learn_procedure(self):
+    def _start_learn_procedure(self) -> None:
         """Start interactive procedure learning flow."""
         ##Block purpose: Initialize procedure data storage and set interactive mode
         with self.state_lock:
@@ -368,7 +368,7 @@ INNATE CAPABILITIES
         self.send_message("system_message", "Please enter the procedure name:")
 
     ##Function purpose: Handle procedure name input in multi-step flow
-    def _handle_procedure_name(self, user_input: str):
+    def _handle_procedure_name(self, user_input: str) -> None:
         """Handle procedure name input."""
         name = user_input.strip()
         
@@ -387,7 +387,7 @@ INNATE CAPABILITIES
         self.send_message("system_message", f"Step {steps_count + 1}:")
 
     ##Function purpose: Handle individual step input in multi-step flow
-    def _handle_procedure_step(self, user_input: str):
+    def _handle_procedure_step(self, user_input: str) -> None:
         """Handle procedure step input."""
         step = user_input.strip()
         
@@ -421,7 +421,7 @@ INNATE CAPABILITIES
         self.send_message("system_message", f"Step {next_step} (or type 'done'):")
 
     ##Function purpose: Handle expected outcome input and complete procedure learning
-    def _handle_procedure_outcome(self, user_input: str):
+    def _handle_procedure_outcome(self, user_input: str) -> None:
         """Handle procedure outcome input and complete the learning process."""
         outcome = user_input.strip()
         

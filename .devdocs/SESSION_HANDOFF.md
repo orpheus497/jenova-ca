@@ -82,6 +82,7 @@ README_BUBBLETEA.md              (Updated references)
 ## For the Next Session
 
 ### If User Requests Phase B (Code Organization)
+
 1. Review initialization patterns in main.py
 2. Look for code duplication across modules
 3. Improve error handling consistency
@@ -89,6 +90,7 @@ README_BUBBLETEA.md              (Updated references)
 5. Add missing type hints
 
 ### If User Requests Phase C (Cognitive Enhancement)
+
 1. Review `cortex/proactive_engine.py` - enhance autonomous reasoning
 2. Review `cognitive_engine/query_analyzer.py` - improve NLP
 3. Review `cognitive_engine/integration_layer.py` - strengthen Memory-Cortex integration
@@ -96,6 +98,7 @@ README_BUBBLETEA.md              (Updated references)
 5. Identify enhancement opportunities
 
 ### Standard Workflow
+
 1. Read `.devdocs/BRIEFING.md` for current status
 2. Read this handoff document
 3. Follow NON-NEGOTIABLE RULES
