@@ -349,6 +349,17 @@ Respond with a valid JSON object:
         
         return entity_links
     
+    ##Function purpose: Filter nodes by username if username is set
+    def _get_user_filtered_nodes(self, nodes) -> List[Dict[str, Any]]:
+        """Filter nodes by username if username is provided."""
+        filtered_nodes = []
+        for node in nodes:
+            if self._username and node.get('user') == self._username:
+                filtered_nodes.append(node)
+            elif not self._username:
+                filtered_nodes.append(node)
+        return filtered_nodes
+    
     ##Function purpose: Search Cortex for nodes matching an entity
     def _search_cortex_for_entity(self, entity: str) -> List[Dict[str, Any]]:
         """Search Cortex graph for nodes related to an entity."""
@@ -359,23 +370,9 @@ Respond with a valid JSON object:
         entity_lower = entity.lower()
         
         try:
-            ##Block purpose: Get all nodes from Cortex and search for matches
-            if hasattr(self._cortex, 'get_all_nodes_by_type'):
-                # Get all nodes for the user regardless of type
-                all_nodes = []
-                if hasattr(self._cortex, 'graph') and 'nodes' in self._cortex.graph:
-                    for node in self._cortex.graph['nodes'].values():
-                        if self._username and node.get('user') == self._username:
-                            all_nodes.append(node)
-                        elif not self._username:
-                            all_nodes.append(node)
-            elif hasattr(self._cortex, 'graph') and 'nodes' in self._cortex.graph:
-                all_nodes = []
-                for node in self._cortex.graph['nodes'].values():
-                    if self._username and node.get('user') == self._username:
-                        all_nodes.append(node)
-                    elif not self._username:
-                        all_nodes.append(node)
+            ##Block purpose: Get all nodes, filtered by user if username is provided
+            if hasattr(self._cortex, 'graph') and 'nodes' in self._cortex.graph:
+                all_nodes = self._get_user_filtered_nodes(self._cortex.graph['nodes'].values())
             else:
                 return []
             
