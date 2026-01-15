@@ -105,8 +105,13 @@ class BubbleTeaUI:
             try:
                 user_input = self.input_queue.get(timeout=0.1)
                 if user_input is None:  ##Block purpose: None signals worker shutdown
+                    self.input_queue.task_done()
                     break
-                self.process_user_input(user_input)
+                try:
+                    self.process_user_input(user_input)
+                finally:
+                    ##Block purpose: Mark task as done even if processing fails
+                    self.input_queue.task_done()
             except queue.Empty:
                 continue
             except Exception as e:
@@ -345,6 +350,8 @@ INNATE CAPABILITIES
                 )
                 self.send_message("system_message", "Assumption verification recorded. Thank you!")
             else:
+                ##Block purpose: Log unexpected case where no assumption was pending
+                self.logger.info("Warning: _handle_verify_response called with no pending assumption")
                 self.send_message("system_message", "No pending assumption to verify.")
             
         except Exception as e:
