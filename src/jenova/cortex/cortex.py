@@ -5,7 +5,7 @@ import os
 import json
 from datetime import datetime
 import uuid
-from typing import Any, Dict, List
+from typing import Any, Dict
 from .graph_metrics import GraphMetrics
 from .clustering import AdvancedClustering
 from jenova.utils.grammar_loader import load_json_grammar

@@ -3,7 +3,7 @@
 
 import os
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 ##Block purpose: Import Pydantic compatibility fix before ChromaDB import
 from jenova.utils.pydantic_compat import *  # noqa: F401, F403
 from jenova.utils.pydantic_compat import create_chromadb_client, get_or_create_collection_with_embedding

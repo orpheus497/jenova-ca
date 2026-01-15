@@ -2,7 +2,7 @@
 ##This module schedules cognitive tasks based on conversation context and configurable intervals
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 ##Class purpose: Schedules cognitive functions based on turn count and context
 class CognitiveScheduler:

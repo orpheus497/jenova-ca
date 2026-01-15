@@ -4,7 +4,7 @@
 import os
 import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from .concerns import ConcernManager
 
 ##Class purpose: Manages lifecycle of insights including creation, storage, and retrieval

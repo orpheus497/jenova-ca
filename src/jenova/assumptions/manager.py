@@ -3,7 +3,7 @@
 
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from jenova.utils.file_io import load_json_file, save_json_file
 
 ##Class purpose: Manages lifecycle of assumptions about users

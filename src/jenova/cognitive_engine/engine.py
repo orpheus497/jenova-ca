@@ -37,8 +37,11 @@ class CognitiveEngine:
         self.query_analyzer = QueryAnalyzer(llm, config, cortex.json_grammar if cortex else None)
         
         ##Block purpose: Set Cortex reference for entity linking (Phase C.2)
+        # Note: We intentionally pass username=None here because CognitiveEngine may be reused
+        # across different users/sessions. The per-request username context is set later in
+        # the think() method via QueryAnalyzer.set_username(), after we know the actual user.
         if cortex:
-            self.query_analyzer.set_cortex(cortex, username if hasattr(self, 'username') else None)
+            self.query_analyzer.set_cortex(cortex, None)
         
         ##Block purpose: Initialize integration layer reference (will be set by main.py after initialization)
         ##This enables Cortex-Memory feedback loops and unified knowledge representation

@@ -5,7 +5,7 @@
 
 import json
 import re
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from enum import Enum
 from dataclasses import dataclass, field
 from jenova.utils.json_parser import extract_json
@@ -349,6 +349,15 @@ Respond with a valid JSON object:
         
         return entity_links
     
+    ##Function purpose: Filter nodes by username if username is set
+    def _get_user_filtered_nodes(self, nodes: Any) -> List[Dict[str, Any]]:
+        """Filter nodes by username if username is provided."""
+        filtered_nodes = []
+        for node in nodes:
+            if not self._username or node.get('user') == self._username:
+                filtered_nodes.append(node)
+        return filtered_nodes
+    
     ##Function purpose: Search Cortex for nodes matching an entity
     def _search_cortex_for_entity(self, entity: str) -> List[Dict[str, Any]]:
         """Search Cortex graph for nodes related to an entity."""
@@ -359,11 +368,9 @@ Respond with a valid JSON object:
         entity_lower = entity.lower()
         
         try:
-            ##Block purpose: Get all nodes from Cortex and search for matches
-            if hasattr(self._cortex, 'get_all_nodes'):
-                all_nodes = self._cortex.get_all_nodes(self._username)
-            elif hasattr(self._cortex, 'cognitive_graph'):
-                all_nodes = list(self._cortex.cognitive_graph.get(self._username, {}).values())
+            ##Block purpose: Get all nodes, filtered by user if username is provided
+            if hasattr(self._cortex, 'graph') and 'nodes' in self._cortex.graph:
+                all_nodes = self._get_user_filtered_nodes(self._cortex.graph['nodes'].values())
             else:
                 return []
             
