@@ -415,10 +415,9 @@ INNATE CAPABILITIES
         with self.state_lock:
             self.procedure_data["steps"].append(step)
             steps_count = len(self.procedure_data['steps'])
+            next_step = steps_count + 1
         
         self.send_message("system_message", f"Step {steps_count} recorded: {step}")
-        with self.state_lock:
-            next_step = len(self.procedure_data['steps']) + 1
         self.send_message("system_message", f"Step {next_step} (or type 'done'):")
 
     ##Function purpose: Handle expected outcome input and complete procedure learning
