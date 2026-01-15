@@ -482,6 +482,7 @@ INNATE CAPABILITIES
     ##Function purpose: Start TUI process and run main message processing loop
     def run(self):
         """Start the TUI and process messages."""
+        input_worker_thread = None  ##Block purpose: Initialize to None for safe cleanup
         try:
             ##Block purpose: Start the TUI subprocess with stdin/stdout pipes for IPC
             self.tui_process = subprocess.Popen(
@@ -551,8 +552,8 @@ INNATE CAPABILITIES
             self.input_queue.put(None)
             ##Block purpose: Clean shutdown of TUI process and wait for worker thread
             self.running = False
-            ##Block purpose: Join input worker thread for orderly shutdown
-            if 'input_worker_thread' in locals():
+            ##Block purpose: Join input worker thread for orderly shutdown if it was started
+            if input_worker_thread is not None:
                 input_worker_thread.join(timeout=2.0)
             if self.tui_process:
                 self.tui_process.terminate()
