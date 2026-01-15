@@ -42,6 +42,9 @@ class BubbleTeaUI:
         ##Block purpose: Thread lock for synchronizing interactive mode state access
         self.state_lock = threading.Lock()
         
+        ##Block purpose: Input processing queue for serializing user input handling
+        self.input_queue = queue.Queue()
+        
         ##Block purpose: Find the TUI binary path
         script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         self.tui_path = os.path.join(script_dir, "tui", "jenova-tui")
@@ -94,6 +97,20 @@ class BubbleTeaUI:
                     self.logger.info(f"Error reading message: {e}")
         except Exception as e:
             self.logger.info(f"Error in read thread: {e}")
+
+    ##Function purpose: Worker thread that serially processes user input from queue
+    def _input_worker(self) -> None:
+        """Process user input serially from the input queue."""
+        while self.running:
+            try:
+                user_input = self.input_queue.get(timeout=0.1)
+                if user_input is None:  ##Block purpose: None signals worker shutdown
+                    break
+                self.process_user_input(user_input)
+            except queue.Empty:
+                continue
+            except Exception as e:
+                self.logger.info(f"Error in input worker: {e}")
 
     ##Function purpose: Process user input based on current interactive mode
     def process_user_input(self, user_input: str):
@@ -314,9 +331,11 @@ INNATE CAPABILITIES
         try:
             self.send_message("start_loading")
             
-            ##Block purpose: Resolve the pending assumption with validated response
+            ##Block purpose: Atomically read and clear pending assumption
             with self.state_lock:
                 pending_assumption = self.pending_assumption
+                self.pending_assumption = None
+                self.interactive_mode = 'normal'
             
             if pending_assumption:
                 self.engine.assumption_manager.resolve_assumption(
@@ -325,18 +344,12 @@ INNATE CAPABILITIES
                     self.username
                 )
                 self.send_message("system_message", "Assumption verification recorded. Thank you!")
-            
-            ##Block purpose: Reset to normal mode only after successful verification
-            with self.state_lock:
-                self.pending_assumption = None
-                self.interactive_mode = 'normal'
+            else:
+                self.send_message("system_message", "No pending assumption to verify.")
             
         except Exception as e:
             self.send_message("system_message", f"Error during verification: {e}")
-            ##Block purpose: Reset to normal mode on error to prevent stuck states
-            with self.state_lock:
-                self.pending_assumption = None
-                self.interactive_mode = 'normal'
+            ##Block purpose: State already cleared above, no additional cleanup needed
         finally:
             self.send_message("stop_loading")
 
@@ -473,6 +486,10 @@ INNATE CAPABILITIES
             read_thread = threading.Thread(target=self.read_messages, daemon=True)
             read_thread.start()
             
+            ##Block purpose: Start single worker thread to process user inputs serially
+            input_worker_thread = threading.Thread(target=self._input_worker, daemon=True)
+            input_worker_thread.start()
+            
             ##Block purpose: Send initial banner and welcome messages
             banner = """
      ██╗███████╗███╗   ██╗ ██████╗ ██╗   ██╗ █████╗ 
@@ -504,12 +521,8 @@ INNATE CAPABILITIES
                                     self.interactive_mode = 'normal'
                             break
                         
-                        ##Block purpose: Process input in a separate thread to avoid blocking
-                        threading.Thread(
-                            target=self.process_user_input,
-                            args=(user_input,),
-                            daemon=True
-                        ).start()
+                        ##Block purpose: Queue input for serial processing by worker thread
+                        self.input_queue.put(user_input)
                     
                     elif message.get("type") == "exit":
                         break
@@ -524,6 +537,8 @@ INNATE CAPABILITIES
         finally:
             ##Block purpose: Clean shutdown of TUI process
             self.running = False
+            ##Block purpose: Signal input worker thread to shut down
+            self.input_queue.put(None)
             if self.tui_process:
                 self.tui_process.terminate()
                 self.tui_process.wait()
