@@ -474,10 +474,12 @@ jenova-ca/
 The following changes were made during Phase A (UI Consolidation):
 
 ### Removed Files
+
 - `src/jenova/main_bubbletea.py` (merged into main.py)
 - `src/jenova/ui/terminal.py` (Python UI removed)
 
 ### Modified Files
+
 - `src/jenova/main.py` - Now sole entry point with BubbleTeaUI
 - `src/jenova/ui/bubbletea.py` - Enhanced with full feature parity
 - `src/jenova/ui/__init__.py` - Updated exports
@@ -485,4 +487,5 @@ The following changes were made during Phase A (UI Consolidation):
 - `requirements.txt` - Removed prompt-toolkit dependency
 
 ### Dependencies Removed
+
 - `prompt-toolkit` (was only used by terminal.py)

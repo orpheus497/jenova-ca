@@ -103,30 +103,35 @@ All terminal.py commands verified and implemented in bubbletea.py.
 **Tasks:**
 
 #### C.1: Enhance ProactiveEngine
+
 - More sophisticated trigger conditions
 - Better suggestion generation
 - User preference learning
 - Smarter proactive timing
 
 #### C.2: Improve QueryAnalyzer
+
 - Enhanced entity extraction
 - Better intent classification
 - Multi-turn context understanding
 - Deeper semantic analysis
 
 #### C.3: Strengthen Memory-Cortex Integration
+
 - Bidirectional feedback loops
 - Automatic knowledge consolidation
 - Cross-memory linking
 - Unified knowledge representation
 
 #### C.4: Optimize Cortex Graph Operations
+
 - Faster traversal algorithms
 - Better clustering methods
 - Enhanced graph metrics
 - Improved centrality calculations
 
 #### C.5: Enhanced Reflection Capabilities
+
 - Deeper meta-insight generation
 - Pattern recognition improvements
 - Knowledge gap detection

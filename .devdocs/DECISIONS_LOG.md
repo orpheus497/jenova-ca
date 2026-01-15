@@ -149,7 +149,7 @@ Audit completed, enhancements pending.
 **Session:** 4
 **Author:** Claude AI Assistant
 
-**Context:** 
+**Context:**
 The `/learn_procedure` command requires multi-step interactive input:
 1. Prompt for procedure name
 2. Loop for steps (until "done")

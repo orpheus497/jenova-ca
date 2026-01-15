@@ -1,6 +1,7 @@
 # JENOVA Cognitive Architecture - Task List
 
 ## Purpose
+
 This document tracks immediate and upcoming tasks. Updated each session.
 
 ---
@@ -17,43 +18,51 @@ All CodeRabbit review issues have been resolved (16 fixes applied).
 ## Phase A: UI Consolidation ✅ COMPLETE
 
 ### Step A.1: Feature Parity Audit ✅
+
 - [x] Compare terminal.py commands with bubbletea.py
 - [x] Document missing features
 - [x] Identify enhancement requirements
 
 ### Step A.2: Enhance BubbleTeaUI ✅
+
 - [x] Implement `/learn_procedure` interactive flow
 - [x] Complete `/verify` interactive flow
 - [x] Enhance `/help` formatting
 - [x] Add state machine for interactive modes
 
 ### Step A.3: Merge Entry Points ✅
+
 - [x] Create `initialize_jenova()` factory function
 - [x] Merge main.py and main_bubbletea.py
 - [x] Update imports
 - [x] Test unified entry point
 
 ### Step A.4: Remove Legacy UI Files (terminal.py and main_bubbletea.py) ✅
+
 - [x] Verify all features work in BubbleTea
 - [x] Remove src/jenova/ui/terminal.py (26,494 bytes)
 - [x] Remove src/jenova/main_bubbletea.py (7,075 bytes)
 - [x] Update src/jenova/ui/__init__.py
 
 ### Step A.5: Update jenova Executable ✅
+
 - [x] Remove UI switching logic
 - [x] Simplify to single entry point
 
 ### Step A.6: Clean Dependencies ✅
+
 - [x] Remove prompt-toolkit from requirements.txt
 - [x] Verify no other files use prompt-toolkit
 
 ### Step A.7: Update References ✅
+
 - [x] Update README.md
 - [x] Update README_BUBBLETEA.md
 - [x] Update .devdocs/ARCHITECTURE.md
 - [x] Update all .devdocs/ files
 
 ### Step A.8: CodeRabbit Review ✅
+
 - [x] Run CodeRabbit review
 - [x] Fix all 16 identified issues
 - [x] Date corrections (2026 → 2025)
@@ -65,6 +74,7 @@ All CodeRabbit review issues have been resolved (16 fixes applied).
 ## Phase B: Code Organization (Ready to Start)
 
 ### Pending Tasks
+
 - [ ] Review and improve application factory pattern
 - [ ] Consolidate utility functions
 - [ ] Improve error handling patterns
@@ -77,6 +87,7 @@ All CodeRabbit review issues have been resolved (16 fixes applied).
 ## Phase C: Cognitive Architecture Enhancement (Pending)
 
 ### Pending Tasks
+
 - [ ] Enhance ProactiveEngine
   - [ ] More sophisticated trigger conditions
   - [ ] Better suggestion generation
@@ -107,6 +118,7 @@ All CodeRabbit review issues have been resolved (16 fixes applied).
 ## Completed Tasks Summary
 
 ### All Phases Complete
+
 | Phase | Status | Sessions |
 |-------|--------|----------|
 | Phase 1: Initialization | ✅ Complete | 1 |

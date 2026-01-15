@@ -165,7 +165,8 @@ This document contains summaries of each AI agent session for historical referen
 | Phase C: Cognitive Enhancement | ⏳ Ready | - |
 
 ### Session Timeline
-```
+
+```text
 Session 1 (Init)     → .devdocs/ created
 Session 2 (Docs)     → 75% documented
 Session 3 (Review)   → 100% documented, security passed

@@ -38,13 +38,15 @@ This document ensures seamless continuity between AI agent sessions. Each sessio
 ## Files Changed This Session
 
 ### Removed (Phase A)
-```
+
+```text
 src/jenova/main_bubbletea.py    (7,075 bytes)
 src/jenova/ui/terminal.py        (26,494 bytes)
 ```
 
 ### Enhanced/Modified
-```
+
+```text
 src/jenova/ui/bubbletea.py       (Full feature parity, interactive modes, validation)
 src/jenova/main.py               (Unified entry with factory function, cleanup)
 src/jenova/ui/__init__.py        (Updated exports)
@@ -61,7 +63,8 @@ README_BUBBLETEA.md              (Updated references)
 ## Current Architecture
 
 ### Single UI Implementation
-```
+
+```text
 ┌─────────────────┐      JSON IPC      ┌──────────────────┐
 │  Bubble Tea TUI │ ◄────────────────► │  Python Backend  │
 │     (Go)        │   stdin/stdout     │   (main.py)      │
@@ -69,7 +72,8 @@ README_BUBBLETEA.md              (Updated references)
 ```
 
 ### Entry Point
-```
+
+```text
 ./jenova  →  src/jenova/main.py  →  BubbleTeaUI  →  tui/jenova-tui
 ```
 
