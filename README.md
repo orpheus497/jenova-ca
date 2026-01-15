@@ -193,7 +193,7 @@ For Python 3.14 compatibility and isolated dependency management, use the virtua
     PYTHONPATH=/path/to/jenova-ca/src:$PYTHONPATH python -m jenova.main
     ```
 
-**Note:** BubbleTea is now the sole supported UI interface.
+**Note:** BubbleTea is now the sole supported UI.
 
 **Note:** The virtual environment setup automatically applies ChromaDB compatibility fixes for Python 3.14 and Pydantic 2.12. See `README_VENV.md` for detailed information about these fixes.
 

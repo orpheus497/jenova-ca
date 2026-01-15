@@ -2,30 +2,30 @@
 # Note: prompt-toolkit removed - BubbleTea is now the sole UI
 
 # Core LLM and ML
-llama-cpp-python
-sentence-transformers
-torch
+llama-cpp-python>=0.2.0
+sentence-transformers>=2.2.0
+torch>=2.0.0
 
 # Vector Database
-chromadb>=0.3.23
+chromadb>=0.4.0,<0.6.0
 
 # UI and Display (for logging/formatting only)
-rich
+rich>=13.0.0
 
 # Configuration
-PyYAML
+PyYAML>=6.0
 
 # Data Processing
-numpy
+numpy>=1.24.0
 
 # Web Automation (for tools)
-selenium
-webdriver-manager
-requests
+selenium>=4.0.0
+webdriver-manager>=3.8.0
+requests>=2.31.0
 
 # Graph Operations
-networkx
+networkx>=3.0
 
 # Compatibility
-pydantic-settings
-overrides
+pydantic-settings>=2.0.0
+overrides>=7.0.0

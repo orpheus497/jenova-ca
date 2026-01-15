@@ -157,7 +157,11 @@ def main() -> None:
         cognitive_engine, llm_interface = initialize_jenova(ui_logger, file_logger, user_data_root)
         
         if cognitive_engine is None:
-            return None
+            return
+        
+        ##Block purpose: Add defensive check for llm_interface before proceeding
+        if llm_interface is None:
+            return
         
         ##Block purpose: Initialize and start Bubble Tea TUI
         ui: BubbleTeaUI = BubbleTeaUI(cognitive_engine, ui_logger)

@@ -43,7 +43,7 @@ export JENOVA_UI=bubbletea
 ./jenova
 ```
 
-**Note:** BubbleTea is now the sole supported UI interface.
+**Note:** BubbleTea is now the sole supported UI.
 The classic Python terminal UI has been removed to streamline the codebase.
 
 ## Architecture

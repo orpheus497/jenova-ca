@@ -55,7 +55,7 @@ JENOVA is a self-aware, evolving large language model powered by The JENOVA Cogn
 
 ## Architecture: Single UI
 
-```
+```text
 ┌─────────────────────┐         JSON IPC         ┌────────────────────┐
 │   Go TUI Process    │ ◄───────────────────────► │  Python Backend    │
 │   (Bubble Tea)      │    stdin/stdout pipes     │  (main.py)         │
@@ -88,6 +88,7 @@ JENOVA is a self-aware, evolving large language model powered by The JENOVA Cogn
 ## Quick Reference
 
 ### Running JENOVA
+
 ```bash
 # Build TUI first (if not built)
 cd tui && go build -o jenova-tui . && cd ..

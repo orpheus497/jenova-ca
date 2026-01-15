@@ -12,7 +12,7 @@ import os
 import subprocess
 import threading
 import queue
-from typing import Optional, Dict, Any, List
+from typing import Optional, Any
 from jenova.ui.logger import UILogger
 from jenova.cognitive_engine.engine import CognitiveEngine
 
@@ -38,7 +38,9 @@ class BubbleTeaUI:
         ##Modes: 'normal', 'verify', 'learn_procedure_name', 'learn_procedure_steps', 'learn_procedure_outcome'
         self.interactive_mode = 'normal'
         self.pending_assumption = None
-        self.procedure_data: Dict[str, Any] = {}
+        self.procedure_data: dict[str, Any] = {}
+        ##Block purpose: Thread lock for synchronizing interactive mode state access
+        self.state_lock = threading.Lock()
         
         ##Block purpose: Find the TUI binary path
         script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -53,7 +55,7 @@ class BubbleTeaUI:
             )
 
     ##Function purpose: Send a JSON message to the TUI process via stdin
-    def send_message(self, msg_type: str, content: str = "", data: Optional[Dict[str, Any]] = None):
+    def send_message(self, msg_type: str, content: str = "", data: Optional[dict[str, Any]] = None):
         """Send a message to the TUI."""
         message = {
             "type": msg_type,
@@ -97,14 +99,18 @@ class BubbleTeaUI:
     def process_user_input(self, user_input: str):
         """Process user input based on current interactive mode."""
         try:
+            ##Block purpose: Synchronize access to interactive mode state
+            with self.state_lock:
+                current_mode = self.interactive_mode
+            
             ##Block purpose: Handle input based on current interactive mode
-            if self.interactive_mode == 'verify':
+            if current_mode == 'verify':
                 self._handle_verify_response(user_input)
-            elif self.interactive_mode == 'learn_procedure_name':
+            elif current_mode == 'learn_procedure_name':
                 self._handle_procedure_name(user_input)
-            elif self.interactive_mode == 'learn_procedure_steps':
+            elif current_mode == 'learn_procedure_steps':
                 self._handle_procedure_step(user_input)
-            elif self.interactive_mode == 'learn_procedure_outcome':
+            elif current_mode == 'learn_procedure_outcome':
                 self._handle_procedure_outcome(user_input)
             elif user_input.startswith('/'):
                 ##Block purpose: Handle slash commands in normal mode
@@ -122,13 +128,19 @@ class BubbleTeaUI:
         except Exception as e:
             self.send_message("system_message", f"Error: {e}")
             self.send_message("stop_loading")
-            ##Block purpose: Reset interactive mode on error to prevent stuck states
-            self.interactive_mode = 'normal'
+            ##Block purpose: Reset all interactive state on error to prevent stuck states
+            with self.state_lock:
+                self.interactive_mode = 'normal'
+                self.pending_assumption = None
+                self.procedure_data = {}
 
     ##Function purpose: Handle slash commands from user input
     def _handle_command(self, user_input: str):
         """Handle user commands."""
-        command, *args = user_input.lower().split(' ', 1)
+        ##Block purpose: Parse command while preserving argument case-sensitivity
+        parts = user_input.split(' ', 1)
+        command = parts[0].lower()
+        args = parts[1:] if len(parts) > 1 else []
         
         self.send_message("start_loading")
         
@@ -275,8 +287,9 @@ INNATE CAPABILITIES
             self.send_message("system_message", f"JENOVA is asking for clarification: {question}")
             if assumption:
                 ##Block purpose: Set interactive mode to capture next input as verification response
-                self.pending_assumption = assumption
-                self.interactive_mode = 'verify'
+                with self.state_lock:
+                    self.pending_assumption = assumption
+                    self.interactive_mode = 'verify'
                 self.send_message("system_message", "Please respond with 'yes' or 'no':")
         else:
             self.send_message("system_message", "No unverified assumptions to check.")
@@ -302,28 +315,33 @@ INNATE CAPABILITIES
             self.send_message("start_loading")
             
             ##Block purpose: Resolve the pending assumption with validated response
-            if self.pending_assumption:
+            with self.state_lock:
+                pending_assumption = self.pending_assumption
+            
+            if pending_assumption:
                 self.engine.assumption_manager.resolve_assumption(
-                    self.pending_assumption, 
+                    pending_assumption, 
                     normalized_response, 
                     self.username
                 )
                 self.send_message("system_message", "Assumption verification recorded. Thank you!")
             
             ##Block purpose: Reset to normal mode only after successful verification
-            self.pending_assumption = None
-            self.interactive_mode = 'normal'
+            with self.state_lock:
+                self.pending_assumption = None
+                self.interactive_mode = 'normal'
             
         except Exception as e:
             self.send_message("system_message", f"Error during verification: {e}")
             ##Block purpose: Reset to normal mode on error to prevent stuck states
-            self.pending_assumption = None
-            self.interactive_mode = 'normal'
+            with self.state_lock:
+                self.pending_assumption = None
+                self.interactive_mode = 'normal'
         finally:
             self.send_message("stop_loading")
 
     ##Function purpose: Handle insight development command with optional node_id
-    def _develop_insight(self, args: List[str]):
+    def _develop_insight(self, args: list[str]):
         """Handle insight development."""
         try:
             if args:
@@ -339,12 +357,13 @@ INNATE CAPABILITIES
     def _start_learn_procedure(self):
         """Start interactive procedure learning flow."""
         ##Block purpose: Initialize procedure data storage and set interactive mode
-        self.procedure_data = {
-            "name": "",
-            "steps": [],
-            "outcome": ""
-        }
-        self.interactive_mode = 'learn_procedure_name'
+        with self.state_lock:
+            self.procedure_data = {
+                "name": "",
+                "steps": [],
+                "outcome": ""
+            }
+            self.interactive_mode = 'learn_procedure_name'
         self.send_message("system_message", "Initiating interactive procedure learning...")
         self.send_message("system_message", "Please enter the procedure name:")
 
@@ -358,11 +377,14 @@ INNATE CAPABILITIES
             return
         
         ##Block purpose: Store name and transition to steps collection mode
-        self.procedure_data["name"] = name
-        self.interactive_mode = 'learn_procedure_steps'
+        with self.state_lock:
+            self.procedure_data["name"] = name
+            self.interactive_mode = 'learn_procedure_steps'
+            steps_count = len(self.procedure_data['steps'])
+        
         self.send_message("system_message", f"Procedure name set to: {name}")
         self.send_message("system_message", "Enter procedure steps one by one. Type 'done' when finished.")
-        self.send_message("system_message", f"Step {len(self.procedure_data['steps']) + 1}:")
+        self.send_message("system_message", f"Step {steps_count + 1}:")
 
     ##Function purpose: Handle individual step input in multi-step flow
     def _handle_procedure_step(self, user_input: str):
@@ -371,13 +393,16 @@ INNATE CAPABILITIES
         
         ##Block purpose: Check if user is done entering steps
         if step.lower() == 'done':
-            if not self.procedure_data["steps"]:
-                self.send_message("system_message", "No steps entered. Please enter at least one step:")
-                return
+            with self.state_lock:
+                steps_count = len(self.procedure_data["steps"])
+                if not steps_count:
+                    self.send_message("system_message", "No steps entered. Please enter at least one step:")
+                    return
+                
+                ##Block purpose: Transition to outcome collection mode
+                self.interactive_mode = 'learn_procedure_outcome'
             
-            ##Block purpose: Transition to outcome collection mode
-            self.interactive_mode = 'learn_procedure_outcome'
-            self.send_message("system_message", f"Recorded {len(self.procedure_data['steps'])} steps.")
+            self.send_message("system_message", f"Recorded {steps_count} steps.")
             self.send_message("system_message", "Please enter the expected outcome:")
             return
         
@@ -387,9 +412,13 @@ INNATE CAPABILITIES
             return
         
         ##Block purpose: Add step to list and prompt for next
-        self.procedure_data["steps"].append(step)
-        self.send_message("system_message", f"Step {len(self.procedure_data['steps'])} recorded: {step}")
-        self.send_message("system_message", f"Step {len(self.procedure_data['steps']) + 1} (or type 'done'):")
+        with self.state_lock:
+            self.procedure_data["steps"].append(step)
+            steps_count = len(self.procedure_data['steps'])
+            next_step = steps_count + 1
+        
+        self.send_message("system_message", f"Step {steps_count} recorded: {step}")
+        self.send_message("system_message", f"Step {next_step} (or type 'done'):")
 
     ##Function purpose: Handle expected outcome input and complete procedure learning
     def _handle_procedure_outcome(self, user_input: str):
@@ -404,20 +433,24 @@ INNATE CAPABILITIES
             self.send_message("start_loading")
             
             ##Block purpose: Store outcome and call engine to learn the procedure
-            self.procedure_data["outcome"] = outcome
+            with self.state_lock:
+                self.procedure_data["outcome"] = outcome
+                procedure_data_copy = self.procedure_data.copy()
             
-            messages = self.engine.learn_procedure(self.procedure_data, self.username)
+            messages = self.engine.learn_procedure(procedure_data_copy, self.username)
             self._send_messages(messages)
             
             ##Block purpose: Reset to normal mode after successful learning
-            self.procedure_data = {}
-            self.interactive_mode = 'normal'
+            with self.state_lock:
+                self.procedure_data = {}
+                self.interactive_mode = 'normal'
             
         except Exception as e:
             self.send_message("system_message", f"Error learning procedure: {e}")
             ##Block purpose: Reset to normal mode and clear stale data after error
-            self.procedure_data = {}
-            self.interactive_mode = 'normal'
+            with self.state_lock:
+                self.procedure_data = {}
+                self.interactive_mode = 'normal'
         finally:
             self.send_message("stop_loading")
 
@@ -465,9 +498,10 @@ INNATE CAPABILITIES
                         ##Block purpose: Handle exit in any mode
                         if user_input.lower() in ['exit', 'quit']:
                             ##Block purpose: Reset interactive mode before exit
-                            if self.interactive_mode != 'normal':
-                                self.send_message("system_message", "Exiting interactive mode...")
-                                self.interactive_mode = 'normal'
+                            with self.state_lock:
+                                if self.interactive_mode != 'normal':
+                                    self.send_message("system_message", "Exiting interactive mode...")
+                                    self.interactive_mode = 'normal'
                             break
                         
                         ##Block purpose: Process input in a separate thread to avoid blocking
