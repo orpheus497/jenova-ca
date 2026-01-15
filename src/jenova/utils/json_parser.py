@@ -2,7 +2,7 @@
 ##This module extracts JSON objects from LLM responses that may contain extra text
 
 import json
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 ##Sentinel purpose: Distinguish between "no default provided" and "explicit None"
 _UNSET = object()

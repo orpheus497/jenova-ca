@@ -5,7 +5,7 @@
 
 import json
 import re
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from enum import Enum
 from dataclasses import dataclass, field
 from jenova.utils.json_parser import extract_json
@@ -360,10 +360,22 @@ Respond with a valid JSON object:
         
         try:
             ##Block purpose: Get all nodes from Cortex and search for matches
-            if hasattr(self._cortex, 'get_all_nodes'):
-                all_nodes = self._cortex.get_all_nodes(self._username)
-            elif hasattr(self._cortex, 'cognitive_graph'):
-                all_nodes = list(self._cortex.cognitive_graph.get(self._username, {}).values())
+            if hasattr(self._cortex, 'get_all_nodes_by_type'):
+                # Get all nodes for the user regardless of type
+                all_nodes = []
+                if hasattr(self._cortex, 'graph') and 'nodes' in self._cortex.graph:
+                    for node in self._cortex.graph['nodes'].values():
+                        if self._username and node.get('user') == self._username:
+                            all_nodes.append(node)
+                        elif not self._username:
+                            all_nodes.append(node)
+            elif hasattr(self._cortex, 'graph') and 'nodes' in self._cortex.graph:
+                all_nodes = []
+                for node in self._cortex.graph['nodes'].values():
+                    if self._username and node.get('user') == self._username:
+                        all_nodes.append(node)
+                    elif not self._username:
+                        all_nodes.append(node)
             else:
                 return []
             

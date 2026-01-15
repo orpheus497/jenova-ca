@@ -1,7 +1,7 @@
 ##Script function and purpose: Procedural Memory for The JENOVA Cognitive Architecture
 ##This module manages step-by-step procedural knowledge with goals and contexts
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 ##Block purpose: Import Pydantic compatibility fix before ChromaDB import
 from jenova.utils.pydantic_compat import *  # noqa: F401, F403

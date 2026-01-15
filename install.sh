@@ -53,7 +53,7 @@ if [ $MISSING_DEPS -eq 1 ]; then
 fi
 
 # Check Go version
-GO_VERSION=$(go version | grep -oP 'go\K[0-9]+\.[0-9]+' | head -1)
+GO_VERSION=$(go version | awk '{print $3}' | sed 's/go//')
 GO_MAJOR=$(echo $GO_VERSION | cut -d. -f1)
 GO_MINOR=$(echo $GO_VERSION | cut -d. -f2)
 if [ "$GO_MAJOR" -lt 1 ] || ([ "$GO_MAJOR" -eq 1 ] && [ "$GO_MINOR" -lt 21 ]); then

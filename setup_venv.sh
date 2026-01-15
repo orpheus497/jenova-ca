@@ -28,6 +28,14 @@ if ! command -v go &> /dev/null; then
 fi
 
 GO_VERSION=$(go version | awk '{print $3}' | sed 's/go//')
+GO_MAJOR=$(echo $GO_VERSION | cut -d. -f1)
+GO_MINOR=$(echo $GO_VERSION | cut -d. -f2)
+if [ "$GO_MAJOR" -lt 1 ] || ([ "$GO_MAJOR" -eq 1 ] && [ "$GO_MINOR" -lt 21 ]); then
+    echo "[ERROR] Go version 1.21+ is required. Found: go$GO_VERSION"
+    echo ""
+    echo "Please upgrade Go from: https://go.dev/dl/"
+    exit 1
+fi
 echo "✓ Go $GO_VERSION detected"
 
 # Remove old venv if it exists

@@ -3,7 +3,7 @@
 
 import os
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 from jenova.utils.file_io import load_json_file, save_json_file
 
 ##Class purpose: Manages concern topics for grouping and organizing insights

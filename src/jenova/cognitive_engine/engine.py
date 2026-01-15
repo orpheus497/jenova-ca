@@ -38,7 +38,7 @@ class CognitiveEngine:
         
         ##Block purpose: Set Cortex reference for entity linking (Phase C.2)
         if cortex:
-            self.query_analyzer.set_cortex(cortex, username if hasattr(self, 'username') else None)
+            self.query_analyzer.set_cortex(cortex, None)
         
         ##Block purpose: Initialize integration layer reference (will be set by main.py after initialization)
         ##This enables Cortex-Memory feedback loops and unified knowledge representation
