@@ -45,7 +45,12 @@ class BubbleTeaUI:
         self.tui_path = os.path.join(script_dir, "tui", "jenova-tui")
         
         if not os.path.exists(self.tui_path):
-            raise FileNotFoundError(f"TUI binary not found at {self.tui_path}. Please build it first with: cd tui && go build -o jenova-tui .")
+            tui_dir = os.path.dirname(self.tui_path)
+            raise FileNotFoundError(
+                f"TUI binary not found at {self.tui_path}. "
+                f"Please build it by running 'go build -o jenova-tui .' in the 'tui' directory located at: "
+                f"{tui_dir}"
+            )
 
     ##Function purpose: Send a JSON message to the TUI process via stdin
     def send_message(self, msg_type: str, content: str = "", data: Optional[Dict[str, Any]] = None):
@@ -410,6 +415,8 @@ INNATE CAPABILITIES
             
         except Exception as e:
             self.send_message("system_message", f"Error learning procedure: {e}")
+            ##Block purpose: Reset to normal mode and clear stale data after error
+            self.procedure_data = {}
             self.interactive_mode = 'normal'
         finally:
             self.send_message("stop_loading")
