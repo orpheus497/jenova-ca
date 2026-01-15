@@ -49,6 +49,10 @@ cortex:
     max_expansion: 3 # Maximum number of context items to add via relationships
     memory_to_cortex_feedback: true # Enable feedback from Memory to Cortex
     cortex_to_memory_feedback: true # Enable feedback from Cortex to Memory
+  proactive_engine:
+    min_history_length: 3 # Minimum conversation turns before analyzing patterns
+    suggestion_cooldown_hours: 1 # Minimum hours between proactive suggestions
+    category_rotation: true # Rotate suggestion categories for variety
 
 scheduler:
   generate_insight_interval: 5
@@ -70,6 +74,11 @@ comprehension:
     intent_classification: true
     entity_extraction: true
     complexity_analysis: true
+    # Phase C.2 enhancements
+    topic_modeling: true      # Extract main topics with category classification
+    entity_linking: true      # Link entities to Cortex nodes
+    reformulation: true       # Generate alternative query phrasings
+    confidence_scoring: true  # Add confidence scores to all classifications
   planning:
     multi_level: true
     reasoning_chains: true
@@ -124,3 +133,7 @@ performance:
   monitoring:
     enabled: true  # Enable performance monitoring
     log_interval: 3600.0  # Log performance summary every hour
+
+logging:
+  debug_enabled: false  # Enable DEBUG level logging to file (verbose, for development)
+  log_file_name: "jenova.log"  # Name of the log file

@@ -4,13 +4,24 @@
 import os
 import json
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from .concerns import ConcernManager
 
 ##Class purpose: Manages lifecycle of insights including creation, storage, and retrieval
 class InsightManager:
     """Manages the creation, storage, and retrieval of topical insights."""
     ##Function purpose: Initialize insight manager with configuration and required components
-    def __init__(self, config, ui_logger, file_logger, insights_root, llm, cortex, memory_search, integration_layer=None):
+    def __init__(
+        self, 
+        config: Dict[str, Any], 
+        ui_logger: Any, 
+        file_logger: Any, 
+        insights_root: str, 
+        llm: Any, 
+        cortex: Any, 
+        memory_search: Any, 
+        integration_layer: Optional[Any] = None
+    ) -> None:
         self.config = config
         self.ui_logger = ui_logger
         self.file_logger = file_logger

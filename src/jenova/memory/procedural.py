@@ -1,6 +1,8 @@
 ##Script function and purpose: Procedural Memory for The JENOVA Cognitive Architecture
 ##This module manages step-by-step procedural knowledge with goals and contexts
 
+from typing import Any, Dict, List, Optional
+
 ##Block purpose: Import Pydantic compatibility fix before ChromaDB import
 from jenova.utils.pydantic_compat import *  # noqa: F401, F403
 from jenova.utils.pydantic_compat import create_chromadb_client, get_or_create_collection_with_embedding
@@ -17,7 +19,14 @@ from jenova.utils.json_parser import extract_json
 ##Class purpose: Manages procedural memory storing step-by-step procedures with goals
 class ProceduralMemory:
     ##Function purpose: Initialize procedural memory with database, embedding, and LLM components
-    def __init__(self, config, ui_logger, file_logger, db_path, llm):
+    def __init__(
+        self, 
+        config: Dict[str, Any], 
+        ui_logger: Any, 
+        file_logger: Any, 
+        db_path: str, 
+        llm: Any
+    ) -> None:
         self.config = config
         self.ui_logger = ui_logger
         self.file_logger = file_logger

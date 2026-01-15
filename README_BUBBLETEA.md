@@ -1,10 +1,12 @@
 # Bubble Tea UI for JENOVA
 
-JENOVA now features a modern, beautiful terminal UI built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) - a powerful TUI framework for Go.
+JENOVA features a modern, beautiful terminal UI built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) - a powerful TUI framework for Go.
+
+**Note:** Bubble Tea is the sole supported UI interface. The classic Python terminal UI has been removed.
 
 ## Features
 
-The new Bubble Tea UI provides:
+The Bubble Tea UI provides:
 
 - **Modern, responsive terminal interface** with smooth rendering
 - **Real-time message updates** with proper viewport scrolling
@@ -15,7 +17,7 @@ The new Bubble Tea UI provides:
 
 ## Building the UI
 
-The Bubble Tea UI requires Go 1.24 or later to be installed. To build the TUI:
+The Bubble Tea UI requires Go 1.21 or later to be installed. To build the TUI:
 
 ```bash
 ./build_tui.sh
@@ -26,25 +28,21 @@ This script will:
 2. Download required Go dependencies
 3. Build the `jenova-tui` binary in the `tui/` directory
 
-## Running JENOVA with Bubble Tea UI
+**Note:** The `setup_venv.sh` script automatically builds the TUI during setup.
 
-### Using the Bubble Tea UI (default)
+## Running JENOVA
 
-The Bubble Tea UI is now the default interface:
+Simply run:
 
 ```bash
 ./jenova
 ```
 
-Or explicitly set the UI mode:
+Or if installed:
 
 ```bash
-export JENOVA_UI=bubbletea
-./jenova
+jenova
 ```
-
-**Note:** BubbleTea is now the sole supported UI interface.
-The classic Python terminal UI has been removed to streamline the codebase.
 
 ## Architecture
 
@@ -95,7 +93,7 @@ The Python wrapper handles communication with the TUI:
 
 1. Edit `tui/main.go` to change UI appearance or behavior
 2. Rebuild with `./build_tui.sh`
-3. Test with `JENOVA_UI=bubbletea ./jenova`
+3. Test with `./jenova`
 
 ### Adding New Message Types
 
@@ -125,11 +123,11 @@ Run the build script:
 
 ### Go not installed
 
-Install Go 1.24 or later:
+Install Go 1.21 or later:
 - Ubuntu/Debian: `sudo apt install golang-go`
 - Fedora: `sudo dnf install golang`
 - macOS: `brew install go`
-- Or download from: https://golang.org/dl/
+- Or download from: https://go.dev/dl/
 
 ### UI not responding
 

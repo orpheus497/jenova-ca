@@ -2,14 +2,24 @@
 ##This module manages the lifecycle of user assumptions including creation, verification, and resolution
 
 import os
-import json
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+from jenova.utils.file_io import load_json_file, save_json_file
 
 ##Class purpose: Manages lifecycle of assumptions about users
 class AssumptionManager:
     """Manages the lifecycle of assumptions about the user."""
     ##Function purpose: Initialize assumption manager with configuration and components
-    def __init__(self, config, ui_logger, file_logger, user_data_root, cortex, llm, integration_layer=None):
+    def __init__(
+        self, 
+        config: Dict[str, Any], 
+        ui_logger: Any, 
+        file_logger: Any, 
+        user_data_root: str, 
+        cortex: Any, 
+        llm: Any, 
+        integration_layer: Optional[Any] = None
+    ) -> None:
         self.config = config
         self.ui_logger = ui_logger
         self.file_logger = file_logger
@@ -17,29 +27,17 @@ class AssumptionManager:
         self.cortex = cortex
         self.llm = llm
         self.integration_layer = integration_layer  # Optional integration layer for Cortex-Memory feedback
-        self.assumptions = self._load_assumptions()
-
-    ##Function purpose: Load assumptions from persistent JSON file
-    def _load_assumptions(self):
-        """Loads assumptions from the assumptions.json file."""
-        if os.path.exists(self.assumptions_file):
-            try:
-                with open(self.assumptions_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except (json.JSONDecodeError, OSError) as e:
-                self.file_logger.log_error(f"Error loading assumptions file: {e}")
-                return {"verified": [], "unverified": [], "true": [], "false": []}
-        return {"verified": [], "unverified": [], "true": [], "false": []}
+        ##Block purpose: Load assumptions using centralized file I/O utility
+        self.assumptions = load_json_file(
+            self.assumptions_file, 
+            {"verified": [], "unverified": [], "true": [], "false": []},
+            file_logger
+        )
 
     ##Function purpose: Save assumptions to persistent JSON file
     def _save_assumptions(self):
         """Saves assumptions to the assumptions.json file."""
-        try:
-            with open(self.assumptions_file, 'w', encoding='utf-8') as f:
-                json.dump(self.assumptions, f, indent=4)
-        except OSError as e:
-            self.file_logger.log_error(f"Error saving assumptions file: {e}")
-            pass
+        save_json_file(self.assumptions_file, self.assumptions, indent=4, file_logger=self.file_logger)
 
     ##Function purpose: Add a new assumption, avoiding duplicates
     def add_assumption(self, assumption_content: str, username: str, status: str = 'unverified', linked_to: list = None) -> str:

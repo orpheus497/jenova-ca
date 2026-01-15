@@ -9,6 +9,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from jenova.cortex.proactive_engine import ProactiveEngine
 from jenova.cognitive_engine.scheduler import CognitiveScheduler
 from jenova.cognitive_engine.query_analyzer import QueryAnalyzer
+from jenova.utils.json_parser import extract_json
 from jenova import tools
 
 ##Class purpose: Orchestrates the cognitive cycle and coordinates all cognitive functions
@@ -24,7 +25,7 @@ class CognitiveEngine:
         self.ui_logger = ui_logger
         self.file_logger = file_logger
         self.cortex = cortex
-        self.proactive_engine = ProactiveEngine(cortex, llm, ui_logger)
+        self.proactive_engine = ProactiveEngine(cortex, llm, ui_logger, config.get('cortex', {}))
         self.rag_system = rag_system
         self.scheduler = CognitiveScheduler(config, cortex, insight_manager)
         self.history = []
@@ -34,6 +35,10 @@ class CognitiveEngine:
         
         ##Block purpose: Initialize query analyzer for enhanced comprehension
         self.query_analyzer = QueryAnalyzer(llm, config, cortex.json_grammar if cortex else None)
+        
+        ##Block purpose: Set Cortex reference for entity linking (Phase C.2)
+        if cortex:
+            self.query_analyzer.set_cortex(cortex, username if hasattr(self, 'username') else None)
         
         ##Block purpose: Initialize integration layer reference (will be set by main.py after initialization)
         ##This enables Cortex-Memory feedback loops and unified knowledge representation
@@ -45,6 +50,10 @@ class CognitiveEngine:
         with self.ui_logger.cognitive_process("Thinking...") as thinking_status:
             self.file_logger.log_info(f"New query received from {username}: {user_input}")
             self.turn_count += 1
+            
+            ##Block purpose: Update QueryAnalyzer with current username for entity linking (Phase C.2)
+            if self.query_analyzer.get_username() != username:
+                self.query_analyzer.set_username(username)
 
             ##Block purpose: Analyze query for enhanced comprehension
             query_analysis = self.query_analyzer.analyze(user_input)
@@ -301,14 +310,16 @@ Format the output as a valid JSON object with "topic" and "insight" keys.
         with self.ui_logger.thinking_process("Generating insight from recent conversation..."):
             insight_json_str = self.llm.generate(prompt, temperature=0.2, grammar=self.cortex.json_grammar)
         
-        try:
-            data = json.loads(insight_json_str)
-            topic = data.get('topic')
-            insight = data.get('insight')
-            if topic and insight:
-                self.insight_manager.save_insight(insight, username, topic=topic)
-        except (json.JSONDecodeError, ValueError):
+        ##Block purpose: Parse insight JSON using centralized utility
+        data = extract_json(insight_json_str, default=None)
+        if data is None:
             self.ui_logger.system_message(f"Failed to decode insight from LLM response: {insight_json_str}")
+            return
+        
+        topic = data.get('topic')
+        insight = data.get('insight')
+        if topic and insight:
+            self.insight_manager.save_insight(insight, username, topic=topic)
 
     ##Function purpose: Analyze conversation history to generate assumptions about the user
     def generate_assumption_from_history(self, username: str) -> None:
@@ -338,13 +349,15 @@ Format the output as a valid JSON object with an "assumption" key.
         with self.ui_logger.thinking_process("Forming new assumption..."):
             assumption_json_str = self.llm.generate(prompt, temperature=0.3, grammar=self.cortex.json_grammar)
 
-        try:
-            assumption_data = json.loads(assumption_json_str)
-            assumption = assumption_data.get('assumption')
-            if assumption:
-                self.assumption_manager.add_assumption(assumption, username)
-        except (json.JSONDecodeError, ValueError):
+        ##Block purpose: Parse assumption JSON using centralized utility
+        assumption_data = extract_json(assumption_json_str, default=None)
+        if assumption_data is None:
             self.ui_logger.system_message(f"Failed to decode assumption from LLM response: {assumption_json_str}")
+            return
+        
+        assumption = assumption_data.get('assumption')
+        if assumption:
+            self.assumption_manager.add_assumption(assumption, username)
 
     ##Function purpose: Develop multiple insights from the full conversation history
     def develop_insights_from_conversation(self, username: str) -> List[str]:
@@ -372,16 +385,25 @@ Format the output as a valid JSON array of objects, where each object has 'topic
 """
         insights_json_str = self.llm.generate(prompt, temperature=0.3, grammar=self.cortex.json_grammar)
         
-        try:
-            insights = json.loads(insights_json_str)
-            for insight_data in insights:
-                topic = insight_data.get('topic')
-                insight = insight_data.get('insight')
-                if topic and insight:
-                    insight_id = self.insight_manager.save_insight(insight, username, topic=topic)
-                    messages.append(f"New insight node created: {insight_id}")
-        except (json.JSONDecodeError, ValueError):
+        ##Block purpose: Parse insights JSON using centralized utility
+        insights = extract_json(insights_json_str, default=None)
+        if insights is None:
             messages.append(f"Failed to decode insights from LLM response: {insights_json_str}")
+            return messages
+        
+        ##Block purpose: Validate insights is a list, wrap dict in list if needed
+        if isinstance(insights, dict):
+            insights = [insights]  # Wrap single insight object in list
+        elif not isinstance(insights, list):
+            messages.append(f"Unexpected insights format (expected list): {type(insights)}")
+            return messages
+        
+        for insight_data in insights:
+            topic = insight_data.get('topic')
+            insight = insight_data.get('insight')
+            if topic and insight:
+                insight_id = self.insight_manager.save_insight(insight, username, topic=topic)
+                messages.append(f"New insight node created: {insight_id}")
         return messages
 
     ##Function purpose: Trigger deep reflection on the cognitive graph with unified knowledge integration
@@ -455,17 +477,19 @@ You are {ai_name}. You are analyzing a collection of insights for {user_title} (
         
         self.file_logger.log_info(f"Meta-insight response: {meta_insight_json_str}")
 
-        try:
-            data = json.loads(meta_insight_json_str)
-            topic = data.get('topic', 'meta')
-            insight = data.get('insight')
-            if insight:
-                self.insight_manager.save_insight(insight, username, topic=topic)
-                messages.append(f"New meta-insight generated under topic '{topic}': {insight}")
-            else:
-                messages.append("No new meta-insight could be generated from the existing insights.")
-        except (json.JSONDecodeError, ValueError):
+        ##Block purpose: Parse meta-insight JSON using centralized utility
+        data = extract_json(meta_insight_json_str, default=None)
+        if data is None:
             messages.append(f"Failed to decode meta-insight from LLM response: {meta_insight_json_str}")
+            return messages
+        
+        topic = data.get('topic', 'meta')
+        insight = data.get('insight')
+        if insight:
+            self.insight_manager.save_insight(insight, username, topic=topic)
+            messages.append(f"New meta-insight generated under topic '{topic}': {insight}")
+        else:
+            messages.append("No new meta-insight could be generated from the existing insights.")
         return messages
 
     ##Function purpose: Develop insights or assumptions from broad memory search
@@ -502,24 +526,26 @@ Format the output as a valid JSON object with one of two structures:
 """
         insight_json_str = self.llm.generate(prompt, temperature=0.3, grammar=self.cortex.json_grammar)
         
-        try:
-            data = json.loads(insight_json_str)
-            if data.get('type') == 'insight':
-                topic = data.get('topic')
-                insight = data.get('content')
-                if topic and insight:
-                    insight_id = self.insight_manager.save_insight(insight, username, topic=topic)
-                    messages.append(f"New insight node created: {insight_id}")
-            elif data.get('type') == 'assumption':
-                assumption = data.get('content')
-                if assumption:
-                    assumption_id = self.assumption_manager.add_assumption(assumption, username)
-                    if assumption_id != "Assumption already exists.": # Check if a new assumption was actually added
-                        messages.append(f"New assumption node created: {assumption_id}")
-                    else:
-                        messages.append(assumption_id) # Append the "Assumption already exists." message
-        except (json.JSONDecodeError, ValueError):
+        ##Block purpose: Parse insight/assumption JSON using centralized utility
+        data = extract_json(insight_json_str, default=None)
+        if data is None:
             messages.append(f"Failed to decode insight from LLM response: {insight_json_str}")
+            return messages
+        
+        if data.get('type') == 'insight':
+            topic = data.get('topic')
+            insight = data.get('content')
+            if topic and insight:
+                insight_id = self.insight_manager.save_insight(insight, username, topic=topic)
+                messages.append(f"New insight node created: {insight_id}")
+        elif data.get('type') == 'assumption':
+            assumption = data.get('content')
+            if assumption:
+                assumption_id = self.assumption_manager.add_assumption(assumption, username)
+                if assumption_id != "Assumption already exists.": # Check if a new assumption was actually added
+                    messages.append(f"New assumption node created: {assumption_id}")
+                else:
+                    messages.append(assumption_id) # Append the "Assumption already exists." message
         return messages
 
     ##Function purpose: Proactively verify an unverified assumption with the user

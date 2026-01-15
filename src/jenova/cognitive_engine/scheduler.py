@@ -2,13 +2,19 @@
 ##This module schedules cognitive tasks based on conversation context and configurable intervals
 
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 ##Class purpose: Schedules cognitive functions based on turn count and context
 class CognitiveScheduler:
     """Schedules cognitive functions based on the current context."""
 
     ##Function purpose: Initialize scheduler with configuration and cognitive components
-    def __init__(self, config, cortex, insight_manager):
+    def __init__(
+        self, 
+        config: Dict[str, Any], 
+        cortex: Any, 
+        insight_manager: Any
+    ) -> None:
         self.config = config
         self.cortex = cortex
         self.insight_manager = insight_manager

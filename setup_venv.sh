@@ -1,31 +1,53 @@
 #!/bin/bash
-# Setup script for JENOVA with proper venv and dependencies
+# JENOVA Cognitive Architecture - Virtual Environment Setup Script
+# Recommended installation method for development and Python 3.13+ compatibility
 
 set -e
 
-echo "=== JENOVA Virtual Environment Setup ==="
+echo "=============================================="
+echo "  JENOVA Virtual Environment Setup"
+echo "=============================================="
 echo ""
 
 # Get the directory of this script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
+# Check for Go (required for Bubble Tea TUI)
+echo "--> Checking for Go installation..."
+if ! command -v go &> /dev/null; then
+    echo "[ERROR] Go is not installed."
+    echo "Go 1.21+ is required to build the Bubble Tea TUI."
+    echo ""
+    echo "Install Go from: https://go.dev/dl/"
+    echo "Or use your package manager:"
+    echo "  Ubuntu/Debian: sudo apt install golang-go"
+    echo "  Fedora: sudo dnf install golang"
+    echo "  Arch: sudo pacman -S go"
+    exit 1
+fi
+
+GO_VERSION=$(go version | awk '{print $3}' | sed 's/go//')
+echo "✓ Go $GO_VERSION detected"
+
 # Remove old venv if it exists
 if [ -d "venv" ]; then
-    echo "Removing old virtual environment..."
+    echo ""
+    echo "--> Removing old virtual environment..."
     rm -rf venv
 fi
 
 # Create new venv
-echo "Creating new virtual environment..."
+echo ""
+echo "--> Creating new virtual environment..."
 python3 -m venv venv
 
 # Activate venv
-echo "Activating virtual environment..."
+echo "--> Activating virtual environment..."
 source venv/bin/activate
 
 # Upgrade pip, setuptools, wheel
-echo "Upgrading pip, setuptools, wheel..."
+echo "--> Upgrading pip, setuptools, wheel..."
 pip install --upgrade pip setuptools wheel
 
 # Install dependencies from requirements.txt first
@@ -139,11 +161,33 @@ else:
     print("⚠ Warning: Could not find chromadb config.py. Fixes will be applied at runtime.")
 PYTHON_FIX
 
+# Build the Bubble Tea TUI
 echo ""
-echo "=== Setup Complete ==="
+echo "--> Building Bubble Tea TUI..."
+cd "$SCRIPT_DIR"
+if [ -f "./build_tui.sh" ]; then
+    chmod +x ./build_tui.sh
+    if ./build_tui.sh; then
+        echo "✓ Bubble Tea TUI built successfully"
+    else
+        echo "[ERROR] Failed to build Bubble Tea TUI."
+        echo "You can try building it manually later with: ./build_tui.sh"
+    fi
+else
+    echo "[WARNING] build_tui.sh not found. Build TUI manually with: cd tui && go build -o jenova-tui ."
+fi
+
 echo ""
-echo "To activate the virtual environment, run:"
+echo "=============================================="
+echo "  Setup Complete!"
+echo "=============================================="
+echo ""
+echo "To activate the virtual environment:"
 echo "  source venv/bin/activate"
+echo ""
+echo "IMPORTANT: Before running JENOVA, download a GGUF model:"
+echo "  mkdir -p models"
+echo "  wget -P models/ https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q8_0.gguf"
 echo ""
 echo "To run JENOVA:"
 echo "  source venv/bin/activate"

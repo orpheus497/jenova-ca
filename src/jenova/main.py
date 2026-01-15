@@ -4,7 +4,7 @@
 
 import os
 import traceback
-from typing import Optional
+from typing import Optional, Tuple
 
 ##Block purpose: Import Pydantic compatibility fix FIRST, before any ChromaDB imports
 ##This must happen before chromadb is imported anywhere in the application
@@ -42,7 +42,11 @@ import getpass
 
 ##Function purpose: Initialize all JENOVA components and return configured instances
 ##This factory function sets up the entire cognitive architecture
-def initialize_jenova(ui_logger: UILogger, file_logger: FileLogger, user_data_root: str):
+def initialize_jenova(
+    ui_logger: UILogger, 
+    file_logger: FileLogger, 
+    user_data_root: str
+) -> Tuple[Optional[CognitiveEngine], Optional[LLMInterface]]:
     """
     Initialize all JENOVA cognitive architecture components.
     

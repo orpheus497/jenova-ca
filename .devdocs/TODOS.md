@@ -5,147 +5,114 @@ This document tracks immediate and upcoming tasks. Updated each session.
 
 ---
 
-## Status: ✅ PHASE A COMPLETE | READY FOR NEXT PHASE
+## Status: 🔄 PHASE C IN PROGRESS | Cognitive Architecture Enhancement
 
-Phase A (UI Consolidation) has been successfully completed. BubbleTea is now the sole UI implementation.
-All CodeRabbit review issues have been resolved (16 fixes applied).
+Phase C.1-C.2 complete. Ready for C.3.
 
-**Note:** "UI implementation" refers to independent front-end stacks (now 1: BubbleTea), while "UI files" counts supporting components like the bridge and logger (now 2 files in `src/jenova/ui/`).
+---
+
+## Phase C: Cognitive Architecture Enhancement
+
+### Step C.1: Enhance ProactiveEngine ✅ COMPLETE
+- [x] Add conversation history analysis method (`_analyze_conversation_patterns`)
+- [x] Implement configurable trigger conditions (`should_suggest`)
+- [x] Add suggestion categorization (`SuggestionCategory` enum)
+- [x] Implement category rotation for variety
+- [x] Track user engagement with suggestions
+- [x] Add config section to `main_config.yaml`
+- [x] Update `engine.py` to pass config to ProactiveEngine
+- [x] Update inline comments
+- [x] Update CHANGELOG.md
+
+### Step C.2: Improve QueryAnalyzer ✅ COMPLETE
+- [x] Add topic modeling extraction (`TopicCategory` enum, `_parse_topics`)
+- [x] Implement entity linking to Cortex nodes (`_link_entities_to_cortex`)
+- [x] Add query reformulation capability (`generate_reformulations`)
+- [x] Add confidence scoring to classifications (`_validate_confidence`, `_calculate_overall_confidence`)
+- [x] Add `set_cortex()` method for Cortex reference injection
+- [x] Add `get_analysis_summary()` for human-readable output
+- [x] Update config with new options (topic_modeling, entity_linking, etc.)
+- [x] Update inline comments
+- [x] Update CHANGELOG.md
+
+### Step C.3: Strengthen Memory-Cortex Integration ⏳ PENDING
+- [ ] Implement bidirectional feedback loop
+- [ ] Add cross-memory linking capability
+- [ ] Implement automatic memory consolidation
+- [ ] Add memory reinforcement mechanism
+- [ ] Update inline comments
+- [ ] Update CHANGELOG.md
+
+### Step C.4: Optimize Cortex Graph Operations ⏳ PENDING
+- [ ] Add semantic similarity caching
+- [ ] Implement incremental centrality updates
+- [ ] Improve smart pruning logic
+- [ ] Add graph indexing for faster lookups
+- [ ] Update inline comments
+- [ ] Update CHANGELOG.md
+
+### Step C.5: Add Enhanced Reflection Capabilities ⏳ PENDING
+- [ ] Implement pattern recognition across time
+- [ ] Add knowledge gap detection
+- [ ] Implement temporal trend analysis
+- [ ] Add contradiction detection
+- [ ] Update inline comments
+- [ ] Update CHANGELOG.md
+
+---
+
+## Post-Change Checklist (After Every Code Change)
+
+Use this checklist after completing ANY code modification:
+
+- [x] CHANGELOG.md updated with change description
+- [x] PROGRESS.md updated with completed step
+- [x] TODOS.md updated (check off completed items)
+- [x] Config files verified (main_config.yaml updated)
+- [x] Syntax verified (py_compile passed)
+- [x] Documentation comments added to new code
+
+---
+
+## Phase B: Code Organization ✅ COMPLETE
+
+All Phase B tasks completed in Session 5. See PROGRESS.md for details.
+
+**Phase B Results:**
+| Metric | Before | After |
+|--------|--------|-------|
+| Utility Files | 8 | 10 ✅ |
+| Type-Hinted Constructors | ~50% | ~90% ✅ |
+| Code Duplication Patterns | 5 | 0 ✅ |
+| DEBUG Logging Support | No | Yes ✅ |
+
+---
+
+## Post-Change Checklist (After Every Code Change)
+
+Use this checklist after completing ANY code modification:
+
+- [ ] CHANGELOG.md updated with change description
+- [ ] PROGRESS.md updated with completed step
+- [ ] TODOS.md updated (check off completed items)
+- [ ] requirements.txt verified (no unexpected changes)
+- [ ] pyproject.toml verified (version if needed)
+- [ ] Setup scripts verified (if relevant)
+- [ ] Tests still pass (if test suite exists)
+- [ ] Documentation comments added to new code
 
 ---
 
 ## Phase A: UI Consolidation ✅ COMPLETE
 
-### Step A.1: Feature Parity Audit ✅
-- [x] Compare terminal.py commands with bubbletea.py
-- [x] Document missing features
-- [x] Identify enhancement requirements
-
-### Step A.2: Enhance BubbleTeaUI ✅
-- [x] Implement `/learn_procedure` interactive flow
-- [x] Complete `/verify` interactive flow
-- [x] Enhance `/help` formatting
-- [x] Add state machine for interactive modes
-
-### Step A.3: Merge Entry Points ✅
-- [x] Create `initialize_jenova()` factory function
-- [x] Merge main.py and main_bubbletea.py
-- [x] Update imports
-- [x] Test unified entry point
-
-### Step A.4: Remove Legacy UI Files (terminal.py and main_bubbletea.py) ✅
-- [x] Verify all features work in BubbleTea
-- [x] Remove src/jenova/ui/terminal.py (26,494 bytes)
-- [x] Remove src/jenova/main_bubbletea.py (7,075 bytes)
-- [x] Update src/jenova/ui/__init__.py
-
-### Step A.5: Update jenova Executable ✅
-- [x] Remove UI switching logic
-- [x] Simplify to single entry point
-
-### Step A.6: Clean Dependencies ✅
-- [x] Remove prompt-toolkit from requirements.txt
-- [x] Verify no other files use prompt-toolkit
-
-### Step A.7: Update References ✅
-- [x] Update README.md
-- [x] Update README_BUBBLETEA.md
-- [x] Update .devdocs/ARCHITECTURE.md
-- [x] Update all .devdocs/ files
-
-### Step A.8: CodeRabbit Review ✅
-- [x] Run CodeRabbit review
-- [x] Fix all 16 identified issues
-- [x] Date corrections (2026 → 2025)
-- [x] Code quality improvements (cleanup, validation)
-- [x] Documentation enhancements
-
----
-
-## Phase B: Code Organization (Ready to Start)
-
-### Pending Tasks
-- [ ] Review and improve application factory pattern
-- [ ] Consolidate utility functions
-- [ ] Improve error handling patterns
-- [ ] Enhance logging consistency
-- [ ] Add type hints where missing
-- [ ] Review code for further duplication
-
----
-
-## Phase C: Cognitive Architecture Enhancement (Pending)
-
-### Pending Tasks
-- [ ] Enhance ProactiveEngine
-  - [ ] More sophisticated trigger conditions
-  - [ ] Better suggestion generation
-  - [ ] User preference learning
-  
-- [ ] Improve QueryAnalyzer
-  - [ ] Enhanced entity extraction
-  - [ ] Better intent classification
-  - [ ] Multi-turn context understanding
-  
-- [ ] Strengthen Memory-Cortex Integration
-  - [ ] Bidirectional feedback loops
-  - [ ] Automatic knowledge consolidation
-  - [ ] Cross-memory linking
-  
-- [ ] Optimize Cortex Graph Operations
-  - [ ] Faster traversal algorithms
-  - [ ] Better clustering
-  - [ ] Enhanced graph metrics
-  
-- [ ] Add Enhanced Reflection Capabilities
-  - [ ] Deeper meta-insight generation
-  - [ ] Pattern recognition improvements
-  - [ ] Knowledge gap detection
-
----
-
-## Completed Tasks Summary
-
-### All Phases Complete
-| Phase | Status | Sessions |
-|-------|--------|----------|
-| Phase 1: Initialization | ✅ Complete | 1 |
-| Phase 2: Documentation | ✅ Complete | 2-3 |
-| Phase 3: Review & Security | ✅ Complete | 3 |
-| Phase A: UI Consolidation | ✅ Complete | 4 |
-
----
-
-## Quick Stats
-
-| Metric | Before Phase A | After Phase A |
-|--------|----------------|---------------|
-| Source Files | 52 | 50 |
-| UI Files | 4 | 2 |
-| Entry Points | 2 | 1 |
-| Dependencies | 14 | 13 |
-| UI Implementations | 2 | 1 |
-| CodeRabbit Issues | 16 | 0 |
-
----
-
-## CodeRabbit Fixes Applied
-
-| Category | Count | Examples |
-|----------|-------|----------|
-| Date corrections | 8 | 2026 → 2025 throughout |
-| Terminology | 3 | "Phase A" → clearer wording |
-| Tables | 2 | Added Rationale columns |
-| Code quality | 3 | Cleanup, validation, feedback |
-| **Total** | **16** | All resolved |
+All Phase A tasks completed in Session 4. See PROGRESS.md for details.
 
 ---
 
 ## Notes
 
-- All Phase A code changes include inline comments
-- Feature parity verified for all commands
-- BubbleTea is now the sole UI implementation
-- No features were removed or simplified
-- CodeRabbit review passed with all issues fixed
-- Ready for Phase B or C when user requests
+- All code changes require inline comments
+- Update CHANGELOG.md after EVERY code change
+- Verify requirements.txt and setup scripts after changes
+- No features to be removed - only improvements
+- Type hints are annotations only - no functional changes

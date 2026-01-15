@@ -14,18 +14,32 @@ This guide helps you set up JENOVA in a clean virtual environment with all compa
    source venv/bin/activate
    ```
 
-3. **Run JENOVA:**
+3. **Download a GGUF model:**
+   ```bash
+   mkdir -p models
+   wget -P models/ https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q8_0.gguf
+   ```
+
+4. **Run JENOVA:**
    ```bash
    jenova
    ```
 
+## Prerequisites
+
+- **Python 3.10+** (tested with 3.10, 3.11, 3.12, 3.13)
+- **Go 1.21+** (required for building the Bubble Tea TUI)
+- **C++ compiler** (g++ or clang++, for building llama-cpp-python)
+
 ## What the Setup Script Does
 
-1. Creates a fresh Python 3.14 virtual environment
-2. Upgrades pip, setuptools, and wheel
-3. Installs all dependencies from `requirements.txt`
-4. Installs JENOVA in editable mode
-5. Applies chromadb compatibility fixes for Python 3.14 and Pydantic 2.12
+1. Checks for Go installation (required for TUI)
+2. Creates a fresh Python virtual environment
+3. Upgrades pip, setuptools, and wheel
+4. Installs all dependencies from `requirements.txt`
+5. Installs JENOVA in editable mode
+6. Applies ChromaDB compatibility fixes for Python 3.13+ and Pydantic 2.12
+7. Builds the Bubble Tea TUI binary
 
 ## ChromaDB Compatibility Fixes Applied
 
@@ -81,10 +95,11 @@ If you encounter issues:
 
 ## Notes
 
-- The virtual environment uses Python 3.14
+- Tested with Python 3.10, 3.11, 3.12, and 3.13
 - ChromaDB compatibility fixes are applied automatically
-- All fixes are applied to the chromadb installation in the venv
+- All fixes are applied to the ChromaDB installation in the venv
 - The fixes are compatible with Pydantic 2.12
+- The Bubble Tea TUI is built automatically during setup
 
 ## Fixed Issues
 

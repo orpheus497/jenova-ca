@@ -3,6 +3,7 @@
 
 import os
 import json
+from typing import Any, Dict, List, Optional
 ##Block purpose: Import Pydantic compatibility fix before ChromaDB import
 from jenova.utils.pydantic_compat import *  # noqa: F401, F403
 from jenova.utils.pydantic_compat import create_chromadb_client, get_or_create_collection_with_embedding
@@ -18,7 +19,15 @@ from jenova.utils.embedding import CustomEmbeddingFunction
 ##Class purpose: Manages semantic memory storing facts with confidence and validity metadata
 class SemanticMemory:
     ##Function purpose: Initialize semantic memory with database, embedding model, and initial facts
-    def __init__(self, config, ui_logger, file_logger, db_path, llm, embedding_model):
+    def __init__(
+        self, 
+        config: Dict[str, Any], 
+        ui_logger: Any, 
+        file_logger: Any, 
+        db_path: str, 
+        llm: Any, 
+        embedding_model: Any
+    ) -> None:
         self.config = config
         self.ui_logger = ui_logger
         self.file_logger = file_logger

@@ -8,10 +8,116 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- (Add new features for the next version here)
+- New `utils/grammar_loader.py` for centralized JSON grammar loading (Phase B.1)
+- New `utils/file_io.py` for centralized JSON file load/save operations (Phase B.2)
+- Enhanced `utils/json_parser.py` with optional `default` parameter for graceful error handling (Phase B.3)
+- Added type hints to 12 core modules for improved IDE support and code documentation (Phase B.4)
+- Enhanced `FileLogger` with DEBUG level logging and runtime toggle (Phase B.6)
+- Added `logging.debug_enabled` configuration option in `main_config.yaml`
+- **Phase C.1: Enhanced ProactiveEngine** with context-aware suggestions:
+  - New `SuggestionCategory` enum for categorizing suggestions (explore, verify, develop, connect, reflect)
+  - Conversation history analysis via `_analyze_conversation_patterns()` method
+  - Smart category selection with `_select_suggestion_category()` based on cognitive state
+  - Configurable trigger conditions with `should_suggest()` method
+  - Category rotation for suggestion variety
+  - User engagement tracking with `mark_suggestion_engaged()` and `get_engagement_stats()`
+  - New `proactive_engine` config section in `main_config.yaml`
+- **Phase C.2: Enhanced QueryAnalyzer** with comprehensive query understanding:
+  - New `TopicCategory` enum for topic classification (technical, personal, creative, analytical, procedural, conceptual, temporal)
+  - New `EntityLink` dataclass for entity-to-Cortex-node linking
+  - New `TopicResult` dataclass for topic modeling results
+  - Topic modeling with `_parse_topics()` and `_extract_default_topics()` methods
+  - Entity linking to Cortex nodes via `_link_entities_to_cortex()` and `_search_cortex_for_entity()`
+  - Query reformulation with `generate_reformulations()` method
+  - Confidence scoring for intent, complexity, type, and overall analysis
+  - New `set_cortex()` method for dynamic Cortex reference injection
+  - New `get_analysis_summary()` for human-readable analysis output
+  - Enhanced config options: `topic_modeling`, `entity_linking`, `reformulation`, `confidence_scoring`
+
+### Changed
+- `cortex/cortex.py` now uses `load_json_grammar()` utility instead of internal method
+- `cortex/cortex.py` now uses `load_json_file()`, `save_json_file()`, and `extract_json()` utilities
+- `cognitive_engine/context_organizer.py` now uses `load_json_grammar()` utility instead of internal method
+- `cognitive_engine/engine.py` now uses `extract_json()` utility for all LLM JSON parsing
+- `assumptions/manager.py` now uses `load_json_file()` and `save_json_file()` utilities
+- `insights/concerns.py` now uses `load_json_file()` and `save_json_file()` utilities
+- Added type hints to constructors: `cortex.py`, `semantic.py`, `episodic.py`, `procedural.py`, 
+  `insights/manager.py`, `insights/concerns.py`, `assumptions/manager.py`, `scheduler.py`,
+  `proactive_engine.py`, `file_logger.py`
+- `ProactiveEngine` now accepts optional `config` parameter for customization (Phase C.1)
+- `CognitiveEngine` now passes cortex config to `ProactiveEngine` (Phase C.1)
+- `QueryAnalyzer.analyze()` now returns enhanced structure with topics, reformulations, and confidence scores (Phase C.2)
+- `QueryAnalyzer._parse_analysis()` now handles topics, reformulations, and confidence validation (Phase C.2)
+- `QueryAnalyzer._default_analysis()` now returns C.2-compatible structure with confidence scores (Phase C.2)
+- `CognitiveEngine.think()` now uses public `set_username()` method for per-request entity linking (Phase C.2)
+- `main_config.yaml` comprehension section expanded with C.2 query analysis options
+- Added public `calculate_centrality()` method to Cortex class (CodeRabbit C.2)
+- Added `set_username()` and `get_username()` public methods to QueryAnalyzer (CodeRabbit C.2)
+- Added return type annotation to `initialize_jenova()` function (CodeRabbit C.2)
 
 ### Fixed
-- (Add fixes for the next version here)
+- Fixed duplicate `addHandler` call in `file_logger.py` that caused duplicate log entries
+- Removed `prompt-toolkit` from `pyproject.toml` dependencies (BubbleTea is now sole UI)
+- Fixed unused imports in `file_logger.py` and `cortex.py` (CodeRabbit B.9)
+- Fixed empty dict false-positive in `cortex.py` emotion parsing (CodeRabbit B.9)
+- Fixed redundant truthy check in `cortex.py` document analysis (CodeRabbit B.9)
+- Fixed unused `history` parameter in `proactive_engine.py` (CodeRabbit B.9)
+- Fixed insights type validation in `engine.py` to handle dict/list correctly (CodeRabbit B.9)
+- Fixed `grammar_loader.py` to use module-relative path instead of cwd (CodeRabbit B.9)
+- Fixed unquoted `$SCRIPT_DIR/models` in `uninstall.sh` command substitution (CodeRabbit C.2)
+- Fixed GNU-only `grep -oP` in `setup_venv.sh` with portable awk/sed (CodeRabbit C.2)
+- Fixed `json_parser.py` bracket-matching to handle braces inside JSON strings (CodeRabbit C.2)
+- Fixed ProactiveEngine calling private `_calculate_centrality()` - now uses public method (CodeRabbit C.2)
+- Fixed engine.py directly mutating private `_username` - now uses public setter (CodeRabbit C.2)
+- Fixed indentation error in `cortex.py` document processing block (CodeRabbit C.2)
+- Removed unused `json` import from `assumptions/manager.py` (CodeRabbit C.2)
+- Removed unused `List`, `Optional` imports from `memory/episodic.py` (CodeRabbit C.2)
+- Added UI logger notification to `grammar_loader.py` ImportError handler (CodeRabbit C.2)
+- Archived outdated Phase B tables in `TODOS.md` (CodeRabbit C.2)
+- Fixed Phase B status inconsistency in `PLANS.md` (CodeRabbit C.2)
+- Added `_UNSET` sentinel to `json_parser.py` for proper None vs no-default distinction (CodeRabbit C.2)
+
+## [3.2.0] - 2026-01-15
+
+### Changed
+- **Bubble Tea as Sole UI:** Removed legacy prompt-toolkit/Textual terminal UI. Bubble Tea is now the only supported interface, providing a cleaner architecture with Go handling rendering and Python handling cognition.
+- **Unified Entry Point:** Consolidated `main.py` and `main_bubbletea.py` into a single `main.py` entry point. The `jenova` command now directly launches the Bubble Tea UI.
+- **Installation Scripts:** Completely overhauled all installation scripts:
+  - `install.sh`: Now checks for Go dependency, validates Go version (1.21+), and automatically builds the TUI binary during installation
+  - `uninstall.sh`: Now handles TUI binary removal, virtual environment cleanup, and models directory
+  - `setup_venv.sh`: Now validates Go installation and automatically builds TUI after Python setup
+  - `build_tui.sh`: Removed outdated environment variable references (JENOVA_UI no longer needed)
+- **Branding:** Consistent use of "JENOVA Cognitive Architecture" throughout all scripts and documentation
+
+### Added
+- **Comprehensive Inline Documentation:** Added detailed documentation comments throughout the entire Python codebase following a consistent standard:
+  - `##Script function and purpose:` at file headers
+  - `##Class purpose:` for class definitions
+  - `##Function purpose:` for method definitions
+  - `##Block purpose:` for significant code blocks
+- **Developer Documentation:** Added `.devdocs/` directory with comprehensive development documentation:
+  - `ARCHITECTURE.md`: System architecture overview
+  - `BRIEFING.md`: Quick start guide for developers
+  - `DECISIONS_LOG.md`: Architectural decision records
+  - `PLANS.md`: Future development roadmap
+  - `PROGRESS.md`: Development progress tracking
+  - `SESSION_HANDOFF.md`: Context for development sessions
+  - `SUMMARIES.md`: Code review summaries
+  - `TESTS.md`: Testing documentation
+  - `TODOS.md`: Outstanding tasks and improvements
+- **Enhanced Query Analysis:** Added multi-level planning support with structured sub-goals and reasoning chains for complex queries
+- **Integration Layer:** New Cortex-Memory integration layer for unified knowledge representation and cross-referencing
+- **Context Scoring:** Enhanced context retrieval with configurable scoring weights and query-aware ranking
+
+### Removed
+- **Legacy Terminal UI:** Removed `src/jenova/ui/terminal.py` (prompt-toolkit based UI)
+- **Dual UI Mode:** Removed `JENOVA_UI` environment variable - Bubble Tea is now the only UI
+- **Separate Bubble Tea Entry Point:** Removed `src/jenova/main_bubbletea.py` - functionality merged into `main.py`
+
+### Fixed
+- **Interactive Mode State:** Fixed interactive mode handling in BubbleTeaUI to properly reset state on errors and exit commands
+- **Procedure Learning Flow:** Fixed the multi-step procedure learning flow to validate input at each stage
+- **Assumption Verification:** Fixed yes/no response validation to accept 'y' and 'n' shortcuts
 
 ## [3.1.0] - 2025-12-09
 
