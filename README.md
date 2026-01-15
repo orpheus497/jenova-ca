@@ -190,13 +190,10 @@ For Python 3.14 compatibility and isolated dependency management, use the virtua
     ```
     Or if the package isn't installed in the venv:
     ```bash
-    PYTHONPATH=/path/to/jenova-ca/src:$PYTHONPATH python -m jenova.main_bubbletea
+    PYTHONPATH=/path/to/jenova-ca/src:$PYTHONPATH python -m jenova.main
     ```
 
-To use the classic terminal UI instead:
-```bash
-JENOVA_UI=classic jenova
-```
+**Note:** BubbleTea is now the sole supported UI interface.
 
 **Note:** The virtual environment setup automatically applies ChromaDB compatibility fixes for Python 3.14 and Pydantic 2.12. See `README_VENV.md` for detailed information about these fixes.
 

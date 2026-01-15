@@ -7,197 +7,182 @@ This document records all architectural and process decisions made during develo
 
 ## Decision Log
 
-### DEC-001: Documentation Folder Structure
-**Date:** [Current Date]
-**Session:** 1
-**Author:** Copilot Coding Agent
-
-**Context:**
-The problem statement specifies NON-NEGOTIABLE RULES for documentation organization. A .devdocs/ folder structure was required.
-
-**Decision:**
-Create .devdocs/ folder with 8 required documentation files:
-- BRIEFING.md - Current project status
-- PROGRESS.md - Progress tracking
-- SESSION_HANDOFF.md - Session-to-session continuity
-- DECISIONS_LOG.md - Architectural decisions (this file)
-- TODOS.md - Task lists
-- PLANS.md - Planning documents
-- TESTS.md - Test documentation
-- SUMMARIES.md - Session summaries
-
-**Rationale:**
-- Follows NON-NEGOTIABLE RULES from problem statement
-- Enables clear separation between AI/developer process docs and product code
-- Provides structured handoff between sessions
-
-**Alternatives Considered:**
-- Using root-level documentation files (rejected: violates rules)
-- Minimal documentation (rejected: violates rules)
-
-**Outcome:**
-Structure implemented as specified.
-
----
-
-### DEC-002: Code Commenting Format Standard
-**Date:** [Current Date]
-**Session:** 1
-**Author:** Copilot Coding Agent
-
-**Context:**
-The problem statement requires ALL code to have inline comments. A consistent format was needed.
-
-**Decision:**
-Adopt the format already used in main.py, engine.py, and cortex.py:
-```python
-##Script function and purpose: [Explanation]
-
-##Function purpose: [Explanation]
-def function_name():
-    ##Block purpose: [Explanation]
-    code
-```
-
-**Rationale:**
-- Format already exists in codebase (consistency)
-- `##` prefix distinguishes from regular Python `#` comments
-- Clear hierarchy: Script > Function > Block
-- Enables developers and AI agents to understand code immediately
-
-**Alternatives Considered:**
-- Docstrings only (rejected: doesn't cover blocks, not visible inline)
-- Standard `#` comments (rejected: less distinctive)
-- Google-style docstrings (rejected: existing pattern preferred)
-
-**Outcome:**
-Standard adopted and documented in PLANS.md.
-
----
-
-### DEC-003: Multi-Session Review Approach
-**Date:** [Current Date]
-**Session:** 1
-**Author:** Copilot Coding Agent
-
-**Context:**
-Repository contains 57 Python files (~6,117 lines). Complete review in single session not feasible.
-
-**Decision:**
-Divide review into 10-15 sessions with:
-- 3-5 files per session
-- Priority order: Core Engine → Cortex → Memory → UI → Utils → Tests
-- Each session updates all documentation files
-- Explicit permission required before each phase
-
-**Rationale:**
-- Manageable scope per session
-- Priority order reflects component importance
-- Documentation updates ensure continuity
-- Permission checkpoints follow NON-NEGOTIABLE RULES
-
-**Alternatives Considered:**
-- Single massive session (rejected: not feasible)
-- Arbitrary file order (rejected: no logical progression)
-- Automatic continuation (rejected: violates permission rules)
-
-**Outcome:**
-Plan documented in PLANS.md.
-
----
-
-### DEC-004: Existing Comments Preservation
-**Date:** [Current Date]
-**Session:** 1
-**Author:** Copilot Coding Agent
-
-**Context:**
-Some files (main.py, engine.py, cortex.py) already have partial commenting following the standard format.
-
-**Decision:**
-- Preserve all existing comments
-- Add missing comments to achieve 100% coverage
-- Do not modify working code unless necessary for commenting
-
-**Rationale:**
-- Follows NON-NEGOTIABLE RULE: ALL features must be preserved
-- Minimizes risk of breaking changes
-- Respects existing developer work
-
-**Alternatives Considered:**
-- Rewriting all comments (rejected: unnecessary, risky)
-- Ignoring partially commented files (rejected: incomplete coverage)
-
-**Outcome:**
-Approach documented in PLANS.md.
-
----
-
-### DEC-005: Package __init__.py Documentation Standard
-**Date:** 2026-01-14
-**Session:** 3
+### DEC-006: BubbleTea as Sole UI
+**Date:** 2025-01-15
+**Session:** 4
 **Author:** Claude AI Assistant
 
 **Context:**
-Package `__init__.py` files were empty or minimal across the codebase. A consistent approach was needed to document what each package contains.
+The codebase has two UI implementations:
+1. Python-based TerminalUI using prompt_toolkit (terminal.py)
+2. Go-based BubbleTea TUI (tui/main.go + bubbletea.py bridge)
+
+This creates maintenance burden, code duplication (two nearly identical main.py files), and unnecessary dependencies.
 
 **Decision:**
-All `__init__.py` files receive a `##Script function and purpose:` header that:
-- Names the package
-- Describes the package's role in the architecture
-- Lists key modules/components contained within (using bullet points)
-
-Example format:
-```python
-##Script function and purpose: [Package Name] package for The JENOVA Cognitive Architecture
-##This package [description of purpose]
-##Key components include:
-##- Component 1 (file.py)
-##- Component 2 (file.py)
-```
+Consolidate to BubbleTea as the ONLY user interface:
+- Remove `terminal.py` (469 lines)
+- Remove duplicate `main.py` entry point
+- Rename `main_bubbletea.py` to `main.py`
+- Remove `prompt-toolkit` from requirements.txt
+- Enhance `bubbletea.py` to support all features
 
 **Rationale:**
-- Provides immediate context for developers/AI agents navigating the codebase
-- Follows same comment style as all other files
-- Helps understand module organization at a glance
-- Consistent with NON-NEGOTIABLE RULES documentation standards
+- BubbleTea provides modern, responsive TUI with Go performance
+- Reduces codebase complexity and maintenance burden
+- Eliminates duplicate initialization code
+- Follows user's explicit requirement for BubbleTea-only UI
+- Go handles UI rendering while Python handles cognitive logic (clean separation)
 
 **Alternatives Considered:**
-- Leave empty (rejected: missed opportunity for documentation)
-- Use docstrings (rejected: inconsistent with `##` comment standard)
-- Only list imports (rejected: doesn't explain purpose)
+1. Keep both UIs (rejected: maintenance burden, user explicitly requested single UI)
+2. Keep only Python terminal UI (rejected: BubbleTea is more modern, user preference)
+3. Rewrite everything in Go (rejected: massive effort, Python excellent for ML/AI)
 
 **Outcome:**
-All 9 package `__init__.py` files documented with this standard.
+Phase A initiated to implement this decision.
 
 ---
 
-## Resolved Decisions
+### DEC-007: Unified Entry Point Pattern
+**Date:** 2025-01-15
+**Session:** 4
+**Author:** Claude AI Assistant
 
-### RESOLVED-001: Go File Commenting Convention (was PENDING-001)
-**Status:** Resolved in Session 2
-**Resolution:** Use Go standard `//` comments with same purpose structure as Python files.
+**Context:**
+`main.py` and `main_bubbletea.py` are 99% identical (134 lines each), differing only in:
+- Line 20: UI import statement
+- Line 116: UI class instantiation
 
-Example:
-```go
-// Script function and purpose: [Explanation]
-// Function purpose: [Explanation]
-func functionName() {
-    // Block purpose: [Explanation]
-}
-```
+This violates DRY (Don't Repeat Yourself) principle.
+
+**Decision:**
+Create a unified `main.py` that:
+1. Contains shared initialization logic in a reusable function
+2. Uses only BubbleTeaUI (after Phase A completion)
+3. Simplifies the `jenova` executable script
+
+**Rationale:**
+- Eliminates code duplication
+- Single source of truth for initialization
+- Easier maintenance and updates
+- Cleaner architecture
+
+**Alternatives Considered:**
+1. Keep both files (rejected: violates DRY, maintenance nightmare)
+2. Create shared module for initialization (rejected: over-engineering for this case)
+
+**Outcome:**
+Will be implemented in Phase A, Step 3.
+
+---
+
+### DEC-008: Feature Parity Before Removal
+**Date:** 2025-01-15
+**Session:** 4
+**Author:** Claude AI Assistant
+
+**Context:**
+Before removing `terminal.py`, we must ensure all features are available in BubbleTeaUI.
+
+**Decision:**
+Perform complete feature audit and enhance `bubbletea.py` BEFORE removing `terminal.py`:
+1. Audit all commands and features
+2. Implement missing features in BubbleTea
+3. Test all functionality
+4. Only then remove terminal.py
+
+**Rationale:**
+- Follows NON-NEGOTIABLE RULE: ALL features must be preserved
+- Reduces risk of feature loss
+- Enables proper testing before removal
+- Documents exactly what needs implementation
+
+**Features Requiring Enhancement:**
+- `/learn_procedure` - Interactive multi-step input
+- `/verify` - Full interactive verification flow
+- `/help` - Enhanced formatting
+
+**Outcome:**
+Audit completed, enhancements pending.
+
+---
+
+## Previous Decisions (Sessions 1-3)
+
+### DEC-001: Documentation Folder Structure
+**Date:** Previous
+**Session:** 1
+**Decision:** Create `.devdocs/` folder with 8 documentation files
+**Outcome:** Implemented and maintained.
+
+### DEC-002: Code Commenting Format Standard
+**Date:** Previous
+**Session:** 1
+**Decision:** Use `##Script/Function/Block purpose:` format
+**Outcome:** Applied to all 52 files.
+
+### DEC-003: Multi-Session Review Approach
+**Date:** Previous
+**Session:** 1
+**Decision:** Divide review into multiple sessions by component priority
+**Outcome:** Completed in 3 sessions.
+
+### DEC-004: Existing Comments Preservation
+**Date:** Previous
+**Session:** 1
+**Decision:** Preserve existing comments, add missing ones
+**Outcome:** Successfully maintained.
+
+### DEC-005: Package __init__.py Documentation Standard
+**Date:** 2025-01-14
+**Session:** 3
+**Decision:** All `__init__.py` files receive descriptive headers
+**Outcome:** Applied to all 9 package files.
+
+---
+
+## Resolved Pending Decisions
+
+### RESOLVED: PENDING-001 → DEC-009: Interactive Command Handling in BubbleTea
+**Date:** 2025-01-15
+**Session:** 4
+**Author:** Claude AI Assistant
+
+**Context:** 
+The `/learn_procedure` command requires multi-step interactive input:
+1. Prompt for procedure name
+2. Loop for steps (until "done")
+3. Prompt for expected outcome
+
+**Options Considered:**
+1. Implement state machine in Go TUI for multi-step prompts
+2. Implement state machine in Python bubbletea.py bridge
+3. Use special message types for interactive flows
+4. Redesign command to use single structured input
+
+**Decision:** Option 2 - Implement state machine in Python bubbletea.py bridge
+
+**Implementation:**
+- Added `interactive_mode` state variable to `BubbleTeaUI` class
+- Modes: `'normal'`, `'verify'`, `'learn_procedure_name'`, `'learn_procedure_steps'`, `'learn_procedure_outcome'`
+- Added `procedure_data` dict for accumulating multi-step input
+- Created handler methods: `_handle_procedure_name()`, `_handle_procedure_step()`, `_handle_procedure_outcome()`
+- Flow: `/learn_procedure` → name prompt → steps loop (until "done") → outcome prompt → `engine.learn_procedure()`
+
+**Rationale:**
+- Keeps Go TUI simple and focused on rendering
+- All cognitive logic stays in Python
+- Easier to maintain and debug
+- Consistent with existing command handling patterns
+
+**Outcome:** Successfully implemented in `src/jenova/ui/bubbletea.py`. Full interactive multi-step procedure learning now works.
 
 ---
 
 ## Pending Decisions
-**Context:** tui/main.go uses Go commenting conventions. Need to determine if Go style or adapted format should be used.
 
-**Proposed Options:**
-1. Use Go standard `//` comments with similar purpose structure
-2. Adapt `##` format to `// ##Block purpose:`
-3. Leave as-is with minimal additions
-
-**Awaiting:** User input/permission
+*No pending decisions at this time.*
 
 ---
 

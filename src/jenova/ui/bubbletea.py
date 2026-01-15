@@ -1,5 +1,6 @@
 ##Script function and purpose: Bubble Tea UI Wrapper for The JENOVA Cognitive Architecture
 ##This module provides a bridge between the Python backend and the Go-based Bubble Tea TUI
+##Handles IPC communication, command processing, and interactive multi-step flows
 
 """
 Bubble Tea UI wrapper for JENOVA Cognitive Architecture.
@@ -11,19 +12,20 @@ import os
 import subprocess
 import threading
 import queue
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from jenova.ui.logger import UILogger
 from jenova.cognitive_engine.engine import CognitiveEngine
 
 
-##Class purpose: Wraps Go Bubble Tea TUI and manages Python-Go IPC
+##Class purpose: Wraps Go Bubble Tea TUI and manages Python-Go IPC communication
+##Handles all command processing, interactive flows, and state management
 class BubbleTeaUI:
     """
     Wrapper for the Bubble Tea terminal UI.
     Manages communication between Python backend and Go TUI process.
     """
 
-    ##Function purpose: Initialize UI wrapper with engine and communication channels
+    ##Function purpose: Initialize UI wrapper with engine, communication channels, and state tracking
     def __init__(self, cognitive_engine: CognitiveEngine, logger: UILogger):
         self.engine = cognitive_engine
         self.logger = logger
@@ -32,14 +34,20 @@ class BubbleTeaUI:
         self.running = False
         self.username = os.getenv("USER", "user")
         
-        # Find the TUI binary
+        ##Block purpose: Initialize interactive mode state tracking
+        ##Modes: 'normal', 'verify', 'learn_procedure_name', 'learn_procedure_steps', 'learn_procedure_outcome'
+        self.interactive_mode = 'normal'
+        self.pending_assumption = None
+        self.procedure_data: Dict[str, Any] = {}
+        
+        ##Block purpose: Find the TUI binary path
         script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         self.tui_path = os.path.join(script_dir, "tui", "jenova-tui")
         
         if not os.path.exists(self.tui_path):
-            raise FileNotFoundError(f"TUI binary not found at {self.tui_path}. Please build it first.")
+            raise FileNotFoundError(f"TUI binary not found at {self.tui_path}. Please build it first with: cd tui && go build -o jenova-tui .")
 
-    ##Function purpose: Send a JSON message to the TUI process
+    ##Function purpose: Send a JSON message to the TUI process via stdin
     def send_message(self, msg_type: str, content: str = "", data: Optional[Dict[str, Any]] = None):
         """Send a message to the TUI."""
         message = {
@@ -57,7 +65,7 @@ class BubbleTeaUI:
         except Exception as e:
             self.logger.info(f"Error sending message to TUI: {e}")
 
-    ##Function purpose: Read messages from TUI stdout in separate thread
+    ##Function purpose: Read messages from TUI stdout in separate thread for async communication
     def read_messages(self):
         """Read messages from the TUI in a separate thread."""
         if not self.tui_process or not self.tui_process.stdout:
@@ -80,14 +88,24 @@ class BubbleTeaUI:
         except Exception as e:
             self.logger.info(f"Error in read thread: {e}")
 
+    ##Function purpose: Process user input based on current interactive mode
     def process_user_input(self, user_input: str):
-        """Process user input and generate response."""
+        """Process user input based on current interactive mode."""
         try:
-            if user_input.startswith('/'):
-                # Handle commands
+            ##Block purpose: Handle input based on current interactive mode
+            if self.interactive_mode == 'verify':
+                self._handle_verify_response(user_input)
+            elif self.interactive_mode == 'learn_procedure_name':
+                self._handle_procedure_name(user_input)
+            elif self.interactive_mode == 'learn_procedure_steps':
+                self._handle_procedure_step(user_input)
+            elif self.interactive_mode == 'learn_procedure_outcome':
+                self._handle_procedure_outcome(user_input)
+            elif user_input.startswith('/'):
+                ##Block purpose: Handle slash commands in normal mode
                 self._handle_command(user_input)
             else:
-                # Regular conversation
+                ##Block purpose: Handle regular conversation in normal mode
                 self.send_message("start_loading")
                 response = self.engine.think(user_input, self.username)
                 
@@ -99,6 +117,8 @@ class BubbleTeaUI:
         except Exception as e:
             self.send_message("system_message", f"Error: {e}")
             self.send_message("stop_loading")
+            ##Block purpose: Reset interactive mode on error to prevent stuck states
+            self.interactive_mode = 'normal'
 
     ##Function purpose: Handle slash commands from user input
     def _handle_command(self, user_input: str):
@@ -123,13 +143,13 @@ class BubbleTeaUI:
                 messages = self.engine.generate_meta_insight(self.username)
                 self._send_messages(messages)
             elif command == '/verify':
-                self._verify_assumption()
+                self._start_verify()
             elif command == '/train':
-                self.send_message("system_message", "To create a training file, run: python3 finetune/train.py")
+                self.send_message("system_message", "To create a training file for fine-tuning, run: python3 finetune/train.py")
             elif command == '/develop_insight':
                 self._develop_insight(args)
             elif command == '/learn_procedure':
-                self.send_message("system_message", "Interactive procedure learning not yet implemented in Bubble Tea UI")
+                self._start_learn_procedure()
             else:
                 self.send_message("system_message", f"Unknown command: {command}")
         except Exception as e:
@@ -137,39 +157,103 @@ class BubbleTeaUI:
         finally:
             self.send_message("stop_loading")
 
-    ##Function purpose: Display help information to user
+    ##Function purpose: Display comprehensive help information with formatted sections
     def _show_help(self):
-        """Display help information."""
+        """Display formatted help information."""
         help_text = """
-╔═══════════════════════════════════════════════════════════════╗
-║                   JENOVA COMMAND REFERENCE                    ║
-╚═══════════════════════════════════════════════════════════════╝
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                         JENOVA COMMAND REFERENCE                              ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
 
 COGNITIVE COMMANDS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-/help       - Display this help message
-/insight    - Analyze conversation and generate insights
-/reflect    - Deep reflection on cognitive architecture
-/memory-insight - Search all memory layers for insights
-/meta       - Generate higher-level meta-insights
-/verify     - Verify assumptions about you
+  /help
+    Displays this comprehensive command reference guide.
+    Shows all available commands with detailed descriptions.
+
+  /insight
+    Analyzes the current conversation and generates new insights.
+    JENOVA will extract key takeaways from your recent interactions and
+    store them as structured insights in long-term memory, contributing
+    to its evolving understanding of topics and patterns.
+
+  /reflect
+    Initiates deep reflection within The JENOVA Cognitive Architecture.
+    This powerful command reorganizes and interlinks all cognitive nodes
+    (insights, memories, assumptions), identifies patterns, and generates
+    higher-level meta-insights, significantly enhancing intelligence and
+    cognitive coherence across the entire knowledge graph.
+
+  /memory-insight
+    Performs a comprehensive search across all memory layers.
+    JENOVA will scan episodic, semantic, and procedural memory to
+    develop new insights or assumptions based on accumulated knowledge
+    from past interactions and learned information.
+
+  /meta
+    Generates higher-level meta-insights from existing knowledge.
+    Analyzes clusters of related insights within the cognitive graph
+    to form abstract conclusions and identify overarching themes,
+    enabling more sophisticated pattern recognition and understanding.
+
+  /verify
+    Starts the assumption verification process.
+    JENOVA will present an unverified assumption about your preferences
+    or knowledge and ask for clarification, allowing you to confirm or
+    deny it. This refines JENOVA's understanding of your context.
 
 LEARNING COMMANDS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-/develop_insight [node_id] - Develop insights or process documents
-/learn_procedure - Teach JENOVA a new procedure
-/train      - Instructions for fine-tuning
+  /develop_insight [node_id]
+    Dual-purpose insight development and document learning command.
+    • With node_id: Expands an existing insight with more context
+      and connections, generating a more detailed version.
+    • Without node_id: Scans the src/jenova/docs directory for new
+      or updated documents, processes their content, and integrates
+      insights and summaries into the cognitive graph, enabling
+      learning from external documentation.
+
+  /learn_procedure
+    Interactive guided process to teach JENOVA a new procedure.
+    JENOVA will prompt you for the procedure's name, individual steps,
+    and expected outcome. This structured approach ensures comprehensive
+    intake of procedural knowledge, stored in procedural memory for
+    future recall and application in relevant contexts.
+
+  /train
+    Provides instructions for creating fine-tuning training data.
+    Shows how to generate a training dataset from your interactions
+    for fine-tuning the underlying language model with personalized
+    knowledge and conversation patterns.
 
 SYSTEM COMMANDS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-exit or quit - Exit the application
+  exit or quit
+    Exits The JENOVA Cognitive Architecture application.
+    All current session data will be automatically saved.
+
+INNATE CAPABILITIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  JENOVA can intelligently use its built-in tools to answer your
+  questions without requiring specific commands. For example:
+
+    • Ask for the current time
+    • Request file operations in the sandbox directory (~/jenova_files)
+    • Perform calculations and data analysis
+    • Access and process information from its knowledge graph
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║  Tip: Commands are not stored in conversational memory and can be used       ║
+║  freely to manage JENOVA's cognitive processes.                              ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
         """
         self.send_message("help", help_text)
 
-    ##Function purpose: Send multiple messages to TUI
+    ##Function purpose: Send multiple system messages to the TUI
     def _send_messages(self, messages):
         """Send multiple messages to the TUI."""
         if messages:
@@ -178,16 +262,63 @@ exit or quit - Exit the application
             for msg in messages:
                 self.send_message("system_message", str(msg))
 
-    ##Function purpose: Handle assumption verification flow
-    def _verify_assumption(self):
-        """Handle assumption verification."""
+    ##Function purpose: Start the assumption verification interactive flow
+    def _start_verify(self):
+        """Start assumption verification flow."""
         assumption, question = self.engine.verify_assumptions(self.username)
         if question:
-            self.send_message("system_message", f"Verification: {question}")
-            # Note: Full verification flow would require more complex state management
+            self.send_message("system_message", f"JENOVA is asking for clarification: {question}")
+            if assumption:
+                ##Block purpose: Set interactive mode to capture next input as verification response
+                self.pending_assumption = assumption
+                self.interactive_mode = 'verify'
+                self.send_message("system_message", "Please respond with 'yes' or 'no':")
+        else:
+            self.send_message("system_message", "No unverified assumptions to check.")
 
-    ##Function purpose: Handle insight development command
-    def _develop_insight(self, args):
+    ##Function purpose: Handle user response to assumption verification
+    def _handle_verify_response(self, user_input: str):
+        """Handle yes/no response for assumption verification."""
+        response = user_input.strip().lower()
+        
+        ##Block purpose: Validate that response is yes/no (or y/n)
+        valid_yes = ['yes', 'y']
+        valid_no = ['no', 'n']
+        
+        if response not in valid_yes + valid_no:
+            self.send_message("system_message", "Please respond with 'yes' or 'no':")
+            ##Block purpose: Keep in verification mode, don't clear pending assumption
+            return
+        
+        ##Block purpose: Normalize response to 'yes' or 'no'
+        normalized_response = 'yes' if response in valid_yes else 'no'
+        
+        try:
+            self.send_message("start_loading")
+            
+            ##Block purpose: Resolve the pending assumption with validated response
+            if self.pending_assumption:
+                self.engine.assumption_manager.resolve_assumption(
+                    self.pending_assumption, 
+                    normalized_response, 
+                    self.username
+                )
+                self.send_message("system_message", "Assumption verification recorded. Thank you!")
+            
+            ##Block purpose: Reset to normal mode only after successful verification
+            self.pending_assumption = None
+            self.interactive_mode = 'normal'
+            
+        except Exception as e:
+            self.send_message("system_message", f"Error during verification: {e}")
+            ##Block purpose: Reset to normal mode on error to prevent stuck states
+            self.pending_assumption = None
+            self.interactive_mode = 'normal'
+        finally:
+            self.send_message("stop_loading")
+
+    ##Function purpose: Handle insight development command with optional node_id
+    def _develop_insight(self, args: List[str]):
         """Handle insight development."""
         try:
             if args:
@@ -199,11 +330,95 @@ exit or quit - Exit the application
         except Exception as e:
             self.send_message("system_message", f"Error: {e}")
 
-    ##Function purpose: Start TUI process and main message processing loop
+    ##Function purpose: Start the multi-step procedure learning interactive flow
+    def _start_learn_procedure(self):
+        """Start interactive procedure learning flow."""
+        ##Block purpose: Initialize procedure data storage and set interactive mode
+        self.procedure_data = {
+            "name": "",
+            "steps": [],
+            "outcome": ""
+        }
+        self.interactive_mode = 'learn_procedure_name'
+        self.send_message("system_message", "Initiating interactive procedure learning...")
+        self.send_message("system_message", "Please enter the procedure name:")
+
+    ##Function purpose: Handle procedure name input in multi-step flow
+    def _handle_procedure_name(self, user_input: str):
+        """Handle procedure name input."""
+        name = user_input.strip()
+        
+        if not name:
+            self.send_message("system_message", "Procedure name cannot be empty. Please enter a name:")
+            return
+        
+        ##Block purpose: Store name and transition to steps collection mode
+        self.procedure_data["name"] = name
+        self.interactive_mode = 'learn_procedure_steps'
+        self.send_message("system_message", f"Procedure name set to: {name}")
+        self.send_message("system_message", "Enter procedure steps one by one. Type 'done' when finished.")
+        self.send_message("system_message", f"Step {len(self.procedure_data['steps']) + 1}:")
+
+    ##Function purpose: Handle individual step input in multi-step flow
+    def _handle_procedure_step(self, user_input: str):
+        """Handle procedure step input."""
+        step = user_input.strip()
+        
+        ##Block purpose: Check if user is done entering steps
+        if step.lower() == 'done':
+            if not self.procedure_data["steps"]:
+                self.send_message("system_message", "No steps entered. Please enter at least one step:")
+                return
+            
+            ##Block purpose: Transition to outcome collection mode
+            self.interactive_mode = 'learn_procedure_outcome'
+            self.send_message("system_message", f"Recorded {len(self.procedure_data['steps'])} steps.")
+            self.send_message("system_message", "Please enter the expected outcome:")
+            return
+        
+        ##Block purpose: Handle empty step input with feedback
+        if not step:
+            self.send_message("system_message", "Empty step entered. Please enter a step or type 'done':")
+            return
+        
+        ##Block purpose: Add step to list and prompt for next
+        self.procedure_data["steps"].append(step)
+        self.send_message("system_message", f"Step {len(self.procedure_data['steps'])} recorded: {step}")
+        self.send_message("system_message", f"Step {len(self.procedure_data['steps']) + 1} (or type 'done'):")
+
+    ##Function purpose: Handle expected outcome input and complete procedure learning
+    def _handle_procedure_outcome(self, user_input: str):
+        """Handle procedure outcome input and complete the learning process."""
+        outcome = user_input.strip()
+        
+        if not outcome:
+            self.send_message("system_message", "Expected outcome cannot be empty. Please enter an outcome:")
+            return
+        
+        try:
+            self.send_message("start_loading")
+            
+            ##Block purpose: Store outcome and call engine to learn the procedure
+            self.procedure_data["outcome"] = outcome
+            
+            messages = self.engine.learn_procedure(self.procedure_data, self.username)
+            self._send_messages(messages)
+            
+            ##Block purpose: Reset to normal mode after successful learning
+            self.procedure_data = {}
+            self.interactive_mode = 'normal'
+            
+        except Exception as e:
+            self.send_message("system_message", f"Error learning procedure: {e}")
+            self.interactive_mode = 'normal'
+        finally:
+            self.send_message("stop_loading")
+
+    ##Function purpose: Start TUI process and run main message processing loop
     def run(self):
         """Start the TUI and process messages."""
         try:
-            # Start the TUI process
+            ##Block purpose: Start the TUI subprocess with stdin/stdout pipes for IPC
             self.tui_process = subprocess.Popen(
                 [self.tui_path],
                 stdin=subprocess.PIPE,
@@ -214,11 +429,11 @@ exit or quit - Exit the application
             
             self.running = True
             
-            # Start reading messages in a separate thread
+            ##Block purpose: Start background thread to read messages from TUI
             read_thread = threading.Thread(target=self.read_messages, daemon=True)
             read_thread.start()
             
-            # Send initial banner
+            ##Block purpose: Send initial banner and welcome messages
             banner = """
      ██╗███████╗███╗   ██╗ ██████╗ ██╗   ██╗ █████╗ 
      ██║██╔════╝████╗  ██║██╔═══██╗██║   ██║██╔══██╗
@@ -232,7 +447,7 @@ exit or quit - Exit the application
             self.send_message("info", "Type your message, use a command, or type 'exit' to quit.")
             self.send_message("info", "Type /help to see available commands.")
             
-            # Process messages from TUI
+            ##Block purpose: Main event loop - process messages from TUI
             while self.running:
                 try:
                     message = self.message_queue.get(timeout=0.1)
@@ -240,10 +455,15 @@ exit or quit - Exit the application
                     if message.get("type") == "user_input":
                         user_input = message.get("content", "").strip()
                         
+                        ##Block purpose: Handle exit in any mode
                         if user_input.lower() in ['exit', 'quit']:
+                            ##Block purpose: Reset interactive mode before exit
+                            if self.interactive_mode != 'normal':
+                                self.send_message("system_message", "Exiting interactive mode...")
+                                self.interactive_mode = 'normal'
                             break
                         
-                        # Process in a separate thread to avoid blocking
+                        ##Block purpose: Process input in a separate thread to avoid blocking
                         threading.Thread(
                             target=self.process_user_input,
                             args=(user_input,),
@@ -261,6 +481,7 @@ exit or quit - Exit the application
         except Exception as e:
             print(f"Error running TUI: {e}")
         finally:
+            ##Block purpose: Clean shutdown of TUI process
             self.running = False
             if self.tui_process:
                 self.tui_process.terminate()

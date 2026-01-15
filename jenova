@@ -1,16 +1,13 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
+##Script function and purpose: JENOVA executable entry point
+##This script launches The JENOVA Cognitive Architecture with Bubble Tea TUI
+##BubbleTea is the sole supported user interface
+
 import sys
-import os
-
-# Check if we should use the Bubble Tea UI
-USE_BUBBLETEA = os.environ.get('JENOVA_UI', 'bubbletea').lower() == 'bubbletea'
-
-if USE_BUBBLETEA:
-    from jenova.main_bubbletea import main
-else:
-    from jenova.main import main
+from jenova.main import main
 
 if __name__ == '__main__':
+    ##Block purpose: Handle Windows .exe suffix if present
     if sys.argv[0].endswith('.exe'):
         sys.argv[0] = sys.argv[0][:-4]
     sys.exit(main())

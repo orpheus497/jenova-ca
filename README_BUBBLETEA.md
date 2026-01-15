@@ -43,14 +43,8 @@ export JENOVA_UI=bubbletea
 ./jenova
 ```
 
-### Using the Classic UI
-
-To use the original terminal UI with prompt-toolkit:
-
-```bash
-export JENOVA_UI=classic
-./jenova
-```
+**Note:** BubbleTea is now the sole supported UI interface.
+The classic Python terminal UI has been removed to streamline the codebase.
 
 ## Architecture
 
@@ -95,7 +89,7 @@ The TUI is implemented in Go and located at:
 
 The Python wrapper handles communication with the TUI:
 - `src/jenova/ui/bubbletea.py` - BubbleTeaUI class
-- `src/jenova/main_bubbletea.py` - Main entry point for Bubble Tea UI
+- `src/jenova/main.py` - Main entry point (BubbleTea is the sole UI)
 
 ### Modifying the UI
 
