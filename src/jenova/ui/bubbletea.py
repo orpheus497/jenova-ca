@@ -55,7 +55,7 @@ class BubbleTeaUI:
             )
 
     ##Function purpose: Send a JSON message to the TUI process via stdin
-    def send_message(self, msg_type: str, content: str = "", data: Optional[Dict[str, Any]] = None):
+    def send_message(self, msg_type: str, content: str = "", data: Optional[dict[str, Any]] = None):
         """Send a message to the TUI."""
         message = {
             "type": msg_type,
