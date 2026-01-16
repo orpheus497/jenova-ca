@@ -103,7 +103,7 @@ Thumbs.db
 !/docs/.gitkeep
 
 # Development planning and status docs (for AI agent collaboration)
-.devdocs/
+/.devdocs/
 
 # Unnecessary vendored code
 /llama.cpp/
