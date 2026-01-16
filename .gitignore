@@ -10,6 +10,7 @@ __pycache__/
 venv/
 ENV/
 env/
+
 # Virtual environment activation scripts and config
 pyvenv.cfg
 activate
@@ -34,6 +35,7 @@ wheels/
 src/*.egg-info/
 .installed.cfg
 *.egg
+
 # Setuptools build artifacts
 src/jenova_ai.egg-info/
 
@@ -46,6 +48,7 @@ src/jenova_ai.egg-info/
 *.sqlite3
 *.db
 *.bak
+
 
 # Test and coverage reports
 htmlcov/
@@ -100,7 +103,7 @@ Thumbs.db
 !/docs/.gitkeep
 
 # Development planning and status docs (for AI agent collaboration)
-# .devdocs/ is now tracked per NON-NEGOTIABLE RULES for code documentation
+.devdocs/
 
 # Unnecessary vendored code
 /llama.cpp/
