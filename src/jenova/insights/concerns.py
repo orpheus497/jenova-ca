@@ -3,41 +3,34 @@
 
 import os
 import json
+from typing import Any, Dict
+from jenova.utils.file_io import load_json_file, save_json_file
 
 ##Class purpose: Manages concern topics for grouping and organizing insights
 class ConcernManager:
     """Manages the lifecycle of concerns, including their creation, updating, and interlinking."""
     ##Function purpose: Initialize concern manager with configuration and storage paths
-    def __init__(self, config, ui_logger, file_logger, insights_root, llm):
+    def __init__(
+        self, 
+        config: Dict[str, Any], 
+        ui_logger: Any, 
+        file_logger: Any, 
+        insights_root: str, 
+        llm: Any
+    ) -> None:
         self.config = config
         self.ui_logger = ui_logger
         self.file_logger = file_logger
         self.insights_root = insights_root
         self.concerns_file = os.path.join(self.insights_root, 'concerns.json')
-        self.concerns = self._load_concerns()
+        ##Block purpose: Load concerns using centralized file I/O utility
+        self.concerns = load_json_file(self.concerns_file, {}, file_logger)
         self.llm = llm
-
-    ##Function purpose: Load concerns from persistent JSON file
-    def _load_concerns(self):
-        """Loads the concerns from the concerns.json file."""
-        if os.path.exists(self.concerns_file):
-            try:
-                with open(self.concerns_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except (json.JSONDecodeError, OSError) as e:
-                # self.file_logger.log_error(f"Error loading concerns file: {e}")
-                return {}
-        return {}
 
     ##Function purpose: Save concerns to persistent JSON file
     def _save_concerns(self):
         """Saves the concerns to the concerns.json file."""
-        try:
-            with open(self.concerns_file, 'w', encoding='utf-8') as f:
-                json.dump(self.concerns, f, indent=4)
-        except OSError as e:
-            # self.file_logger.log_error(f"Error saving concerns file: {e}")
-            pass
+        save_json_file(self.concerns_file, self.concerns, indent=4, file_logger=self.file_logger)
 
     ##Function purpose: Return list of all existing concern topics
     def get_all_concerns(self) -> list[str]:

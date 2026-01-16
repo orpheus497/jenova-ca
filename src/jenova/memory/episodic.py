@@ -1,6 +1,8 @@
 ##Script function and purpose: Episodic Memory for The JENOVA Cognitive Architecture
 ##This module manages autobiographical memories of specific events and interactions
 
+from typing import Any, Dict
+
 ##Block purpose: Import Pydantic compatibility fix before ChromaDB import
 from jenova.utils.pydantic_compat import *  # noqa: F401, F403
 from jenova.utils.pydantic_compat import create_chromadb_client, get_or_create_collection_with_embedding
@@ -18,7 +20,14 @@ from jenova.utils.json_parser import extract_json
 ##Class purpose: Manages episodic memory storing autobiographical events and interactions
 class EpisodicMemory:
     ##Function purpose: Initialize episodic memory with database, logging, and LLM components
-    def __init__(self, config, ui_logger, file_logger, db_path, llm):
+    def __init__(
+        self, 
+        config: Dict[str, Any], 
+        ui_logger: Any, 
+        file_logger: Any, 
+        db_path: str, 
+        llm: Any
+    ) -> None:
         self.config = config
         self.ui_logger = ui_logger
         self.file_logger = file_logger

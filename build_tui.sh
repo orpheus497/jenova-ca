@@ -26,12 +26,8 @@ go build -o jenova-tui main.go
 if [ -f jenova-tui ]; then
     echo "✓ TUI binary built successfully: tui/jenova-tui"
     echo ""
-    echo "To use the Bubble Tea UI, run:"
-    echo "  export JENOVA_UI=bubbletea"
-    echo "  ./jenova"
-    echo ""
-    echo "Or run directly:"
-    echo "  JENOVA_UI=bubbletea ./jenova"
+    echo "The Bubble Tea UI is now ready. Run JENOVA with:"
+    echo "  jenova"
 else
     echo "✗ Failed to build TUI binary"
     exit 1

@@ -5,8 +5,12 @@ import os
 import json
 from datetime import datetime
 import uuid
+from typing import Any, Dict
 from .graph_metrics import GraphMetrics
 from .clustering import AdvancedClustering
+from jenova.utils.grammar_loader import load_json_grammar
+from jenova.utils.file_io import load_json_file, save_json_file
+from jenova.utils.json_parser import extract_json
 
 ##Class purpose: The Cortex is the central hub of the AI's cognitive architecture
 ##It manages a graph of interconnected cognitive nodes, including insights,
@@ -18,7 +22,14 @@ class Cortex:
     memories, and assumptions, fostering a deep, evolving understanding.
     """
     ##Function purpose: Initialize Cortex with configuration, loggers, LLM interface, and data directory
-    def __init__(self, config, ui_logger, file_logger, llm, cortex_root):
+    def __init__(
+        self, 
+        config: Dict[str, Any], 
+        ui_logger: Any, 
+        file_logger: Any, 
+        llm: Any, 
+        cortex_root: str
+    ) -> None:
         self.config = config
         self.ui_logger = ui_logger
         self.file_logger = file_logger
@@ -27,39 +38,20 @@ class Cortex:
         os.makedirs(self.cortex_root, exist_ok=True)
         self.docs_path = os.path.join(os.getcwd(), "src", "jenova", "docs")
         self.graph_file = os.path.join(self.cortex_root, 'cognitive_graph.json')
-        self.graph = self._load_graph()
+        ##Block purpose: Load cognitive graph using centralized utility
+        self.graph = load_json_file(self.graph_file, {"nodes": {}, "links": []}, file_logger)
         self.reflection_cycle_count = 0
-        self.json_grammar = self._load_grammar()
+        ##Block purpose: Load JSON grammar using centralized utility
+        self.json_grammar = load_json_grammar(ui_logger, file_logger)
         
         # Initialize advanced clustering and graph metrics modules
         self.clustering = AdvancedClustering(config)
         self.graph_metrics = GraphMetrics(config)
 
-    ##Function purpose: Load the JSON grammar for structured LLM outputs
-    def _load_grammar(self):
-        """Loads the JSON grammar from the llama.cpp submodule."""
-        grammar_path = os.path.join(os.getcwd(), "llama.cpp", "grammars", "json.gbnf")
-        if os.path.exists(grammar_path):
-            with open(grammar_path, 'r') as f:
-                grammar_text = f.read()
-            from llama_cpp.llama_grammar import LlamaGrammar
-            return LlamaGrammar.from_string(grammar_text)
-        self.ui_logger.system_message("JSON grammar file not found at " + grammar_path)
-        return None
-
-    ##Function purpose: Load cognitive graph from persistent file storage
-    def _load_graph(self):
-        """Loads the cognitive graph from a file."""
-        if os.path.exists(self.graph_file):
-            with open(self.graph_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return {"nodes": {}, "links": []}
-
     ##Function purpose: Save cognitive graph to persistent file storage
     def _save_graph(self):
         """Saves the cognitive graph to a file."""
-        with open(self.graph_file, 'w', encoding='utf-8') as f:
-            json.dump(self.graph, f, indent=4)
+        save_json_file(self.graph_file, self.graph, indent=4, file_logger=self.file_logger)
 
     ##Function purpose: Add a new node to the cognitive graph with emotion analysis
     def add_node(self, node_type: str, content: str, user: str, linked_to: list = None, metadata: dict = None):
@@ -72,11 +64,11 @@ Text: "{content}"
 
 Emotion JSON:"""        
         emotion_str = self.llm.generate(prompt=emotion_prompt, temperature=0.2, grammar=self.json_grammar)
-        try:
-            emotions = json.loads(emotion_str)
-        except json.JSONDecodeError:
-            emotions = {}
+        ##Block purpose: Parse emotion JSON using centralized utility with sentinel default
+        emotions = extract_json(emotion_str, default=None)
+        if emotions is None:
             self.file_logger.log_error(f"Failed to decode emotion JSON: {emotion_str}")
+            emotions = {}  # Use empty dict as fallback
 
         new_node = {
             "id": node_id,
@@ -239,6 +231,11 @@ Emotion JSON:"""
         self._save_graph()
         messages.append("Reflection complete. The cognitive graph has been refined.")
         return messages
+    
+    ##Function purpose: Public method to recalculate centrality scores for all nodes
+    def calculate_centrality(self) -> None:
+        """Recalculate weighted degree centrality for all nodes in the graph."""
+        self._calculate_centrality()
 
     def _calculate_centrality(self):
         """Calculates the weighted degree centrality for each node in the graph."""
@@ -299,8 +296,11 @@ JSON Response:"""
 
             response_str = self.llm.generate(prompt, temperature=0.3, grammar=self.json_grammar)
             
+            ##Block purpose: Parse response JSON using centralized utility
             try:
-                response_data = json.loads(response_str)
+                response_data = extract_json(response_str, default=None)
+                if response_data is None:
+                    raise ValueError("No JSON found")
                 # Handle both list and single object responses
                 if isinstance(response_data, dict):
                     response_data = [response_data]
@@ -318,7 +318,7 @@ JSON Response:"""
                                 if target_id in self.graph["nodes"]:
                                     self.add_link(orphan_id, target_id, relationship)
                                     self.ui_logger.info(f"Linked orphan node {orphan_id} to {target_id}")
-            except (json.JSONDecodeError, KeyError, ValueError) as e:
+            except (KeyError, ValueError, TypeError) as e:
                 self.file_logger.log_error(f"Failed to link orphan batch. Invalid JSON response: {response_str}. Error: {e}")
                 # Fallback to individual processing for this batch
                 for orphan in batch_orphans:
@@ -343,8 +343,11 @@ JSON Response:"""
 
         response_str = self.llm.generate(prompt, temperature=0.3, grammar=self.json_grammar)
         
+        ##Block purpose: Parse response JSON using centralized utility
         try:
-            response_data = json.loads(response_str)
+            response_data = extract_json(response_str, default=None)
+            if response_data is None:
+                raise ValueError("No JSON found")
             target_ids = response_data.get('relevant_node_ids', [])
             relationship = response_data.get('relationship')
 
@@ -353,7 +356,7 @@ JSON Response:"""
                     if target_id in self.graph["nodes"]:
                         self.add_link(orphan['id'], target_id, relationship)
                         self.ui_logger.info(f"Linked orphan node {orphan['id']} to {target_id}")
-        except (json.JSONDecodeError, KeyError, ValueError) as e:
+        except (KeyError, ValueError, TypeError) as e:
             self.file_logger.log_error(f"Failed to link orphan node {orphan['id']}. Invalid JSON response: {response_str}. Error: {e}")
 
     def _link_external_information(self, user_nodes: list):
@@ -380,14 +383,17 @@ External Information: "{ext_node['content']}"
 Relationship JSON:"""
                     response_str = self.llm.generate(prompt, temperature=0.3, grammar=self.json_grammar)
                     
+                    ##Block purpose: Parse response JSON using centralized utility
                     try:
-                        response_data = json.loads(response_str)
+                        response_data = extract_json(response_str, default=None)
+                        if response_data is None:
+                            raise ValueError("No JSON found")
                         relationship = response_data.get('relationship')
 
                         if relationship:
                             self.add_link(insight['id'], ext_node['id'], relationship)
                             self.ui_logger.info(f"Linked insight {insight['id']} to {ext_node['id']} as '{relationship}'")
-                    except (json.JSONDecodeError, KeyError, ValueError) as e:
+                    except (KeyError, ValueError, TypeError) as e:
                         self.file_logger.log_error(f"Failed to link external information for insight {insight['id']}. Invalid JSON response: {response_str}. Error: {e}")
                         continue
         
@@ -406,8 +412,11 @@ Information 2: "{node2['content']}"
 Relationship JSON:"""
                 response_str = self.llm.generate(prompt, temperature=0.3, grammar=self.json_grammar)
                 
+                ##Block purpose: Parse response JSON using centralized utility
                 try:
-                    response_data = json.loads(response_str)
+                    response_data = extract_json(response_str, default=None)
+                    if response_data is None:
+                        raise ValueError("No JSON found")
                     relationship = response_data.get('relationship')
                     contradiction = response_data.get('contradiction')
 
@@ -506,37 +515,36 @@ Text: '''{chunk}'''
 
 JSON Response:"""
                         
-                        analysis_data = None
                         analysis_json_str = self.llm.generate(prompt, temperature=0.2, grammar=self.json_grammar)
-                        try:
-                            analysis_data = json.loads(analysis_json_str)
-                        except (json.JSONDecodeError, KeyError, ValueError) as e:
-                            self.file_logger.log_error(f"Failed to process analysis from document chunk. Invalid JSON response: {analysis_json_str}. Error: {e}")
+                        ##Block purpose: Parse analysis JSON using centralized utility
+                        analysis_data = extract_json(analysis_json_str, default=None)
+                        if analysis_data is None:
+                            self.file_logger.log_error(f"Failed to process analysis from document chunk. Invalid JSON response: {analysis_json_str}")
                             continue
                         
-                        if analysis_data:
-                            chunk_summary = analysis_data.get('summary')
-                            if chunk_summary:
-                                insight_metadata = {
-                                    'entities': analysis_data.get('entities'),
-                                    'sentiment': analysis_data.get('sentiment'),
-                                    'source_chunk': i
-                                }
-                                summary_insight_id = self.add_node('insight', chunk_summary, user, metadata=insight_metadata)
-                                self.add_link(summary_insight_id, doc_node_id, 'derived_from')
-                                insight_ids.append(summary_insight_id)
+                        ##Block purpose: Process valid analysis data (non-None guaranteed by above check)
+                        chunk_summary = analysis_data.get('summary')
+                        if chunk_summary:
+                            insight_metadata = {
+                                'entities': analysis_data.get('entities'),
+                                'sentiment': analysis_data.get('sentiment'),
+                                'source_chunk': i
+                            }
+                            summary_insight_id = self.add_node('insight', chunk_summary, user, metadata=insight_metadata)
+                            self.add_link(summary_insight_id, doc_node_id, 'derived_from')
+                            insight_ids.append(summary_insight_id)
 
-                                # Add takeaways as separate insight nodes
-                                for takeaway in analysis_data.get('takeaways', []):
-                                    takeaway_id = self.add_node('insight', takeaway, user, metadata={'source_chunk': i})
-                                    self.add_link(takeaway_id, summary_insight_id, 'elaborates_on')
-                                    self.add_link(takeaway_id, doc_node_id, 'derived_from')
+                            # Add takeaways as separate insight nodes
+                            for takeaway in analysis_data.get('takeaways', []):
+                                takeaway_id = self.add_node('insight', takeaway, user, metadata={'source_chunk': i})
+                                self.add_link(takeaway_id, summary_insight_id, 'elaborates_on')
+                                self.add_link(takeaway_id, doc_node_id, 'derived_from')
 
-                                # Add questions as separate question nodes
-                                for question in analysis_data.get('questions', []):
-                                    question_id = self.add_node('question', question, user, metadata={'source_chunk': i})
-                                    self.add_link(question_id, summary_insight_id, 'answered_by')
-                                    self.add_link(question_id, doc_node_id, 'related_to_document')
+                            # Add questions as separate question nodes
+                            for question in analysis_data.get('questions', []):
+                                question_id = self.add_node('question', question, user, metadata={'source_chunk': i})
+                                self.add_link(question_id, summary_insight_id, 'answered_by')
+                                self.add_link(question_id, doc_node_id, 'related_to_document')
 
 
                     # Update processed docs tracker

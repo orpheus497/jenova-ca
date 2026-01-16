@@ -164,11 +164,10 @@ class UILogger:
                 
                 # Handle special message types
                 if msg_type == 'start_status':
-                    # For status updates in queue mode, we don't actually start a spinner
-                    # The TerminalUI will handle its own spinner
+                    ##Block purpose: Status updates in queue mode are handled by the UI layer
                     pass
                 elif msg_type == 'stop_status':
-                    # Similarly, stop is handled by TerminalUI
+                    ##Block purpose: Stop status is handled by the UI layer
                     pass
                 else:
                     # Call the direct method

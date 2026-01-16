@@ -4,6 +4,7 @@
 from typing import List, Dict, Any, Optional
 from collections import defaultdict
 import json
+from jenova.utils.grammar_loader import load_json_grammar
 
 ##Class purpose: Organizes context into structured categories and matrices
 class ContextOrganizer:
@@ -18,23 +19,8 @@ class ContextOrganizer:
         self.categorization_enabled = self.context_org_config.get('categorization', True)
         self.tier_classification_enabled = self.context_org_config.get('tier_classification', True)
         
-        ##Block purpose: Load JSON grammar for structured LLM responses if available
-        self.json_grammar = self._load_json_grammar()
-    
-    ##Function purpose: Load JSON grammar for structured LLM responses
-    def _load_json_grammar(self) -> Optional[Any]:
-        """Loads JSON grammar from llama.cpp if available."""
-        try:
-            import os
-            grammar_path = os.path.join(os.getcwd(), "llama.cpp", "grammars", "json.gbnf")
-            if os.path.exists(grammar_path):
-                with open(grammar_path, 'r') as f:
-                    grammar_text = f.read()
-                from llama_cpp.llama_grammar import LlamaGrammar
-                return LlamaGrammar.from_string(grammar_text)
-        except Exception as e:
-            self.file_logger.log_error(f"Could not load JSON grammar: {e}")
-        return None
+        ##Block purpose: Load JSON grammar using centralized utility
+        self.json_grammar = load_json_grammar(file_logger=file_logger)
     
     ##Function purpose: Organize context into categorized matrix
     def organize_context(self, context_items: List[str], query: str) -> Dict[str, Any]:

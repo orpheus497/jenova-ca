@@ -3,6 +3,8 @@
 ## Purpose
 This document provides a comprehensive overview of the JENOVA Cognitive Architecture system design, component relationships, and data flows.
 
+**Last Updated:** 2026-01-15 (Phase A Complete - BubbleTea-only UI)
+
 ---
 
 ## System Overview
@@ -15,13 +17,25 @@ JENOVA (Just Evolving Neural Optimized Virtual Agent) is a self-aware, evolving 
 │                                                                              │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
 │  │                         USER INTERFACE LAYER                         │   │
-│  │  ┌──────────────────┐              ┌──────────────────────────────┐ │   │
-│  │  │   Terminal UI    │◄────────────►│      Bubble Tea TUI (Go)     │ │   │
-│  │  │  (prompt_toolkit)│     IPC      │    (Modern Terminal UI)       │ │   │
-│  │  └────────┬─────────┘              └──────────────┬───────────────┘ │   │
-│  └───────────┼──────────────────────────────────────┼──────────────────┘   │
-│              │                                       │                      │
-│              ▼                                       ▼                      │
+│  │                                                                      │   │
+│  │  ┌──────────────────────────────────────────────────────────────┐  │   │
+│  │  │                    Bubble Tea TUI (Go)                        │  │   │
+│  │  │              Modern Terminal User Interface                    │  │   │
+│  │  │                                                                │  │   │
+│  │  │  • Input handling    • View rendering    • Styling            │  │   │
+│  │  │  • State management  • Keyboard shortcuts                      │  │   │
+│  │  └───────────────────────────┬──────────────────────────────────┘  │   │
+│  │                              │                                      │   │
+│  │                         IPC via JSON                                │   │
+│  │                       (stdin/stdout pipes)                          │   │
+│  │                              │                                      │   │
+│  │  ┌───────────────────────────┴──────────────────────────────────┐  │   │
+│  │  │              BubbleTeaUI Bridge (Python)                      │  │   │
+│  │  │         Handles IPC, command processing, interactive flows    │  │   │
+│  │  └──────────────────────────────────────────────────────────────┘  │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                    │                                        │
+│                                    ▼                                        │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
 │  │                       COGNITIVE ENGINE LAYER                         │   │
 │  │                                                                      │   │
@@ -125,14 +139,15 @@ JENOVA (Just Evolving Neural Optimized Virtual Agent) is a self-aware, evolving 
 
 ## Component Breakdown
 
-### 1. User Interface Layer
+### 1. User Interface Layer (BubbleTea Only)
+
+**Note:** BubbleTea is the SOLE user interface.
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| Terminal UI | `ui/terminal.py` | Rich terminal interface using prompt_toolkit |
-| Bubble Tea TUI | `tui/main.go` | Modern Go-based TUI with IPC to Python backend |
-| UI Logger | `ui/logger.py` | Formatted console output with spinners |
-| Bubbletea Bridge | `ui/bubbletea.py` | Python-Go IPC communication |
+| Bubble Tea TUI | `tui/main.go` | Modern Go-based TUI with rich rendering |
+| BubbleTeaUI Bridge | `ui/bubbletea.py` | Python-Go IPC communication and command handling |
+| UI Logger | `ui/logger.py` | Formatted console output with thread-safe queuing |
 
 ### 2. Cognitive Engine Layer
 
@@ -204,7 +219,14 @@ User Input
     │
     ▼
 ┌────────────────┐
-│ Terminal UI    │
+│ Bubble Tea TUI │
+│    (Go)        │
+└───────┬────────┘
+        │ JSON IPC
+        ▼
+┌────────────────┐
+│ BubbleTeaUI    │
+│  (Python)      │
 └───────┬────────┘
         │
         ▼
@@ -242,7 +264,8 @@ User Input
         │
         ▼
 ┌────────────────┐
-│ User Output    │
+│ Bubble Tea TUI │
+│  (Display)     │
 └────────────────┘
 ```
 
@@ -327,8 +350,7 @@ jenova-ca/
 │
 ├── src/jenova/                  # Main source code
 │   ├── __init__.py              # Package initialization
-│   ├── main.py                  # Application entry point
-│   ├── main_bubbletea.py        # Bubble Tea entry point
+│   ├── main.py                  # SOLE application entry point (BubbleTea)
 │   ├── llm_interface.py         # LLM integration
 │   ├── tools.py                 # Tool calling
 │   ├── default_api.py           # API placeholder
@@ -363,9 +385,8 @@ jenova-ca/
 │   ├── assumptions/             # Assumption tracking
 │   │   └── manager.py           # Assumption lifecycle
 │   │
-│   ├── ui/                      # User interfaces
-│   │   ├── terminal.py          # Terminal UI
-│   │   ├── bubbletea.py         # Go TUI bridge
+│   ├── ui/                      # User interface (BubbleTea only)
+│   │   ├── bubbletea.py         # Go TUI bridge with IPC
 │   │   └── logger.py            # UI logging
 │   │
 │   ├── utils/                   # Utilities
@@ -401,8 +422,9 @@ jenova-ca/
 │
 └── [Root Files]
     ├── pyproject.toml           # Project configuration
-    ├── requirements.txt         # Dependencies
+    ├── requirements.txt         # Dependencies (prompt-toolkit removed)
     ├── setup.py                 # Setup script
+    ├── jenova                   # Executable entry point
     ├── README.md                # Main documentation
     └── ...
 ```
@@ -416,8 +438,9 @@ jenova-ca/
 | **LLM** | llama-cpp-python | Local LLM inference |
 | **Embeddings** | SentenceTransformers | Text embeddings |
 | **Vector DB** | ChromaDB | Persistent vector storage |
-| **Terminal UI** | prompt_toolkit | Python terminal UI |
-| **Modern TUI** | Bubble Tea (Go) | Modern terminal interface |
+| **TUI** | Bubble Tea (Go) | Modern terminal interface |
+| **IPC Bridge** | Python subprocess | Python-Go communication |
+| **Logging** | rich | Formatted console output |
 | **Config** | YAML | Configuration files |
 | **Testing** | pytest | Test framework |
 
@@ -425,13 +448,14 @@ jenova-ca/
 
 ## Key Design Decisions
 
-1. **Local-First**: All LLM inference runs locally using llama-cpp-python
-2. **Multi-Memory**: Three-tier memory system (Episodic, Semantic, Procedural)
-3. **Knowledge Graph**: Cortex maintains interconnected knowledge nodes
-4. **Dual UI**: Both Python (prompt_toolkit) and Go (Bubble Tea) interfaces
-5. **100% FOSS**: Fully open-source, no proprietary dependencies
-6. **ChromaDB**: Vector database for semantic search capabilities
-7. **Modular Design**: Clear separation of concerns across layers
+1. **BubbleTea-Only UI**: Single UI implementation for maintainability (Phase A decision)
+2. **Local-First**: All LLM inference runs locally using llama-cpp-python
+3. **Multi-Memory**: Three-tier memory system (Episodic, Semantic, Procedural)
+4. **Knowledge Graph**: Cortex maintains interconnected knowledge nodes
+5. **IPC Architecture**: Go handles UI rendering, Python handles cognitive logic
+6. **100% FOSS**: Fully open-source, no proprietary dependencies
+7. **ChromaDB**: Vector database for semantic search capabilities
+8. **Modular Design**: Clear separation of concerns across layers
 
 ---
 
@@ -442,3 +466,23 @@ jenova-ca/
 - ✅ `.gitignore` excludes sensitive files
 - ✅ No unsafe eval/exec patterns
 - ✅ ChromaDB telemetry disabled by default
+
+---
+
+## Phase A Changes Summary
+
+The following changes were made during Phase A (UI Consolidation):
+
+### Removed Files
+- `src/jenova/main_bubbletea.py` (merged into main.py)
+- `src/jenova/ui/terminal.py` (Python UI removed)
+
+### Modified Files
+- `src/jenova/main.py` - Now sole entry point with BubbleTeaUI
+- `src/jenova/ui/bubbletea.py` - Enhanced with full feature parity
+- `src/jenova/ui/__init__.py` - Updated exports
+- `jenova` - Simplified executable
+- `requirements.txt` - Removed prompt-toolkit dependency
+
+### Dependencies Removed
+- `prompt-toolkit` (was only used by terminal.py)
