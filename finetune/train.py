@@ -1,74 +1,134 @@
-##Script function and purpose: Fine-tuning Data Generator for The JENOVA Cognitive Architecture
-##This script converts user insights into a JSONL format suitable for fine-tuning LLMs
-##It synthesizes conversational pairs from stored insights to enable personalized model training
+##Script function and purpose: Fine-tuning training script for JENOVA embedding model
+"""
+JENOVA Embedding Model Training
 
-import os
-import json
-import glob
-import argparse
+Training script for fine-tuning the JENOVA embedding model
+on learned insights and interactions.
+"""
 
-##Function purpose: Scan insights directory and compile into fine-tuning format
-def create_training_data(insights_dir, output_file):
+from __future__ import annotations
+
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
+
+
+##Function purpose: Load training data from JSONL file
+def load_training_data(path: Path) -> list[dict[str, str]]:
     """
-    Scans the user's insights directory and compiles all generated insights
-    into a conversational format suitable for fine-tuning.
+    Load training data from JSONL file.
+    
+    Args:
+        path: Path to JSONL file
+        
+    Returns:
+        List of training examples
     """
-    if not os.path.exists(insights_dir):
-        print(f"Error: Insights directory not found at '{insights_dir}'")
-        return
-
-    print(f"Scanning for insights in: {insights_dir}")
-    count = 0
-    insight_files = glob.glob(os.path.join(insights_dir, "**", "*.json"), recursive=True)
-    print(f"Found {len(insight_files)} insight files.")
-
-    with open(output_file, 'w', encoding='utf-8') as outfile:
-        for file_path in insight_files:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                try:
-                    data = json.load(f)
-                    topic = data.get("topic", "general")
-                    insight_content = data.get("content")
-                    user = data.get("user", "user")
-
-                    if not insight_content:
-                        continue
-
-                    # Synthesize a user prompt that would lead to the insight
-                    instruction = f"Let's reflect on the topic of '{topic}'. Based on our conversations, can you summarize your understanding of my perspective?"
-                    
-                    # The assistant's response is the insight itself
-                    assistant_response = f"Of course, {user}. I've developed an insight regarding '{topic}'. My understanding is that: {insight_content}"
-
-                    formatted_entry = {
-                        "messages": [
-                            {"role": "user", "content": instruction},
-                            {"role": "assistant", "content": assistant_response}
-                        ]
-                    }
-                    outfile.write(json.dumps(formatted_entry) + "\n")
-                    count += 1
-                except json.JSONDecodeError:
-                    print(f"Warning: Skipping corrupted JSON file: {file_path}")
-                    continue
+    import json
     
-    print(f"Successfully created '{output_file}' with {count} training entries.")
+    examples: list[dict[str, str]] = []
+    
+    ##Loop purpose: Read each line as JSON
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            ##Condition purpose: Skip empty lines
+            if line:
+                examples.append(json.loads(line))
+    
+    return examples
 
-##Function purpose: Parse command line arguments and run the training data generator
-def main():
-    parser = argparse.ArgumentParser(description="Create a fine-tuning dataset from JENOVA's insights.")
+
+##Function purpose: Train embedding model on examples
+def train(
+    model_name: str = "all-MiniLM-L6-v2",
+    training_data_path: Path | None = None,
+    output_path: Path | None = None,
+    epochs: int = 3,
+    batch_size: int = 16,
+) -> Path:
+    """
+    Train the JENOVA embedding model.
     
-    # Get the username of the current user
-    username = os.getlogin()
+    Args:
+        model_name: Base model to fine-tune
+        training_data_path: Path to training JSONL
+        output_path: Where to save trained model
+        epochs: Number of training epochs
+        batch_size: Training batch size
+        
+    Returns:
+        Path to saved model
+    """
+    from sentence_transformers import SentenceTransformer, InputExample, losses
+    from torch.utils.data import DataLoader
     
-    default_insights_dir = os.path.join(os.path.expanduser("~"), ".jenova-ai", "users", username, "insights")
+    ##Step purpose: Set default paths
+    if training_data_path is None:
+        training_data_path = Path(".jenova-ai/training_data.jsonl")
+    if output_path is None:
+        output_path = Path(".jenova-ai/models/jenova-embedding")
     
-    parser.add_argument("--insights-dir", default=default_insights_dir, help=f"Directory containing the user's insights. Defaults to the current user's insights directory: {default_insights_dir}")
-    parser.add_argument("--output-file", default="finetune_train.jsonl", help="Output file for the fine-tuning data. Defaults to 'finetune_train.jsonl' in the current directory.")
+    ##Step purpose: Load base model
+    model = SentenceTransformer(model_name)
+    
+    ##Step purpose: Load and convert training data
+    raw_examples = load_training_data(training_data_path)
+    
+    ##Step purpose: Convert to InputExamples (assuming contrastive format)
+    train_examples: list[InputExample] = []
+    ##Loop purpose: Convert each raw example
+    for example in raw_examples:
+        ##Condition purpose: Handle different formats
+        if "anchor" in example and "positive" in example:
+            train_examples.append(InputExample(
+                texts=[example["anchor"], example["positive"]],
+            ))
+    
+    ##Step purpose: Create dataloader
+    train_dataloader = DataLoader(
+        train_examples,
+        shuffle=True,
+        batch_size=batch_size,
+    )
+    
+    ##Step purpose: Define loss function
+    train_loss = losses.MultipleNegativesRankingLoss(model)
+    
+    ##Step purpose: Train model
+    model.fit(
+        train_objectives=[(train_dataloader, train_loss)],
+        epochs=epochs,
+        warmup_steps=100,
+        output_path=str(output_path),
+    )
+    
+    return output_path
+
+
+##Condition purpose: Allow running as script
+if __name__ == "__main__":
+    import argparse
+    
+    ##Step purpose: Parse arguments
+    parser = argparse.ArgumentParser(description="Train JENOVA embedding model")
+    parser.add_argument("--data", type=Path, help="Training data JSONL")
+    parser.add_argument("--output", type=Path, help="Output model path")
+    parser.add_argument("--epochs", type=int, default=3, help="Training epochs")
+    parser.add_argument("--batch-size", type=int, default=16, help="Batch size")
+    parser.add_argument("--base-model", default="all-MiniLM-L6-v2", help="Base model")
     
     args = parser.parse_args()
-
-    create_training_data(args.insights_dir, args.output_file)
-
-if __name__ == "__main__":
-    main()
+    
+    ##Action purpose: Run training
+    output = train(
+        model_name=args.base_model,
+        training_data_path=args.data,
+        output_path=args.output,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+    )
+    
+    print(f"Model saved to: {output}")

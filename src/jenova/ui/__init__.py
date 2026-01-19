@@ -1,12 +1,14 @@
-##Script function and purpose: UI package for The JENOVA Cognitive Architecture
-##This package provides user interface components:
-##- Bubble Tea TUI integration (bubbletea.py) - The SOLE user interface
-##- UI logging utilities (logger.py)
-##
-##Note: As of Phase A refactoring, BubbleTea is the only supported UI.
-##The Python-based terminal UI has been removed in favor of the Go-based TUI.
+##Script function and purpose: UI package initialization and exports
+"""
+UI components for JENOVA.
 
-from jenova.ui.bubbletea import BubbleTeaUI
-from jenova.ui.logger import UILogger
+Provides the terminal user interface built with Textual,
+including the main application and reusable components.
+"""
 
-__all__ = ['BubbleTeaUI', 'UILogger']
+from jenova.ui.app import JenovaApp, run_tui
+
+__all__ = [
+    "JenovaApp",
+    "run_tui",
+]

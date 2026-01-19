@@ -1,176 +1,483 @@
 ##Script function and purpose: Assumption Manager for The JENOVA Cognitive Architecture
-##This module manages the lifecycle of user assumptions including creation, verification, and resolution
+"""
+Assumption Manager
 
-import os
-from datetime import datetime
-from typing import Any, Dict, Optional
-from jenova.utils.file_io import load_json_file, save_json_file
+Manages the lifecycle of user assumptions including creation, verification,
+and resolution. Assumptions are linked to the cognitive graph and can be
+converted to insights when verified as true.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Protocol, runtime_checkable
+
+import structlog
+
+from jenova.assumptions.types import (
+    Assumption,
+    AssumptionStatus,
+    AssumptionStore,
+    CortexId,
+)
+from jenova.exceptions import (
+    AssumptionDuplicateError,
+    AssumptionNotFoundError,
+    LLMGenerationError,
+)
+from jenova.graph.types import Node
+from jenova.llm.types import GenerationParams, Prompt
+from jenova.utils.migrations import load_json_with_migration, save_json_atomic
+
+
+##Step purpose: Get module logger
+logger = structlog.get_logger(__name__)
+
+
+##Class purpose: Protocol for cognitive graph operations
+@runtime_checkable
+class GraphProtocol(Protocol):
+    """Protocol for cognitive graph dependency."""
+    
+    def add_node(self, node: Node) -> None:
+        """Add a node to the graph."""
+        ...
+    
+    def has_node(self, node_id: str) -> bool:
+        """Check if node exists."""
+        ...
+
+
+##Class purpose: Protocol for LLM operations
+@runtime_checkable
+class LLMProtocol(Protocol):
+    """Protocol for LLM dependency."""
+    
+    def generate_text(
+        self,
+        text: str,
+        system_prompt: str = "You are a helpful assistant.",
+        params: GenerationParams | None = None,
+    ) -> str:
+        """Generate text completion."""
+        ...
+
 
 ##Class purpose: Manages lifecycle of assumptions about users
 class AssumptionManager:
-    """Manages the lifecycle of assumptions about the user."""
-    ##Function purpose: Initialize assumption manager with configuration and components
+    """
+    Manages the lifecycle of assumptions about the user.
+    
+    Assumptions are hypotheses formed during conversation that can be
+    verified through explicit user confirmation. Once verified, true
+    assumptions can be converted to permanent insights.
+    """
+    
+    ##Method purpose: Initialize assumption manager with dependencies
     def __init__(
-        self, 
-        config: Dict[str, Any], 
-        ui_logger: Any, 
-        file_logger: Any, 
-        user_data_root: str, 
-        cortex: Any, 
-        llm: Any, 
-        integration_layer: Optional[Any] = None
+        self,
+        storage_path: Path,
+        graph: GraphProtocol,
+        llm: LLMProtocol,
     ) -> None:
-        self.config = config
-        self.ui_logger = ui_logger
-        self.file_logger = file_logger
-        self.assumptions_file = os.path.join(user_data_root, 'assumptions.json')
-        self.cortex = cortex
-        self.llm = llm
-        self.integration_layer = integration_layer  # Optional integration layer for Cortex-Memory feedback
-        ##Block purpose: Load assumptions using centralized file I/O utility
-        self.assumptions = load_json_file(
-            self.assumptions_file, 
-            {"verified": [], "unverified": [], "true": [], "false": []},
-            file_logger
+        """
+        Initialize assumption manager.
+        
+        Args:
+            storage_path: Directory for assumption data
+            graph: Cognitive graph for node linking
+            llm: LLM interface for verification questions
+        """
+        ##Step purpose: Store dependencies
+        self._storage_path = storage_path
+        self._assumptions_file = storage_path / "assumptions.json"
+        self._graph = graph
+        self._llm = llm
+        
+        ##Action purpose: Load assumptions from persistent storage
+        self._store = self._load()
+        
+        logger.info(
+            "assumption_manager_initialized",
+            storage_path=str(storage_path),
+            total_assumptions=len(self._store.all_assumptions()),
         )
-
-    ##Function purpose: Save assumptions to persistent JSON file
-    def _save_assumptions(self):
-        """Saves assumptions to the assumptions.json file."""
-        save_json_file(self.assumptions_file, self.assumptions, indent=4, file_logger=self.file_logger)
-
-    ##Function purpose: Add a new assumption, avoiding duplicates
-    def add_assumption(self, assumption_content: str, username: str, status: str = 'unverified', linked_to: list = None) -> str:
-        """Adds a new assumption, avoiding duplicates."""
-        # Check for duplicates across all statuses
-        for s in ['unverified', 'true', 'false']:
-            if s in self.assumptions:
-                for existing_assumption in self.assumptions[s]:
-                    if existing_assumption.get('content') == assumption_content and existing_assumption.get('username') == username:
-                        if s in ['true', 'false']:
-                            self.ui_logger.system_message(".. >> Assumption already exists and has been resolved.")
-                            return existing_assumption.get('cortex_id')
-                        else: # unverified
-                            self.ui_logger.system_message(".. >> Assumption already exists and is unverified.")
-                            return existing_assumption.get('cortex_id')
-
-        if status not in self.assumptions:
-            status = 'unverified'
+    
+    ##Method purpose: Load assumptions from persistent storage
+    def _load(self) -> AssumptionStore:
+        """Load assumptions from disk with migration support."""
+        ##Step purpose: Define default factory for empty store
+        def default_factory() -> dict[str, object]:
+            return {
+                "unverified": [],
+                "true": [],
+                "false": [],
+            }
         
-        new_assumption = {
-            "content": assumption_content,
-            "username": username,
-            "timestamp": datetime.now().isoformat()
-        }
+        ##Action purpose: Load with migration support
+        data = load_json_with_migration(
+            self._assumptions_file,
+            default_factory=default_factory,
+        )
         
-        node_id = self.cortex.add_node('assumption', assumption_content, username, linked_to=linked_to)
-        new_assumption['cortex_id'] = node_id
-
-        ##Block purpose: Provide feedback from Cortex to Memory (if integration layer available)
-        integration_config = self.config.get('cortex', {}).get('integration', {})
-        if integration_config.get('cortex_to_memory_feedback', False) and self.integration_layer:
-            try:
-                self.integration_layer.feedback_cortex_to_memory(node_id, username)
-            except Exception as e:
-                self.file_logger.log_error(f"Error providing Cortex-to-Memory feedback for assumption {node_id}: {e}")
-
-        self.assumptions[status].append(new_assumption)
-        self._save_assumptions()
-
-        return node_id
-
-    ##Function purpose: Return all assumptions grouped by status
-    def get_all_assumptions(self) -> dict:
-        """Returns all assumptions."""
-        return self.assumptions
-
-    ##Function purpose: Get an unverified assumption and generate verification question
-    def get_assumption_to_verify(self, username: str):
-        """Gets an unverified assumption and generates a question to verify it."""
-        unverified = self.assumptions.get('unverified', [])
-        if not unverified:
-            return None, None
-
-        assumption_to_verify = unverified[0]
+        return AssumptionStore.from_dict(data)
+    
+    ##Method purpose: Save assumptions to persistent storage
+    def _save(self) -> None:
+        """Save assumptions to disk atomically."""
+        data = self._store.to_dict()
+        data["schema_version"] = 1
+        save_json_atomic(self._assumptions_file, data)
+    
+    ##Method purpose: Add a new assumption, rejecting duplicates
+    def add_assumption(
+        self,
+        content: str,
+        username: str,
+        linked_to: list[CortexId] | None = None,
+    ) -> CortexId:
+        """
+        Add a new assumption.
         
-        prompt = f'''You have an unverified assumption about the user '{username}'. Ask them a clear, direct question to confirm or deny this assumption. The user's response will determine if the assumption is true or false.
+        Args:
+            content: The assumption statement
+            username: User this assumption relates to
+            linked_to: Optional list of existing cortex IDs to link
+            
+        Returns:
+            The cortex ID of the new assumption node
+            
+        Raises:
+            AssumptionDuplicateError: If assumption already exists
+        """
+        ##Step purpose: Check for duplicates
+        existing = self._store.find_by_content(content, username)
+        
+        ##Condition purpose: Reject duplicate assumptions
+        if existing is not None:
+            assumption, status = existing
+            logger.warning(
+                "assumption_duplicate",
+                content=content[:50],
+                existing_status=status.value,
+            )
+            raise AssumptionDuplicateError(content, status.value)
+        
+        ##Step purpose: Create cortex node for assumption
+        node = Node.create(
+            label=content[:50],
+            content=content,
+            node_type="assumption",
+            metadata={"username": username},
+        )
+        self._graph.add_node(node)
+        
+        ##Step purpose: Create assumption record
+        assumption = Assumption(
+            content=content,
+            username=username,
+            status=AssumptionStatus.UNVERIFIED,
+            cortex_id=node.id,
+        )
+        
+        ##Action purpose: Add to store and persist
+        self._store.unverified.append(assumption)
+        self._save()
+        
+        logger.info(
+            "assumption_added",
+            cortex_id=node.id,
+            username=username,
+            content_preview=content[:50],
+        )
+        
+        return node.id
+    
+    ##Method purpose: Get all assumptions as store
+    def get_all_assumptions(self) -> AssumptionStore:
+        """
+        Get all assumptions.
+        
+        Returns:
+            AssumptionStore containing all assumptions by status
+        """
+        return self._store
+    
+    ##Method purpose: Get an unverified assumption and generate verification question
+    def get_assumption_to_verify(
+        self,
+        username: str,
+    ) -> tuple[Assumption, str] | None:
+        """
+        Get an unverified assumption and generate a verification question.
+        
+        Args:
+            username: Username to filter assumptions for
+            
+        Returns:
+            Tuple of (assumption, question) if found, None otherwise
+        """
+        ##Step purpose: Find first unverified assumption for user
+        user_unverified = [
+            a for a in self._store.unverified 
+            if a.username == username
+        ]
+        
+        ##Condition purpose: Return None if no unverified assumptions
+        if not user_unverified:
+            return None
+        
+        assumption = user_unverified[0]
+        
+        ##Step purpose: Generate verification question using LLM
+        prompt_text = f'''You have an unverified assumption about the user '{username}'. Ask them a clear, direct question to confirm or deny this assumption. The user's response will determine if the assumption is true or false.
 
-Assumption: "{assumption_to_verify["content"]}"
+Assumption: "{assumption.content}"
 
 Your question to the user:'''
         
+        ##Error purpose: Handle LLM generation failure
         try:
-            question = self.llm.generate(prompt, temperature=0.3)
-            return assumption_to_verify, question
-        except Exception as e:
-            self.file_logger.log_error(f"Error generating assumption verification question: {e}")
-            return None, None
+            params = GenerationParams(
+                max_tokens=256,
+                temperature=0.3,
+            )
+            question = self._llm.generate_text(
+                prompt_text,
+                system_prompt="You are a helpful assistant asking clarifying questions.",
+                params=params,
+            )
+            return (assumption, question.strip())
+        except LLMGenerationError as e:
+            logger.error(
+                "assumption_verification_question_failed",
+                error=str(e),
+                assumption_content=assumption.content[:50],
+            )
+            return None
+    
+    ##Method purpose: Resolve an assumption based on user response
+    def resolve_assumption(
+        self,
+        assumption: Assumption,
+        user_response: str,
+        username: str,
+    ) -> AssumptionStatus:
+        """
+        Resolve an assumption based on user response.
+        
+        Uses LLM to analyze the user's response and determine if the
+        assumption is confirmed or denied.
+        
+        Args:
+            assumption: The assumption to resolve
+            user_response: User's response to verification question
+            username: Username for validation
+            
+        Returns:
+            The resolved status (TRUE or FALSE)
+            
+        Raises:
+            AssumptionNotFoundError: If assumption not in unverified list
+        """
+        ##Step purpose: Verify assumption exists in unverified list
+        found = False
+        found_index = -1
+        ##Loop purpose: Find the assumption in unverified list
+        for idx, a in enumerate(self._store.unverified):
+            if a.content == assumption.content and a.username == username:
+                found = True
+                found_index = idx
+                break
+        
+        ##Condition purpose: Raise if not found
+        if not found:
+            raise AssumptionNotFoundError(assumption.content)
+        
+        ##Step purpose: Use LLM to analyze response
+        prompt_text = f'''Analyze the user's response to determine if it confirms or denies the assumption. Respond with exactly "true" or "false".
 
-    ##Function purpose: Move assumption to true or false list based on user response
-    def resolve_assumption(self, assumption, user_response: str, username: str):
-        """Moves an assumption to the 'true' or 'false' list based on user response."""
-        prompt = f'''Analyze the user's response to determine if it confirms or denies the assumption. Respond with "true" or "false".
-
-Assumption: "{assumption["content"]}"
+Assumption: "{assumption.content}"
 User Response: "{user_response}"
 
 Result:'''
         
-        try:
-            result = self.llm.generate(prompt, temperature=0.1).strip().lower()
-        except Exception as e:
-            self.file_logger.log_error(f"Error resolving assumption: {e}")
-            return
-
-        if result == 'true':
-            self.assumptions['true'].append(assumption)
-            self.assumptions['verified'].append(assumption)
-            # Also add to cortex as a true insight
-            linked_to_cortex_id = []
-            if 'cortex_id' in assumption:
-                linked_to_cortex_id.append(assumption['cortex_id'])
-            else:
-                # If cortex_id is missing, create a new node for the assumption
-                node_id = self.cortex.add_node('assumption', assumption['content'], username)
-                assumption['cortex_id'] = node_id
-                linked_to_cortex_id.append(node_id)
-            insight_node_id = self.cortex.add_node('insight', assumption['content'], username, linked_to=linked_to_cortex_id)
-            
-            ##Block purpose: Provide feedback from Cortex to Memory for new insight (if integration layer available)
-            integration_config = self.config.get('cortex', {}).get('integration', {})
-            if integration_config.get('cortex_to_memory_feedback', False) and self.integration_layer:
-                try:
-                    self.integration_layer.feedback_cortex_to_memory(insight_node_id, username)
-                except Exception as e:
-                    self.file_logger.log_error(f"Error providing Cortex-to-Memory feedback for converted insight {insight_node_id}: {e}")
-            
-            self.ui_logger.system_message("Assumption confirmed and converted to insight.")
-        else:
-            self.assumptions['false'].append(assumption)
-            self.assumptions['verified'].append(assumption)
-            self.ui_logger.system_message("Assumption marked as false.")
+        ##Step purpose: Determine result from LLM response
+        params = GenerationParams(
+            max_tokens=10,
+            temperature=0.1,
+        )
         
-        # Remove from unverified
-        for i, a in enumerate(self.assumptions['unverified']):
-            if a['content'] == assumption['content'] and a['username'] == username:
-                self.assumptions['unverified'].pop(i)
-                break
-        self._save_assumptions()
-
-    ##Function purpose: Update an existing assumption's content
-    def update_assumption(self, old_assumption_content: str, new_assumption_content: str, username: str):
-        """Updates an existing assumption."""
-        for status in ['verified', 'unverified', 'true', 'false']:
-            for assumption in self.assumptions[status]:
-                if assumption['content'] == old_assumption_content and assumption['username'] == username:
-                    assumption['content'] = new_assumption_content
-                    assumption['timestamp'] = datetime.now().isoformat()
-                    if 'cortex_id' in assumption:
-                        self.cortex.update_node(assumption['cortex_id'], content=new_assumption_content)
-                    else:
-                        node_id = self.cortex.add_node('assumption', new_assumption_content, username)
-                        assumption['cortex_id'] = node_id
-                    self._save_assumptions()
-                    self.ui_logger.info(f"Assumption updated: {old_assumption_content} -> {new_assumption_content}")
-                    return
-        self.ui_logger.system_message("Assumption not found.")
+        ##Error purpose: Handle LLM failure with default to false
+        try:
+            result = self._llm.generate_text(
+                prompt_text,
+                system_prompt="You are analyzing whether a response confirms or denies an assumption. Respond only with 'true' or 'false'.",
+                params=params,
+            ).strip().lower()
+        except LLMGenerationError as e:
+            logger.error(
+                "assumption_resolution_failed",
+                error=str(e),
+            )
+            ##Step purpose: Default to false on error
+            result = "false"
+        
+        ##Step purpose: Determine final status
+        is_true = result == "true"
+        new_status = AssumptionStatus.TRUE if is_true else AssumptionStatus.FALSE
+        
+        ##Step purpose: Update assumption with new status
+        updated = assumption.with_updates(status=new_status)
+        
+        ##Step purpose: Move to appropriate list
+        self._store.unverified.pop(found_index)
+        
+        ##Condition purpose: Add to correct verified list and create insight if true
+        if is_true:
+            self._store.verified_true.append(updated)
+            
+            ##Step purpose: Create insight node linked to assumption (legacy behavior)
+            insight_node = Node.create(
+                label=f"Insight: {assumption.content[:40]}",
+                content=assumption.content,
+                node_type="insight",
+                metadata={
+                    "username": username,
+                    "source": "assumption_verification",
+                    "linked_assumption_id": updated.cortex_id or "",
+                },
+            )
+            self._graph.add_node(insight_node)
+            
+            logger.info(
+                "assumption_confirmed_and_converted_to_insight",
+                assumption_content=assumption.content[:50],
+                insight_node_id=insight_node.id,
+            )
+        else:
+            self._store.verified_false.append(updated)
+            logger.info(
+                "assumption_denied",
+                content=assumption.content[:50],
+            )
+        
+        self._save()
+        
+        return new_status
+    
+    ##Method purpose: Update an existing assumption's content
+    def update_assumption(
+        self,
+        old_content: str,
+        new_content: str,
+        username: str,
+    ) -> Assumption:
+        """
+        Update an existing assumption's content.
+        
+        Args:
+            old_content: Current content to find
+            new_content: New content to set
+            username: Username for validation
+            
+        Returns:
+            Updated assumption
+            
+        Raises:
+            AssumptionNotFoundError: If assumption not found
+        """
+        ##Step purpose: Search all lists for the assumption
+        lists = [
+            ("unverified", self._store.unverified),
+            ("true", self._store.verified_true),
+            ("false", self._store.verified_false),
+        ]
+        
+        ##Loop purpose: Find and update assumption
+        for list_name, assumption_list in lists:
+            for idx, assumption in enumerate(assumption_list):
+                if assumption.content == old_content and assumption.username == username:
+                    ##Step purpose: Create updated assumption
+                    updated = assumption.with_updates(content=new_content)
+                    assumption_list[idx] = updated
+                    self._save()
+                    
+                    logger.info(
+                        "assumption_updated",
+                        old_content=old_content[:30],
+                        new_content=new_content[:30],
+                        list_name=list_name,
+                    )
+                    
+                    return updated
+        
+        raise AssumptionNotFoundError(old_content)
+    
+    ##Method purpose: Get count of unverified assumptions for user
+    def unverified_count(self, username: str) -> int:
+        """Get count of unverified assumptions for a user."""
+        return len([
+            a for a in self._store.unverified 
+            if a.username == username
+        ])
+    
+    ##Method purpose: Get all pending verifications for a user
+    def get_pending_verifications(self, username: str) -> list[Assumption]:
+        """
+        Get all assumptions needing verification for a user.
+        
+        Args:
+            username: Username to filter by
+            
+        Returns:
+            List of unverified Assumptions for the user
+        """
+        return [
+            a for a in self._store.unverified
+            if a.username == username
+        ]
+    
+    ##Method purpose: Get all assumptions for a user regardless of status
+    def get_assumptions_for_user(self, username: str) -> list[Assumption]:
+        """
+        Get all assumptions for a user across all statuses.
+        
+        Args:
+            username: Username to filter by
+            
+        Returns:
+            List of all Assumptions for the user
+        """
+        return [
+            a for a in self._store.all_assumptions()
+            if a.username == username
+        ]
+    
+    ##Method purpose: Factory method for production use
+    @classmethod
+    def create(
+        cls,
+        storage_path: Path,
+        graph: GraphProtocol,
+        llm: LLMProtocol,
+    ) -> "AssumptionManager":
+        """
+        Factory method to create AssumptionManager.
+        
+        Args:
+            storage_path: Directory for assumption data
+            graph: Cognitive graph for node linking
+            llm: LLM interface for verification questions
+            
+        Returns:
+            Configured AssumptionManager instance
+        """
+        ##Step purpose: Ensure storage directory exists
+        storage_path.mkdir(parents=True, exist_ok=True)
+        
+        return cls(
+            storage_path=storage_path,
+            graph=graph,
+            llm=llm,
+        )
