@@ -120,8 +120,8 @@ def validate_path_component(component: str) -> str:
     if ".." in component:
         raise ValueError("Path component cannot contain '..'")
     
-    ##Condition purpose: Check for path separators
-    if "/" in component or "\\" in component:
+    ##Condition purpose: Check for path separators (POSIX forward slash only)
+    if "/" in component:
         raise ValueError("Path component cannot contain path separators")
     
     ##Condition purpose: Check for null bytes

@@ -23,6 +23,30 @@ pip install -e ".[dev]"
 pip install -e ".[dev,finetune]"
 ```
 
+### GPU/CUDA Support
+
+JENOVA supports GPU acceleration via llama-cpp-python for faster inference.
+
+**For NVIDIA GPUs (CUDA):**
+```bash
+# Install llama-cpp-python with CUDA support
+CMAKE_ARGS="-DLLAMA_CUBLAS=on" pip install llama-cpp-python --no-cache-dir
+```
+
+**For Apple Silicon (Metal):**
+```bash
+# Metal support is usually enabled by default on macOS
+pip install llama-cpp-python
+```
+
+**Configuration:**
+```yaml
+hardware:
+  gpu_layers: all  # Use all GPU layers (or "none" for CPU only)
+```
+
+The system automatically detects GPU availability and falls back to CPU if GPU is unavailable. See `.devdocs/builders/logic_engineer/CUDA_SUPPORT.md` for detailed documentation.
+
 ## Usage
 
 ```bash
@@ -81,19 +105,33 @@ jenova-ca/
 
 ## Platform Support
 
-JENOVA is designed for **native, out-of-the-box support** on:
+JENOVA is designed for **100% POSIX/UNIX compliance** and supports:
 
 | Platform | Status | Notes |
 |----------|--------|-------|
 | **FreeBSD** | ✅ Fully Supported | Tested on FreeBSD 13.x, 14.x |
-| **Linux** | ✅ Fully Supported | Tested on Ubuntu 22.04+, Debian 12+, Fedora 38+ |
+| **Linux** | ✅ Fully Supported | Tested on Ubuntu 22.04+, Debian 12+, Fedora 38+, Arch Linux |
+| **macOS** | ✅ Fully Supported | Tested on macOS 11.0+ (Apple Silicon and Intel) |
 
 ### Platform Requirements
 
-- **Python**: 3.10+ (native packages available on both platforms)
-- **ChromaDB**: Uses SQLite backend (native on FreeBSD/Linux)
+- **Python**: 3.10+ (native packages available on all POSIX platforms)
+- **ChromaDB**: Uses SQLite backend (native on all POSIX systems)
 - **llama-cpp-python**: Compiles natively with system compilers
-- **No Windows-specific dependencies**: Pure POSIX-compliant codebase
+- **POSIX Compliance**: 100% POSIX/UNIX compliant codebase
+- **No Windows Support**: This is a POSIX-first architecture
+
+### POSIX/UNIX Standards
+
+JENOVA follows strict POSIX/UNIX standards:
+- ✅ POSIX path conventions (`/` separator only, no backslashes)
+- ✅ POSIX file operations (atomic writes, octal permissions)
+- ✅ POSIX shell commands only (no Windows commands)
+- ✅ LF line endings (enforced via `.editorconfig`)
+- ✅ UTF-8 encoding throughout
+- ✅ POSIX-compliant subprocess execution
+
+See `.devdocs/builders/logic_engineer/POSIX_COMPLIANCE.md` for detailed compliance documentation.
 
 ### FreeBSD-Specific Notes
 

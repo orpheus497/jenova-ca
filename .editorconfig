@@ -1,7 +1,7 @@
 # EditorConfig - Cross-platform editor settings for JENOVA
 # https://editorconfig.org
 
-##Script function and purpose: Ensures consistent formatting across all editors on FreeBSD and Linux
+##Script function and purpose: Ensures consistent formatting across all editors on FreeBSD, Linux, and macOS (POSIX/UNIX systems)
 
 root = true
 
@@ -32,7 +32,7 @@ indent_size = 4
 trim_trailing_whitespace = false
 indent_size = 2
 
-# Shell scripts (FreeBSD/Linux compatible)
+# Shell scripts (POSIX: FreeBSD, Linux, macOS compatible)
 [*.sh]
 indent_size = 4
 shell_variant = bash

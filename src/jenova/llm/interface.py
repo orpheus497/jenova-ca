@@ -83,6 +83,17 @@ class LLMInterface:
             ##Step purpose: Determine GPU layers
             gpu_layers = self._resolve_gpu_layers()
             
+            ##Step purpose: Check GPU availability if GPU layers requested
+            if gpu_layers != 0:
+                gpu_available = self._check_gpu_availability()
+                if not gpu_available:
+                    logger.warning(
+                        "gpu_requested_but_unavailable",
+                        gpu_layers=gpu_layers,
+                        message="GPU layers requested but CUDA/Metal/Vulkan not available. Falling back to CPU.",
+                    )
+                    gpu_layers = 0
+            
             ##Action purpose: Load the model
             self._llm = Llama(
                 model_path=str(path),
@@ -91,6 +102,16 @@ class LLMInterface:
                 n_gpu_layers=gpu_layers,
                 verbose=False,
             )
+            
+            ##Action purpose: Log GPU usage
+            if gpu_layers != 0:
+                logger.info(
+                    "model_loaded_with_gpu",
+                    gpu_layers=gpu_layers,
+                    model_path=str(path),
+                )
+            else:
+                logger.info("model_loaded_cpu_only", model_path=str(path))
         except Exception as e:
             ##Step purpose: Sanitize path in error message
             safe_path = sanitize_path_for_error(path)
@@ -133,6 +154,76 @@ class LLMInterface:
             return LLAMA_CPP_ALL_LAYERS
         else:
             return gpu
+    
+    ##Method purpose: Check if GPU is available for llama-cpp-python
+    def _check_gpu_availability(self) -> bool:
+        """Check if GPU is available for llama-cpp-python.
+        
+        Checks for CUDA, Metal, or Vulkan support by attempting to
+        detect available GPU backends. This is a best-effort check;
+        llama-cpp-python will handle actual GPU availability when loading.
+        
+        Returns:
+            True if GPU backend appears available, False otherwise.
+        """
+        ##Error purpose: Handle import errors gracefully
+        try:
+            import os
+            import platform
+            
+            ##Step purpose: Check for CUDA environment variables
+            ##Condition purpose: CUDA_VISIBLE_DEVICES indicates CUDA setup
+            if os.environ.get("CUDA_VISIBLE_DEVICES") is not None:
+                # CUDA environment is set, likely available
+                return True
+            
+            ##Step purpose: Check for NVIDIA GPU via nvidia-smi (POSIX: FreeBSD, Linux)
+            ##Condition purpose: Try to detect NVIDIA GPU on POSIX systems
+            if platform.system() in ("Linux", "FreeBSD"):
+                try:
+                    import subprocess
+                    result = subprocess.run(
+                        ["nvidia-smi"],
+                        capture_output=True,
+                        timeout=2.0,
+                        check=False,
+                    )
+                    if result.returncode == 0:
+                        # nvidia-smi succeeded, GPU likely available
+                        return True
+                except (FileNotFoundError, subprocess.TimeoutExpired):
+                    pass
+            
+            ##Step purpose: Check for Metal (macOS) support
+            ##Condition purpose: macOS with Apple Silicon likely has Metal
+            if platform.system() == "Darwin":
+                # Check for Apple Silicon (M1/M2/M3)
+                try:
+                    import subprocess
+                    result = subprocess.run(
+                        ["sysctl", "-n", "machdep.cpu.brand_string"],
+                        capture_output=True,
+                        text=True,
+                        timeout=1.0,
+                        check=False,
+                    )
+                    if result.returncode == 0 and "Apple" in result.stdout:
+                        # Apple Silicon detected, Metal likely available
+                        return True
+                except (FileNotFoundError, subprocess.TimeoutExpired):
+                    # Assume Metal may be available on macOS
+                    return True
+            
+            ##Step purpose: Default to False if no detection method works
+            # Conservative approach - let llama-cpp-python handle actual GPU check
+            # If GPU isn't available, llama-cpp-python will fall back to CPU
+            return False
+            
+        except Exception as e:
+            ##Step purpose: Log error but don't fail
+            logger.debug("gpu_availability_check_failed", error=str(e))
+            # Conservative: assume no GPU if check fails
+            return False
     
     ##Method purpose: Check if model is loaded
     @property

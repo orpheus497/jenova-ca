@@ -60,19 +60,19 @@ def sanitize_error_message(msg: str) -> str:
     ##Step purpose: Replace home directory with ~
     sanitized = msg.replace(home, '~')
     
-    ##Step purpose: Remove absolute paths (keep relative)
+    ##Step purpose: Remove absolute paths (keep relative) - POSIX only
     ##Condition purpose: Only process if message contains absolute paths
-    if '/' in sanitized or '\\' in sanitized:
+    if '/' in sanitized:
         ##Step purpose: Replace absolute paths with filename only
         def replace_path(match: re.Match[str]) -> str:
             path_str = match.group(0)
-            ##Condition purpose: Check if absolute path
-            if path_str.startswith('/') or (len(path_str) > 1 and path_str[1] == ':'):
+            ##Condition purpose: Check if absolute path (POSIX: starts with /)
+            if path_str.startswith('/'):
                 return Path(path_str).name
             return path_str
         
-        ##Action purpose: Replace absolute paths
-        sanitized = re.sub(r'[/\\][^\s]+', replace_path, sanitized)
+        ##Action purpose: Replace absolute paths (POSIX forward slash only)
+        sanitized = re.sub(r'/[^\s]+', replace_path, sanitized)
     
     return sanitized
 
