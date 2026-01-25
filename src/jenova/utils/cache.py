@@ -9,6 +9,7 @@ eviction policies.
 Reference: .devdocs/resources/src/jenova/utils/cache.py
 """
 
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import TypeVar, Generic, Hashable
@@ -120,8 +121,9 @@ class TTLCache(Generic[K, V]):
             default_ttl: Default TTL in seconds (None = no expiration)
             cleanup_interval: Seconds between cleanup runs (default 60)
         """
-        ##Step purpose: Initialize cache storage
-        self._cache: dict[K, CacheEntry[V]] = {}
+        ##Update: Use OrderedDict for O(1) LRU tracking
+        ##Step purpose: Initialize cache storage with OrderedDict for efficient LRU
+        self._cache: OrderedDict[K, CacheEntry[V]] = OrderedDict()
         self._max_size = max_size
         self._default_ttl = default_ttl
         self._cleanup_interval = cleanup_interval
@@ -171,8 +173,11 @@ class TTLCache(Generic[K, V]):
                 self._stats.size = len(self._cache)
                 return None
             
-            ##Step purpose: Mark as accessed and return
+            ##Update: Move to end for LRU tracking (O(1) operation)
+            ##Step purpose: Mark as accessed and move to end for LRU
             entry.touch()
+            ##Action purpose: Move accessed entry to end (most recently used)
+            self._cache.move_to_end(key)
             self._stats.hits += 1
             return entry.value
     
@@ -196,8 +201,11 @@ class TTLCache(Generic[K, V]):
             if key not in self._cache and len(self._cache) >= self._max_size:
                 self._evict_lru()
             
-            ##Step purpose: Store entry
+            ##Update: Store entry and move to end for LRU tracking
+            ##Step purpose: Store entry and mark as most recently used
             self._cache[key] = entry
+            ##Action purpose: Move new/updated entry to end (most recently used)
+            self._cache.move_to_end(key)
             self._stats.size = len(self._cache)
     
     ##Method purpose: Delete a key from cache
@@ -247,21 +255,21 @@ class TTLCache(Generic[K, V]):
                 return False
             return True
     
+    ##Update: Optimize LRU eviction to O(1) using OrderedDict
     ##Method purpose: Evict least recently used entry
     def _evict_lru(self) -> None:
-        """Evict the least recently used entry."""
+        """Evict the least recently used entry.
+        
+        Uses OrderedDict's FIFO order where first item is least recently used.
+        This is O(1) operation compared to O(n) min() search.
+        """
         ##Condition purpose: Nothing to evict if empty
         if not self._cache:
             return
         
-        ##Step purpose: Find LRU entry
-        lru_key = min(
-            self._cache.keys(),
-            key=lambda k: self._cache[k].last_accessed
-        )
-        
-        ##Step purpose: Remove LRU entry
-        del self._cache[lru_key]
+        ##Update: OrderedDict maintains insertion order, first item is LRU
+        ##Step purpose: Pop first item (least recently used) - O(1) operation
+        lru_key, _ = self._cache.popitem(last=False)
         self._stats.evictions += 1
         self._stats.size = len(self._cache)
         

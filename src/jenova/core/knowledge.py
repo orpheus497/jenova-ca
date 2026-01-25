@@ -8,6 +8,7 @@ and graph memory (CognitiveGraph) into a single searchable knowledge base.
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -17,6 +18,7 @@ import structlog
 from jenova.config.models import MemoryConfig, GraphConfig
 from jenova.exceptions import GraphError
 from jenova.memory import Memory, MemoryResult, MemoryType
+from jenova.utils.cache import TTLCache
 
 if TYPE_CHECKING:
     from jenova.graph import CognitiveGraph
@@ -112,6 +114,12 @@ class KnowledgeStore:
         
         ##Step purpose: Graph will be lazy-loaded to avoid circular import
         self._graph: CognitiveGraph | None = None
+        
+        ##Update: Add search result cache for performance optimization
+        self._search_cache: TTLCache[str, KnowledgeContext] = TTLCache(
+            max_size=500,
+            default_ttl=300,  # 5 minutes
+        )
     
     ##Method purpose: Get or create the cognitive graph
     @property
@@ -171,6 +179,21 @@ class KnowledgeStore:
         ##Step purpose: Determine which memory types to search
         types_to_search = memory_types or list(MemoryType)
         
+        ##Update: Generate cache key from search parameters
+        cache_key_parts = [
+            query,
+            str(sorted([mt.value for mt in types_to_search])),
+            str(n_results),
+            str(include_graph),
+        ]
+        cache_key = hashlib.sha256("|".join(cache_key_parts).encode()).hexdigest()
+        
+        ##Update: Check cache first
+        cached_result = self._search_cache.get(cache_key)
+        if cached_result is not None:
+            logger.debug("search_cache_hit", query_preview=query[:50])
+            return cached_result
+        
         ##Step purpose: Search all specified memories
         all_results: list[MemoryResult] = []
         ##Loop purpose: Search each memory type
@@ -196,11 +219,16 @@ class KnowledgeStore:
                 ##Step purpose: Log unexpected errors but don't crash search
                 logger.error("unexpected_graph_error", error=str(e), query=query, exc_info=True)
         
-        return KnowledgeContext(
+        result = KnowledgeContext(
             memories=all_results,
             graph_context=graph_context,
             query=query,
         )
+        
+        ##Update: Cache the result
+        self._search_cache.set(cache_key, result)
+        
+        return result
     
     ##Method purpose: Factory method for production use
     @classmethod

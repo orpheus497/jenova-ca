@@ -10,6 +10,7 @@ orphan linking, meta-insight generation, and contradiction detection.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from collections import defaultdict, deque
@@ -39,6 +40,7 @@ from jenova.graph.types import (
 from jenova.utils.migrations import load_json_with_migration, save_json_atomic
 from jenova.utils.json_safe import safe_json_loads, extract_json_from_response, JSONSizeError
 from jenova.utils.sanitization import sanitize_for_prompt
+from jenova.utils.validation import validate_username
 ##Sec: Import Pydantic validators for LLM output validation (P1-001)
 from jenova.graph.llm_schemas import (
     EmotionAnalysisResponse,
@@ -48,7 +50,9 @@ from jenova.graph.llm_schemas import (
 )
 
 if TYPE_CHECKING:
+    from jenova.embeddings.model import JenovaEmbedding
     from jenova.llm.interface import LLMInterface
+    from jenova.utils.cache import TTLCache
 
 ##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
@@ -88,12 +92,17 @@ class CognitiveGraph:
     """
     
     ##Method purpose: Initialize graph with storage path
-    def __init__(self, storage_path: Path) -> None:
+    def __init__(
+        self,
+        storage_path: Path,
+        embedding_model: "JenovaEmbedding | None" = None,
+    ) -> None:
         """
         Initialize cognitive graph.
         
         Args:
             storage_path: Directory for graph data persistence
+            embedding_model: Optional embedding model for semantic search
         """
         ##Step purpose: Store configuration
         self.storage_path = storage_path
@@ -103,6 +112,20 @@ class CognitiveGraph:
         self._nodes: dict[str, Node] = {}
         self._edges: dict[str, list[Edge]] = defaultdict(list)
         self._reverse_edges: dict[str, list[Edge]] = defaultdict(list)
+        
+        ##Update: Add embedding model for semantic search (P0-002)
+        self._embedding_model = embedding_model
+        
+        ##Update: Initialize inverted index for keyword search (P0-002)
+        self._inverted_index: dict[str, set[str]] = defaultdict(set)
+        self._index_built: bool = False
+        
+        ##Update: Add search result cache (P0-002)
+        from jenova.utils.cache import TTLCache
+        self._search_cache: TTLCache[str, list[dict[str, str]]] = TTLCache(
+            max_size=500,
+            default_ttl=300,  # 5 minutes
+        )
         
         ##Action purpose: Load existing data if present
         self._load()
@@ -150,6 +173,11 @@ class CognitiveGraph:
             edge = Edge.from_dict(edge_data)
             self._edges[edge.source_id].append(edge)
             self._reverse_edges[edge.target_id].append(edge)
+        
+        ##Update: Rebuild inverted index after loading (P0-002)
+        self._index_built = False
+        if self._nodes:
+            self._build_inverted_index()
     
     ##Method purpose: Save graph to persistent storage
     def _save(self) -> None:
@@ -167,6 +195,71 @@ class CognitiveGraph:
         ##Action purpose: Save atomically
         save_json_atomic(self._graph_file, data)
     
+    ##Method purpose: Extract keywords from text for inverted index
+    def _extract_keywords(self, text: str) -> set[str]:
+        """
+        Extract keywords from text for inverted index.
+        
+        Args:
+            text: Text to extract keywords from
+            
+        Returns:
+            Set of lowercase keywords (words with 3+ characters)
+        """
+        ##Step purpose: Simple keyword extraction (words, 3+ chars, lowercase)
+        words = re.findall(r'\b\w{3,}\b', text.lower())
+        return set(words)
+    
+    ##Method purpose: Update inverted index for a node
+    def _update_index_for_node(self, node_id: str, node: Node) -> None:
+        """
+        Update inverted index with keywords from a node.
+        
+        Args:
+            node_id: ID of the node
+            node: The node to index
+        """
+        ##Step purpose: Extract keywords from label and content
+        label_keywords = self._extract_keywords(node.label)
+        content_keywords = self._extract_keywords(node.content)
+        all_keywords = label_keywords | content_keywords
+        
+        ##Step purpose: Add node to index for each keyword
+        for keyword in all_keywords:
+            self._inverted_index[keyword].add(node_id)
+    
+    ##Method purpose: Remove node from inverted index
+    def _remove_from_index(self, node_id: str) -> None:
+        """
+        Remove a node from the inverted index.
+        
+        Args:
+            node_id: ID of the node to remove
+        """
+        ##Loop purpose: Remove node from all keyword entries
+        for keyword, node_ids in list(self._inverted_index.items()):
+            node_ids.discard(node_id)
+            ##Condition purpose: Clean up empty keyword entries
+            if not node_ids:
+                del self._inverted_index[keyword]
+    
+    ##Method purpose: Build inverted index from all nodes
+    def _build_inverted_index(self) -> None:
+        """Build inverted index from all existing nodes."""
+        ##Condition purpose: Skip if already built
+        if self._index_built:
+            return
+        
+        ##Step purpose: Clear existing index
+        self._inverted_index.clear()
+        
+        ##Loop purpose: Index all nodes
+        for node_id, node in self._nodes.items():
+            self._update_index_for_node(node_id, node)
+        
+        self._index_built = True
+        logger.debug("inverted_index_built", node_count=len(self._nodes), keyword_count=len(self._inverted_index))
+    
     ##Method purpose: Add a node to the graph
     def add_node(self, node: Node, persist: bool = True) -> None:
         """
@@ -177,6 +270,10 @@ class CognitiveGraph:
             persist: Whether to immediately persist to disk (default: True)
         """
         self._nodes[node.id] = node
+        
+        ##Update: Update inverted index when node is added (P0-002)
+        self._update_index_for_node(node.id, node)
+        
         ##Condition purpose: Only persist if requested
         if persist:
             self._save()
@@ -192,6 +289,8 @@ class CognitiveGraph:
         ##Loop purpose: Add all nodes to in-memory structure
         for node in nodes:
             self._nodes[node.id] = node
+            ##Update: Update inverted index for each node (P0-002)
+            self._update_index_for_node(node.id, node)
         
         ##Action purpose: Single disk write for all nodes
         self._save()
@@ -237,6 +336,9 @@ class CognitiveGraph:
         
         ##Action purpose: Remove node
         del self._nodes[node_id]
+        
+        ##Update: Remove from inverted index (P0-002)
+        self._remove_from_index(node_id)
         
         ##Perf: Use _reverse_edges index to find sources with edges TO this node (O(degree) not O(n))
         ##      This fixes P1-003 from Daedelus audit - was O(n²), now O(degree)
@@ -345,7 +447,50 @@ class CognitiveGraph:
         
         return [self._nodes[nid] for nid in neighbor_ids if nid in self._nodes]
     
-    ##Method purpose: Search graph for matching nodes
+    ##Method purpose: Calculate semantic similarity using embeddings
+    def _semantic_similarity(self, query: str, node: Node) -> float:
+        """
+        Calculate semantic similarity between query and node using embeddings.
+        
+        Args:
+            query: Search query
+            node: Node to compare against
+            
+        Returns:
+            Similarity score (0.0 to 1.0), or 0.0 if embeddings unavailable
+        """
+        ##Condition purpose: Return 0 if no embedding model
+        if self._embedding_model is None or not self._embedding_model.is_loaded:
+            return 0.0
+        
+        ##Error purpose: Handle embedding errors gracefully
+        try:
+            ##Step purpose: Create searchable text from node
+            node_text = f"{node.label} {node.content}"
+            
+            ##Action purpose: Get embeddings
+            query_emb = self._embedding_model.embed_raw(query)
+            node_emb = self._embedding_model.embed_raw(node_text)
+            
+            ##Step purpose: Calculate cosine similarity
+            dot_product = sum(a * b for a, b in zip(query_emb, node_emb))
+            norm_query = sum(a * a for a in query_emb) ** 0.5
+            norm_node = sum(b * b for b in node_emb) ** 0.5
+            
+            ##Condition purpose: Avoid division by zero
+            if norm_query <= 0 or norm_node <= 0:
+                return 0.0
+            
+            similarity = dot_product / (norm_query * norm_node)
+            
+            ##Step purpose: Normalize from [-1, 1] to [0, 1]
+            return (similarity + 1) / 2
+            
+        except Exception as e:
+            logger.warning("embedding_similarity_failed", node_id=node.id, error=str(e))
+            return 0.0
+    
+    ##Method purpose: Search graph for matching nodes using hybrid search
     def search(
         self,
         query: str,
@@ -353,11 +498,10 @@ class CognitiveGraph:
         node_types: list[str] | None = None,
     ) -> list[dict[str, str]]:
         """
-        Search for nodes matching query text.
+        Search for nodes matching query text using hybrid search.
         
-        Performs case-insensitive substring matching on node labels and content.
-        Results are scored (label matches count more than content matches)
-        and sorted by relevance.
+        Uses embedding-based semantic search (if available) combined with
+        keyword matching via inverted index. Results are scored and sorted by relevance.
         
         Args:
             query: Text to search for in labels and content
@@ -367,37 +511,88 @@ class CognitiveGraph:
         Returns:
             List of dicts with 'id', 'label', 'content' keys, sorted by relevance
         """
+        ##Update: Check cache first (P0-002)
+        cache_key_parts = [query, str(sorted(node_types) if node_types else "all"), str(max_results)]
+        cache_key = hashlib.sha256("|".join(cache_key_parts).encode()).hexdigest()
+        
+        cached_result = self._search_cache.get(cache_key)
+        if cached_result is not None:
+            logger.debug("graph_search_cache_hit", query_preview=query[:50])
+            return cached_result
+        
+        ##Update: Build inverted index if needed (P0-002)
+        self._build_inverted_index()
+        
+        ##Step purpose: Extract query keywords
+        query_keywords = self._extract_keywords(query)
         query_lower = query.lower()
+        
+        ##Step purpose: Find candidate nodes via inverted index
+        candidate_node_ids: set[str] = set()
+        if query_keywords:
+            ##Loop purpose: Collect nodes matching any query keyword
+            for keyword in query_keywords:
+                candidate_node_ids.update(self._inverted_index.get(keyword, set()))
+        else:
+            ##Condition purpose: If no keywords, search all nodes (fallback)
+            candidate_node_ids = set(self._nodes.keys())
+        
+        ##Step purpose: Score candidate nodes
         matches: list[tuple[float, Node]] = []
         
-        ##Loop purpose: Score each node against query
-        for node in self._nodes.values():
+        ##Loop purpose: Score each candidate node
+        for node_id in candidate_node_ids:
+            ##Condition purpose: Skip if node doesn't exist
+            if node_id not in self._nodes:
+                continue
+            
+            node = self._nodes[node_id]
+            
             ##Condition purpose: Filter by node type if specified
             if node_types and node.node_type not in node_types:
                 continue
             
-            ##Step purpose: Simple relevance scoring
+            ##Update: Hybrid scoring: semantic + keyword (P0-002)
             score = 0.0
+            
+            ##Step purpose: Semantic similarity score (weight: 3.0)
+            if self._embedding_model is not None and self._embedding_model.is_loaded:
+                semantic_score = self._semantic_similarity(query, node)
+                score += semantic_score * 3.0
+            
+            ##Step purpose: Keyword matching score
+            keyword_score = 0.0
             ##Condition purpose: Check label match
             if query_lower in node.label.lower():
-                score += 2.0
+                keyword_score += 2.0
             ##Condition purpose: Check content match
             if query_lower in node.content.lower():
-                score += 1.0
+                keyword_score += 1.0
+            
+            ##Step purpose: Boost score for keyword matches in index
+            matching_keywords = query_keywords & self._extract_keywords(f"{node.label} {node.content}")
+            keyword_score += len(matching_keywords) * 0.5
+            
+            score += keyword_score
             
             ##Condition purpose: Only include if matched
             if score > 0:
                 matches.append((score, node))
         
-        ##Step purpose: Sort by score and limit
+        ##Update: Early termination: sort and limit (P0-002)
         matches.sort(key=lambda x: x[0], reverse=True)
         matches = matches[:max_results]
         
         ##Step purpose: Convert to dicts
-        return [
+        result = [
             {"id": node.id, "label": node.label, "content": node.content}
             for _, node in matches
         ]
+        
+        ##Update: Cache the result (P0-002)
+        self._search_cache.set(cache_key, result)
+        
+        return result
     
     ##Method purpose: Get all nodes
     def all_nodes(self) -> list[Node]:
@@ -424,11 +619,17 @@ class CognitiveGraph:
             
         Returns:
             List of nodes with matching user metadata
+            
+        Raises:
+            ValueError: If username is invalid
         """
+        ##Sec: Validate username before filtering to prevent injection attacks (P1-002 Daedelus audit)
+        safe_username = validate_username(username)
+        
         ##Step purpose: Filter nodes by user metadata
         return [
             node for node in self._nodes.values()
-            if node.metadata.get("user") == username
+            if node.metadata.get("user") == safe_username
         ]
     
     ##Method purpose: Get all nodes of a specific type

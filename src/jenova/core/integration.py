@@ -574,17 +574,15 @@ class IntegrationHub:
         ##Step purpose: Get Cortex nodes for user
         cortex_nodes: list[dict[str, str]] = []
         try:
-            all_nodes = self._graph.all_nodes()
-            ##Loop purpose: Filter nodes by user
-            for node in all_nodes:
-                if node.metadata.get("user") == username:
-                    cortex_nodes.append({
-                        "id": node.id,
-                        "label": node.label,
-                        "content": node.content,
-                    })
-                    if len(cortex_nodes) >= max_items * 2:
-                        break
+            ##Update: Use existing get_nodes_by_user() method for better performance
+            user_nodes = self._graph.get_nodes_by_user(username)
+            ##Loop purpose: Convert to cortex format with limit
+            for node in user_nodes[:max_items * 2]:
+                cortex_nodes.append({
+                    "id": node.id,
+                    "label": node.label,
+                    "content": node.content,
+                })
         except Exception as e:
             logger.error("failed_to_get_cortex_nodes", error=str(e))
         

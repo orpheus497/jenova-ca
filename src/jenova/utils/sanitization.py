@@ -75,6 +75,13 @@ def sanitize_for_prompt(
     if not content:
         return ""
     
+    ##Sec: Validate input length BEFORE regex matching to prevent ReDoS attacks (P1-001 Daedelus audit)
+    ##Step purpose: Reject inputs exceeding maximum length before any regex operations
+    if len(content) > config.max_user_input_length:
+        raise ValueError(
+            f"Input too long: {len(content)} characters > {config.max_user_input_length} maximum"
+        )
+    
     ##Step purpose: Limit length first to prevent processing large inputs
     sanitized = content[:config.max_content_length]
     
@@ -82,6 +89,7 @@ def sanitize_for_prompt(
     sanitized = sanitized.replace("```", "'''")
     sanitized = sanitized.replace("`", "'")
     
+    ##Sec: Apply regex patterns after length validation to prevent ReDoS (P1-001 Daedelus audit)
     ##Step purpose: Remove injection patterns (case-insensitive)
     for pattern in INJECTION_PATTERNS:
         sanitized = re.sub(pattern, '[REDACTED]', sanitized)

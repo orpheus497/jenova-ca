@@ -9,6 +9,7 @@ to prevent denial of service attacks via resource exhaustion.
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from typing import Any
 
 ##Step purpose: Define size and depth limits
@@ -18,10 +19,20 @@ MAX_JSON_SIZE = 1024 * 1024  # 1MB
 MAX_JSON_DEPTH = 100
 """Maximum JSON nesting depth."""
 
+##Sec: Define timeout for JSON parsing to prevent DoS attacks (P1-003 Daedelus audit)
+JSON_PARSE_TIMEOUT = 5.0  # 5 seconds
+"""Maximum time allowed for JSON parsing in seconds."""
+
 
 ##Class purpose: Exception for JSON size limit violations
 class JSONSizeError(Exception):
     """Raised when JSON exceeds size or depth limits."""
+    pass
+
+
+##Class purpose: Exception for JSON parsing timeout
+class JSONTimeoutError(Exception):
+    """Raised when JSON parsing exceeds timeout limit."""
     pass
 
 
@@ -58,22 +69,26 @@ def safe_json_loads(
     json_str: str,
     max_size: int = MAX_JSON_SIZE,
     max_depth: int = MAX_JSON_DEPTH,
+    timeout: float = JSON_PARSE_TIMEOUT,
 ) -> dict[str, Any]:
     """Safely parse JSON with size and depth limits.
     
     Prevents denial of service attacks by limiting the size and
-    nesting depth of JSON payloads.
+    nesting depth of JSON payloads. Also includes timeout protection
+    to prevent hanging on malicious JSON.
     
     Args:
         json_str: JSON string to parse
         max_size: Maximum size in bytes
         max_depth: Maximum nesting depth
+        timeout: Maximum time allowed for parsing in seconds
         
     Returns:
         Parsed JSON dict
         
     Raises:
         JSONSizeError: If size or depth exceeds limits
+        JSONTimeoutError: If parsing exceeds timeout
         json.JSONDecodeError: If JSON is invalid
     """
     ##Condition purpose: Check size limit
@@ -83,9 +98,24 @@ def safe_json_loads(
             f"JSON response too large: {len(json_bytes)} bytes > {max_size} bytes"
         )
     
-    ##Error purpose: Parse JSON with error handling
-    try:
+    ##Sec: Parse JSON with timeout protection to prevent DoS attacks (P1-003 Daedelus audit)
+    ##Step purpose: Define parsing function for timeout wrapper
+    def _parse_json() -> dict[str, Any]:
+        """Parse JSON and check depth."""
         data = json.loads(json_str)
+        _check_depth(data, max_depth=max_depth)
+        return data
+    
+    ##Error purpose: Parse JSON with timeout protection
+    try:
+        ##Step purpose: Use ThreadPoolExecutor for cross-platform timeout
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_parse_json)
+            data = future.result(timeout=timeout)
+    except FutureTimeoutError:
+        raise JSONTimeoutError(
+            f"JSON parsing exceeded timeout of {timeout} seconds"
+        ) from None
     except json.JSONDecodeError as e:
         ##Step purpose: Re-raise with context
         raise json.JSONDecodeError(
@@ -93,9 +123,6 @@ def safe_json_loads(
             e.doc,
             e.pos,
         ) from e
-    
-    ##Step purpose: Check nesting depth
-    _check_depth(data, max_depth=max_depth)
     
     return data
 

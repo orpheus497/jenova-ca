@@ -8,6 +8,7 @@ Replaces the legacy copy-paste pattern of three nearly-identical classes.
 
 from __future__ import annotations
 
+import hashlib
 import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -18,10 +19,16 @@ from chromadb.config import Settings
 from jenova.exceptions import MemorySearchError, MemoryStoreError
 from jenova.memory.types import MemoryResult, MemoryType
 ##Sec: Import username validation for security (PATCH-001)
+from jenova.utils.cache import TTLCache
 from jenova.utils.validation import validate_username
+
+import structlog
 
 if TYPE_CHECKING:
     from chromadb.api.types import EmbeddingFunction
+
+##Step purpose: Initialize module logger
+logger = structlog.get_logger(__name__)
 
 
 ##Class purpose: Unified memory interface wrapping ChromaDB collection
@@ -73,6 +80,12 @@ class Memory:
                 name=memory_type.value,
                 metadata={"memory_type": memory_type.value},
             )
+        
+        ##Update: Add search result cache for performance (P1-005)
+        self._search_cache: TTLCache[str, list[MemoryResult]] = TTLCache(
+            max_size=100,
+            default_ttl=300,  # 5 minutes
+        )
     
     ##Method purpose: Add content to memory with metadata
     def add(
@@ -107,6 +120,9 @@ class Memory:
         except Exception as e:
             raise MemoryStoreError(content[:100], str(e)) from e
         
+        ##Update: Invalidate search cache when new content is added (P1-005)
+        self._search_cache.clear()
+        
         return doc_id
     
     ##Method purpose: Search memory for relevant content
@@ -130,6 +146,15 @@ class Memory:
         Raises:
             MemorySearchError: If search fails
         """
+        ##Update: Check cache first (P1-005)
+        cache_key_parts = [query, str(n_results), username or ""]
+        cache_key = hashlib.sha256("|".join(cache_key_parts).encode()).hexdigest()
+        
+        cached_result = self._search_cache.get(cache_key)
+        if cached_result is not None:
+            logger.debug("memory_search_cache_hit", query_preview=query[:50], memory_type=self.memory_type.value)
+            return cached_result
+        
         ##Error purpose: Wrap ChromaDB errors
         try:
             ##Step purpose: Build where clause for user filtering
@@ -175,6 +200,9 @@ class Memory:
                     metadata=metadatas[0][i] if metadatas and metadatas[0] else {},
                 )
             )
+        
+        ##Update: Cache the result (P1-005)
+        self._search_cache.set(cache_key, memory_results)
         
         return memory_results
     

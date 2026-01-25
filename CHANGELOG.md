@@ -37,10 +37,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Security & Validation
 - **LLM Output Validation**: Pydantic schemas for validating all LLM JSON responses (`src/jenova/graph/llm_schemas.py`)
-- **Prompt Injection Sanitization**: Comprehensive sanitization utilities (`src/jenova/utils/sanitization.py`)
-- **Safe JSON Parsing**: Robust JSON parsing with size limits and depth validation (`src/jenova/utils/json_safe.py`)
+- **Prompt Injection Sanitization**: Comprehensive sanitization utilities with ReDoS protection (`src/jenova/utils/sanitization.py`)
+- **Safe JSON Parsing**: Robust JSON parsing with size limits, depth validation, and timeout protection (`src/jenova/utils/json_safe.py`)
 - **Path Validation**: Secure path validation with sandboxing (`src/jenova/utils/validation.py`)
 - **Error Message Sanitization**: Safe error handling without information leakage (`src/jenova/utils/errors.py`)
+- **Username Validation**: Comprehensive username validation across all entry points including graph operations
 
 #### Testing Infrastructure
 - **Comprehensive Test Suite**: 365+ unit tests across 17 test files
@@ -60,10 +61,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Architecture
 - **Complete Codebase Rebuild**: Legacy codebase archived to `.devdocs/resources/`, new production-ready codebase in `src/jenova/`
 - **Dict-Based Graph**: Replaced networkx dependency with lightweight dict-based graph implementation
+- **Graph Search Algorithm Rebuild**: Rebuilt `CognitiveGraph.search()` with hybrid search (embedding-based semantic search + inverted index keyword matching) replacing O(n) linear scan (P0-002)
 - **Unified Memory System**: Consolidated episodic, semantic, and procedural memory into unified ChromaDB-based system
 - **Textual TUI**: Modern terminal UI using Textual framework (replaced Bubble Tea Go TUI)
 - **Type Safety**: Full type hints across entire codebase with strict mypy checking
 - **Comment Schema**: Mandatory `##Comment:` schema enforced across all code files
+
+#### Performance
+- **Graph Search Optimization**: Implemented hybrid search with embedding-based semantic similarity and inverted index for keyword matching (P0-002)
+- **Search Result Caching**: Added TTLCache (5-minute TTL) for graph search results to reduce redundant queries
+- **Inverted Index**: Built keyword index for fast node lookup by content keywords
+- **Context Scoring Optimization**: Implemented embedding cache, batch operations, and heap-based top-k selection for efficient context scoring (P1-004)
 
 #### Security
 - **All P0/P1 Issues Resolved**: 
@@ -71,7 +79,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - P1-001: LLM JSON validation with Pydantic schemas
   - P1-002: Thread-safe response cache with `threading.Lock`
   - P1-003: O(n²) edge cleanup fixed with adjacency index
-  - P1-004: Hardcoded paths fixed with validators
+- **Daedelus Security Patches Applied**:
+  - P1-001: Input length validation before regex matching to prevent ReDoS attacks
+  - P1-002: Username validation in graph operations (`get_nodes_by_user()`)
+  - P1-003: JSON parsing timeout protection (5-second default timeout)
 - **Exception Handling**: All bare exception handlers replaced with specific exception types
 - **Input Validation**: Comprehensive input validation across all public APIs
 - **Error Handling**: Explicit error handling following AP-003 (no silent failures)
@@ -114,6 +125,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - **Comprehensive Security Audit**: All vulnerabilities identified and patched
+- **Daedelus Security Patches**: Applied all three Daedelus-assigned P1 security patches:
+  - Input length validation before regex matching (prevents ReDoS attacks)
+  - Username validation in graph operations (prevents injection attacks)
+  - JSON parsing timeout protection (prevents DoS via malicious JSON)
 - **Security Test Suite**: 23 adversarial input tests
 - **CI/CD Security Scanning**: Automated security scanning with pip-audit and bandit
 - **Security Posture**: LOW RISK - Ready for release from security perspective

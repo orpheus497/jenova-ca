@@ -8,6 +8,8 @@ Enables intelligent ranking of retrieved context for LLM prompt construction.
 
 from __future__ import annotations
 
+import hashlib
+import heapq
 import re
 from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
@@ -15,6 +17,7 @@ from typing import Protocol, runtime_checkable
 import structlog
 
 from jenova.core.query_analyzer import AnalyzedQuery, QueryType
+from jenova.utils.cache import TTLCache
 
 ##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
@@ -172,6 +175,12 @@ class ContextScorer:
         else:
             self._weights = self._config.weights
         
+        ##Update: Add embedding cache for performance (P1-004)
+        self._embedding_cache: TTLCache[str, list[float]] = TTLCache(
+            max_size=1000,
+            default_ttl=600,  # 10 minutes
+        )
+        
         logger.debug(
             "context_scorer_initialized",
             enabled=self._config.enabled,
@@ -205,19 +214,78 @@ class ContextScorer:
             ]
             return ScoredContext(items=items, query=query)
         
-        ##Step purpose: Score each context item
-        scored_items: list[ScoringBreakdown] = []
+        ##Update: Optimize scoring with batching, caching, and early termination (P1-004)
+        ##Step purpose: Use heap for top-k selection (more efficient than sorting all)
+        top_k_heap: list[tuple[float, ScoringBreakdown]] = []
+        k = min(len(context_items), 50)  # Track top 50 for early termination
+        
+        ##Update: Batch embedding operations (P1-004)
+        item_embeddings: dict[str, list[float]] = {}
+        query_embedding: list[float] | None = None
+        
+        if self._embedding_model is not None:
+            ##Step purpose: Get or compute query embedding
+            query_cache_key = hashlib.sha256(query.encode()).hexdigest()
+            query_embedding = self._embedding_cache.get(query_cache_key)
+            if query_embedding is None:
+                try:
+                    query_emb_raw = self._embedding_model.encode([query], convert_to_numpy=True)
+                    query_embedding = query_emb_raw[0].tolist() if hasattr(query_emb_raw[0], 'tolist') else list(query_emb_raw[0])
+                    self._embedding_cache.set(query_cache_key, query_embedding)
+                except Exception as e:
+                    logger.warning("query_embedding_failed", error=str(e))
+                    query_embedding = None
+            
+            ##Step purpose: Batch compute item embeddings
+            items_to_embed: list[str] = []
+            item_indices: list[int] = []
+            for i, item in enumerate(context_items):
+                item_cache_key = hashlib.sha256(item.encode()).hexdigest()
+                cached_emb = self._embedding_cache.get(item_cache_key)
+                if cached_emb is not None:
+                    item_embeddings[item] = cached_emb
+                else:
+                    items_to_embed.append(item)
+                    item_indices.append(i)
+            
+            ##Action purpose: Batch encode items that aren't cached
+            if items_to_embed:
+                try:
+                    batch_embeddings = self._embedding_model.encode(items_to_embed, convert_to_numpy=True)
+                    for item, emb in zip(items_to_embed, batch_embeddings):
+                        emb_list = emb.tolist() if hasattr(emb, 'tolist') else list(emb)
+                        item_cache_key = hashlib.sha256(item.encode()).hexdigest()
+                        item_embeddings[item] = emb_list
+                        self._embedding_cache.set(item_cache_key, emb_list)
+                except Exception as e:
+                    logger.warning("batch_embedding_failed", error=str(e))
+        
+        ##Step purpose: Score items with early termination
+        early_termination_threshold = 0.8  # Stop if top-k scores are above this
+        
         ##Loop purpose: Calculate scores for each item
         for item in context_items:
-            breakdown = self._score_item(item, query, analysis)
-            scored_items.append(breakdown)
+            breakdown = self._score_item_optimized(item, query, analysis, item_embeddings.get(item), query_embedding)
+            
+            ##Update: Use heap for top-k (P1-004)
+            if len(top_k_heap) < k:
+                heapq.heappush(top_k_heap, (breakdown.total_score, breakdown))
+            elif breakdown.total_score > top_k_heap[0][0]:
+                heapq.heapreplace(top_k_heap, (breakdown.total_score, breakdown))
+            
+            ##Update: Early termination if top scores are high (P1-004)
+            if len(top_k_heap) >= k and top_k_heap[0][0] >= early_termination_threshold:
+                logger.debug("early_termination_triggered", threshold=early_termination_threshold)
+                break
         
-        ##Step purpose: Sort by total score descending
+        ##Step purpose: Extract and sort top-k results
+        scored_items = [breakdown for _, breakdown in top_k_heap]
         scored_items.sort(key=lambda x: x.total_score, reverse=True)
         
         logger.info(
             "context_scored",
             item_count=len(scored_items),
+            total_items=len(context_items),
             top_score=scored_items[0].total_score if scored_items else 0.0,
         )
         
@@ -243,6 +311,71 @@ class ContextScorer:
         """
         ##Step purpose: Calculate individual factor scores
         semantic_score = self._semantic_similarity(item, query)
+        entity_score = self._entity_overlap(item, analysis.entities)
+        keyword_score = self._keyword_match(item, analysis.keywords)
+        type_score = self._query_type_match(item, analysis.query_type)
+        
+        ##Step purpose: Calculate weighted total
+        total_score = (
+            semantic_score * self._weights.semantic_similarity
+            + entity_score * self._weights.entity_overlap
+            + keyword_score * self._weights.keyword_match
+            + type_score * self._weights.query_type_match
+        )
+        
+        ##Step purpose: Clamp to valid range
+        total_score = max(0.0, min(1.0, total_score))
+        
+        return ScoringBreakdown(
+            content=item,
+            total_score=total_score,
+            semantic_score=semantic_score,
+            entity_score=entity_score,
+            keyword_score=keyword_score,
+            type_score=type_score,
+        )
+    
+    ##Update: Optimized scoring method using pre-computed embeddings (P1-004)
+    ##Method purpose: Score item with pre-computed embeddings
+    def _score_item_optimized(
+        self,
+        item: str,
+        query: str,
+        analysis: AnalyzedQuery,
+        item_embedding: list[float] | None,
+        query_embedding: list[float] | None,
+    ) -> ScoringBreakdown:
+        """
+        Calculate multi-factor score using pre-computed embeddings.
+        
+        Args:
+            item: Context content to score
+            query: User query
+            analysis: Analyzed query
+            item_embedding: Pre-computed item embedding (None if unavailable)
+            query_embedding: Pre-computed query embedding (None if unavailable)
+            
+        Returns:
+            ScoringBreakdown with detailed scores
+        """
+        ##Step purpose: Calculate semantic score from pre-computed embeddings
+        if item_embedding is not None and query_embedding is not None:
+            ##Step purpose: Calculate cosine similarity
+            dot_product = sum(a * b for a, b in zip(item_embedding, query_embedding))
+            norm_item = sum(a * a for a in item_embedding) ** 0.5
+            norm_query = sum(b * b for b in query_embedding) ** 0.5
+            
+            ##Condition purpose: Avoid division by zero
+            if norm_item > 0 and norm_query > 0:
+                similarity = dot_product / (norm_item * norm_query)
+                semantic_score = (similarity + 1) / 2  # Normalize to [0, 1]
+            else:
+                semantic_score = 0.5
+        else:
+            ##Step purpose: Fallback to word overlap if embeddings unavailable
+            semantic_score = self._word_overlap_similarity(item, query)
+        
+        ##Step purpose: Calculate other factor scores
         entity_score = self._entity_overlap(item, analysis.entities)
         keyword_score = self._keyword_match(item, analysis.keywords)
         type_score = self._query_type_match(item, analysis.query_type)

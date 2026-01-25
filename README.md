@@ -484,7 +484,7 @@ ruff format src/
 - **Test Coverage:** 400+ tests across unit, integration, security, and benchmark suites
 - **Documentation:** Comprehensive inline documentation, README, and `.devdocs/` system
 - **Architecture:** Protocol-based design with clean separation of concerns
-- **Dependencies:** 6 core dependencies, 4 dev dependencies, 2 optional finetune dependencies
+- **Dependencies:** 7 core dependencies, 4 dev dependencies, 2 optional finetune dependencies
 - **Platform Support:** Native FreeBSD and Linux support
 - **License:** AGPL-3.0 (Free and Open Source Software)
 

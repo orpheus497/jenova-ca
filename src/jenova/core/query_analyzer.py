@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Protocol
 
 import structlog
 
+from jenova.utils.cache import TTLCache
 from jenova.utils.json_safe import safe_json_loads, extract_json_from_response, JSONSizeError
 
 if TYPE_CHECKING:
@@ -243,6 +244,12 @@ class QueryAnalyzer:
         
         ##Step purpose: Initialize username for per-user filtering
         self._username: str | None = None
+        
+        ##Update: Add entity match cache for performance
+        self._entity_match_cache: TTLCache[str, list[dict[str, str | float]]] = TTLCache(
+            max_size=1000,
+            default_ttl=600,  # 10 minutes
+        )
         
         logger.debug("query_analyzer_initialized", config=self._config)
     
@@ -967,7 +974,15 @@ Respond with a valid JSON object:
         if not self._graph:
             return []
         
+        ##Update: Check cache before computing entity matches
         entity_lower = entity.lower()
+        cache_key = f"entity_match:{entity_lower}"
+        
+        cached_matches = self._entity_match_cache.get(cache_key)
+        if cached_matches is not None:
+            logger.debug("entity_match_cache_hit", entity=entity)
+            return cached_matches[:self._config.max_entity_links]
+        
         matching_nodes: list[dict[str, str | float]] = []
         
         ##Error purpose: Handle graph access errors
@@ -988,7 +1003,12 @@ Respond with a valid JSON object:
             ##Step purpose: Sort by score descending
             matching_nodes.sort(key=lambda x: float(x.get("score", 0)), reverse=True)
             
-            return matching_nodes[:self._config.max_entity_links]
+            result = matching_nodes[:self._config.max_entity_links]
+            
+            ##Update: Cache the result
+            self._entity_match_cache.set(cache_key, result)
+            
+            return result
             
         except Exception as e:
             logger.warning("graph_search_failed", entity=entity, error=str(e))

@@ -28,6 +28,10 @@ classifiers = [
 
 dependencies = [
     "chromadb>=0.5.0",
+    ##Fix: Explicitly declare chromadb transitive dependency - pip doesn't install it automatically
+    "opentelemetry-exporter-otlp-proto-grpc>=1.0.0",
+    ##Note: onnxruntime is optional - not available on FreeBSD, but chromadb handles its absence gracefully
+    ##Tests mock onnxruntime in conftest.py for FreeBSD compatibility
     "pydantic>=2.0.0,<3.0.0",
     "structlog>=23.0.0",
     "textual>=0.40.0",
