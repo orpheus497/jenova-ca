@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 import structlog
 
-from jenova.exceptions import IntegrationError, ConsistencyError
+from jenova.exceptions import IntegrationError, ConsistencyError, NodeNotFoundError, GraphError
 
 if TYPE_CHECKING:
     from jenova.graph.graph import CognitiveGraph
@@ -408,12 +408,13 @@ class IntegrationHub:
                     ##Note: Simple position-based scoring; could be enhanced with embeddings
                     similarity = 1.0 / (1.0 + i * 0.2)
                     
+                    ##Fix: Guard against None metadata
                     related.append(RelatedNodeResult(
                         node_id=node.id,
                         content=node.content,
                         label=node.label,
                         similarity_score=similarity,
-                        metadata=dict(node.metadata),
+                        metadata=dict(node.metadata) if node.metadata else {},
                     ))
                     
                     ##Condition purpose: Stop if we have enough
@@ -625,8 +626,14 @@ class IntegrationHub:
                             content=node.content[:200],
                             severity=min(centrality / 10.0, 1.0),
                         ))
-            except Exception:
+            except (NodeNotFoundError, GraphError, AttributeError, ValueError, KeyError) as e:
+                ##Fix: Handle expected exceptions gracefully with logging - prevents silent failures
+                logger.warning("node_processing_failed", node_id=node_id, error=str(e))
                 continue
+            except Exception as e:
+                ##Fix: Re-raise unexpected exceptions with context - prevents hiding critical errors
+                logger.error("unexpected_error_in_context_building", node_id=node_id, error=str(e))
+                raise IntegrationError(f"Unexpected error processing node {node_id}") from e
         
         logger.info(
             "unified_context_built",
@@ -775,13 +782,22 @@ class IntegrationHub:
             
             return node_id
             
-        except Exception as e:
+        except (GraphError, NodeNotFoundError, ValueError) as e:
+            ##Fix: Catch specific exceptions and re-raise with context - prevents silent failures
             logger.error(
                 "failed_to_create_memory_reference",
                 error=str(e),
                 memory_type=memory_type,
             )
-            return None
+            raise IntegrationError(f"Failed to create memory reference: {e}") from e
+        except Exception as e:
+            ##Fix: Re-raise unexpected exceptions with context - prevents hiding critical errors
+            logger.error(
+                "unexpected_error_creating_memory_reference",
+                error=str(e),
+                memory_type=memory_type,
+            )
+            raise IntegrationError(f"Unexpected error creating memory reference: {e}") from e
     
     ##Method purpose: Get unified knowledge view for a query
     def get_knowledge_map(

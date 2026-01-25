@@ -22,6 +22,7 @@ from jenova.assumptions.types import (
 )
 from jenova.exceptions import (
     AssumptionDuplicateError,
+    AssumptionError,
     AssumptionNotFoundError,
     LLMGenerationError,
 )
@@ -249,12 +250,13 @@ Your question to the user:'''
             )
             return (assumption, question.strip())
         except LLMGenerationError as e:
+            ##Fix: Re-raise LLM errors with context - critical errors should propagate, not be silently swallowed
             logger.error(
                 "assumption_verification_question_failed",
                 error=str(e),
                 assumption_content=assumption.content[:50],
             )
-            return None
+            raise AssumptionError(f"Failed to generate verification question: {e}") from e
     
     ##Method purpose: Resolve an assumption based on user response
     def resolve_assumption(

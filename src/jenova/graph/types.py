@@ -82,13 +82,14 @@ class Node:
     @classmethod
     def from_dict(cls, data: dict[str, object]) -> "Node":
         """Create from dictionary."""
+        ##Fix: Add type coercion to handle None/non-string values from JSON
         return cls(
-            id=data["id"],
-            label=data["label"],
-            content=data["content"],
-            node_type=data["node_type"],
-            created_at=data.get("created_at", datetime.now().isoformat()),
-            metadata=data.get("metadata", {}),
+            id=str(data["id"]) if data.get("id") is not None else "",
+            label=str(data["label"]) if data.get("label") is not None else "",
+            content=str(data["content"]) if data.get("content") is not None else "",
+            node_type=str(data["node_type"]) if data.get("node_type") is not None else "",
+            created_at=str(data.get("created_at", "")) or datetime.now().isoformat(),
+            metadata=dict(data.get("metadata", {})) if data.get("metadata") else {},
         )
     
     ##Method purpose: Factory method to create a new node with generated ID

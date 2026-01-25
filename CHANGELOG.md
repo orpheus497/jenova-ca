@@ -1,0 +1,167 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [4.0.0] - 2026-01-26
+
+### Added
+
+#### Core Cognitive Architecture
+- **Complete Architectural Rebuild**: Full Phase 7 remediation with production-ready codebase
+- **Assumption Manager**: Comprehensive assumption tracking and verification system (`src/jenova/assumptions/manager.py`)
+- **Insight Manager**: Advanced insight generation and management (`src/jenova/insights/manager.py`)
+- **Concern Manager**: Topic-based concern organization (`src/jenova/insights/concerns.py`)
+- **Query Analyzer**: Multi-level query analysis with intent detection, complexity scoring, and topic modeling (`src/jenova/core/query_analyzer.py` - ~1147 lines)
+- **Context Scorer**: Configurable context retrieval with query-aware ranking (`src/jenova/core/context_scorer.py` - ~496 lines)
+- **Context Organizer**: Intelligent context organization and prioritization (`src/jenova/core/context_organizer.py` - ~716 lines)
+- **Integration Hub**: Unified knowledge representation bridging Memory and Cortex (`src/jenova/core/integration.py` - ~808 lines)
+- **Multi-Level Planning**: Structured planning system for complex queries (`src/jenova/core/engine.py` - ~734 lines)
+- **Cortex Intelligence**: Dict-based cognitive graph with advanced features (`src/jenova/graph/graph.py` - ~1420 lines)
+  - Emotion analysis with Pydantic validation
+  - Clustering and meta-insight generation
+  - Orphan linking and contradiction detection
+  - Connection suggestions
+
+#### Utility Systems
+- **Cognitive Scheduler**: Task scheduling system for background cognitive operations (`src/jenova/core/scheduler.py` - ~316 lines)
+- **Proactive Engine**: Autonomous suggestion generation (`src/jenova/graph/proactive.py` - ~485 lines)
+- **TTLCache/CacheManager**: Thread-safe caching system (`src/jenova/utils/cache.py` - ~430 lines)
+- **Performance Monitor**: Performance profiling and timing utilities (`src/jenova/utils/performance.py` - ~325 lines)
+- **Grammar Loader**: Centralized JSON grammar loading (`src/jenova/utils/grammar.py` - ~260 lines)
+- **Tools Module**: Shell command execution and datetime utilities (`src/jenova/tools.py` - ~310 lines)
+
+#### Security & Validation
+- **LLM Output Validation**: Pydantic schemas for validating all LLM JSON responses (`src/jenova/graph/llm_schemas.py`)
+- **Prompt Injection Sanitization**: Comprehensive sanitization utilities (`src/jenova/utils/sanitization.py`)
+- **Safe JSON Parsing**: Robust JSON parsing with size limits and depth validation (`src/jenova/utils/json_safe.py`)
+- **Path Validation**: Secure path validation with sandboxing (`src/jenova/utils/validation.py`)
+- **Error Message Sanitization**: Safe error handling without information leakage (`src/jenova/utils/errors.py`)
+
+#### Testing Infrastructure
+- **Comprehensive Test Suite**: 365+ unit tests across 17 test files
+- **Integration Tests**: 36 tests across 4 integration test files
+- **Security Tests**: 23 adversarial input tests
+- **Performance Benchmarks**: Benchmark suite for utility modules
+- **CI/CD Pipeline**: GitHub Actions workflow with automated testing, coverage reporting, and security scanning
+
+#### Documentation
+- **Developer Documentation**: Complete `.devdocs/` structure with agent-specific documentation
+- **Code Standards**: Comprehensive coding standards and anti-patterns documentation
+- **Architecture Documentation**: System architecture, decision logs, and planning documents
+- **Contributing Guide**: Detailed contribution guidelines with code standards
+
+### Changed
+
+#### Architecture
+- **Complete Codebase Rebuild**: Legacy codebase archived to `.devdocs/resources/`, new production-ready codebase in `src/jenova/`
+- **Dict-Based Graph**: Replaced networkx dependency with lightweight dict-based graph implementation
+- **Unified Memory System**: Consolidated episodic, semantic, and procedural memory into unified ChromaDB-based system
+- **Textual TUI**: Modern terminal UI using Textual framework (replaced Bubble Tea Go TUI)
+- **Type Safety**: Full type hints across entire codebase with strict mypy checking
+- **Comment Schema**: Mandatory `##Comment:` schema enforced across all code files
+
+#### Security
+- **All P0/P1 Issues Resolved**: 
+  - P0-001: MemoryError shadowing fixed (renamed to `JenovaMemoryError`)
+  - P1-001: LLM JSON validation with Pydantic schemas
+  - P1-002: Thread-safe response cache with `threading.Lock`
+  - P1-003: O(n²) edge cleanup fixed with adjacency index
+  - P1-004: Hardcoded paths fixed with validators
+- **Exception Handling**: All bare exception handlers replaced with specific exception types
+- **Input Validation**: Comprehensive input validation across all public APIs
+- **Error Handling**: Explicit error handling following AP-003 (no silent failures)
+
+#### Code Quality
+- **Import Ordering**: PEP 8 compliant import ordering across all files
+- **Type Refactoring**: Replaced `Any` types with explicit types in Pydantic validators
+- **Code Uniformity**: Consistent coding style enforced by Marshal (B7)
+- **Anti-Pattern Compliance**: All 12 original + 17 Haymaker audit violations resolved
+
+#### Package Management
+- **Modern Packaging**: pyproject.toml-based packaging (no requirements.txt)
+- **Dependency Verification**: All 12 dependencies (6 core + 4 dev + 2 finetune) verified
+- **Installation**: Standard pip-based installation workflow
+- **Configuration Protection**: Enhanced .gitignore with config.yaml protection
+
+### Fixed
+
+#### Critical Bugs
+- **Bare Exception Handling**: Fixed in `migrations.py` and `integration.py` (P1-001, P1-002)
+- **Return None Violations**: Fixed 4 instances of silent failures (P2-002)
+- **Import Ordering**: Fixed inconsistencies across 8 files (P3-001)
+- **Input Validation**: Added validation to `prune_graph()` method (CRITIC-003)
+- **Inline Imports**: Moved inline imports to module level (CRITIC-001)
+
+#### Code Quality
+- **Unused Imports**: Removed all unused imports
+- **Commented Code**: Removed all commented-out legacy code
+- **Debug Statements**: Removed all debugging print statements (legitimate ones remain in headless mode)
+- **Repository Hygiene**: Removed 77MB core dump artifact, added `.core` to .gitignore
+
+### Removed
+
+- **Legacy Codebase**: Archived to `.devdocs/resources/` for reference only
+- **Networkx Dependency**: Replaced with lightweight dict-based graph
+- **Bubble Tea Go TUI**: Replaced with Textual Python TUI
+- **Requirements.txt**: Replaced with pyproject.toml
+- **Core Dump Artifacts**: Removed zellij.core and added prevention pattern
+
+### Security
+
+- **Comprehensive Security Audit**: All vulnerabilities identified and patched
+- **Security Test Suite**: 23 adversarial input tests
+- **CI/CD Security Scanning**: Automated security scanning with pip-audit and bandit
+- **Security Posture**: LOW RISK - Ready for release from security perspective
+
+---
+
+## [3.2.0] - 2026-01-15
+
+### Changed
+- **Bubble Tea as Sole UI:** Removed legacy prompt-toolkit/Textual terminal UI. Bubble Tea is now the only supported interface, providing a cleaner architecture with Go handling rendering and Python handling cognition.
+- **Unified Entry Point:** Consolidated `main.py` and `main_bubbletea.py` into a single `main.py` entry point. The `jenova` command now directly launches the Bubble Tea UI.
+- **Installation Scripts:** Completely overhauled all installation scripts:
+  - `install.sh`: Now checks for Go dependency, validates Go version (1.21+), and automatically builds the TUI binary during installation
+  - `uninstall.sh`: Now handles TUI binary removal, virtual environment cleanup, and models directory
+  - `setup_venv.sh`: Now validates Go installation and automatically builds TUI after Python setup
+  - `build_tui.sh`: Removed outdated environment variable references (JENOVA_UI no longer needed)
+- **Branding:** Consistent use of "JENOVA Cognitive Architecture" throughout all scripts and documentation
+
+### Added
+- **Comprehensive Inline Documentation:** Added detailed documentation comments throughout the entire Python codebase following a consistent standard:
+  - `##Script function and purpose:` at file headers
+  - `##Class purpose:` for class definitions
+  - `##Function purpose:` for method definitions
+  - `##Block purpose:` for significant code blocks
+- **Developer Documentation:** Added `.devdocs/` directory with comprehensive development documentation:
+  - `ARCHITECTURE.md`: System architecture overview
+  - `BRIEFING.md`: Quick start guide for developers
+  - `DECISIONS_LOG.md`: Architectural decision records
+  - `PLANS.md`: Future development roadmap
+  - `PROGRESS.md`: Development progress tracking
+  - `SESSION_HANDOFF.md`: Context for development sessions
+  - `SUMMARIES.md`: Code review summaries
+  - `TESTS.md`: Testing documentation
+  - `TODOS.md`: Outstanding tasks and improvements
+- **Enhanced Query Analysis:** Added multi-level planning support with structured sub-goals and reasoning chains for complex queries
+- **Integration Layer:** New Cortex-Memory integration layer for unified knowledge representation and cross-referencing
+- **Context Scoring:** Enhanced context retrieval with configurable scoring weights and query-aware ranking
+
+### Removed
+- **Legacy Terminal UI:** Removed `src/jenova/ui/terminal.py` (prompt-toolkit based UI)
+- **Dual UI Mode:** Removed `JENOVA_UI` environment variable - Bubble Tea is now the only UI
+- **Separate Bubble Tea Entry Point:** Removed `src/jenova/main_bubbletea.py` - functionality merged into `main.py`
+
+### Fixed
+- **Interactive Mode State:** Fixed interactive mode handling in BubbleTeaUI to properly reset state on errors and exit commands
+- **Procedure Learning Flow:** Fixed the multi-step procedure learning flow to validate input at each stage
+- **Assumption Verification:** Fixed yes/no response validation to accept 'y' and 'n' shortcuts
+
+---
+
+*For earlier versions, see `.devdocs/resources/CHANGELOG.md`*

@@ -15,7 +15,6 @@ parsing should use these validators.
 from __future__ import annotations
 
 from pydantic import BaseModel, Field, field_validator
-from typing import Any
 
 
 ##Class purpose: Validate emotion analysis LLM response
@@ -42,7 +41,8 @@ class EmotionAnalysisResponse(BaseModel):
     ##Method purpose: Validate and clamp confidence value
     @field_validator("confidence", mode="before")
     @classmethod
-    def clamp_confidence(cls, v: Any) -> float:
+    ##Refactor: Replace Any with object for Pydantic validator input - more explicit about intentional type acceptance (AP-001)
+    def clamp_confidence(cls, v: object) -> float:
         """Clamp confidence to valid range, handling non-numeric input."""
         try:
             value = float(v)
@@ -53,7 +53,8 @@ class EmotionAnalysisResponse(BaseModel):
     ##Method purpose: Validate emotion_scores dict values
     @field_validator("emotion_scores", mode="before")
     @classmethod
-    def validate_emotion_scores(cls, v: Any) -> dict[str, float]:
+    ##Refactor: Replace Any with object for Pydantic validator input - more explicit about intentional type acceptance (AP-001)
+    def validate_emotion_scores(cls, v: object) -> dict[str, float]:
         """Ensure emotion_scores is a dict with float values."""
         if not isinstance(v, dict):
             return {}
@@ -88,7 +89,8 @@ class RelationshipAnalysisResponse(BaseModel):
     ##Method purpose: Ensure related_node_ids contains only strings
     @field_validator("related_node_ids", mode="before")
     @classmethod
-    def validate_related_ids(cls, v: Any) -> list[str]:
+    ##Refactor: Replace Any with object for Pydantic validator input - more explicit about intentional type acceptance (AP-001)
+    def validate_related_ids(cls, v: object) -> list[str]:
         """Ensure related_node_ids is a list of strings."""
         if not isinstance(v, list):
             return []
@@ -115,7 +117,8 @@ class ContradictionCheckResponse(BaseModel):
     ##Method purpose: Handle non-boolean contradicts values
     @field_validator("contradicts", mode="before")
     @classmethod
-    def validate_contradicts(cls, v: Any) -> bool:
+    ##Refactor: Replace Any with object for Pydantic validator input - more explicit about intentional type acceptance (AP-001)
+    def validate_contradicts(cls, v: object) -> bool:
         """Convert various truthy values to bool."""
         if isinstance(v, bool):
             return v
@@ -140,7 +143,8 @@ class ConnectionSuggestionsResponse(BaseModel):
     ##Method purpose: Ensure suggested_ids contains only strings
     @field_validator("suggested_ids", mode="before")
     @classmethod
-    def validate_suggested_ids(cls, v: Any) -> list[str]:
+    ##Refactor: Replace Any with object for Pydantic validator input - more explicit about intentional type acceptance (AP-001)
+    def validate_suggested_ids(cls, v: object) -> list[str]:
         """Ensure suggested_ids is a list of strings."""
         if not isinstance(v, list):
             return []
@@ -185,7 +189,8 @@ class MetaInsightResponse(BaseModel):
     ##Method purpose: Validate and clamp confidence value
     @field_validator("confidence", mode="before")
     @classmethod
-    def clamp_confidence(cls, v: Any) -> float:
+    ##Refactor: Replace Any with object for Pydantic validator input - more explicit about intentional type acceptance (AP-001)
+    def clamp_confidence(cls, v: object) -> float:
         """Clamp confidence to valid range."""
         try:
             value = float(v)

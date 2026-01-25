@@ -17,6 +17,8 @@ from chromadb.config import Settings
 
 from jenova.exceptions import MemorySearchError, MemoryStoreError
 from jenova.memory.types import MemoryResult, MemoryType
+##Sec: Import username validation for security (PATCH-001)
+from jenova.utils.validation import validate_username
 
 if TYPE_CHECKING:
     from chromadb.api.types import EmbeddingFunction
@@ -112,6 +114,7 @@ class Memory:
         self,
         query: str,
         n_results: int = 5,
+        username: str | None = None,
     ) -> list[MemoryResult]:
         """
         Search memory for relevant content.
@@ -119,6 +122,7 @@ class Memory:
         Args:
             query: Search query text
             n_results: Maximum results to return
+            username: Optional username to filter results (for multi-user support)
             
         Returns:
             List of MemoryResult, sorted by relevance
@@ -128,10 +132,18 @@ class Memory:
         """
         ##Error purpose: Wrap ChromaDB errors
         try:
-            ##Action purpose: Query collection
+            ##Step purpose: Build where clause for user filtering
+            where_clause: dict[str, str] | None = None
+            if username is not None:
+                ##Sec: Validate username before database operations (PATCH-001)
+                safe_username = validate_username(username)
+                where_clause = {"username": safe_username}
+            
+            ##Action purpose: Query collection with optional user filter
             results = self._collection.query(
                 query_texts=[query],
                 n_results=n_results,
+                where=where_clause,
             )
         except Exception as e:
             raise MemorySearchError(query, str(e)) from e
@@ -146,16 +158,21 @@ class Memory:
         ##Loop purpose: Build result list from raw ChromaDB output
         for i in range(len(results["ids"][0])):
             ##Step purpose: Calculate score from distance (lower distance = higher score)
-            distance = results["distances"][0][i] if results["distances"] else 0.0
+            ##Fix: Add nested None checks for ChromaDB result structure
+            distances = results["distances"]
+            distance = distances[0][i] if distances and distances[0] else 0.0
             score = 1.0 / (1.0 + distance)
+            
+            documents = results["documents"]
+            metadatas = results["metadatas"]
             
             memory_results.append(
                 MemoryResult(
                     id=results["ids"][0][i],
-                    content=results["documents"][0][i] if results["documents"] else "",
+                    content=documents[0][i] if documents and documents[0] else "",
                     score=score,
                     memory_type=self.memory_type,
-                    metadata=results["metadatas"][0][i] if results["metadatas"] else {},
+                    metadata=metadatas[0][i] if metadatas and metadatas[0] else {},
                 )
             )
         

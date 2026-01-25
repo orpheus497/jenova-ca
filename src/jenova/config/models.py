@@ -44,7 +44,11 @@ class HardwareConfig(BaseModel):
     ##Method purpose: Resolve 'auto' to actual thread count
     @property
     def effective_threads(self) -> int:
-        """Resolve 'auto' to actual thread count."""
+        """Resolve 'auto' to actual thread count.
+        
+        Returns:
+            Effective thread count (CPU count if 'auto', otherwise the configured value)
+        """
         ##Condition purpose: Return CPU count if auto
         if self.threads == "auto":
             return os.cpu_count() or 4
@@ -103,13 +107,23 @@ class MemoryConfig(BaseModel):
         description="Default max results for memory searches.",
     )
     
-    ##Sec: Validate storage_path against path traversal attacks (P1-002)
+    ##Sec: Validate storage_path against path traversal attacks (P1-002, PATCH-002)
     @field_validator("storage_path", mode="before")
     @classmethod
     def validate_storage_path(cls, v: str | Path) -> Path:
         """Expand user path and reject path traversal attempts."""
         path = Path(v).expanduser()
-        ##Condition purpose: Reject paths with .. components
+        ##Sec: Enhanced path traversal protection using Path.resolve() (PATCH-002)
+        try:
+            ##Step purpose: Resolve path to normalize and detect traversal
+            resolved = path.resolve()
+            ##Condition purpose: Check resolved path parts for traversal sequences
+            if ".." in resolved.parts:
+                raise ValueError("Path traversal not allowed in storage_path")
+        except (OSError, ValueError) as e:
+            ##Error purpose: Reject invalid paths
+            raise ValueError(f"Invalid storage_path: {e}") from e
+        ##Condition purpose: Reject paths with .. in string representation (defense-in-depth)
         if ".." in str(path):
             raise ValueError("Path traversal not allowed in storage_path")
         return path
@@ -130,13 +144,23 @@ class GraphConfig(BaseModel):
         description="Maximum traversal depth for graph queries.",
     )
     
-    ##Sec: Validate storage_path against path traversal attacks (P1-002)
+    ##Sec: Validate storage_path against path traversal attacks (P1-002, PATCH-002)
     @field_validator("storage_path", mode="before")
     @classmethod
     def validate_storage_path(cls, v: str | Path) -> Path:
         """Expand user path and reject path traversal attempts."""
         path = Path(v).expanduser()
-        ##Condition purpose: Reject paths with .. components
+        ##Sec: Enhanced path traversal protection using Path.resolve() (PATCH-002)
+        try:
+            ##Step purpose: Resolve path to normalize and detect traversal
+            resolved = path.resolve()
+            ##Condition purpose: Check resolved path parts for traversal sequences
+            if ".." in resolved.parts:
+                raise ValueError("Path traversal not allowed in storage_path")
+        except (OSError, ValueError) as e:
+            ##Error purpose: Reject invalid paths
+            raise ValueError(f"Invalid storage_path: {e}") from e
+        ##Condition purpose: Reject paths with .. in string representation (defense-in-depth)
         if ".." in str(path):
             raise ValueError("Path traversal not allowed in storage_path")
         return path

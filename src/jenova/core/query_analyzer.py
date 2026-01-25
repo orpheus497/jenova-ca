@@ -720,13 +720,17 @@ Respond with a valid JSON object:
         """
         entities: list[str] = []
         
+        ##Sec: Limit query length to prevent ReDoS in nested quantifier patterns (P2-002)
+        MAX_QUERY_LENGTH_FOR_REGEX: int = 2000
+        safe_query = query[:MAX_QUERY_LENGTH_FOR_REGEX]
+        
         ##Step purpose: Extract capitalized words (potential proper nouns)
-        capitalized = re.findall(r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b", query)
+        capitalized = re.findall(r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b", safe_query)
         ##Loop purpose: Filter out sentence starters
         for cap in capitalized:
             ##Condition purpose: Skip if at start of sentence
             pattern = rf"^{re.escape(cap)}|[.!?]\s+{re.escape(cap)}"
-            if not re.search(pattern, query):
+            if not re.search(pattern, safe_query):
                 entities.append(cap)
         
         ##Step purpose: Extract quoted strings as entities
@@ -738,7 +742,7 @@ Respond with a valid JSON object:
                 entities.append(entity)
         
         ##Step purpose: Extract technical terms (all caps or CamelCase)
-        technical = re.findall(r"\b[A-Z]{2,}\b|\b[A-Z][a-z]+[A-Z][a-zA-Z]*\b", query)
+        technical = re.findall(r"\b[A-Z]{2,}\b|\b[A-Z][a-z]+[A-Z][a-zA-Z]*\b", safe_query)
         ##Loop purpose: Add technical terms
         for term in technical:
             if term not in entities:
@@ -1010,11 +1014,11 @@ Respond with a valid JSON object:
         """
         score = 0.0
         
-        ##Step purpose: Get node fields (handle Node dataclass and dict)
-        content = getattr(node, "content", "").lower()
-        label = getattr(node, "label", "").lower()
-        title = getattr(node, "title", "").lower() if hasattr(node, "title") else ""
-        keywords = getattr(node, "keywords", []) if hasattr(node, "keywords") else []
+        ##Fix: Use 'or' for None coalescing - getattr returns None if attr exists but is None
+        content = (getattr(node, "content", "") or "").lower()
+        label = (getattr(node, "label", "") or "").lower()
+        title = (getattr(node, "title", "") or "").lower() if hasattr(node, "title") else ""
+        keywords = getattr(node, "keywords", None) or [] if hasattr(node, "keywords") else []
         
         ##Condition purpose: Check content match
         if entity in content:

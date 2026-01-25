@@ -59,6 +59,14 @@ from jenova.core.response import (
     WebSearchProtocol,
     WebSearchResult,
 )
+from jenova.core.scheduler import (
+    CognitiveScheduler,
+    SchedulerConfig,
+    TaskExecutorProtocol,
+    TaskSchedule,
+    TaskState,
+    TaskType,
+)
 
 __all__ = [
     # Engine
@@ -115,4 +123,11 @@ __all__ = [
     "ContextOrganizerConfig",
     "ContextTier",
     "OrganizedContext",
+    # Scheduler
+    "CognitiveScheduler",
+    "SchedulerConfig",
+    "TaskExecutorProtocol",
+    "TaskSchedule",
+    "TaskState",
+    "TaskType",
 ]

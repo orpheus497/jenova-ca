@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Protocol, TYPE_CHECKING
 
 import structlog
+from pydantic import ValidationError
 
 from jenova.exceptions import (
     NodeNotFoundError,
@@ -45,7 +46,6 @@ from jenova.graph.llm_schemas import (
     ContradictionCheckResponse,
     ConnectionSuggestionsResponse,
 )
-from pydantic import ValidationError
 
 if TYPE_CHECKING:
     from jenova.llm.interface import LLMInterface
@@ -430,6 +430,99 @@ class CognitiveGraph:
             node for node in self._nodes.values()
             if node.metadata.get("user") == username
         ]
+    
+    ##Method purpose: Get all nodes of a specific type
+    def get_nodes_by_type(self, node_type: str) -> list[Node]:
+        """
+        Get all nodes of a specific type.
+        
+        Args:
+            node_type: The node type to filter by (e.g., "insight", "memory", "concept")
+            
+        Returns:
+            List of nodes with matching node_type
+        """
+        ##Step purpose: Filter nodes by type
+        return [
+            node for node in self._nodes.values()
+            if node.node_type == node_type
+        ]
+    
+    ##Method purpose: Update an existing node's content and/or metadata
+    def update_node(
+        self,
+        node_id: str,
+        content: str | None = None,
+        label: str | None = None,
+        metadata: dict[str, str] | None = None,
+        merge_metadata: bool = True,
+        persist: bool = True,
+    ) -> Node:
+        """
+        Update an existing node's content, label, and/or metadata.
+        
+        Args:
+            node_id: ID of node to update
+            content: New content (None to keep existing)
+            label: New label (None to keep existing)
+            metadata: New metadata (None to keep existing)
+            merge_metadata: If True, merge with existing metadata; if False, replace
+            persist: Whether to immediately persist to disk (default: True)
+            
+        Returns:
+            The updated node
+            
+        Raises:
+            NodeNotFoundError: If node doesn't exist
+        """
+        ##Condition purpose: Check node exists
+        if node_id not in self._nodes:
+            raise NodeNotFoundError(node_id)
+        
+        ##Step purpose: Get existing node
+        old_node = self._nodes[node_id]
+        
+        ##Step purpose: Determine new values
+        new_content = content if content is not None else old_node.content
+        new_label = label if label is not None else old_node.label
+        
+        ##Condition purpose: Handle metadata update
+        if metadata is not None:
+            if merge_metadata:
+                ##Step purpose: Merge new metadata with existing
+                new_metadata = {**old_node.metadata, **metadata}
+            else:
+                new_metadata = metadata
+        else:
+            new_metadata = old_node.metadata
+        
+        ##Step purpose: Create updated node (preserving ID and timestamps)
+        updated_node = Node(
+            id=old_node.id,
+            label=new_label,
+            content=new_content,
+            node_type=old_node.node_type,
+            metadata=new_metadata,
+            created_at=old_node.created_at,
+        )
+        
+        ##Action purpose: Store updated node
+        self._nodes[node_id] = updated_node
+        
+        ##Condition purpose: Persist if requested
+        if persist:
+            self._save()
+        
+        ##Action purpose: Log the update
+        logger.debug(
+            "node_updated",
+            node_id=node_id[:8],
+            content_changed=content is not None,
+            label_changed=label is not None,
+            metadata_changed=metadata is not None,
+        )
+        
+        return updated_node
     
     ##Method purpose: Get connection count for a node (centrality proxy)
     def get_connection_count(self, node_id: str) -> int:
@@ -833,16 +926,23 @@ Generate a concise meta-insight (1-2 sentences) that reveals a non-obvious patte
         Remove nodes that are old and have few connections.
         
         Args:
-            max_age_days: Maximum node age in days
-            min_connections: Minimum connections to keep node
+            max_age_days: Maximum node age in days (must be non-negative)
+            min_connections: Minimum connections to keep node (must be non-negative)
             username: Optional username filter
             
         Returns:
             Number of nodes pruned
             
         Raises:
+            ValueError: If max_age_days or min_connections are negative
             GraphPruneError: If pruning fails
         """
+        ##Step purpose: Validate input parameters
+        if max_age_days < 0:
+            raise ValueError("max_age_days must be non-negative")
+        if min_connections < 0:
+            raise ValueError("min_connections must be non-negative")
+        
         ##Step purpose: Calculate cutoff date
         cutoff_date = datetime.now() - timedelta(days=max_age_days)
         
@@ -1240,3 +1340,94 @@ JSON Response:"""
                 error=str(e),
             )
             return []
+    
+    ##Method purpose: Orchestrate full reflection cycle on the cognitive graph
+    def reflect(
+        self,
+        username: str,
+        llm: LLMProtocol,
+        max_insights: int = 3,
+        prune_enabled: bool = True,
+        max_age_days: int = 90,
+    ) -> dict[str, object]:
+        """
+        Orchestrate a full reflection cycle on the cognitive graph.
+        
+        Performs the following operations in sequence:
+        1. Link orphan nodes to the graph
+        2. Generate meta-insights from clusters
+        3. Optionally prune stale nodes
+        
+        Args:
+            username: Username for user-scoped operations
+            llm: LLM interface for cognitive operations
+            max_insights: Maximum meta-insights to generate
+            prune_enabled: Whether to prune stale nodes (default True)
+            max_age_days: Maximum node age for pruning (default 90)
+            
+        Returns:
+            Dictionary with reflection results:
+            - orphans_linked: Number of new links created
+            - clusters_found: Number of clusters identified
+            - insights_generated: List of generated meta-insight strings
+            - nodes_pruned: Number of nodes removed (if pruning enabled)
+        """
+        ##Step purpose: Initialize result tracking
+        result: dict[str, object] = {
+            "orphans_linked": 0,
+            "clusters_found": 0,
+            "insights_generated": [],
+            "nodes_pruned": 0,
+        }
+        
+        ##Step purpose: Phase 1 - Link orphan nodes
+        try:
+            orphans_linked = self.link_orphans(username, llm)
+            result["orphans_linked"] = orphans_linked
+            logger.debug("reflect_orphans_linked", count=orphans_linked)
+        except Exception as e:
+            logger.warning("reflect_link_orphans_failed", error=str(e))
+        
+        ##Step purpose: Phase 2 - Cluster nodes and generate meta-insights
+        try:
+            clusters = self.cluster_nodes(username, llm)
+            result["clusters_found"] = len(clusters)
+            
+            ##Step purpose: Generate meta-insights from clusters
+            insights_list: list[str] = []
+            if clusters:
+                insights = self.generate_meta_insights(username, llm)
+                insights_list = insights[:max_insights]
+                result["insights_generated"] = insights_list
+            
+            logger.debug(
+                "reflect_insights_generated",
+                clusters=len(clusters),
+                insights=len(insights_list),
+            )
+        except Exception as e:
+            logger.warning("reflect_clustering_failed", error=str(e))
+        
+        ##Step purpose: Phase 3 - Prune stale nodes (if enabled)
+        if prune_enabled:
+            try:
+                nodes_pruned = self.prune_graph(
+                    max_age_days=max_age_days,
+                    min_connections=0,
+                )
+                result["nodes_pruned"] = nodes_pruned
+                logger.debug("reflect_pruned", count=nodes_pruned)
+            except Exception as e:
+                logger.warning("reflect_prune_failed", error=str(e))
+        
+        ##Action purpose: Log completion
+        logger.info(
+            "reflect_complete",
+            username=username,
+            orphans_linked=result["orphans_linked"],
+            clusters=result["clusters_found"],
+            insights=len(result.get("insights_generated", [])),  # type: ignore
+            pruned=result["nodes_pruned"],
+        )
+        
+        return result

@@ -21,6 +21,7 @@ from jenova.graph.types import Node
 from jenova.insights.concerns import ConcernManager
 from jenova.insights.types import CortexId, Insight, InsightSearchResult
 from jenova.llm.types import GenerationParams
+from jenova.utils.json_safe import safe_json_loads
 from jenova.utils.validation import (
     validate_username,
     validate_topic,
@@ -411,7 +412,8 @@ class InsightManager:
                 ##Error purpose: Handle invalid insight files gracefully
                 try:
                     with open(insight_file, encoding="utf-8") as f:
-                        data = json.load(f)
+                        ##Sec: Use safe_json_loads for size/depth limits (P2-001)
+                        data = safe_json_loads(f.read())
                     
                     insight = Insight.from_dict(data)
                     all_insights.append(insight)
@@ -500,7 +502,8 @@ class InsightManager:
         for insight_file in topic_dir.glob("*.json"):
             try:
                 with open(insight_file, encoding="utf-8") as f:
-                    data = json.load(f)
+                    ##Sec: Use safe_json_loads for size/depth limits (P2-001)
+                    data = safe_json_loads(f.read())
                 insights.append(Insight.from_dict(data))
             except (json.JSONDecodeError, KeyError):
                 continue

@@ -31,6 +31,22 @@ from jenova.utils.errors import (
     sanitize_error_message,
     safe_error_with_path,
 )
+from jenova.utils.cache import (
+    TTLCache,
+    CacheEntry,
+    CacheStats,
+    CacheManager,
+)
+from jenova.utils.performance import (
+    PerformanceMonitor,
+    TimingStats,
+    timed,
+    log_slow,
+)
+from jenova.utils.grammar import (
+    GrammarLoader,
+    BuiltinGrammars,
+)
 
 __all__ = [
     # Migration utilities
@@ -58,4 +74,17 @@ __all__ = [
     "sanitize_path_for_error",
     "sanitize_error_message",
     "safe_error_with_path",
+    # Cache utilities
+    "TTLCache",
+    "CacheEntry",
+    "CacheStats",
+    "CacheManager",
+    # Performance utilities
+    "PerformanceMonitor",
+    "TimingStats",
+    "timed",
+    "log_slow",
+    # Grammar utilities
+    "GrammarLoader",
+    "BuiltinGrammars",
 ]

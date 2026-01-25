@@ -297,3 +297,27 @@ class ConsistencyError(IntegrationError):
         self.gaps = gaps
         self.duplications = duplications
         super().__init__(message)
+
+
+##Class purpose: Base exception for scheduler operations
+class SchedulerError(JenovaError):
+    """Scheduler operation failed."""
+    pass
+
+
+##Class purpose: Base exception for grammar operations
+class GrammarError(JenovaError):
+    """Grammar loading or parsing failed."""
+    pass
+
+
+##Class purpose: Base exception for tool operations
+class ToolError(JenovaError):
+    """Tool execution failed."""
+    pass
+
+
+##Class purpose: Base exception for proactive engine operations
+class ProactiveError(JenovaError):
+    """Proactive suggestion generation failed."""
+    pass

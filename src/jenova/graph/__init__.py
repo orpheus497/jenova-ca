@@ -13,6 +13,13 @@ from jenova.graph.types import (
     ConnectionSuggestion,
 )
 from jenova.graph.graph import CognitiveGraph, LLMProtocol
+from jenova.graph.proactive import (
+    ProactiveEngine,
+    ProactiveConfig,
+    Suggestion,
+    SuggestionCategory,
+    EngagementTracker,
+)
 
 __all__ = [
     # Core graph
@@ -32,4 +39,10 @@ __all__ = [
     "ContradictionResult",
     # Connection suggestions
     "ConnectionSuggestion",
+    # Proactive engine
+    "ProactiveEngine",
+    "ProactiveConfig",
+    "Suggestion",
+    "SuggestionCategory",
+    "EngagementTracker",
 ]

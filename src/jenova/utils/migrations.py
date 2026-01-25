@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import TypeVar
 
 from jenova.exceptions import MigrationError, MigrationFailedError, SchemaVersionError
+from jenova.utils.json_safe import safe_json_loads
 
 
 ##Step purpose: Define current schema version constant
@@ -57,7 +58,8 @@ def load_json_with_migration(
     
     ##Step purpose: Load existing file
     with open(path, encoding="utf-8") as f:
-        data = json.load(f)
+        ##Sec: Use safe_json_loads for size/depth limits (P2-001)
+        data = safe_json_loads(f.read())
     
     ##Step purpose: Get current version, defaulting to 0 for legacy data
     version = data.get("schema_version", 0)
@@ -156,10 +158,11 @@ def save_json_atomic(path: Path, data: dict[str, object]) -> None:
         
         ##Action purpose: Ensure permissions are preserved after rename
         os.chmod(path, 0o600)
-    except Exception:
+    except (OSError, IOError, PermissionError, json.JSONEncodeError) as e:
+        ##Fix: Catch specific exceptions instead of bare Exception - preserves error context and security visibility
         ##Action purpose: Remove temp file if write failed
         temp_path.unlink(missing_ok=True)
-        raise
+        raise MigrationError(f"Failed to save migrated data to {path}: {e}") from e
 
 
 ##Function purpose: Load JSON without migration (for read-only access)
@@ -178,7 +181,8 @@ def load_json(path: Path) -> dict[str, object]:
         json.JSONDecodeError: If file is not valid JSON
     """
     with open(path, encoding="utf-8") as f:
-        return json.load(f)
+        ##Sec: Use safe_json_loads for size/depth limits (P2-001)
+        return safe_json_loads(f.read())
 
 
 ##Function purpose: Get schema version from file without loading full data

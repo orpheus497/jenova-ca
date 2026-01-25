@@ -13,6 +13,7 @@ This module provides the central engine that:
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -25,6 +26,8 @@ from jenova.llm.types import Prompt
 from jenova.memory.types import MemoryType
 from jenova.utils.sanitization import sanitize_user_query
 from jenova.utils.json_safe import safe_json_loads, extract_json_from_response, JSONSizeError
+##Sec: Import username validation for security (PATCH-001)
+from jenova.utils.validation import validate_username
 
 if TYPE_CHECKING:
     from jenova.config.models import JenovaConfig
@@ -298,7 +301,8 @@ class CognitiveEngine:
         ##Step purpose: Increment turn counter and set username
         self._turn_count += 1
         if username:
-            self._current_username = username
+            ##Sec: Validate username before database operations (PATCH-001)
+            self._current_username = validate_username(username)
         logger.info("think_started", query=user_input[:100], turn=self._turn_count)
         
         ##Error purpose: Catch and handle errors during cognitive cycle
@@ -686,7 +690,6 @@ Respond with a valid JSON object:
                 data = safe_json_loads(json_str)
             except (json.JSONDecodeError, JSONSizeError) as e:
                 ##Step purpose: Try to extract JSON from response as fallback
-                import re
                 json_match = re.search(r'\{[^{}]*\}', plan_json, re.DOTALL)
                 if json_match:
                     try:

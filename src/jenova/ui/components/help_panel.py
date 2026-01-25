@@ -29,46 +29,52 @@ class CommandInfo:
 
 
 ##Step purpose: Define command categories with detailed descriptions
-COGNITIVE_COMMANDS: list[CommandInfo] = [
+##Note: Currently implemented commands only
+IMPLEMENTED_COMMANDS: list[CommandInfo] = [
     CommandInfo(
         name="/help",
         description="Display this comprehensive command reference guide with all available commands and their descriptions.",
     ),
+]
+
+##Note: Planned cognitive commands (underlying systems implemented, command handlers pending)
+PLANNED_COGNITIVE_COMMANDS: list[CommandInfo] = [
     CommandInfo(
         name="/insight",
-        description="Analyze the current conversation and generate new insights. JENOVA extracts key takeaways and stores them as structured insights in long-term memory.",
+        description="[PLANNED] Analyze the current conversation and generate new insights. JENOVA extracts key takeaways and stores them as structured insights in long-term memory.",
     ),
     CommandInfo(
         name="/reflect",
-        description="Initiate deep reflection within the cognitive architecture. Reorganizes and interlinks cognitive nodes, identifies patterns, and generates higher-level meta-insights.",
+        description="[PLANNED] Initiate deep reflection within the cognitive architecture. Reorganizes and interlinks cognitive nodes, identifies patterns, and generates higher-level meta-insights.",
     ),
     CommandInfo(
         name="/memory-insight",
-        description="Perform comprehensive search across all memory layers. Scans episodic, semantic, and procedural memory to develop new insights from accumulated knowledge.",
+        description="[PLANNED] Perform comprehensive search across all memory layers. Scans episodic, semantic, and procedural memory to develop new insights from accumulated knowledge.",
     ),
     CommandInfo(
         name="/meta",
-        description="Generate higher-level meta-insights from existing knowledge. Analyzes clusters of related insights to form abstract conclusions and identify overarching themes.",
+        description="[PLANNED] Generate higher-level meta-insights from existing knowledge. Analyzes clusters of related insights to form abstract conclusions and identify overarching themes.",
     ),
     CommandInfo(
         name="/verify",
-        description="Start the assumption verification process. JENOVA presents an unverified assumption and asks for clarification to refine understanding of your context.",
+        description="[PLANNED] Start the assumption verification process. JENOVA presents an unverified assumption and asks for clarification to refine understanding of your context.",
     ),
 ]
 
-LEARNING_COMMANDS: list[CommandInfo] = [
+##Note: Planned learning commands (underlying systems implemented, command handlers pending)
+PLANNED_LEARNING_COMMANDS: list[CommandInfo] = [
     CommandInfo(
         name="/develop_insight",
-        description="Dual-purpose command: with node_id expands an existing insight with more context; without node_id scans docs directory for new documents to learn from.",
+        description="[PLANNED] Dual-purpose command: with node_id expands an existing insight with more context; without node_id scans docs directory for new documents to learn from.",
         usage="/develop_insight [node_id]",
     ),
     CommandInfo(
         name="/learn_procedure",
-        description="Interactive guided process to teach JENOVA a new procedure. Prompts for procedure name, individual steps, and expected outcome.",
+        description="[PLANNED] Interactive guided process to teach JENOVA a new procedure. Prompts for procedure name, individual steps, and expected outcome.",
     ),
     CommandInfo(
         name="/train",
-        description="Show instructions for creating fine-tuning training data from your interactions for personalizing the underlying language model.",
+        description="[PLANNED] Show instructions for creating fine-tuning training data from your interactions for personalizing the underlying language model.",
     ),
 ]
 
@@ -182,16 +188,26 @@ class HelpPanel(Static):
         lines.append(f"[bold cyan]╚{'═' * inner_width}╝[/bold cyan]")
         lines.append("")
         
-        ##Step purpose: Add cognitive commands section
-        lines.append("[bold yellow]COGNITIVE COMMANDS[/bold yellow]")
+        ##Step purpose: Add implemented commands section
+        lines.append("[bold yellow]IMPLEMENTED COMMANDS[/bold yellow]")
         lines.append(f"[dim]{'─' * box_width}[/dim]")
-        lines.extend(self._format_commands(COGNITIVE_COMMANDS))
+        lines.extend(self._format_commands(IMPLEMENTED_COMMANDS))
         lines.append("")
         
-        ##Step purpose: Add learning commands section
-        lines.append("[bold yellow]LEARNING COMMANDS[/bold yellow]")
+        ##Step purpose: Add planned cognitive commands section
+        lines.append("[bold yellow]PLANNED COGNITIVE COMMANDS[/bold yellow]")
         lines.append(f"[dim]{'─' * box_width}[/dim]")
-        lines.extend(self._format_commands(LEARNING_COMMANDS))
+        lines.append("[dim]Note: Underlying systems are implemented. Command handlers coming in future releases.[/dim]")
+        lines.append("")
+        lines.extend(self._format_commands(PLANNED_COGNITIVE_COMMANDS))
+        lines.append("")
+        
+        ##Step purpose: Add planned learning commands section
+        lines.append("[bold yellow]PLANNED LEARNING COMMANDS[/bold yellow]")
+        lines.append(f"[dim]{'─' * box_width}[/dim]")
+        lines.append("[dim]Note: Underlying systems are implemented. Command handlers coming in future releases.[/dim]")
+        lines.append("")
+        lines.extend(self._format_commands(PLANNED_LEARNING_COMMANDS))
         lines.append("")
         
         ##Step purpose: Add system commands section
