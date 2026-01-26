@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Literal, Union
+from typing import Literal
 
 import yaml
 from pydantic import BaseModel, Field, field_validator
@@ -22,16 +22,16 @@ from jenova.utils.errors import sanitize_path_for_error
 ##Class purpose: Hardware resource configuration
 class HardwareConfig(BaseModel):
     """Hardware resource configuration."""
-    
-    threads: Union[int, Literal["auto"]] = Field(
+
+    threads: int | Literal["auto"] = Field(
         default="auto",
         description="CPU threads to use. 'auto' for all cores.",
     )
-    gpu_layers: Union[int, Literal["auto", "all", "none"]] = Field(
+    gpu_layers: int | Literal["auto", "all", "none"] = Field(
         default="all",
         description="GPU layers to offload. 'all' for maximum.",
     )
-    
+
     ##Method purpose: Validate threads is positive or 'auto'
     @field_validator("threads")
     @classmethod
@@ -40,12 +40,12 @@ class HardwareConfig(BaseModel):
         if isinstance(v, int) and v < 1:
             raise ValueError("threads must be positive or 'auto'")
         return v
-    
+
     ##Method purpose: Resolve 'auto' to actual thread count
     @property
     def effective_threads(self) -> int:
         """Resolve 'auto' to actual thread count.
-        
+
         Returns:
             Effective thread count (CPU count if 'auto', otherwise the configured value)
         """
@@ -58,8 +58,8 @@ class HardwareConfig(BaseModel):
 ##Class purpose: LLM model configuration
 class ModelConfig(BaseModel):
     """LLM model configuration."""
-    
-    model_path: Union[Path, Literal["auto"]] = Field(
+
+    model_path: Path | Literal["auto"] = Field(
         default="auto",
         description="Path to GGUF model file. 'auto' to search.",
     )
@@ -91,7 +91,7 @@ class ModelConfig(BaseModel):
 ##Class purpose: Memory system configuration
 class MemoryConfig(BaseModel):
     """Memory system configuration."""
-    
+
     storage_path: Path = Field(
         default=Path(".jenova-ai/memory"),
         description="Path for memory database storage.",
@@ -106,7 +106,7 @@ class MemoryConfig(BaseModel):
         le=100,
         description="Default max results for memory searches.",
     )
-    
+
     ##Sec: Validate storage_path against path traversal attacks (P1-002, PATCH-002)
     @field_validator("storage_path", mode="before")
     @classmethod
@@ -132,7 +132,7 @@ class MemoryConfig(BaseModel):
 ##Class purpose: Graph/Cortex configuration
 class GraphConfig(BaseModel):
     """Graph system configuration."""
-    
+
     storage_path: Path = Field(
         default=Path(".jenova-ai/graph"),
         description="Path for graph data storage.",
@@ -143,7 +143,7 @@ class GraphConfig(BaseModel):
         le=10,
         description="Maximum traversal depth for graph queries.",
     )
-    
+
     ##Sec: Validate storage_path against path traversal attacks (P1-002, PATCH-002)
     @field_validator("storage_path", mode="before")
     @classmethod
@@ -169,7 +169,7 @@ class GraphConfig(BaseModel):
 ##Class purpose: Persona and behavior configuration
 class PersonaConfig(BaseModel):
     """Persona configuration."""
-    
+
     name: str = Field(
         default="JENOVA",
         description="AI persona name.",
@@ -191,24 +191,24 @@ class PersonaConfig(BaseModel):
 ##Class purpose: Root configuration for JENOVA
 class JenovaConfig(BaseModel):
     """Root configuration for JENOVA."""
-    
+
     hardware: HardwareConfig = Field(default_factory=HardwareConfig)
     model: ModelConfig = Field(default_factory=ModelConfig)
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
     graph: GraphConfig = Field(default_factory=GraphConfig)
     persona: PersonaConfig = Field(default_factory=PersonaConfig)
     debug: bool = Field(default=False, description="Enable debug mode.")
-    
+
     ##Method purpose: Load and validate config from YAML file
     @classmethod
-    def from_yaml(cls, path: Path) -> "JenovaConfig":
+    def from_yaml(cls, path: Path) -> JenovaConfig:
         """Load and validate config from YAML file."""
         ##Condition purpose: Check file exists
         if not path.exists():
             ##Step purpose: Sanitize path in error message
             safe_path = sanitize_path_for_error(path)
             raise ConfigNotFoundError(safe_path)
-        
+
         ##Error purpose: Handle YAML parse errors
         try:
             with open(path, encoding="utf-8") as f:
@@ -217,7 +217,7 @@ class JenovaConfig(BaseModel):
             ##Step purpose: Sanitize path in error message
             safe_path = sanitize_path_for_error(path)
             raise ConfigParseError(safe_path, str(e)) from e
-        
+
         ##Error purpose: Handle Pydantic validation errors
         try:
             return cls.model_validate(data)
@@ -228,10 +228,10 @@ class JenovaConfig(BaseModel):
             ##Step purpose: Sanitize path in error message
             safe_path = sanitize_path_for_error(path)
             raise ConfigParseError(safe_path, str(e)) from e
-    
+
     ##Method purpose: Create default config
     @classmethod
-    def default(cls) -> "JenovaConfig":
+    def default(cls) -> JenovaConfig:
         """Create default configuration."""
         return cls()
 
@@ -240,15 +240,15 @@ class JenovaConfig(BaseModel):
 def load_config(path: Path | None = None) -> JenovaConfig:
     """
     Load configuration from file or return defaults.
-    
+
     Args:
         path: Path to config.yaml. If None, returns defaults.
-        
+
     Returns:
         Validated JenovaConfig instance
     """
     ##Condition purpose: Return defaults if no path specified
     if path is None:
         return JenovaConfig.default()
-    
+
     return JenovaConfig.from_yaml(path)

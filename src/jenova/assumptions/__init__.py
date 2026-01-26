@@ -7,13 +7,13 @@ Assumptions are hypotheses that JENOVA forms about the user and world,
 which can be verified or disproven through conversation.
 """
 
+from jenova.assumptions.manager import AssumptionManager
 from jenova.assumptions.types import (
     Assumption,
     AssumptionStatus,
     AssumptionStore,
     CortexId,
 )
-from jenova.assumptions.manager import AssumptionManager
 
 __all__ = [
     "Assumption",

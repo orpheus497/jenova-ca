@@ -11,7 +11,6 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
-from typing import Literal
 
 import structlog
 
@@ -24,7 +23,7 @@ def configure_logging(
 ) -> None:
     """
     Configure application logging.
-    
+
     Args:
         level: Log level (DEBUG, INFO, WARNING, ERROR)
         log_file: Optional file path for log output
@@ -36,7 +35,7 @@ def configure_logging(
         stream=sys.stdout,
         level=getattr(logging, level.upper()),
     )
-    
+
     ##Step purpose: Build processor chain for structlog
     processors: list[structlog.types.Processor] = [
         structlog.stdlib.filter_by_level,
@@ -46,13 +45,13 @@ def configure_logging(
         structlog.processors.StackInfoRenderer(),
         structlog.processors.UnicodeDecoder(),
     ]
-    
+
     ##Condition purpose: Choose renderer based on format preference
     if json_format:
         processors.append(structlog.processors.JSONRenderer())
     else:
         processors.append(structlog.dev.ConsoleRenderer())
-    
+
     ##Action purpose: Apply structlog configuration
     structlog.configure(
         processors=processors,
@@ -61,7 +60,7 @@ def configure_logging(
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
-    
+
     ##Condition purpose: Set up file handler if log file specified
     if log_file is not None:
         ##Action purpose: Add file handler to root logger
@@ -75,10 +74,10 @@ def configure_logging(
 def get_logger(name: str) -> structlog.stdlib.BoundLogger:
     """
     Get a logger instance.
-    
+
     Args:
         name: Logger name, typically __name__
-        
+
     Returns:
         Configured structlog logger
     """
@@ -92,11 +91,11 @@ def get_logger_with_context(
 ) -> structlog.stdlib.BoundLogger:
     """
     Get a logger with pre-bound context values.
-    
+
     Args:
         name: Logger name
         **context: Key-value pairs to bind to all log entries
-        
+
     Returns:
         Logger with bound context
     """

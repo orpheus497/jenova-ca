@@ -10,40 +10,39 @@ Provides fixtures that create real component instances with:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 import pytest
 
 from jenova.config.models import (
-    JenovaConfig,
-    HardwareConfig,
-    ModelConfig,
-    MemoryConfig,
     GraphConfig,
+    HardwareConfig,
+    JenovaConfig,
+    MemoryConfig,
+    ModelConfig,
     PersonaConfig,
 )
 from jenova.core.engine import CognitiveEngine, EngineConfig
 from jenova.core.knowledge import KnowledgeStore
-from jenova.core.response import ResponseGenerator, ResponseConfig
-from jenova.llm.types import Prompt, Completion, GenerationParams
+from jenova.core.response import ResponseConfig, ResponseGenerator
+from jenova.llm.types import Completion, GenerationParams, Prompt
 
 
 ##Class purpose: Mock LLM interface for deterministic testing
 class MockLLMInterface:
     """
     Mock LLM for integration testing.
-    
+
     Provides deterministic responses without requiring a GGUF model.
     Responses are based on input patterns for testing specific behaviors.
     """
-    
+
     ##Method purpose: Initialize mock with optional response patterns
     def __init__(self, default_response: str = "This is a test response from JENOVA.") -> None:
         """
         Initialize mock LLM.
-        
+
         Args:
             default_response: Default response when no pattern matches.
         """
@@ -51,24 +50,24 @@ class MockLLMInterface:
         self._response_patterns: dict[str, str] = {}
         self._call_count: int = 0
         self._last_prompt: Prompt | None = None
-    
+
     ##Method purpose: Check if model is loaded (always True for mock)
     @property
     def is_loaded(self) -> bool:
         """Mock is always 'loaded'."""
         return True
-    
+
     ##Method purpose: Add a response pattern for testing
     def add_response_pattern(self, contains: str, response: str) -> None:
         """
         Add a pattern-based response.
-        
+
         Args:
             contains: If prompt contains this string, use this response.
             response: Response to return.
         """
         self._response_patterns[contains.lower()] = response
-    
+
     ##Method purpose: Generate completion from prompt
     def generate(
         self,
@@ -77,21 +76,21 @@ class MockLLMInterface:
     ) -> Completion:
         """
         Generate mock completion.
-        
+
         Args:
             prompt: Structured prompt
             params: Generation parameters (ignored for mock)
-            
+
         Returns:
             Mock completion result
         """
         ##Step purpose: Track call for assertions
         self._call_count += 1
         self._last_prompt = prompt
-        
+
         ##Step purpose: Format prompt to check patterns
         prompt_text = prompt.format_chat().lower()
-        
+
         ##Loop purpose: Check for matching patterns
         for pattern, response in self._response_patterns.items():
             ##Condition purpose: Return pattern response if matched
@@ -103,7 +102,7 @@ class MockLLMInterface:
                     tokens_prompt=len(prompt_text.split()),
                     generation_time_ms=10.0,
                 )
-        
+
         ##Step purpose: Return default response
         return Completion(
             content=self._default_response,
@@ -112,7 +111,7 @@ class MockLLMInterface:
             tokens_prompt=len(prompt_text.split()),
             generation_time_ms=10.0,
         )
-    
+
     ##Method purpose: Simple text generation helper
     def generate_text(
         self,
@@ -124,7 +123,7 @@ class MockLLMInterface:
         prompt = Prompt(system=system_prompt, user_message=text)
         completion = self.generate(prompt, params)
         return completion.content
-    
+
     ##Method purpose: Reset mock state for clean test
     def reset(self) -> None:
         """Reset call count and last prompt."""
@@ -146,11 +145,11 @@ def integration_data_dir(tmp_path: Path) -> Path:
     ##Step purpose: Create data directory structure
     data_dir = tmp_path / "jenova-test-data"
     data_dir.mkdir(parents=True, exist_ok=True)
-    
+
     ##Step purpose: Create subdirectories for memory and graph
     (data_dir / "memory").mkdir(exist_ok=True)
     (data_dir / "graph").mkdir(exist_ok=True)
-    
+
     return data_dir
 
 
@@ -199,32 +198,20 @@ def integration_config(integration_data_dir: Path) -> JenovaConfig:
 @pytest.fixture
 def mock_llm() -> MockLLMInterface:
     """Create a mock LLM for integration tests.
-    
+
     Returns:
         MockLLMInterface instance with default responses.
     """
-    llm = MockLLMInterface(
-        default_response="I understand your query. This is a test response."
-    )
-    
+    llm = MockLLMInterface(default_response="I understand your query. This is a test response.")
+
     ##Step purpose: Add common test patterns
+    llm.add_response_pattern("hello", "Hello! How can I help you today?")
+    llm.add_response_pattern("name", "I am JENOVA-TEST, your AI assistant.")
     llm.add_response_pattern(
-        "hello",
-        "Hello! How can I help you today?"
+        "favorite color", "Based on our previous conversation, your favorite color is blue."
     )
-    llm.add_response_pattern(
-        "name",
-        "I am JENOVA-TEST, your AI assistant."
-    )
-    llm.add_response_pattern(
-        "favorite color",
-        "Based on our previous conversation, your favorite color is blue."
-    )
-    llm.add_response_pattern(
-        "capital of france",
-        "The capital of France is Paris."
-    )
-    
+    llm.add_response_pattern("capital of france", "The capital of France is Paris.")
+
     return llm
 
 
@@ -244,9 +231,9 @@ def knowledge_store(integration_config: JenovaConfig) -> Generator[KnowledgeStor
         memory_config=integration_config.memory,
         graph_config=integration_config.graph,
     )
-    
+
     yield store
-    
+
     ##Step purpose: Cleanup is handled by tmp_path fixture
 
 
@@ -254,10 +241,10 @@ def knowledge_store(integration_config: JenovaConfig) -> Generator[KnowledgeStor
 @pytest.fixture
 def response_generator(integration_config: JenovaConfig) -> ResponseGenerator:
     """Create a ResponseGenerator for integration tests.
-    
+
     Args:
         integration_config: Test configuration.
-        
+
     Returns:
         Configured ResponseGenerator instance.
     """
@@ -303,8 +290,8 @@ def cognitive_engine(
             max_history_turns=5,
         ),
     )
-    
+
     yield engine
-    
+
     ##Step purpose: Cleanup - reset engine state
     engine.reset()

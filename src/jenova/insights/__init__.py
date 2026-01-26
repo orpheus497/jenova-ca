@@ -7,14 +7,14 @@ and meta-insight synthesis. Insights are stored persistently and
 linked through the Cortex knowledge graph.
 """
 
+from jenova.insights.concerns import ConcernManager
+from jenova.insights.manager import InsightManager
 from jenova.insights.types import (
     Concern,
     CortexId,
     Insight,
     InsightSearchResult,
 )
-from jenova.insights.concerns import ConcernManager
-from jenova.insights.manager import InsightManager
 
 __all__ = [
     "Concern",

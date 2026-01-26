@@ -48,13 +48,13 @@ from jenova.core.query_analyzer import (
     TopicResult,
 )
 from jenova.core.response import (
+    PersonaFormatter,
     Response,
+    ResponseCache,
     ResponseConfig,
     ResponseGenerator,
-    ResponseCache,
-    PersonaFormatter,
-    SourceCitationFormatter,
     SourceCitation,
+    SourceCitationFormatter,
     SourceType,
     WebSearchProtocol,
     WebSearchResult,

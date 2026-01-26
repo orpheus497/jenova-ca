@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING, Protocol
 import structlog
 
 if TYPE_CHECKING:
-    from jenova.config.models import JenovaConfig, PersonaConfig
+    from jenova.config.models import JenovaConfig
 
 ##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
@@ -62,19 +62,19 @@ MAX_CITATIONS: int = 5  # Maximum citations to display
 ##Class purpose: Enum for source types in citations
 class SourceType(Enum):
     """Types of sources for citation formatting."""
-    
+
     MEMORY = "memory"
     """From personal memory store."""
-    
+
     GRAPH = "graph"
     """From cognitive graph."""
-    
+
     WEB = "web"
     """From web search."""
-    
+
     DOCUMENT = "document"
     """From uploaded document."""
-    
+
     INSIGHT = "insight"
     """From generated insight."""
 
@@ -83,19 +83,19 @@ class SourceType(Enum):
 @dataclass
 class SourceCitation:
     """A citation to a source used in response generation."""
-    
+
     source_type: SourceType
     """Type of source."""
-    
+
     content_preview: str
     """Preview of source content."""
-    
+
     relevance_score: float = 0.0
     """How relevant this source was (0.0 to 1.0)."""
-    
+
     source_id: str = ""
     """Optional unique source identifier."""
-    
+
     metadata: dict[str, str] = field(default_factory=dict)
     """Additional source metadata."""
 
@@ -104,19 +104,19 @@ class SourceCitation:
 @dataclass
 class WebSearchResult:
     """A web search result for RAG integration."""
-    
+
     title: str
     """Page title."""
-    
+
     url: str
     """Page URL."""
-    
+
     snippet: str
     """Search result snippet."""
-    
+
     source: str = ""
     """Search engine or API source."""
-    
+
     timestamp: datetime = field(default_factory=datetime.now)
     """When the result was retrieved."""
 
@@ -124,11 +124,11 @@ class WebSearchResult:
 ##Class purpose: Protocol for web search integration
 class WebSearchProtocol(Protocol):
     """Protocol for web search integration.
-    
+
     Implement this protocol to integrate custom web search providers.
     The ResponseGenerator can optionally use web search for RAG.
     """
-    
+
     ##Method purpose: Search the web for relevant content
     def search(
         self,
@@ -137,16 +137,16 @@ class WebSearchProtocol(Protocol):
     ) -> list[WebSearchResult]:
         """
         Search the web for relevant content.
-        
+
         Args:
             query: Search query string
             max_results: Maximum results to return
-            
+
         Returns:
             List of WebSearchResult objects
         """
         ...
-    
+
     ##Method purpose: Check if search is available
     def is_available(self) -> bool:
         """Check if web search is available."""
@@ -156,16 +156,16 @@ class WebSearchProtocol(Protocol):
 ##Class purpose: LRU cache for response caching
 class ResponseCache:
     """LRU cache for caching generated responses.
-    
+
     Uses OrderedDict for O(1) operations while maintaining LRU order.
     Thread-safe via internal lock. All public methods are synchronized.
     """
-    
+
     ##Method purpose: Initialize cache with max size
     def __init__(self, max_size: int = 100) -> None:
         """
         Initialize response cache.
-        
+
         Args:
             max_size: Maximum number of cached responses
         """
@@ -176,25 +176,25 @@ class ResponseCache:
         self._misses = 0
         ##Sec: Add lock for thread-safe operations (P1-002 Daedelus audit)
         self._lock = threading.Lock()
-    
+
     ##Method purpose: Generate cache key from query and context
     @staticmethod
     def _make_key(query: str, username: str, context_hash: str = "") -> str:
         """
         Generate cache key from query components.
-        
+
         Args:
             query: User query
             username: Username
             context_hash: Optional hash of context
-            
+
         Returns:
             Cache key string
         """
         ##Step purpose: Combine components and hash
         combined = f"{username}:{query}:{context_hash}"
         return hashlib.sha256(combined.encode()).hexdigest()[:32]
-    
+
     ##Method purpose: Get cached response if available
     def get(
         self,
@@ -204,19 +204,19 @@ class ResponseCache:
     ) -> Response | None:
         """
         Get cached response if available.
-        
+
         Thread-safe: Uses internal lock for synchronization.
-        
+
         Args:
             query: User query
             username: Username
             context_hash: Optional context hash
-            
+
         Returns:
             Cached Response or None
         """
         key = self._make_key(query, username, context_hash)
-        
+
         ##Sec: Acquire lock for thread-safe cache access (P1-002)
         with self._lock:
             ##Condition purpose: Check cache hit
@@ -224,18 +224,18 @@ class ResponseCache:
                 ##Step purpose: Move to end (most recently used)
                 self._cache.move_to_end(key)
                 self._hits += 1
-                
+
                 logger.debug(
                     "cache_hit",
                     query_preview=query[:50],
                     cache_size=len(self._cache),
                 )
-                
+
                 return self._cache[key]
-            
+
             self._misses += 1
             return None
-    
+
     ##Method purpose: Store response in cache
     def put(
         self,
@@ -246,9 +246,9 @@ class ResponseCache:
     ) -> None:
         """
         Store response in cache.
-        
+
         Thread-safe: Uses internal lock for synchronization.
-        
+
         Args:
             query: User query
             username: Username
@@ -256,7 +256,7 @@ class ResponseCache:
             context_hash: Optional context hash
         """
         key = self._make_key(query, username, context_hash)
-        
+
         ##Sec: Acquire lock for thread-safe cache modification (P1-002)
         with self._lock:
             ##Condition purpose: Evict oldest if at capacity
@@ -264,10 +264,10 @@ class ResponseCache:
                 ##Step purpose: Remove oldest (first) item
                 self._cache.popitem(last=False)
                 logger.debug("cache_eviction", cache_size=self._max_size)
-            
+
             ##Step purpose: Add new entry
             self._cache[key] = response
-    
+
     ##Method purpose: Clear entire cache
     def clear(self) -> None:
         """Clear all cached responses. Thread-safe."""
@@ -275,7 +275,7 @@ class ResponseCache:
         with self._lock:
             self._cache.clear()
             logger.debug("cache_cleared")
-    
+
     ##Method purpose: Get cache statistics
     @property
     def stats(self) -> dict[str, int]:
@@ -291,7 +291,7 @@ class ResponseCache:
                 "misses": self._misses,
                 "hit_rate_percent": int(hit_rate * 100),
             }
-    
+
     ##Method purpose: Check if key exists
     def __contains__(self, key: str) -> bool:
         """Check if key exists in cache. Thread-safe."""
@@ -303,38 +303,38 @@ class ResponseCache:
 ##Class purpose: Formats prompts with persona context
 class PersonaFormatter:
     """Formats prompts with persona-aware context.
-    
+
     Injects persona identity, directives, and style into prompts
     for consistent personality in responses.
     """
-    
+
     ##Method purpose: Initialize with persona config
     def __init__(self, persona_config: dict[str, object]) -> None:
         """
         Initialize persona formatter.
-        
+
         Args:
             persona_config: Persona configuration dict with identity/directives
         """
         ##Step purpose: Extract persona components
         identity = persona_config.get("identity", {})
-        
+
         ##Step purpose: Check identity type once (consolidate scattered checks)
         is_identity_dict = isinstance(identity, dict)
-        
+
         self._name = identity.get("name", "JENOVA") if is_identity_dict else "JENOVA"
         self._type = identity.get("type", "AI assistant") if is_identity_dict else "AI assistant"
         self._origin = identity.get("origin_story", "") if is_identity_dict else ""
         self._creator = identity.get("creator", "") if is_identity_dict else ""
-        
+
         directives = persona_config.get("directives", [])
         self._directives = directives if isinstance(directives, list) else []
-    
+
     ##Method purpose: Format system prompt with persona
     def format_system_prompt(self) -> str:
         """
         Generate persona-aware system prompt.
-        
+
         Returns:
             Formatted system prompt string
         """
@@ -344,16 +344,16 @@ class PersonaFormatter:
             directive_text = "\n\nYour core directives:\n" + "\n".join(
                 f"- {d}" for d in self._directives
             )
-        
+
         ##Step purpose: Build origin section
         origin_text = ""
         if self._origin:
             origin_text = f"\n\nYour origin: {self._origin}"
-        
+
         return f"""You are {self._name}, a {self._type}.{origin_text}{directive_text}
 
 Respond naturally and helpfully while maintaining your identity."""
-    
+
     ##Method purpose: Format user message with context
     def format_user_prompt(
         self,
@@ -364,48 +364,47 @@ Respond naturally and helpfully while maintaining your identity."""
     ) -> str:
         """
         Format user message with context.
-        
+
         Args:
             query: User query
             context: Retrieved context items
             history: Conversation history
             web_results: Optional web search results
-            
+
         Returns:
             Formatted user prompt string
         """
         sections: list[str] = []
-        
+
         ##Condition purpose: Add context section
         if context:
             context_text = "\n".join(f"- {c}" for c in context[:MAX_CONTEXT_ITEMS])
             sections.append(f"## Retrieved Context\n{context_text}")
-        
+
         ##Condition purpose: Add web results section
         if web_results:
             web_text = "\n".join(
-                f"- [{r.title}]({r.url}): {r.snippet[:100]}"
-                for r in web_results[:MAX_WEB_RESULTS]
+                f"- [{r.title}]({r.url}): {r.snippet[:100]}" for r in web_results[:MAX_WEB_RESULTS]
             )
             sections.append(f"## Web Search Results\n{web_text}")
-        
+
         ##Condition purpose: Add history section
         if history:
             history_text = "\n".join(history[-5:])
             sections.append(f"## Recent Conversation\n{history_text}")
-        
+
         ##Step purpose: Combine sections
         context_block = "\n\n".join(sections) if sections else ""
-        
+
         ##Condition purpose: Include context if present
         if context_block:
             return f"""{context_block}
 
 ## User Query
 {query}"""
-        
+
         return query
-    
+
     ##Method purpose: Get persona name
     @property
     def name(self) -> str:
@@ -416,19 +415,19 @@ Respond naturally and helpfully while maintaining your identity."""
 ##Class purpose: Formats source citations for responses
 class SourceCitationFormatter:
     """Formats source citations for inclusion in responses.
-    
+
     Creates consistent, readable citations from various source types.
     """
-    
+
     ##Method purpose: Format a single citation
     @staticmethod
     def format_citation(citation: SourceCitation) -> str:
         """
         Format a single citation for display.
-        
+
         Args:
             citation: Citation to format
-            
+
         Returns:
             Formatted citation string
         """
@@ -441,43 +440,40 @@ class SourceCitationFormatter:
             SourceType.INSIGHT: "Insight",
         }
         type_label = type_labels.get(citation.source_type, "Source")
-        
+
         ##Step purpose: Format with relevance
         relevance_pct = int(citation.relevance_score * 100)
-        
+
         ##Condition purpose: Include source ID if present
         id_part = f" ({citation.source_id[:8]})" if citation.source_id else ""
-        
+
         return f"[{type_label}{id_part}] {citation.content_preview[:80]}... ({relevance_pct}% relevant)"
-    
+
     ##Method purpose: Format multiple citations
     @staticmethod
     def format_citations(citations: list[SourceCitation]) -> str:
         """
         Format multiple citations as a block.
-        
+
         Args:
             citations: Citations to format
-            
+
         Returns:
             Formatted citations block
         """
         ##Condition purpose: Handle empty case
         if not citations:
             return ""
-        
+
         ##Step purpose: Sort by relevance and format
-        sorted_citations = sorted(
-            citations, key=lambda c: c.relevance_score, reverse=True
-        )
-        
+        sorted_citations = sorted(citations, key=lambda c: c.relevance_score, reverse=True)
+
         formatted = [
-            SourceCitationFormatter.format_citation(c)
-            for c in sorted_citations[:MAX_CITATIONS]
+            SourceCitationFormatter.format_citation(c) for c in sorted_citations[:MAX_CITATIONS]
         ]
-        
+
         return "\n".join(formatted)
-    
+
     ##Method purpose: Extract citations from context items
     @staticmethod
     def extract_citations(
@@ -486,19 +482,19 @@ class SourceCitationFormatter:
     ) -> list[SourceCitation]:
         """
         Extract citations from context items.
-        
+
         Args:
             context: Context items with optional type tags
             relevance_scores: Optional scores per item
-            
+
         Returns:
             List of SourceCitation objects
         """
         citations: list[SourceCitation] = []
-        
+
         ##Step purpose: Pattern to match source type tags
         tag_pattern = re.compile(r"^\[(\w+)\]\s*(.+)$", re.DOTALL)
-        
+
         ##Step purpose: Type mapping
         type_map = {
             "memory": SourceType.MEMORY,
@@ -513,11 +509,11 @@ class SourceCitationFormatter:
             "doc": SourceType.DOCUMENT,
             "insight": SourceType.INSIGHT,
         }
-        
+
         ##Loop purpose: Extract from each context item
         for i, item in enumerate(context):
             match = tag_pattern.match(item)
-            
+
             ##Condition purpose: Check for tagged format
             if match:
                 tag = match.group(1).lower()
@@ -526,16 +522,18 @@ class SourceCitationFormatter:
             else:
                 content = item
                 source_type = SourceType.MEMORY
-            
+
             ##Step purpose: Get relevance score
             score = relevance_scores[i] if relevance_scores and i < len(relevance_scores) else 0.5
-            
-            citations.append(SourceCitation(
-                source_type=source_type,
-                content_preview=content[:100],
-                relevance_score=score,
-            ))
-        
+
+            citations.append(
+                SourceCitation(
+                    source_type=source_type,
+                    content_preview=content[:100],
+                    relevance_score=score,
+                )
+            )
+
         return citations
 
 
@@ -595,13 +593,13 @@ class ResponseGenerator:
         self._config = config
         self._response_config = response_config or ResponseConfig()
         self._web_search = web_search
-        
+
         ##Step purpose: Initialize cache if enabled
         if self._response_config.enable_cache:
             self._cache = ResponseCache(max_size=self._response_config.cache_size)
         else:
             self._cache = None
-        
+
         ##Step purpose: Initialize persona formatter
         persona_dict = getattr(config, "persona", None)
         if persona_dict and hasattr(persona_dict, "model_dump"):
@@ -610,10 +608,10 @@ class ResponseGenerator:
             self._persona = PersonaFormatter(persona_dict)
         else:
             self._persona = PersonaFormatter({})
-        
+
         ##Step purpose: Initialize citation formatter
         self._citation_formatter = SourceCitationFormatter()
-        
+
         ##Action purpose: Log initialization
         logger.debug(
             "response_generator_initialized",
@@ -621,12 +619,12 @@ class ResponseGenerator:
             format_style=self._response_config.format_style,
             cache_enabled=self._cache is not None,
         )
-    
+
     ##Method purpose: Get cache statistics
     @property
     def cache_stats(self) -> dict[str, int | bool]:
         """Get cache statistics.
-        
+
         Returns:
             Dictionary with cache statistics. When cache is disabled,
             returns {"enabled": False}. When enabled, returns stats dict
@@ -635,19 +633,19 @@ class ResponseGenerator:
         if self._cache:
             return self._cache.stats
         return {"enabled": False}
-    
+
     ##Method purpose: Get persona name
     @property
     def persona_name(self) -> str:
         """Get the persona name."""
         return self._persona.name
-    
+
     ##Method purpose: Clear response cache
     def clear_cache(self) -> None:
         """Clear the response cache."""
         if self._cache:
             self._cache.clear()
-    
+
     ##Method purpose: Format prompt with persona context
     def format_prompt(
         self,
@@ -658,13 +656,13 @@ class ResponseGenerator:
     ) -> tuple[str, str]:
         """
         Format a complete prompt with persona and context.
-        
+
         Args:
             query: User query
             context: Retrieved context items
             history: Conversation history
             include_web_search: Whether to perform web search
-            
+
         Returns:
             Tuple of (system_prompt, user_prompt)
         """
@@ -676,7 +674,7 @@ class ResponseGenerator:
                 web_results = self._web_search.search(query, max_results=MAX_WEB_RESULTS)
             except Exception as e:
                 logger.warning("web_search_failed", error=str(e))
-        
+
         system_prompt = self._persona.format_system_prompt()
         user_prompt = self._persona.format_user_prompt(
             query=query,
@@ -684,7 +682,7 @@ class ResponseGenerator:
             history=history,
             web_results=web_results,
         )
-        
+
         return system_prompt, user_prompt
 
     ##Method purpose: Generate a formatted response from LLM output
@@ -716,43 +714,39 @@ class ResponseGenerator:
         ##Step purpose: Compute context hash once (reused for get and put)
         context_hash = ""
         if use_cache and self._cache and query and context:
-            context_hash = hashlib.sha256(
-                str(context).encode()
-            ).hexdigest()[:16]
-        
+            context_hash = hashlib.sha256(str(context).encode()).hexdigest()[:16]
+
         ##Condition purpose: Check cache for existing response
         if use_cache and self._cache and query:
             cached = self._cache.get(query, username, context_hash)
             if cached:
                 return cached
-        
+
         ##Step purpose: Format the content according to style
         formatted_content = self._format_content(llm_output)
-        
+
         ##Step purpose: Validate the response
         is_valid = self._validate_response(formatted_content)
-        
+
         ##Condition purpose: Handle invalid responses
         if not is_valid:
             logger.warning("invalid_response_generated", content_length=len(formatted_content))
             formatted_content = self._get_fallback_response()
-        
+
         ##Step purpose: Extract sources if configured
         sources: list[str] = []
         if self._response_config.include_sources and context:
             sources = self._extract_sources(context)
-        
+
         ##Step purpose: Extract and format citations if configured
         citations_text = ""
         if self._response_config.include_citations and context:
-            citations = self._citation_formatter.extract_citations(
-                context, relevance_scores
-            )
+            citations = self._citation_formatter.extract_citations(context, relevance_scores)
             citations_text = self._citation_formatter.format_citations(citations)
-        
+
         ##Step purpose: Calculate confidence based on response quality
         confidence = self._calculate_confidence(formatted_content, context)
-        
+
         ##Step purpose: Build metadata
         metadata: dict[str, str] = {}
         if query:
@@ -761,7 +755,7 @@ class ResponseGenerator:
         metadata["persona"] = self._persona.name
         if citations_text:
             metadata["citations"] = citations_text
-        
+
         ##Action purpose: Log response generation
         logger.debug(
             "response_generated",
@@ -769,20 +763,20 @@ class ResponseGenerator:
             sources_count=len(sources),
             confidence=confidence,
         )
-        
+
         response = Response(
             content=formatted_content,
             sources=sources,
             confidence=confidence,
             metadata=metadata,
         )
-        
+
         ##Condition purpose: Store in cache if enabled (reuse pre-computed hash)
         if use_cache and self._cache and query:
             self._cache.put(query, username, response, context_hash)
-        
+
         return response
-    
+
     ##Method purpose: Generate response with optional web search integration
     def generate_with_rag(
         self,
@@ -795,9 +789,9 @@ class ResponseGenerator:
     ) -> Response:
         """
         Generate response with full RAG features.
-        
+
         Combines caching, persona formatting, citations, and optional web search.
-        
+
         Args:
             llm_output: Raw LLM output
             query: User query
@@ -805,7 +799,7 @@ class ResponseGenerator:
             username: Username
             history: Conversation history
             include_web: Whether to include web search
-            
+
         Returns:
             Structured Response with RAG enhancements
         """
@@ -815,16 +809,13 @@ class ResponseGenerator:
             ##Error purpose: Handle web search errors gracefully
             try:
                 results = self._web_search.search(query, max_results=MAX_WEB_RESULTS)
-                web_context = [
-                    f"[Web] {r.title}: {r.snippet}"
-                    for r in results
-                ]
+                web_context = [f"[Web] {r.title}: {r.snippet}" for r in results]
             except Exception as e:
                 logger.warning("web_search_failed", error=str(e))
-        
+
         ##Step purpose: Combine context sources
         full_context = (context or []) + web_context
-        
+
         ##Step purpose: Generate with full context
         return self.generate(
             llm_output=llm_output,
@@ -847,11 +838,11 @@ class ResponseGenerator:
         ##Condition purpose: Check for empty content
         if not content or not content.strip():
             return False
-        
+
         ##Condition purpose: Check minimum length
         if len(content.strip()) < 5:
             return False
-        
+
         ##Condition purpose: Check for error patterns
         error_patterns = [
             r"^error:",
@@ -862,11 +853,7 @@ class ResponseGenerator:
         ]
         content_lower = content.lower()
         ##Loop purpose: Check each error pattern
-        for pattern in error_patterns:
-            if re.search(pattern, content_lower):
-                return False
-        
-        return True
+        return all(not re.search(pattern, content_lower) for pattern in error_patterns)
 
     ##Method purpose: Format response according to style
     def _format_content(self, content: str) -> str:
@@ -880,23 +867,25 @@ class ResponseGenerator:
         """
         ##Step purpose: Strip whitespace
         formatted = content.strip()
-        
+
         ##Condition purpose: Apply max length if configured (skip if RESPONSE_LENGTH_UNLIMITED)
-        if self._response_config.max_length != RESPONSE_LENGTH_UNLIMITED:
-            if len(formatted) > self._response_config.max_length:
-                ##Step purpose: Truncate at sentence boundary if possible
-                truncated = formatted[:self._response_config.max_length]
-                last_period = truncated.rfind(".")
-                if last_period > self._response_config.max_length * 0.7:
-                    formatted = truncated[:last_period + 1]
-                else:
-                    formatted = truncated + "..."
-        
+        if (
+            self._response_config.max_length != RESPONSE_LENGTH_UNLIMITED
+            and len(formatted) > self._response_config.max_length
+        ):
+            ##Step purpose: Truncate at sentence boundary if possible
+            truncated = formatted[: self._response_config.max_length]
+            last_period = truncated.rfind(".")
+            if last_period > self._response_config.max_length * 0.7:
+                formatted = truncated[: last_period + 1]
+            else:
+                formatted = truncated + "..."
+
         ##Condition purpose: Apply style-specific formatting
         if self._response_config.format_style == "minimal":
             ##Step purpose: Remove extra whitespace for minimal style
             formatted = " ".join(formatted.split())
-        
+
         return formatted
 
     ##Method purpose: Extract source references from context
@@ -910,10 +899,10 @@ class ResponseGenerator:
             List of source reference strings.
         """
         sources: list[str] = []
-        
+
         ##Step purpose: Pattern to match source type tags
         source_pattern = re.compile(r"^\[(\w+)\]")
-        
+
         ##Loop purpose: Extract source type from each context item
         for item in context:
             match = source_pattern.match(item)
@@ -922,9 +911,9 @@ class ResponseGenerator:
                 ##Condition purpose: Avoid duplicate source types
                 if source_type not in sources:
                     sources.append(source_type)
-        
+
         return sources
-    
+
     ##Method purpose: Calculate confidence score for response
     def _calculate_confidence(
         self,
@@ -932,24 +921,24 @@ class ResponseGenerator:
         context: list[str] | None,
     ) -> float:
         """Calculate confidence score based on response quality.
-        
+
         Args:
             content: The response content.
             context: Context items used.
-            
+
         Returns:
             Confidence score between 0.0 and 1.0.
         """
         confidence = 1.0
-        
+
         ##Condition purpose: Lower confidence if no context was used
         if not context:
             confidence *= 0.8
-        
+
         ##Condition purpose: Lower confidence for very short responses
         if len(content) < 50:
             confidence *= 0.9
-        
+
         ##Condition purpose: Lower confidence if response seems uncertain
         uncertainty_phrases = ["i'm not sure", "i think", "maybe", "possibly"]
         content_lower = content.lower()
@@ -958,9 +947,9 @@ class ResponseGenerator:
             if phrase in content_lower:
                 confidence *= 0.85
                 break
-        
+
         return round(confidence, 2)
-    
+
     ##Method purpose: Get fallback response for invalid LLM output
     def _get_fallback_response(self) -> str:
         """Get a fallback response when LLM output is invalid."""

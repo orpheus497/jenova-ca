@@ -26,10 +26,10 @@ if TYPE_CHECKING:
 def parse_args(args: list[str] | None = None) -> argparse.Namespace:
     """
     Parse command-line arguments.
-    
+
     Args:
         args: Arguments to parse (None = sys.argv)
-        
+
     Returns:
         Parsed arguments namespace
     """
@@ -38,36 +38,39 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
         prog="jenova",
         description="JENOVA - Self-Aware AI Cognitive Architecture",
     )
-    
+
     ##Action purpose: Add version argument
     parser.add_argument(
-        "--version", "-v",
+        "--version",
+        "-v",
         action="version",
         version=f"JENOVA {__version__}",
     )
-    
+
     ##Action purpose: Add config argument
     parser.add_argument(
-        "--config", "-c",
+        "--config",
+        "-c",
         type=Path,
         default=None,
         help="Path to configuration YAML file",
     )
-    
+
     ##Action purpose: Add debug argument
     parser.add_argument(
-        "--debug", "-d",
+        "--debug",
+        "-d",
         action="store_true",
         help="Enable debug mode with verbose logging",
     )
-    
+
     ##Action purpose: Add no-tui argument
     parser.add_argument(
         "--no-tui",
         action="store_true",
         help="Run in headless mode without TUI",
     )
-    
+
     ##Action purpose: Add log-file argument
     parser.add_argument(
         "--log-file",
@@ -75,21 +78,21 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Path to log file (logs to stdout if not specified)",
     )
-    
+
     ##Action purpose: Add json-logs argument
     parser.add_argument(
         "--json-logs",
         action="store_true",
         help="Output logs in JSON format",
     )
-    
+
     ##Action purpose: Add skip-model-load argument for testing
     parser.add_argument(
         "--skip-model-load",
         action="store_true",
         help="Skip loading LLM model (for testing/development)",
     )
-    
+
     return parser.parse_args(args)
 
 
@@ -97,50 +100,52 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
 def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> CognitiveEngine:
     """
     Create and wire up the CognitiveEngine with all dependencies.
-    
+
     Args:
         config: JENOVA configuration
         skip_model_load: If True, skip loading the LLM model (uses mock)
-        
+
     Returns:
         Configured CognitiveEngine instance
-        
+
     Raises:
         Exception: If component initialization fails
     """
     logger = get_logger(__name__)
-    
+
     ##Step purpose: Import components
+    from jenova.assumptions.manager import AssumptionManager
     from jenova.core.engine import CognitiveEngine, EngineConfig
     from jenova.core.knowledge import KnowledgeStore
-    from jenova.core.response import ResponseGenerator, ResponseConfig
+    from jenova.core.response import ResponseConfig, ResponseGenerator
+    from jenova.insights.manager import InsightManager
     from jenova.llm.interface import LLMInterface
-    
+
     ##Action purpose: Log initialization start
     logger.info("creating_engine", skip_model_load=skip_model_load)
-    
+
     ##Step purpose: Create KnowledgeStore with memory and graph
     logger.debug("initializing_knowledge_store")
     knowledge_store = KnowledgeStore(
         memory_config=config.memory,
         graph_config=config.graph,
     )
-    
+
     ##Step purpose: Create LLM interface
     logger.debug("initializing_llm", skip_load=skip_model_load)
     ##Condition purpose: Use mock or real LLM based on flag
     if skip_model_load:
         ##Step purpose: Create minimal mock LLM for development
-        from jenova.llm.types import Prompt, Completion
-        
+        from jenova.llm.types import Completion, Prompt
+
         ##Class purpose: Minimal mock LLM for development/testing
         class DevelopmentLLM:
             """Development mock LLM that returns echo responses."""
-            
+
             @property
             def is_loaded(self) -> bool:
                 return True
-            
+
             def generate(self, prompt: Prompt, params: object = None) -> Completion:
                 ##Step purpose: Return echo response
                 return Completion(
@@ -150,7 +155,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
                     tokens_prompt=len(prompt.user_message.split()),
                     generation_time_ms=1.0,
                 )
-        
+
         llm: LLMInterface | DevelopmentLLM = DevelopmentLLM()
     else:
         ##Step purpose: Create and load real LLM
@@ -159,7 +164,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
             hardware_config=config.hardware,
         )
         llm.load()
-    
+
     ##Step purpose: Create ResponseGenerator
     logger.debug("initializing_response_generator")
     response_generator = ResponseGenerator(
@@ -170,7 +175,28 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
             format_style="default",
         ),
     )
-    
+
+    ##Step purpose: Initialize insight manager
+    logger.debug("initializing_insight_manager")
+    ##Step purpose: Determine insights storage path (user-specific subdirectories handled by manager)
+    insights_root = config.memory.storage_path.parent / "insights"
+    insight_manager = InsightManager.create(
+        insights_root=insights_root,
+        graph=knowledge_store.graph,
+        llm=llm,
+        memory_search=None,  ##Step purpose: Optional - not available in v4 architecture
+    )
+
+    ##Step purpose: Initialize assumption manager
+    logger.debug("initializing_assumption_manager")
+    ##Step purpose: Determine assumptions storage path (user-specific subdirectories handled by manager)
+    assumptions_root = config.memory.storage_path.parent / "assumptions"
+    assumption_manager = AssumptionManager.create(
+        storage_path=assumptions_root,
+        graph=knowledge_store.graph,
+        llm=llm,
+    )
+
     ##Step purpose: Create CognitiveEngine
     logger.debug("initializing_cognitive_engine")
     engine = CognitiveEngine(
@@ -184,8 +210,10 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
             enable_learning=True,
             max_history_turns=10,
         ),
+        insight_manager=insight_manager,
+        assumption_manager=assumption_manager,
     )
-    
+
     logger.info("engine_created")
     return engine
 
@@ -194,35 +222,35 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
 def run_headless(config: JenovaConfig, engine: CognitiveEngine) -> None:
     """
     Run JENOVA in headless mode (no TUI).
-    
+
     Args:
         config: JENOVA configuration
         engine: Cognitive engine instance
     """
     logger = get_logger(__name__)
     logger.info("starting_headless", config_debug=config.debug)
-    
+
     ##Step purpose: Print startup message
     print(f"JENOVA {__version__} - Headless Mode")
     print(f"Persona: {config.persona.name}")
     print("Type 'quit' or 'exit' to stop.\n")
-    
+
     ##Loop purpose: Main REPL loop
     while True:
         ##Error purpose: Handle keyboard interrupt
         try:
             ##Action purpose: Read user input
             user_input = input("You: ").strip()
-            
+
             ##Condition purpose: Check for exit commands
             if user_input.lower() in ("quit", "exit", "q"):
                 print("Goodbye!")
                 break
-            
+
             ##Condition purpose: Skip empty input
             if not user_input:
                 continue
-            
+
             ##Condition purpose: Handle special commands
             if user_input.lower() == "/help":
                 print("\nCommands:")
@@ -231,29 +259,29 @@ def run_headless(config: JenovaConfig, engine: CognitiveEngine) -> None:
                 print("  /debug   - Toggle debug mode")
                 print("  quit     - Exit JENOVA\n")
                 continue
-            
+
             if user_input.lower() == "/reset":
                 engine.reset()
                 print(">> Conversation reset.\n")
                 continue
-            
+
             if user_input.lower() == "/debug":
                 ##Step purpose: Toggle debug logging
                 current = logger.isEnabledFor(10)  # DEBUG level
                 print(f">> Debug mode: {'off' if current else 'on'}\n")
                 continue
-            
+
             ##Action purpose: Process through cognitive engine
             result = engine.think(user_input)
-            
+
             ##Condition purpose: Handle error responses
             if result.is_error:
                 print(f"JENOVA: [Error] {result.error_message}")
             else:
                 print(f"JENOVA: {result.content}")
-            
+
             print()  ##Step purpose: Add spacing
-            
+
         except KeyboardInterrupt:
             print("\nGoodbye!")
             break
@@ -266,17 +294,17 @@ def run_headless(config: JenovaConfig, engine: CognitiveEngine) -> None:
 def run_tui(config: JenovaConfig, engine: CognitiveEngine) -> None:
     """
     Run JENOVA with TUI interface.
-    
+
     Args:
         config: JENOVA configuration
         engine: Cognitive engine instance
     """
     from jenova.ui.app import JenovaApp
-    
+
     ##Step purpose: Create app and connect engine
     app = JenovaApp(config)
     app.set_engine(engine)
-    
+
     ##Action purpose: Run the app
     app.run()
 
@@ -285,16 +313,16 @@ def run_tui(config: JenovaConfig, engine: CognitiveEngine) -> None:
 def main(args: list[str] | None = None) -> int:
     """
     Main entry point for JENOVA.
-    
+
     Args:
         args: Command-line arguments (None = sys.argv)
-        
+
     Returns:
         Exit code (0 = success)
     """
     ##Step purpose: Parse arguments
     parsed = parse_args(args)
-    
+
     ##Step purpose: Configure logging
     log_level = "DEBUG" if parsed.debug else "INFO"
     configure_logging(
@@ -302,24 +330,24 @@ def main(args: list[str] | None = None) -> int:
         log_file=parsed.log_file,
         json_format=parsed.json_logs,
     )
-    
+
     logger = get_logger(__name__)
     logger.info("jenova_starting", version=__version__)
-    
+
     ##Error purpose: Handle configuration errors
     try:
         ##Step purpose: Load configuration
         config = load_config(parsed.config)
-        
+
         ##Condition purpose: Override debug from CLI
         if parsed.debug:
             config = config.model_copy(update={"debug": True})
-            
+
     except Exception as e:
         logger.error("config_error", error=str(e))
         print(f"Configuration error: {e}", file=sys.stderr)
         return 1
-    
+
     ##Error purpose: Handle engine initialization errors
     try:
         ##Step purpose: Create the cognitive engine
@@ -331,7 +359,7 @@ def main(args: list[str] | None = None) -> int:
         logger.error("engine_init_error", error=str(e), exc_info=True)
         print(f"Failed to initialize engine: {e}", file=sys.stderr)
         return 1
-    
+
     ##Error purpose: Handle runtime errors
     try:
         ##Condition purpose: Choose run mode
@@ -343,7 +371,7 @@ def main(args: list[str] | None = None) -> int:
         logger.error("runtime_error", error=str(e), exc_info=True)
         print(f"Error: {e}", file=sys.stderr)
         return 1
-    
+
     logger.info("jenova_stopped")
     return 0
 

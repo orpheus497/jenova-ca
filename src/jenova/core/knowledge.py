@@ -10,12 +10,11 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import structlog
 
-from jenova.config.models import MemoryConfig, GraphConfig
+from jenova.config.models import GraphConfig, MemoryConfig
 from jenova.exceptions import GraphError
 from jenova.memory import Memory, MemoryResult, MemoryType
 from jenova.utils.cache import TTLCache
@@ -31,35 +30,34 @@ logger = structlog.get_logger(__name__)
 @dataclass
 class KnowledgeContext:
     """Combined search results from all knowledge sources."""
-    
+
     memories: list[MemoryResult]
     """Results from vector memory search."""
-    
+
     graph_context: list[dict[str, str]]
     """Related nodes from graph traversal."""
-    
+
     query: str
     """Original search query."""
-    
+
     ##Method purpose: Check if any results were found
     def is_empty(self) -> bool:
         """Check if no results found."""
         return len(self.memories) == 0 and len(self.graph_context) == 0
-    
+
     ##Method purpose: Get combined text context for LLM
     def as_context_string(self, max_length: int = 4000) -> str:
         """Format as context string for LLM prompt."""
         ##Step purpose: Build context parts
         parts: list[str] = []
-        
+
         ##Condition purpose: Add memory results if present
         if self.memories:
             memory_text = "\n".join(
-                f"- [{m.memory_type.value}] {m.content}"
-                for m in self.memories[:5]
+                f"- [{m.memory_type.value}] {m.content}" for m in self.memories[:5]
             )
             parts.append(f"Relevant memories:\n{memory_text}")
-        
+
         ##Condition purpose: Add graph context if present
         if self.graph_context:
             graph_text = "\n".join(
@@ -67,13 +65,13 @@ class KnowledgeContext:
                 for node in self.graph_context[:5]
             )
             parts.append(f"Related knowledge:\n{graph_text}")
-        
+
         result = "\n\n".join(parts)
-        
+
         ##Condition purpose: Truncate if too long
         if len(result) > max_length:
             return result[:max_length] + "..."
-        
+
         return result
 
 
@@ -81,11 +79,11 @@ class KnowledgeContext:
 class KnowledgeStore:
     """
     Unified interface to all knowledge sources.
-    
+
     Combines vector memory and graph memory into a single
     searchable knowledge base.
     """
-    
+
     ##Method purpose: Initialize with memory and graph configs
     def __init__(
         self,
@@ -94,7 +92,7 @@ class KnowledgeStore:
     ) -> None:
         """
         Initialize knowledge store.
-        
+
         Args:
             memory_config: Configuration for memory system
             graph_config: Configuration for graph system
@@ -102,7 +100,7 @@ class KnowledgeStore:
         ##Step purpose: Store configuration
         self._memory_config = memory_config
         self._graph_config = graph_config
-        
+
         ##Action purpose: Initialize memory instances for each type
         self._memories: dict[MemoryType, Memory] = {}
         ##Loop purpose: Create memory for each type
@@ -111,31 +109,32 @@ class KnowledgeStore:
                 memory_type=memory_type,
                 storage_path=memory_config.storage_path / memory_type.value,
             )
-        
+
         ##Step purpose: Graph will be lazy-loaded to avoid circular import
         self._graph: CognitiveGraph | None = None
-        
+
         ##Update: Add search result cache for performance optimization
         self._search_cache: TTLCache[str, KnowledgeContext] = TTLCache(
             max_size=500,
             default_ttl=300,  # 5 minutes
         )
-    
+
     ##Method purpose: Get or create the cognitive graph
     @property
-    def graph(self) -> "CognitiveGraph":
+    def graph(self) -> CognitiveGraph:
         """Get the cognitive graph (lazy-loaded)."""
         ##Condition purpose: Initialize graph on first access
         if self._graph is None:
             from jenova.graph import CognitiveGraph
+
             self._graph = CognitiveGraph(self._graph_config.storage_path)
         return self._graph
-    
+
     ##Method purpose: Get memory instance by type
     def get_memory(self, memory_type: MemoryType) -> Memory:
         """Get memory instance for a specific type."""
         return self._memories[memory_type]
-    
+
     ##Method purpose: Add content to a specific memory type
     def add(
         self,
@@ -145,17 +144,17 @@ class KnowledgeStore:
     ) -> str:
         """
         Add content to memory.
-        
+
         Args:
             content: Text content to store
             memory_type: Which memory type to store in
             metadata: Optional metadata
-            
+
         Returns:
             ID of stored memory
         """
         return self._memories[memory_type].add(content, metadata)
-    
+
     ##Method purpose: Search all memory types and graph
     def search(
         self,
@@ -166,19 +165,19 @@ class KnowledgeStore:
     ) -> KnowledgeContext:
         """
         Search all knowledge sources.
-        
+
         Args:
             query: Search query
             memory_types: Types to search (None = all)
             n_results: Max results per source
             include_graph: Whether to include graph context
-            
+
         Returns:
             KnowledgeContext with combined results
         """
         ##Step purpose: Determine which memory types to search
         types_to_search = memory_types or list(MemoryType)
-        
+
         ##Update: Generate cache key from search parameters
         cache_key_parts = [
             query,
@@ -187,24 +186,24 @@ class KnowledgeStore:
             str(include_graph),
         ]
         cache_key = hashlib.sha256("|".join(cache_key_parts).encode()).hexdigest()
-        
+
         ##Update: Check cache first
         cached_result = self._search_cache.get(cache_key)
         if cached_result is not None:
             logger.debug("search_cache_hit", query_preview=query[:50])
             return cached_result
-        
+
         ##Step purpose: Search all specified memories
         all_results: list[MemoryResult] = []
         ##Loop purpose: Search each memory type
         for memory_type in types_to_search:
             results = self._memories[memory_type].search(query, n_results)
             all_results.extend(results)
-        
+
         ##Action purpose: Sort by score and limit
         all_results.sort(key=lambda r: r.score, reverse=True)
         all_results = all_results[:n_results]
-        
+
         ##Step purpose: Get graph context if requested
         graph_context: list[dict[str, str]] = []
         ##Condition purpose: Search graph if requested
@@ -218,24 +217,24 @@ class KnowledgeStore:
             except Exception as e:
                 ##Step purpose: Log unexpected errors but don't crash search
                 logger.error("unexpected_graph_error", error=str(e), query=query, exc_info=True)
-        
+
         result = KnowledgeContext(
             memories=all_results,
             graph_context=graph_context,
             query=query,
         )
-        
+
         ##Update: Cache the result
         self._search_cache.set(cache_key, result)
-        
+
         return result
-    
+
     ##Method purpose: Factory method for production use
     @classmethod
     def create(
         cls,
         memory_config: MemoryConfig,
         graph_config: GraphConfig,
-    ) -> "KnowledgeStore":
+    ) -> KnowledgeStore:
         """Factory method to create a KnowledgeStore."""
         return cls(memory_config, graph_config)

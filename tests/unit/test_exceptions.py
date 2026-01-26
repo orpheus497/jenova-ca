@@ -7,33 +7,25 @@ Tests for the typed exception hierarchy.
 
 from __future__ import annotations
 
-import pytest
-
 from jenova.exceptions import (
-    JenovaError,
     ConfigError,
     ConfigNotFoundError,
     ConfigParseError,
     ConfigValidationError,
-    LLMError,
-    LLMLoadError,
-    LLMGenerationError,
-    LLMParseError,
-    MemoryError,
-    MemoryStoreError,
-    MemorySearchError,
     GraphError,
-    NodeNotFoundError,
+    JenovaError,
+    JenovaMemoryError,
+    LLMError,
+    LLMParseError,
     MigrationError,
     SchemaVersionError,
-    MigrationFailedError,
 )
 
 
 ##Class purpose: Test exception hierarchy
 class TestExceptionHierarchy:
     """Tests for exception inheritance."""
-    
+
     ##Method purpose: Test all exceptions inherit from JenovaError
     def test_all_inherit_from_jenova_error(self) -> None:
         """All custom exceptions should inherit from JenovaError."""
@@ -41,15 +33,15 @@ class TestExceptionHierarchy:
             ConfigError("test"),
             ConfigNotFoundError("/path"),
             LLMError("test"),
-            MemoryError("test"),
+            JenovaMemoryError("test"),
             GraphError("test"),
             MigrationError("test"),
         ]
-        
+
         ##Loop purpose: Verify inheritance
         for exc in exceptions:
             assert isinstance(exc, JenovaError)
-    
+
     ##Method purpose: Test config exceptions inherit from ConfigError
     def test_config_exceptions_inherit_from_config_error(self) -> None:
         """Config-related exceptions should inherit from ConfigError."""
@@ -58,7 +50,7 @@ class TestExceptionHierarchy:
             ConfigParseError("/path", "error"),
             ConfigValidationError([{"loc": "test", "msg": "error"}]),
         ]
-        
+
         ##Loop purpose: Verify inheritance
         for exc in exceptions:
             assert isinstance(exc, ConfigError)
@@ -68,14 +60,14 @@ class TestExceptionHierarchy:
 ##Class purpose: Test exception messages
 class TestExceptionMessages:
     """Tests for exception message formatting."""
-    
+
     ##Method purpose: Test ConfigNotFoundError message
     def test_config_not_found_error_message(self) -> None:
         """ConfigNotFoundError should include path in message."""
         exc = ConfigNotFoundError("/path/to/config.yaml")
         assert "/path/to/config.yaml" in str(exc)
         assert exc.path == "/path/to/config.yaml"
-    
+
     ##Method purpose: Test LLMParseError preserves raw output
     def test_llm_parse_error_preserves_raw_output(self) -> None:
         """LLMParseError should preserve raw output for debugging."""
@@ -83,7 +75,7 @@ class TestExceptionMessages:
         exc = LLMParseError(raw, "JSON decode error")
         assert exc.raw_output == raw
         assert exc.parse_error == "JSON decode error"
-    
+
     ##Method purpose: Test SchemaVersionError message
     def test_schema_version_error_message(self) -> None:
         """SchemaVersionError should show found and supported versions."""

@@ -12,9 +12,9 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from jenova.config.models import ModelConfig, HardwareConfig
-from jenova.exceptions import LLMLoadError, LLMGenerationError
-from jenova.llm.types import Prompt, Completion, GenerationParams
+from jenova.config.models import HardwareConfig, ModelConfig
+from jenova.exceptions import LLMGenerationError, LLMLoadError
+from jenova.llm.types import Completion, GenerationParams, Prompt
 from jenova.utils.errors import sanitize_path_for_error
 
 if TYPE_CHECKING:
@@ -28,10 +28,10 @@ LLAMA_CPP_ALL_LAYERS: int = -1  # llama.cpp convention: -1 means offload all lay
 class LLMInterface:
     """
     Interface for LLM operations using llama-cpp-python.
-    
+
     Wraps a GGUF model for text generation with typed inputs/outputs.
     """
-    
+
     ##Method purpose: Initialize with model and hardware configs
     def __init__(
         self,
@@ -40,7 +40,7 @@ class LLMInterface:
     ) -> None:
         """
         Initialize LLM interface.
-        
+
         Args:
             model_config: Model configuration
             hardware_config: Hardware configuration
@@ -49,25 +49,25 @@ class LLMInterface:
         self._model_config = model_config
         self._hardware_config = hardware_config
         self._llm: Llama | None = None
-    
+
     ##Method purpose: Load the LLM model
     def load(self, model_path: Path | None = None) -> None:
         """
         Load the LLM model.
-        
+
         Args:
             model_path: Path to GGUF file (overrides config)
-            
+
         Raises:
             LLMLoadError: If model loading fails
         """
         ##Step purpose: Determine model path
         path = model_path or self._model_config.model_path
-        
+
         ##Condition purpose: Handle 'auto' model path
         if path == "auto":
             path = self._find_model()
-        
+
         ##Condition purpose: Validate path exists
         if not isinstance(path, Path):
             path = Path(path)
@@ -75,14 +75,14 @@ class LLMInterface:
             ##Step purpose: Sanitize path in error message
             safe_path = sanitize_path_for_error(path)
             raise LLMLoadError(safe_path, "File not found")
-        
+
         ##Error purpose: Catch model loading errors
         try:
             from llama_cpp import Llama
-            
+
             ##Step purpose: Determine GPU layers
             gpu_layers = self._resolve_gpu_layers()
-            
+
             ##Action purpose: Load the model
             self._llm = Llama(
                 model_path=str(path),
@@ -95,7 +95,7 @@ class LLMInterface:
             ##Step purpose: Sanitize path in error message
             safe_path = sanitize_path_for_error(path)
             raise LLMLoadError(safe_path, str(e)) from e
-    
+
     ##Method purpose: Find model file automatically
     def _find_model(self) -> Path:
         """Find a GGUF model file in common locations."""
@@ -105,26 +105,26 @@ class LLMInterface:
             Path(".jenova-ai/models"),
             Path.home() / ".cache" / "jenova" / "models",
         ]
-        
+
         ##Loop purpose: Search each path for GGUF files
         for search_path in search_paths:
             ##Condition purpose: Skip if path doesn't exist
             if not search_path.exists():
                 continue
-            
+
             ##Step purpose: Find GGUF files
             gguf_files = list(search_path.glob("*.gguf"))
             ##Condition purpose: Return first found
             if gguf_files:
                 return gguf_files[0]
-        
+
         raise LLMLoadError("auto", "No GGUF files found in search paths")
-    
+
     ##Method purpose: Resolve GPU layer configuration
     def _resolve_gpu_layers(self) -> int:
         """Resolve GPU layers setting to integer."""
         gpu = self._hardware_config.gpu_layers
-        
+
         ##Condition purpose: Handle string values
         if gpu == "none":
             return 0
@@ -133,13 +133,13 @@ class LLMInterface:
             return LLAMA_CPP_ALL_LAYERS
         else:
             return gpu
-    
+
     ##Method purpose: Check if model is loaded
     @property
     def is_loaded(self) -> bool:
         """Check if model is loaded."""
         return self._llm is not None
-    
+
     ##Method purpose: Generate completion from prompt
     def generate(
         self,
@@ -148,21 +148,21 @@ class LLMInterface:
     ) -> Completion:
         """
         Generate completion from prompt.
-        
+
         Args:
             prompt: Structured prompt
             params: Generation parameters (uses defaults if None)
-            
+
         Returns:
             Completion result
-            
+
         Raises:
             LLMGenerationError: If generation fails
         """
         ##Condition purpose: Ensure model is loaded
         if self._llm is None:
             raise LLMGenerationError("Model not loaded")
-        
+
         ##Step purpose: Use default params if not provided
         if params is None:
             params = GenerationParams(
@@ -170,15 +170,15 @@ class LLMInterface:
                 temperature=self._model_config.temperature,
                 top_p=self._model_config.top_p,
             )
-        
+
         ##Step purpose: Format prompt
         prompt_text = prompt.format_chat()
-        
+
         ##Error purpose: Catch generation errors
         try:
             ##Action purpose: Generate completion
             start_time = time.perf_counter()
-            
+
             result = self._llm(
                 prompt_text,
                 max_tokens=params.max_tokens,
@@ -188,14 +188,14 @@ class LLMInterface:
                 repeat_penalty=params.repeat_penalty,
                 stop=params.stop,
             )
-            
+
             elapsed_ms = (time.perf_counter() - start_time) * 1000
-            
+
             ##Step purpose: Extract result data
             choice = result["choices"][0]
             content = choice["text"]
             finish_reason = choice.get("finish_reason", "stop")
-            
+
             return Completion(
                 content=content,
                 finish_reason=finish_reason,
@@ -205,7 +205,7 @@ class LLMInterface:
             )
         except Exception as e:
             raise LLMGenerationError(str(e), prompt_text[:200]) from e
-    
+
     ##Method purpose: Generate simple text completion
     def generate_text(
         self,
@@ -215,12 +215,12 @@ class LLMInterface:
     ) -> str:
         """
         Simple text generation helper.
-        
+
         Args:
             text: User message
             system_prompt: System prompt
             params: Generation parameters
-            
+
         Returns:
             Generated text
         """
@@ -230,7 +230,7 @@ class LLMInterface:
         )
         completion = self.generate(prompt, params)
         return completion.content
-    
+
     ##Method purpose: Factory method for production use
     @classmethod
     def create(
@@ -238,22 +238,22 @@ class LLMInterface:
         model_config: ModelConfig,
         hardware_config: HardwareConfig,
         auto_load: bool = True,
-    ) -> "LLMInterface":
+    ) -> LLMInterface:
         """
         Factory method to create and optionally load LLM.
-        
+
         Args:
             model_config: Model configuration
             hardware_config: Hardware configuration
             auto_load: Whether to load model immediately
-            
+
         Returns:
             LLMInterface instance
         """
         interface = cls(model_config, hardware_config)
-        
+
         ##Condition purpose: Load model if requested
         if auto_load:
             interface.load()
-        
+
         return interface

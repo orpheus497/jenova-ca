@@ -8,9 +8,8 @@ for visual feedback during processing.
 
 from __future__ import annotations
 
-from textual.widgets import Static
 from textual.reactive import reactive
-
+from textual.widgets import Static
 
 ##Step purpose: Define spinner animation frames with various styles
 ##Animation purpose: Braille spinner provides smooth 10-frame cycle
@@ -34,11 +33,11 @@ SPINNER_FPS_SLOW = 0.15  ##Animation purpose: 6.7fps for subtle animation
 class Spinner(Static):
     """
     Animated spinner widget.
-    
+
     Displays a cycling animation to indicate processing.
     Uses Braille pattern characters for smooth animation.
     """
-    
+
     ##Step purpose: Define spinner-specific CSS
     DEFAULT_CSS = """
     Spinner {
@@ -46,16 +45,16 @@ class Spinner(Static):
         height: 1;
         color: $primary;
     }
-    
+
     Spinner.-spinning {
         text-style: bold;
     }
     """
-    
+
     ##Step purpose: Define reactive state for animation frame
     frame_index: reactive[int] = reactive(0)
     is_spinning: reactive[bool] = reactive(False)
-    
+
     ##Method purpose: Initialize spinner with optional label
     def __init__(
         self,
@@ -65,7 +64,7 @@ class Spinner(Static):
     ) -> None:
         """
         Initialize the spinner.
-        
+
         Args:
             label: Text to display alongside spinner.
             frames: Custom animation frames. Defaults to Braille spinner.
@@ -74,49 +73,49 @@ class Spinner(Static):
         self._label = label
         self._frames = frames or SPINNER_FRAMES
         self._timer_handle: object | None = None
-        
+
         super().__init__(**kwargs)
-    
+
     ##Method purpose: Start the spinner animation
     def start(self) -> None:
         """Start the spinner animation."""
         ##Condition purpose: Don't start if already spinning
         if self.is_spinning:
             return
-        
+
         self.is_spinning = True
         self.add_class("-spinning")
-        
+
         ##Action purpose: Start animation timer (12.5 fps for responsive feel)
         self._timer_handle = self.set_interval(SPINNER_FPS_FAST, self._advance_frame)
         self._update_display()
-    
+
     ##Method purpose: Stop the spinner animation
     def stop(self) -> None:
         """Stop the spinner animation."""
         self.is_spinning = False
         self.remove_class("-spinning")
-        
+
         ##Condition purpose: Cancel timer if running
         if self._timer_handle is not None:
             self._timer_handle.stop()
             self._timer_handle = None
-        
+
         ##Action purpose: Clear display
         self.update("")
-    
+
     ##Method purpose: Advance to next animation frame
     def _advance_frame(self) -> None:
         """Advance to the next animation frame."""
         self.frame_index = (self.frame_index + 1) % len(self._frames)
         self._update_display()
-    
+
     ##Method purpose: Update the displayed content
     def _update_display(self) -> None:
         """Update the spinner display."""
         frame = self._frames[self.frame_index]
         self.update(f"[bold cyan]{frame}[/bold cyan] {self._label}...")
-    
+
     ##Method purpose: Watch for frame changes
     def watch_frame_index(self, _old: int, _new: int) -> None:
         """React to frame index changes."""
@@ -129,10 +128,10 @@ class Spinner(Static):
 class StatusBar(Static):
     """
     Status bar widget with integrated spinner.
-    
+
     Shows current status with optional loading animation.
     """
-    
+
     ##Step purpose: Define status bar CSS with state transitions
     DEFAULT_CSS = """
     StatusBar {
@@ -144,42 +143,42 @@ class StatusBar(Static):
         /* Animation purpose: Smooth color transitions between states */
         transition: color 200ms ease-in-out, background 200ms ease-in-out;
     }
-    
+
     StatusBar.-loading {
         color: $primary;
     }
-    
+
     StatusBar.-error {
         color: $error;
         background: $error-darken-3;
     }
-    
+
     StatusBar.-success {
         color: $success;
     }
     """
-    
+
     ##Step purpose: Define reactive status state
     status_text: reactive[str] = reactive("Ready")
     is_loading: reactive[bool] = reactive(False)
-    
+
     ##Method purpose: Initialize status bar
     def __init__(self, **kwargs: object) -> None:
         """Initialize the status bar."""
         super().__init__(**kwargs)
         self._spinner_frame = 0
         self._timer_handle: object | None = None
-    
+
     ##Method purpose: Handle component mount
     def on_mount(self) -> None:
         """Initialize display on mount."""
         self._update_display()
-    
+
     ##Method purpose: Set status to loading state
     def set_loading(self, message: str = "Thinking") -> None:
         """
         Set loading status with animation.
-        
+
         Args:
             message: Loading message to display.
         """
@@ -187,16 +186,16 @@ class StatusBar(Static):
         self.is_loading = True
         self.add_class("-loading")
         self.remove_class("-error", "-success")
-        
+
         ##Action purpose: Start spinner animation with fast frame rate
         if self._timer_handle is None:
             self._timer_handle = self.set_interval(SPINNER_FPS_FAST, self._animate_spinner)
-    
+
     ##Method purpose: Set status to ready state
     def set_ready(self, message: str = "Ready") -> None:
         """
         Set ready status.
-        
+
         Args:
             message: Status message to display.
         """
@@ -206,15 +205,15 @@ class StatusBar(Static):
         self.remove_class("-loading", "-error")
         self.add_class("-success")
         self._update_display()
-        
+
         ##Action purpose: Remove success class after delay
         self.set_timer(2.0, self._clear_success)
-    
+
     ##Method purpose: Set status to error state
     def set_error(self, message: str = "Error") -> None:
         """
         Set error status.
-        
+
         Args:
             message: Error message to display.
         """
@@ -224,25 +223,25 @@ class StatusBar(Static):
         self.remove_class("-loading", "-success")
         self.add_class("-error")
         self._update_display()
-    
+
     ##Method purpose: Animate the spinner
     def _animate_spinner(self) -> None:
         """Advance spinner animation frame."""
         self._spinner_frame = (self._spinner_frame + 1) % len(SPINNER_FRAMES)
         self._update_display()
-    
+
     ##Method purpose: Stop the animation timer
     def _stop_animation(self) -> None:
         """Stop the spinner animation."""
         if self._timer_handle is not None:
             self._timer_handle.stop()
             self._timer_handle = None
-    
+
     ##Method purpose: Clear success styling
     def _clear_success(self) -> None:
         """Clear success class after timeout."""
         self.remove_class("-success")
-    
+
     ##Method purpose: Update the display content
     def _update_display(self) -> None:
         """Update the status bar display."""
@@ -252,7 +251,7 @@ class StatusBar(Static):
             self.update(f"{frame} {self.status_text}...")
         else:
             self.update(self.status_text)
-    
+
     ##Method purpose: Watch for status text changes
     def watch_status_text(self, _old: str, _new: str) -> None:
         """React to status text changes."""

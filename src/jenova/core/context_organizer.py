@@ -16,14 +16,15 @@ from __future__ import annotations
 import json
 import re
 from collections import defaultdict
-from dataclasses import dataclass, field
+from collections.abc import Mapping
+from dataclasses import dataclass
 from enum import Enum
-from typing import Mapping, Protocol
+from typing import Protocol
 
 import structlog
 
 from jenova.core.context_scorer import ScoredContext, ScoringBreakdown
-from jenova.utils.json_safe import safe_json_loads, extract_json_from_response, JSONSizeError
+from jenova.utils.json_safe import JSONSizeError, extract_json_from_response, safe_json_loads
 
 ##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
@@ -32,7 +33,7 @@ logger = structlog.get_logger(__name__)
 ##Class purpose: Protocol for LLM interface
 class LLMProtocol(Protocol):
     """Protocol defining LLM interface for categorization."""
-    
+
     ##Method purpose: Generate text from prompt
     def generate(self, prompt: str, temperature: float = 0.7) -> str:
         """Generate text from prompt."""
@@ -42,6 +43,7 @@ class LLMProtocol(Protocol):
 ##Class purpose: Enum defining context priority tiers
 class ContextTier(Enum):
     """Priority tier for context items."""
+
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
@@ -51,50 +53,50 @@ class ContextTier(Enum):
 @dataclass
 class OrganizedContext:
     """Context organized into categories and priority tiers."""
-    
+
     categorized: dict[str, list[str]]
     """Items grouped by topic category."""
-    
+
     tiers: dict[ContextTier, list[str]]
     """Items grouped by priority tier."""
-    
+
     query: str
     """Original query used for organization."""
-    
+
     ##Method purpose: Get all items in a specific tier
     def get_tier(self, tier: ContextTier) -> list[str]:
         """Get all items in a priority tier."""
         return self.tiers.get(tier, [])
-    
+
     ##Method purpose: Get high priority items only
     @property
     def high_priority(self) -> list[str]:
         """Get high priority items."""
         return self.tiers.get(ContextTier.HIGH, [])
-    
+
     ##Method purpose: Get medium priority items only
     @property
     def medium_priority(self) -> list[str]:
         """Get medium priority items."""
         return self.tiers.get(ContextTier.MEDIUM, [])
-    
+
     ##Method purpose: Get low priority items only
     @property
     def low_priority(self) -> list[str]:
         """Get low priority items."""
         return self.tiers.get(ContextTier.LOW, [])
-    
+
     ##Method purpose: Get total item count
     @property
     def total_items(self) -> int:
         """Get total number of items across all tiers."""
         return sum(len(items) for items in self.tiers.values())
-    
+
     ##Method purpose: Check if context is empty
     def is_empty(self) -> bool:
         """Check if no context items exist."""
         return self.total_items == 0
-    
+
     ##Method purpose: Format for LLM prompt
     def format_for_prompt(
         self,
@@ -103,18 +105,18 @@ class OrganizedContext:
     ) -> str:
         """
         Format organized context for LLM prompt.
-        
+
         Args:
             max_tokens: Maximum tokens for context
             chars_per_token: Estimated characters per token
-            
+
         Returns:
             Formatted context string
         """
         max_chars = max_tokens * chars_per_token
         parts: list[str] = []
         current_chars = 0
-        
+
         ##Step purpose: Add high priority first
         if self.high_priority:
             header = "### Highly Relevant Context:\n"
@@ -126,7 +128,7 @@ class OrganizedContext:
             if items_text:
                 parts.append(header + items_text)
                 current_chars += len(items_text)
-        
+
         ##Step purpose: Add medium priority if space allows
         if self.medium_priority and current_chars < max_chars * 0.8:
             header = "\n### Related Context:\n"
@@ -138,7 +140,7 @@ class OrganizedContext:
             if items_text:
                 parts.append(header + items_text)
                 current_chars += len(items_text)
-        
+
         ##Step purpose: Add low priority if space allows
         if self.low_priority and current_chars < max_chars * 0.6:
             header = "\n### Additional Context:\n"
@@ -149,15 +151,15 @@ class OrganizedContext:
             )
             if items_text:
                 parts.append(header + items_text)
-        
+
         return "".join(parts)
-    
+
     ##Method purpose: Format list of items with character limit
     def _format_items(self, items: list[str], max_chars: int) -> str:
         """Format items as bullet list within character limit."""
         formatted: list[str] = []
         chars_used = 0
-        
+
         ##Loop purpose: Add items until limit reached
         for item in items:
             line = f"- {item}\n"
@@ -169,7 +171,7 @@ class OrganizedContext:
                 break
             formatted.append(line)
             chars_used += len(line)
-        
+
         return "".join(formatted)
 
 
@@ -177,31 +179,31 @@ class OrganizedContext:
 @dataclass
 class ContextOrganizerConfig:
     """Configuration for ContextOrganizer behavior."""
-    
+
     enabled: bool = True
     """Whether organization is enabled."""
-    
+
     categorization_enabled: bool = True
     """Whether to categorize by topic."""
-    
+
     use_llm_categorization: bool = False
     """Whether to use LLM for categorization (for sets > 3 items)."""
-    
+
     llm_categorization_threshold: int = 3
     """Minimum items to trigger LLM categorization."""
-    
+
     tier_classification_enabled: bool = True
     """Whether to classify by priority tier."""
-    
+
     high_tier_threshold: float = 0.7
     """Score threshold for high priority."""
-    
+
     medium_tier_threshold: float = 0.4
     """Score threshold for medium priority."""
-    
+
     max_items_per_tier: int = 10
     """Maximum items per priority tier."""
-    
+
     max_categories: int = 5
     """Maximum number of categories."""
 
@@ -210,15 +212,15 @@ class ContextOrganizerConfig:
 class ContextOrganizer:
     """
     Organizes context into categories and priority tiers.
-    
+
     Provides hierarchical organization of context items for optimal
     prompt construction and token budget management.
-    
+
     Supports two categorization modes:
     - Heuristic mode (default): Fast, keyword-based categorization
     - LLM mode: More accurate categorization for larger item sets
     """
-    
+
     ##Method purpose: Initialize organizer with configuration
     def __init__(
         self,
@@ -227,14 +229,14 @@ class ContextOrganizer:
     ) -> None:
         """
         Initialize context organizer.
-        
+
         Args:
             config: Organizer configuration
             llm: Optional LLM for advanced categorization
         """
         self._config = config or ContextOrganizerConfig()
         self._llm = llm
-        
+
         logger.debug(
             "context_organizer_initialized",
             enabled=self._config.enabled,
@@ -242,7 +244,7 @@ class ContextOrganizer:
             tier_classification=self._config.tier_classification_enabled,
             use_llm=self._config.use_llm_categorization and llm is not None,
         )
-    
+
     ##Method purpose: Organize scored context into categories and tiers
     def organize(
         self,
@@ -250,17 +252,17 @@ class ContextOrganizer:
     ) -> OrganizedContext:
         """
         Organize scored context into categories and tiers.
-        
+
         Args:
             scored_context: Context with relevance scores
-            
+
         Returns:
             OrganizedContext with categorization and tiering
         """
         ##Condition purpose: Return flat organization if disabled
         if not self._config.enabled:
             return self._flat_organization(scored_context)
-        
+
         ##Step purpose: Categorize items by topic
         if self._config.categorization_enabled:
             categorized = self._categorize_by_topic(
@@ -269,7 +271,7 @@ class ContextOrganizer:
             )
         else:
             categorized = {"general": [item.content for item in scored_context.items]}
-        
+
         ##Step purpose: Classify by relevance tier
         if self._config.tier_classification_enabled:
             tiers = self._classify_by_tier(scored_context.items)
@@ -279,7 +281,7 @@ class ContextOrganizer:
                 ContextTier.HIGH: [],
                 ContextTier.LOW: [],
             }
-        
+
         logger.info(
             "context_organized",
             categories=len(categorized),
@@ -287,13 +289,13 @@ class ContextOrganizer:
             medium_count=len(tiers.get(ContextTier.MEDIUM, [])),
             low_count=len(tiers.get(ContextTier.LOW, [])),
         )
-        
+
         return OrganizedContext(
             categorized=categorized,
             tiers=tiers,
             query=scored_context.query,
         )
-    
+
     ##Method purpose: Organize raw context items without scores
     def organize_raw(
         self,
@@ -302,11 +304,11 @@ class ContextOrganizer:
     ) -> OrganizedContext:
         """
         Organize raw context items without pre-scoring.
-        
+
         Args:
             context_items: List of context strings
             query: User query for categorization
-            
+
         Returns:
             OrganizedContext with categorization
         """
@@ -317,22 +319,22 @@ class ContextOrganizer:
                 tiers={ContextTier.MEDIUM: context_items},
                 query=query,
             )
-        
+
         ##Step purpose: Categorize items
         if self._config.categorization_enabled:
             categorized = self._categorize_by_keywords(context_items, query)
         else:
             categorized = {"general": context_items}
-        
+
         ##Step purpose: Simple tier classification by category size
         tiers = self._classify_by_category_relevance(categorized, query)
-        
+
         return OrganizedContext(
             categorized=categorized,
             tiers=tiers,
             query=query,
         )
-    
+
     ##Method purpose: Categorize items by detected topic
     def _categorize_by_topic(
         self,
@@ -341,14 +343,14 @@ class ContextOrganizer:
     ) -> dict[str, list[str]]:
         """
         Group items by detected topic.
-        
+
         Uses LLM categorization for larger item sets if configured,
         otherwise falls back to keyword-based categorization.
-        
+
         Args:
             items: Scored context items
             query: User query for context
-            
+
         Returns:
             Dict mapping category names to item lists
         """
@@ -359,9 +361,9 @@ class ContextOrganizer:
             and len(items) > self._config.llm_categorization_threshold
         ):
             return self._llm_categorize(items, query)
-        
+
         return self._heuristic_categorize(items, query)
-    
+
     ##Method purpose: LLM-based categorization for more accurate grouping
     def _llm_categorize(
         self,
@@ -370,24 +372,21 @@ class ContextOrganizer:
     ) -> dict[str, list[str]]:
         """
         Categorize items using LLM for better accuracy.
-        
+
         Args:
             items: Scored context items
             query: User query for context
-            
+
         Returns:
             Dict mapping category names to item lists
         """
         ##Condition purpose: Fallback if no LLM
         if self._llm is None:
             return self._heuristic_categorize(items, query)
-        
+
         ##Step purpose: Build categorization prompt
-        items_str = "\n".join(
-            f"{i + 1}. {item.content[:200]}"
-            for i, item in enumerate(items)
-        )
-        
+        items_str = "\n".join(f"{i + 1}. {item.content[:200]}" for i, item in enumerate(items))
+
         prompt = f"""Categorize the following context items by topic. Group related items together.
 Each item should be assigned to exactly one category. Use concise category names (1-3 words).
 
@@ -400,7 +399,7 @@ Respond with a valid JSON object where keys are category names and values are ar
 Example: {{"Python Programming": [1, 3], "Data Structures": [2, 4]}}
 
 JSON Response:"""
-        
+
         ##Error purpose: Handle LLM errors gracefully
         try:
             response = self._llm.generate(prompt, temperature=0.3)
@@ -408,7 +407,7 @@ JSON Response:"""
         except Exception as e:
             logger.warning("llm_categorization_failed", error=str(e))
             return self._heuristic_categorize(items, query)
-    
+
     ##Method purpose: Parse LLM categorization response
     def _parse_llm_categorization(
         self,
@@ -417,11 +416,11 @@ JSON Response:"""
     ) -> dict[str, list[str]]:
         """
         Parse LLM JSON response for categorization.
-        
+
         Args:
             response: LLM response string
             items: Original items for index lookup
-            
+
         Returns:
             Dict mapping category names to item content lists
         """
@@ -433,49 +432,47 @@ JSON Response:"""
             except ValueError:
                 logger.warning("no_json_in_llm_response")
                 return self._heuristic_categorize(items, "")
-            
+
             ##Action purpose: Parse with size limits
             data = safe_json_loads(json_str)
         except (json.JSONDecodeError, JSONSizeError) as e:
             logger.warning("json_parse_failed", error=str(e))
             return self._heuristic_categorize(items, "")
-        
+
         ##Condition purpose: Validate data type
         if not isinstance(data, dict):
             return self._heuristic_categorize(items, "")
-        
+
         ##Step purpose: Convert indices to content
         categorized: dict[str, list[str]] = {}
         categorized_indices: set[int] = set()
-        
+
         ##Loop purpose: Process each category
         for category, indices in data.items():
             if not isinstance(category, str) or not isinstance(indices, list):
                 continue
-            
+
             categorized[category] = []
             for idx in indices:
                 if isinstance(idx, int) and 1 <= idx <= len(items):
                     categorized[category].append(items[idx - 1].content)
                     categorized_indices.add(idx - 1)
-        
+
         ##Step purpose: Add uncategorized items
         uncategorized = [
-            items[i].content
-            for i in range(len(items))
-            if i not in categorized_indices
+            items[i].content for i in range(len(items)) if i not in categorized_indices
         ]
         if uncategorized:
             categorized["Other"] = uncategorized
-        
+
         logger.info(
             "llm_categorization_complete",
             categories=len(categorized),
             items=len(items),
         )
-        
+
         return categorized
-    
+
     ##Method purpose: Heuristic keyword-based categorization
     def _heuristic_categorize(
         self,
@@ -484,49 +481,59 @@ JSON Response:"""
     ) -> dict[str, list[str]]:
         """
         Categorize items using keyword matching (fallback method).
-        
+
         Args:
             items: Scored context items
             query: User query for context
-            
+
         Returns:
             Dict mapping category names to item lists
         """
         ##Step purpose: Define topic keyword mappings
         topic_keywords: dict[str, list[str]] = {
-            "Technical": ["code", "programming", "software", "api", "function", "class", "method", "bug", "error"],
+            "Technical": [
+                "code",
+                "programming",
+                "software",
+                "api",
+                "function",
+                "class",
+                "method",
+                "bug",
+                "error",
+            ],
             "Procedural": ["step", "how to", "guide", "process", "procedure", "method", "way"],
             "Conceptual": ["concept", "idea", "theory", "principle", "definition", "meaning"],
             "Personal": ["i", "my", "me", "feel", "think", "believe", "experience"],
             "Temporal": ["time", "when", "date", "schedule", "yesterday", "today", "tomorrow"],
         }
-        
+
         categorized: dict[str, list[str]] = defaultdict(list)
         uncategorized: list[str] = []
-        
+
         ##Loop purpose: Categorize each item
         for item in items:
             content_lower = item.content.lower()
             matched_category: str | None = None
             best_match_count = 0
-            
+
             ##Loop purpose: Find best matching category
             for category, keywords in topic_keywords.items():
                 match_count = sum(1 for kw in keywords if kw in content_lower)
                 if match_count > best_match_count:
                     best_match_count = match_count
                     matched_category = category
-            
+
             ##Condition purpose: Add to category or uncategorized
             if matched_category and best_match_count > 0:
                 categorized[matched_category].append(item.content)
             else:
                 uncategorized.append(item.content)
-        
+
         ##Step purpose: Add uncategorized items
         if uncategorized:
             categorized["Other"] = uncategorized
-        
+
         ##Step purpose: Limit number of categories
         if len(categorized) > self._config.max_categories:
             ##Step purpose: Keep largest categories
@@ -535,10 +542,10 @@ JSON Response:"""
                 key=lambda x: len(x[1]),
                 reverse=True,
             )
-            categorized = dict(sorted_categories[:self._config.max_categories])
-        
+            categorized = dict(sorted_categories[: self._config.max_categories])
+
         return dict(categorized)
-    
+
     ##Method purpose: Classify items by priority tier based on scores
     def _classify_by_tier(
         self,
@@ -546,10 +553,10 @@ JSON Response:"""
     ) -> dict[ContextTier, list[str]]:
         """
         Classify items into priority tiers based on scores.
-        
+
         Args:
             items: Scored context items
-            
+
         Returns:
             Dict mapping tiers to item lists
         """
@@ -558,7 +565,7 @@ JSON Response:"""
             ContextTier.MEDIUM: [],
             ContextTier.LOW: [],
         }
-        
+
         ##Loop purpose: Assign each item to a tier
         for item in items:
             ##Condition purpose: Classify by score thresholds
@@ -568,13 +575,13 @@ JSON Response:"""
                 tier = ContextTier.MEDIUM
             else:
                 tier = ContextTier.LOW
-            
+
             ##Condition purpose: Respect max items per tier
             if len(tiers[tier]) < self._config.max_items_per_tier:
                 tiers[tier].append(item.content)
-        
+
         return tiers
-    
+
     ##Method purpose: Categorize by keyword matching
     def _categorize_by_keywords(
         self,
@@ -583,23 +590,23 @@ JSON Response:"""
     ) -> dict[str, list[str]]:
         """
         Simple keyword-based categorization.
-        
+
         Args:
             items: Context strings
             query: User query
-            
+
         Returns:
             Dict mapping categories to items
         """
         ##Step purpose: Extract query words for categorization
         query_words = set(re.findall(r"\b\w{3,}\b", query.lower()))
         categorized: dict[str, list[str]] = defaultdict(list)
-        
+
         ##Loop purpose: Categorize each item
         for item in items:
             item_words = set(re.findall(r"\b\w{3,}\b", item.lower()))
             overlap = query_words & item_words
-            
+
             ##Condition purpose: Use overlap word as category
             if overlap:
                 ##Step purpose: Pick most common overlapping word
@@ -607,9 +614,9 @@ JSON Response:"""
                 categorized[category.title()].append(item)
             else:
                 categorized["Other"].append(item)
-        
+
         return dict(categorized)
-    
+
     ##Method purpose: Classify by category relevance to query
     def _classify_by_category_relevance(
         self,
@@ -618,11 +625,11 @@ JSON Response:"""
     ) -> dict[ContextTier, list[str]]:
         """
         Classify items by category relevance to query.
-        
+
         Args:
             categorized: Items grouped by category
             query: User query
-            
+
         Returns:
             Dict mapping tiers to items
         """
@@ -632,31 +639,25 @@ JSON Response:"""
             ContextTier.MEDIUM: [],
             ContextTier.LOW: [],
         }
-        
+
         ##Loop purpose: Classify each category
         for category, items in categorized.items():
             category_words = set(category.lower().split())
             word_overlap = len(query_words & category_words)
             category_size = len(items)
-            
+
             ##Condition purpose: High tier - direct matches, focused categories
             if word_overlap > 0 and category_size <= 3:
-                tiers[ContextTier.HIGH].extend(
-                    items[:self._config.max_items_per_tier]
-                )
+                tiers[ContextTier.HIGH].extend(items[: self._config.max_items_per_tier])
             ##Condition purpose: Medium tier - related categories
             elif word_overlap > 0 or category_size <= 5:
-                tiers[ContextTier.MEDIUM].extend(
-                    items[:self._config.max_items_per_tier]
-                )
+                tiers[ContextTier.MEDIUM].extend(items[: self._config.max_items_per_tier])
             ##Condition purpose: Low tier - distant categories
             else:
-                tiers[ContextTier.LOW].extend(
-                    items[:self._config.max_items_per_tier]
-                )
-        
+                tiers[ContextTier.LOW].extend(items[: self._config.max_items_per_tier])
+
         return tiers
-    
+
     ##Method purpose: Create flat organization when disabled
     def _flat_organization(
         self,
@@ -664,15 +665,15 @@ JSON Response:"""
     ) -> OrganizedContext:
         """
         Create flat organization without categorization or tiering.
-        
+
         Args:
             scored_context: Scored context items
-            
+
         Returns:
             OrganizedContext with all items in medium tier
         """
         items = [item.content for item in scored_context.items]
-        
+
         return OrganizedContext(
             categorized={},
             tiers={
@@ -682,7 +683,7 @@ JSON Response:"""
             },
             query=scored_context.query,
         )
-    
+
     ##Method purpose: Summarize a tier for compact representation
     def summarize_tier(
         self,
@@ -692,26 +693,26 @@ JSON Response:"""
     ) -> str:
         """
         Create a summary of items in a tier.
-        
+
         Args:
             organized: Organized context
             tier: Tier to summarize
             max_length: Maximum summary length
-            
+
         Returns:
             Summary string
         """
         items = organized.get_tier(tier)
-        
+
         ##Condition purpose: Handle empty tier
         if not items:
             return f"No {tier.value} priority items."
-        
+
         ##Step purpose: Combine items with truncation
         combined = " | ".join(items)
-        
+
         ##Condition purpose: Truncate if too long
         if len(combined) > max_length:
-            return combined[:max_length - 3] + "..."
-        
+            return combined[: max_length - 3] + "..."
+
         return combined

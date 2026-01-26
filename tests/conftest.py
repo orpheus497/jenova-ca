@@ -8,7 +8,6 @@ Shared fixtures and configuration for JENOVA tests.
 from __future__ import annotations
 
 import sys
-import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -22,7 +21,7 @@ if "onnxruntime" not in sys.modules:
 
 import pytest
 
-from jenova.config.models import JenovaConfig, MemoryConfig, GraphConfig
+from jenova.config.models import GraphConfig, JenovaConfig, MemoryConfig
 from jenova.memory import Memory, MemoryType
 
 

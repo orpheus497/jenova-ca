@@ -7,32 +7,32 @@ across the terminal user interface.
 """
 
 from jenova.ui.components.banner import (
+    ATTRIBUTION,
+    JENOVA_BANNER,
     Banner,
     TitleBanner,
     WelcomePanel,
-    JENOVA_BANNER,
-    ATTRIBUTION,
 )
 from jenova.ui.components.help_panel import (
-    HelpPanel,
-    HelpHint,
-    CommandInfo,
     COGNITIVE_COMMANDS,
+    KEYBOARD_SHORTCUTS,
     LEARNING_COMMANDS,
     SYSTEM_COMMANDS,
-    KEYBOARD_SHORTCUTS,
+    CommandInfo,
+    HelpHint,
+    HelpPanel,
 )
 from jenova.ui.components.loading import (
-    Spinner,
-    StatusBar,
-    SPINNER_FRAMES,
+    ARC_FRAMES,
+    BLOCK_FRAMES,
     DOTS_FRAMES,
     PULSE_FRAMES,
-    BLOCK_FRAMES,
-    ARC_FRAMES,
     SPINNER_FPS_FAST,
     SPINNER_FPS_NORMAL,
     SPINNER_FPS_SLOW,
+    SPINNER_FRAMES,
+    Spinner,
+    StatusBar,
 )
 from jenova.ui.components.message import (
     ChatMessage,

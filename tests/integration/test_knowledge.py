@@ -15,9 +15,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from jenova.config.models import MemoryConfig, GraphConfig
+from jenova.config.models import GraphConfig, MemoryConfig
 from jenova.core.knowledge import KnowledgeStore
-from jenova.graph.types import Node, EdgeType
+from jenova.graph.types import EdgeType, Node
 from jenova.memory.types import MemoryType
 
 if TYPE_CHECKING:
@@ -43,14 +43,14 @@ class TestKnowledgeStoreIntegration:
             memory_type=MemoryType.SEMANTIC,
             metadata={"source": "test", "topic": "programming"},
         )
-        
+
         ##Step purpose: Verify ID was returned
         assert doc_id is not None
         assert len(doc_id) > 0
-        
+
         ##Action purpose: Retrieve the stored content
         result = knowledge_store.get_memory(MemoryType.SEMANTIC).get(doc_id)
-        
+
         ##Step purpose: Verify content matches
         assert result is not None
         assert result.content == content
@@ -76,7 +76,7 @@ class TestKnowledgeStoreIntegration:
             content="Rust is known for memory safety and performance.",
             memory_type=MemoryType.SEMANTIC,
         )
-        
+
         ##Action purpose: Search for Python-related content
         results = knowledge_store.search(
             query="data science programming",
@@ -84,11 +84,11 @@ class TestKnowledgeStoreIntegration:
             n_results=3,
             include_graph=False,
         )
-        
+
         ##Step purpose: Verify results returned
         assert results is not None
         assert len(results.memories) > 0
-        
+
         ##Step purpose: Verify most relevant result is about Python/data science
         top_result = results.memories[0]
         assert "python" in top_result.content.lower() or "data" in top_result.content.lower()
@@ -111,11 +111,11 @@ class TestKnowledgeStoreIntegration:
             content="Field of study using data",
             node_type="concept",
         )
-        
+
         ##Action purpose: Add nodes to graph
         knowledge_store.graph.add_node(python_node)
         knowledge_store.graph.add_node(data_science_node)
-        
+
         ##Action purpose: Create relationship
         edge = knowledge_store.graph.add_edge(
             source_id=python_node.id,
@@ -123,7 +123,7 @@ class TestKnowledgeStoreIntegration:
             edge_type=EdgeType.RELATES_TO,
             weight=0.9,
         )
-        
+
         ##Step purpose: Verify relationship exists
         assert edge is not None
         neighbors = knowledge_store.graph.neighbors(python_node.id)
@@ -133,7 +133,7 @@ class TestKnowledgeStoreIntegration:
     ##Method purpose: Test combined memory and graph search
     def test_combined_search(self, knowledge_store: KnowledgeStore) -> None:
         """Test search across both memory and graph.
-        
+
         Args:
             knowledge_store: Configured knowledge store fixture.
         """
@@ -142,7 +142,7 @@ class TestKnowledgeStoreIntegration:
             content="Machine learning uses algorithms to learn from data.",
             memory_type=MemoryType.SEMANTIC,
         )
-        
+
         ##Step purpose: Add graph node
         ml_node = Node.create(
             label="Machine Learning",
@@ -150,14 +150,14 @@ class TestKnowledgeStoreIntegration:
             node_type="concept",
         )
         knowledge_store.graph.add_node(ml_node)
-        
+
         ##Action purpose: Search with graph included
         results = knowledge_store.search(
             query="machine learning algorithms",
             n_results=5,
             include_graph=True,
         )
-        
+
         ##Step purpose: Verify both sources searched
         assert results is not None
         assert results.query == "machine learning algorithms"
@@ -173,19 +173,19 @@ class TestKnowledgeStoreIntegration:
         ##Step purpose: Create config with specific paths
         memory_config = MemoryConfig(storage_path=integration_data_dir / "memory")
         graph_config = GraphConfig(storage_path=integration_data_dir / "graph")
-        
+
         ##Step purpose: Create first store instance and add data
         store1 = KnowledgeStore(
             memory_config=memory_config,
             graph_config=graph_config,
         )
-        
+
         content = "This should persist across instances."
         doc_id = store1.add(
             content=content,
             memory_type=MemoryType.SEMANTIC,
         )
-        
+
         ##Step purpose: Add a graph node
         node = Node.create(
             label="PersistenceTest",
@@ -193,18 +193,18 @@ class TestKnowledgeStoreIntegration:
             node_type="test",
         )
         store1.graph.add_node(node)
-        
+
         ##Step purpose: Create second store instance
         store2 = KnowledgeStore(
             memory_config=memory_config,
             graph_config=graph_config,
         )
-        
+
         ##Step purpose: Verify memory data persisted
         retrieved = store2.get_memory(MemoryType.SEMANTIC).get(doc_id)
         assert retrieved is not None
         assert retrieved.content == content
-        
+
         ##Step purpose: Verify graph data persisted
         assert store2.graph.has_node(node.id)
         retrieved_node = store2.graph.get_node(node.id)
@@ -222,7 +222,7 @@ class TestKnowledgeStoreIntegration:
             query="",
             n_results=5,
         )
-        
+
         ##Step purpose: Verify graceful handling
         assert results is not None
         assert results.query == ""
@@ -233,11 +233,11 @@ class TestKnowledgeStoreIntegration:
 @pytest.mark.integration
 class TestKnowledgeStoreMemory:
     """Memory-specific tests for KnowledgeStore."""
-    
+
     ##Method purpose: Test storing in different memory types
     def test_different_memory_types(self, knowledge_store: KnowledgeStore) -> None:
         """Test storing content in different memory types.
-        
+
         Args:
             knowledge_store: Configured knowledge store fixture.
         """
@@ -254,16 +254,16 @@ class TestKnowledgeStoreMemory:
             content="To install Python, use your package manager.",
             memory_type=MemoryType.PROCEDURAL,
         )
-        
+
         ##Step purpose: Verify each was stored in correct type
         assert knowledge_store.get_memory(MemoryType.EPISODIC).get(episodic_id) is not None
         assert knowledge_store.get_memory(MemoryType.SEMANTIC).get(semantic_id) is not None
         assert knowledge_store.get_memory(MemoryType.PROCEDURAL).get(procedural_id) is not None
-    
+
     ##Method purpose: Test searching specific memory types
     def test_search_specific_memory_types(self, knowledge_store: KnowledgeStore) -> None:
         """Test searching only specific memory types.
-        
+
         Args:
             knowledge_store: Configured knowledge store fixture.
         """
@@ -276,7 +276,7 @@ class TestKnowledgeStoreMemory:
             content="Python is a programming language.",
             memory_type=MemoryType.SEMANTIC,
         )
-        
+
         ##Action purpose: Search only episodic memory
         episodic_results = knowledge_store.search(
             query="Python",
@@ -284,15 +284,15 @@ class TestKnowledgeStoreMemory:
             n_results=5,
             include_graph=False,
         )
-        
+
         ##Step purpose: Verify only episodic results returned
         for memory in episodic_results.memories:
             assert memory.memory_type == MemoryType.EPISODIC
-    
+
     ##Method purpose: Test memory metadata handling
     def test_memory_metadata(self, knowledge_store: KnowledgeStore) -> None:
         """Test metadata is stored and retrieved correctly.
-        
+
         Args:
             knowledge_store: Configured knowledge store fixture.
         """
@@ -303,10 +303,10 @@ class TestKnowledgeStoreMemory:
             memory_type=MemoryType.SEMANTIC,
             metadata=metadata,
         )
-        
+
         ##Action purpose: Retrieve and check metadata
         result = knowledge_store.get_memory(MemoryType.SEMANTIC).get(doc_id)
-        
+
         ##Step purpose: Verify metadata
         assert result is not None
         assert result.metadata.get("source") == "test"
@@ -318,11 +318,11 @@ class TestKnowledgeStoreMemory:
 @pytest.mark.integration
 class TestKnowledgeStoreGraph:
     """Graph-specific tests for KnowledgeStore."""
-    
+
     ##Method purpose: Test graph node operations
     def test_graph_node_crud(self, knowledge_store: KnowledgeStore) -> None:
         """Test graph node create, read, update, delete.
-        
+
         Args:
             knowledge_store: Configured knowledge store fixture.
         """
@@ -333,20 +333,20 @@ class TestKnowledgeStoreGraph:
             node_type="test",
         )
         knowledge_store.graph.add_node(node)
-        
+
         ##Step purpose: Read node
         assert knowledge_store.graph.has_node(node.id)
         retrieved = knowledge_store.graph.get_node(node.id)
         assert retrieved.label == "TestNode"
-        
+
         ##Step purpose: Delete node
         knowledge_store.graph.remove_node(node.id)
         assert not knowledge_store.graph.has_node(node.id)
-    
+
     ##Method purpose: Test graph search
     def test_graph_search(self, knowledge_store: KnowledgeStore) -> None:
         """Test graph search functionality.
-        
+
         Args:
             knowledge_store: Configured knowledge store fixture.
         """
@@ -363,21 +363,21 @@ class TestKnowledgeStoreGraph:
         )
         knowledge_store.graph.add_node(node1)
         knowledge_store.graph.add_node(node2)
-        
+
         ##Action purpose: Search graph
         results = knowledge_store.graph.search(
             query="programming",
             max_results=5,
         )
-        
+
         ##Step purpose: Verify results
         assert len(results) > 0
         assert any("programming" in r["label"].lower() for r in results)
-    
+
     ##Method purpose: Test edge types
     def test_graph_edge_types(self, knowledge_store: KnowledgeStore) -> None:
         """Test different edge types.
-        
+
         Args:
             knowledge_store: Configured knowledge store fixture.
         """
@@ -386,7 +386,7 @@ class TestKnowledgeStoreGraph:
         child = Node.create(label="Child", content="Child node", node_type="test")
         knowledge_store.graph.add_node(parent)
         knowledge_store.graph.add_node(child)
-        
+
         ##Action purpose: Create edge with specific type
         edge = knowledge_store.graph.add_edge(
             source_id=parent.id,
@@ -394,6 +394,6 @@ class TestKnowledgeStoreGraph:
             edge_type=EdgeType.HAS_CHILD,
             weight=1.0,
         )
-        
+
         ##Step purpose: Verify edge type
         assert edge.edge_type == EdgeType.HAS_CHILD

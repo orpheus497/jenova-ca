@@ -77,11 +77,11 @@ jobs:
       
       - name: Run unit tests
         run: |
-          pytest tests/unit/ -v --tb=short -m "not slow"
+          pytest tests/unit/ -v --tb=short -m "not slow" --junitxml=unit-test-results.xml
       
       - name: Generate coverage report
         run: |
-          pytest tests/unit/ --cov=src/jenova --cov-report=xml --cov-report=html --cov-report=term || true
+          pytest tests/unit/ --cov=src/jenova --cov-report=xml --cov-report=html --cov-report=term --cov-report=json
       
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
@@ -99,8 +99,9 @@ jobs:
         with:
           name: unit-test-results
           path: |
-            .pytest_cache/
-          retention-days: 7
+            unit-test-results.xml
+            coverage.json
+          retention-days: 30
 
   ##Job purpose: Run integration tests
   integration:
@@ -157,7 +158,8 @@ jobs:
       
       - name: Run mypy type checking
         run: |
-          mypy src/ || true  # Allow failures for now
+          mypy src/ --show-error-codes
+        continue-on-error: true  # Allow failures for now, but track them
 
   ##Job purpose: Run all tests in matrix
   test-matrix:
@@ -182,7 +184,7 @@ jobs:
       
       - name: Run all tests
         run: |
-          pytest tests/ -v --tb=short -m "not slow" --junitxml=test-matrix-results-${{ matrix.python-version }}.xml
+          pytest tests/ -v --tb=short -m "not slow" --junitxml=test-matrix-results-${{ matrix.python-version }}.xml --maxfail=5
       
       - name: Upload test matrix results
         uses: actions/upload-artifact@v4

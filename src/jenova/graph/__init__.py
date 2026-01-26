@@ -1,24 +1,24 @@
 ##Script function and purpose: Graph package initialization - exposes CognitiveGraph and types
 """Graph-based cognitive memory for JENOVA."""
 
-from jenova.graph.types import (
-    Node,
-    Edge,
-    EdgeType,
-    GraphQuery,
-    Emotion,
-    EmotionResult,
-    ClusterResult,
-    ContradictionResult,
-    ConnectionSuggestion,
-)
 from jenova.graph.graph import CognitiveGraph, LLMProtocol
 from jenova.graph.proactive import (
-    ProactiveEngine,
+    EngagementTracker,
     ProactiveConfig,
+    ProactiveEngine,
     Suggestion,
     SuggestionCategory,
-    EngagementTracker,
+)
+from jenova.graph.types import (
+    ClusterResult,
+    ConnectionSuggestion,
+    ContradictionResult,
+    Edge,
+    EdgeType,
+    Emotion,
+    EmotionResult,
+    GraphQuery,
+    Node,
 )
 
 __all__ = [

@@ -12,16 +12,15 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 from textual.widgets import Static
-from textual.containers import Horizontal
 
 if TYPE_CHECKING:
-    from textual.app import ComposeResult
+    pass
 
 
 ##Class purpose: Enum defining message sender types for styling
 class MessageType(Enum):
     """Types of messages in the chat interface."""
-    
+
     USER = "user"
     AI = "ai"
     SYSTEM = "system"
@@ -33,12 +32,12 @@ class MessageType(Enum):
 class ChatMessage(Static):
     """
     A styled chat message widget.
-    
+
     Displays messages with appropriate styling based on sender type.
     User messages are green, AI messages are cyan, system messages
     are yellow, and error messages are red.
     """
-    
+
     ##Step purpose: Define component-specific CSS with entry animations
     DEFAULT_CSS = """
     ChatMessage {
@@ -49,53 +48,53 @@ class ChatMessage(Static):
         opacity: 1;
         transition: opacity 150ms ease-in;
     }
-    
+
     ChatMessage.-new {
         /* Animation purpose: Start state for new message animation */
         opacity: 0;
     }
-    
+
     ChatMessage.user {
         color: $success;
     }
-    
+
     ChatMessage.user .message-prefix {
         color: $success-darken-1;
     }
-    
+
     ChatMessage.ai {
         color: $primary-lighten-1;
     }
-    
+
     ChatMessage.ai .message-prefix {
         color: $primary;
     }
-    
+
     ChatMessage.system {
         color: $warning;
     }
-    
+
     ChatMessage.system .message-prefix {
         color: $warning-darken-1;
     }
-    
+
     ChatMessage.error {
         color: $error;
     }
-    
+
     ChatMessage.error .message-prefix {
         color: $error-darken-1;
     }
-    
+
     ChatMessage.info {
         color: $text-muted;
     }
-    
+
     ChatMessage.info .message-prefix {
         color: $text-muted;
     }
     """
-    
+
     ##Method purpose: Initialize message with content and type
     def __init__(
         self,
@@ -106,7 +105,7 @@ class ChatMessage(Static):
     ) -> None:
         """
         Initialize a chat message.
-        
+
         Args:
             content: The message text content.
             message_type: Type of message for styling.
@@ -116,24 +115,24 @@ class ChatMessage(Static):
         self._content = content
         self._message_type = message_type
         self._sender_name = sender_name
-        
+
         ##Step purpose: Build formatted message with prefix
         formatted = self._format_message()
-        
+
         super().__init__(formatted, **kwargs)
-        
+
         ##Action purpose: Add CSS class based on message type
         self.add_class(message_type.value)
-        
+
         ##Animation purpose: Start with hidden state for fade-in effect
         self.add_class("-new")
-    
+
     ##Method purpose: Trigger fade-in animation after mount
     def on_mount(self) -> None:
         """Remove -new class after mount to trigger fade-in."""
         ##Animation purpose: Remove hidden class to trigger CSS transition
         self.remove_class("-new")
-    
+
     ##Method purpose: Format message with appropriate prefix based on type
     def _format_message(self) -> str:
         """Format the message with sender prefix."""
@@ -145,22 +144,22 @@ class ChatMessage(Static):
             MessageType.ERROR: "ERROR",
             MessageType.INFO: ">>",
         }
-        
+
         prefix = prefixes.get(self._message_type, "")
-        
+
         ##Condition purpose: Format differently for system/info messages
         if self._message_type in (MessageType.SYSTEM, MessageType.INFO):
             return f"{prefix} {self._content}"
-        
+
         ##Step purpose: Format with bold prefix for chat messages
         return f"[bold]{prefix}:[/bold] {self._content}"
-    
+
     ##Method purpose: Get the message type
     @property
     def message_type(self) -> MessageType:
         """Get the message type."""
         return self._message_type
-    
+
     ##Method purpose: Get the raw content
     @property
     def content(self) -> str:
@@ -172,10 +171,10 @@ class ChatMessage(Static):
 class MessageThread(Static):
     """
     A container for a series of messages.
-    
+
     Provides consistent spacing and layout for message display.
     """
-    
+
     ##Step purpose: Define thread container CSS
     DEFAULT_CSS = """
     MessageThread {
@@ -184,13 +183,13 @@ class MessageThread(Static):
         padding: 1;
     }
     """
-    
+
     ##Method purpose: Initialize empty message thread
     def __init__(self, **kwargs: object) -> None:
         """Initialize an empty message thread."""
         super().__init__(**kwargs)
         self._messages: list[ChatMessage] = []
-    
+
     ##Method purpose: Add a message to the thread
     def add_message(
         self,
@@ -200,12 +199,12 @@ class MessageThread(Static):
     ) -> ChatMessage:
         """
         Add a new message to the thread.
-        
+
         Args:
             content: The message text.
             message_type: Type of message for styling.
             sender_name: Optional custom sender name.
-            
+
         Returns:
             The created ChatMessage widget.
         """
@@ -218,7 +217,7 @@ class MessageThread(Static):
         self._messages.append(message)
         self.mount(message)
         return message
-    
+
     ##Method purpose: Clear all messages from thread
     def clear_messages(self) -> None:
         """Remove all messages from the thread."""
@@ -226,7 +225,7 @@ class MessageThread(Static):
         for message in self._messages:
             message.remove()
         self._messages.clear()
-    
+
     ##Method purpose: Get count of messages
     @property
     def message_count(self) -> int:

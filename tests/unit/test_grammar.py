@@ -10,14 +10,16 @@ Tests cover:
 - Error handling
 """
 
-import pytest
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
-from jenova.utils.grammar import (
-    GrammarLoader,
-    BuiltinGrammars,
-)
+from unittest.mock import Mock, patch
+
+import pytest
+
 from jenova.exceptions import GrammarError
+from jenova.utils.grammar import (
+    BuiltinGrammars,
+    GrammarLoader,
+)
 
 
 ##Class purpose: Fixture providing temporary grammar directory
@@ -109,7 +111,7 @@ def test_loader_load_from_string_no_llama(loader_no_dir: GrammarLoader) -> None:
     with patch.object(loader_no_dir, "_llama_available", False):
         ##Action purpose: Try to load
         result = loader_no_dir.load_from_string("test grammar", name="test")
-        
+
         ##Assertion purpose: Verify None returned
         assert result is None
 
@@ -121,12 +123,12 @@ def test_loader_load_from_string_with_llama(loader: GrammarLoader) -> None:
     mock_grammar = Mock()
     with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
-        
+
         ##Step purpose: Set llama available
         with patch.object(loader, "_llama_available", True):
             ##Action purpose: Load grammar
             result = loader.load_from_string(BuiltinGrammars.JSON, name="json")
-            
+
             ##Assertion purpose: Verify returned
             assert result is mock_grammar
 
@@ -136,15 +138,15 @@ def test_loader_caches_from_string(loader: GrammarLoader) -> None:
     """##Test case: load_from_string caches result."""
     ##Step purpose: Create mock grammar
     mock_grammar = Mock()
-    
+
     with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
-        
+
         with patch.object(loader, "_llama_available", True):
             ##Action purpose: Load same grammar twice
             result1 = loader.load_from_string("test", name="test")
             result2 = loader.load_from_string("test", name="test")
-            
+
             ##Assertion purpose: Verify cached (only one call to llama)
             assert mock_llama_class.from_string.call_count == 1
             assert result1 is result2
@@ -156,11 +158,10 @@ def test_loader_load_from_string_parse_error(loader: GrammarLoader) -> None:
     ##Step purpose: Set up error
     with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(side_effect=ValueError("Invalid grammar"))
-        
-        with patch.object(loader, "_llama_available", True):
+
+        with patch.object(loader, "_llama_available", True), pytest.raises(GrammarError):  # noqa: SIM117
             ##Action purpose: Try to load
-            with pytest.raises(GrammarError):
-                loader.load_from_string("invalid", name="bad")
+            loader.load_from_string("invalid", name="bad")
 
 
 ##Function purpose: Test loader load from file
@@ -169,16 +170,16 @@ def test_loader_load_from_file(loader: GrammarLoader, grammar_dir: Path) -> None
     ##Step purpose: Create grammar file
     grammar_file = grammar_dir / "test.gbnf"
     grammar_file.write_text(BuiltinGrammars.JSON)
-    
+
     ##Step purpose: Mock llama
     mock_grammar = Mock()
     with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
-        
+
         with patch.object(loader, "_llama_available", True):
             ##Action purpose: Load from file
             result = loader.load_from_file("test.gbnf")
-            
+
             ##Assertion purpose: Verify loaded
             assert result is mock_grammar
 
@@ -189,7 +190,7 @@ def test_loader_load_from_file_not_found(loader: GrammarLoader) -> None:
     ##Step purpose: Try to load nonexistent file
     with pytest.raises(GrammarError) as exc_info:
         loader.load_from_file("nonexistent.gbnf")
-    
+
     ##Assertion purpose: Verify error
     assert "not found" in str(exc_info.value)
 
@@ -200,7 +201,7 @@ def test_loader_load_from_file_no_directory(loader_no_dir: GrammarLoader) -> Non
     ##Step purpose: Try to load
     with pytest.raises(GrammarError) as exc_info:
         loader_no_dir.load_from_file("test.gbnf")
-    
+
     ##Assertion purpose: Verify error
     assert "not configured" in str(exc_info.value)
 
@@ -211,13 +212,13 @@ def test_loader_load_from_file_read_error(loader: GrammarLoader, grammar_dir: Pa
     ##Step purpose: Create file and simulate read error
     grammar_file = grammar_dir / "test.gbnf"
     grammar_file.write_text("test")
-    
+
     ##Action purpose: Patch read to fail
     with patch.object(Path, "read_text", side_effect=OSError("Permission denied")):
         ##Action purpose: Try to load
         with pytest.raises(GrammarError) as exc_info:
             loader.load_from_file("test.gbnf")
-        
+
         ##Assertion purpose: Verify error
         assert "read" in str(exc_info.value).lower()
 
@@ -229,11 +230,11 @@ def test_loader_load_json_grammar(loader: GrammarLoader) -> None:
     mock_grammar = Mock()
     with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
-        
+
         with patch.object(loader, "_llama_available", True):
             ##Action purpose: Load JSON
             result = loader.load_json_grammar()
-            
+
             ##Assertion purpose: Verify loaded and cached as "json"
             assert result is mock_grammar
             assert "json" in loader._cache
@@ -246,11 +247,11 @@ def test_loader_load_simple_json_grammar(loader: GrammarLoader) -> None:
     mock_grammar = Mock()
     with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
-        
+
         with patch.object(loader, "_llama_available", True):
             ##Action purpose: Load simple JSON
             result = loader.load_simple_json_grammar()
-            
+
             ##Assertion purpose: Verify loaded and cached
             assert result is mock_grammar
             assert "simple_json" in loader._cache
@@ -263,11 +264,11 @@ def test_loader_load_boolean_grammar(loader: GrammarLoader) -> None:
     mock_grammar = Mock()
     with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
-        
+
         with patch.object(loader, "_llama_available", True):
             ##Action purpose: Load boolean
             result = loader.load_boolean_grammar()
-            
+
             ##Assertion purpose: Verify loaded and cached
             assert result is mock_grammar
             assert "boolean" in loader._cache
@@ -280,11 +281,11 @@ def test_loader_load_integer_grammar(loader: GrammarLoader) -> None:
     mock_grammar = Mock()
     with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
-        
+
         with patch.object(loader, "_llama_available", True):
             ##Action purpose: Load integer
             result = loader.load_integer_grammar()
-            
+
             ##Assertion purpose: Verify loaded and cached
             assert result is mock_grammar
             assert "integer" in loader._cache
@@ -297,11 +298,11 @@ def test_loader_load_confidence_grammar(loader: GrammarLoader) -> None:
     mock_grammar = Mock()
     with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
-        
+
         with patch.object(loader, "_llama_available", True):
             ##Action purpose: Load confidence
             result = loader.load_confidence_grammar()
-            
+
             ##Assertion purpose: Verify loaded and cached
             assert result is mock_grammar
             assert "confidence" in loader._cache
@@ -313,10 +314,10 @@ def test_loader_clear_cache(loader: GrammarLoader) -> None:
     ##Step purpose: Add to cache
     loader._cache["test"] = Mock()
     loader._cache["test2"] = Mock()
-    
+
     ##Action purpose: Clear
     loader.clear_cache()
-    
+
     ##Assertion purpose: Verify cleared
     assert len(loader._cache) == 0
 
@@ -345,13 +346,13 @@ def test_loader_cache_key_format(loader: GrammarLoader) -> None:
     mock_grammar = Mock()
     with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
-        
+
         with patch.object(loader, "_llama_available", True):
             ##Action purpose: Load grammars
             loader.load_from_string(BuiltinGrammars.JSON, name="json")
             loader.load_from_string(BuiltinGrammars.BOOLEAN, name="bool")
             loader.load_from_string("custom", name="custom_name")
-            
+
             ##Assertion purpose: Verify cache keys
             assert "json" in loader._cache
             assert "bool" in loader._cache
