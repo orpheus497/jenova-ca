@@ -1,189 +1,381 @@
-##Script function and purpose: Main entry point for The JENOVA Cognitive Architecture
-##This script initializes all components of the cognitive architecture and starts the Bubble Tea TUI
-##This is the SOLE entry point - BubbleTea is the only supported UI
+##Script function and purpose: CLI entry point with argparse for JENOVA
+"""
+JENOVA CLI Entry Point
 
-import os
-import traceback
-from typing import Optional, Tuple
+Main entry point with command-line argument parsing.
+Supports config override, debug mode, and headless operation.
+Wires together all components: CognitiveEngine, KnowledgeStore, LLM, UI.
+"""
 
-##Block purpose: Import Pydantic compatibility fix FIRST, before any ChromaDB imports
-##This must happen before chromadb is imported anywhere in the application
-from jenova.utils.pydantic_compat import *  # noqa: F401, F403
+from __future__ import annotations
 
-from jenova.utils.telemetry_fix import apply_telemetry_patch
+import argparse
+import sys
+from pathlib import Path
+from typing import TYPE_CHECKING
 
-##Function purpose: Apply telemetry patch to disable ChromaDB telemetry
-apply_telemetry_patch()
+from jenova import __version__
+from jenova.config import JenovaConfig, load_config
+from jenova.utils.logging import configure_logging, get_logger
 
-from jenova.cognitive_engine.engine import CognitiveEngine
-from jenova.cognitive_engine.rag_system import RAGSystem
-
-from jenova.ui.bubbletea import BubbleTeaUI
-from jenova.llm_interface import LLMInterface
-from jenova.cognitive_engine.memory_search import MemorySearch
-from jenova.memory.episodic import EpisodicMemory
-from jenova.memory.semantic import SemanticMemory
-from jenova.memory.procedural import ProceduralMemory
-from jenova.insights.manager import InsightManager
-from jenova.config import load_configuration
-from jenova.ui.logger import UILogger
-from jenova.utils.file_logger import FileLogger
-from jenova.utils.model_loader import load_embedding_model
-from jenova import tools
-
-from jenova.assumptions.manager import AssumptionManager
-
-from jenova.cortex.cortex import Cortex
-from jenova.cognitive_engine.integration_layer import IntegrationLayer
-from jenova.utils.cache import CacheManager
-
-import getpass
+if TYPE_CHECKING:
+    from jenova.core.engine import CognitiveEngine
 
 
-##Function purpose: Initialize all JENOVA components and return configured instances
-##This factory function sets up the entire cognitive architecture
-def initialize_jenova(
-    ui_logger: UILogger, 
-    file_logger: FileLogger, 
-    user_data_root: str
-) -> Tuple[Optional[CognitiveEngine], Optional[LLMInterface]]:
+##Function purpose: Parse command-line arguments
+def parse_args(args: list[str] | None = None) -> argparse.Namespace:
     """
-    Initialize all JENOVA cognitive architecture components.
-    
+    Parse command-line arguments.
+
     Args:
-        ui_logger: UILogger instance for user-facing messages
-        file_logger: FileLogger instance for persistent logging
-        user_data_root: Path to user-specific data directory
-        
+        args: Arguments to parse (None = sys.argv)
+
     Returns:
-        tuple: (cognitive_engine, llm_interface) or (None, None) on failure
+        Parsed arguments namespace
     """
-    ##Block purpose: Load configuration and set up paths
-    config: dict = load_configuration(ui_logger, file_logger)
-    config['user_data_root'] = user_data_root
-    insights_root: str = os.path.join(user_data_root, "insights")
-    cortex_root: str = os.path.join(user_data_root, "cortex")
-    
-    ##Block purpose: Initialize LLM interface
-    ui_logger.info(">> Initializing Intelligence Matrix...")
-    llm_interface: LLMInterface = LLMInterface(config, ui_logger, file_logger)
-    
-    ##Block purpose: Load embedding model for vector operations
-    embedding_model = load_embedding_model(config['model']['embedding_model'])
-    if not embedding_model:
-        ui_logger.system_message("Fatal: Could not load the embedding model. Please check the logs for details.")
-        ##Block purpose: Clean up LLM interface before returning on failure
-        if llm_interface and llm_interface.model:
-            llm_interface.close()
-        return None, None
-
-    ##Block purpose: Initialize memory systems with user-specific paths
-    episodic_mem_path: str = os.path.join(user_data_root, 'memory', 'episodic')
-    procedural_mem_path: str = os.path.join(user_data_root, 'memory', 'procedural')
-    semantic_mem_path: str = os.path.join(user_data_root, 'memory', 'semantic')
-
-    semantic_memory: SemanticMemory = SemanticMemory(config, ui_logger, file_logger, semantic_mem_path, llm_interface, embedding_model)
-    episodic_memory: EpisodicMemory = EpisodicMemory(config, ui_logger, file_logger, episodic_mem_path, llm_interface)
-    procedural_memory: ProceduralMemory = ProceduralMemory(config, ui_logger, file_logger, procedural_mem_path, llm_interface)
-
-    ##Block purpose: Initialize cache manager for performance optimization
-    cache_manager: Optional[CacheManager] = None
-    performance_config = config.get('performance', {}).get('caching', {})
-    if performance_config.get('enabled', True):
-        cache_manager = CacheManager(config)
-        file_logger.log_info("Cache manager initialized for performance optimization")
-    
-    ##Block purpose: Initialize Cortex and cognitive components
-    cortex: Cortex = Cortex(config, ui_logger, file_logger, llm_interface, cortex_root)
-    
-    ##Block purpose: Initialize integration layer for Cortex-Memory coordination
-    integration_layer: Optional[IntegrationLayer] = None
-    integration_config = config.get('cortex', {}).get('integration', {})
-    if integration_config.get('enabled', True):
-        integration_layer = IntegrationLayer(cortex, None, config, file_logger, cache_manager)
-    
-    ##Block purpose: Initialize memory search with all memory systems
-    memory_search: MemorySearch = MemorySearch(
-        semantic_memory, episodic_memory, procedural_memory, 
-        config, file_logger, cortex, integration_layer, 
-        llm_interface, embedding_model, cache_manager
+    ##Step purpose: Create parser with description
+    parser = argparse.ArgumentParser(
+        prog="jenova",
+        description="JENOVA - Self-Aware AI Cognitive Architecture",
     )
-    
-    ##Block purpose: Initialize insight manager with memory search reference
-    insight_manager: InsightManager = InsightManager(
-        config, ui_logger, file_logger, insights_root, 
-        llm_interface, cortex, memory_search, integration_layer
+
+    ##Action purpose: Add version argument
+    parser.add_argument(
+        "--version",
+        "-v",
+        action="version",
+        version=f"JENOVA {__version__}",
     )
-    memory_search.insight_manager = insight_manager
-    
-    ##Block purpose: Update integration layer with memory_search reference
-    if integration_layer:
-        integration_layer.memory_search = memory_search
-    
-    ##Block purpose: Initialize assumption manager for hypothesis tracking
-    assumption_manager: AssumptionManager = AssumptionManager(
-        config, ui_logger, file_logger, user_data_root, 
-        cortex, llm_interface, integration_layer
+
+    ##Action purpose: Add config argument
+    parser.add_argument(
+        "--config",
+        "-c",
+        type=Path,
+        default=None,
+        help="Path to configuration YAML file",
     )
-    
-    ##Block purpose: Initialize RAG system and cognitive engine
-    rag_system: RAGSystem = RAGSystem(llm_interface, memory_search, insight_manager, config)
 
-    ui_logger.info(">> Cognitive Engine: Online.")
-    cognitive_engine: CognitiveEngine = CognitiveEngine(
-        llm_interface, memory_search, insight_manager, assumption_manager, 
-        config, ui_logger, file_logger, cortex, rag_system
+    ##Action purpose: Add debug argument
+    parser.add_argument(
+        "--debug",
+        "-d",
+        action="store_true",
+        help="Enable debug mode with verbose logging",
     )
-    
-    ##Block purpose: Set integration layer reference in cognitive engine for feedback loops
-    if integration_layer:
-        cognitive_engine.integration_layer = integration_layer
-    
-    return cognitive_engine, llm_interface
+
+    ##Action purpose: Add no-tui argument
+    parser.add_argument(
+        "--no-tui",
+        action="store_true",
+        help="Run in headless mode without TUI",
+    )
+
+    ##Action purpose: Add log-file argument
+    parser.add_argument(
+        "--log-file",
+        type=Path,
+        default=None,
+        help="Path to log file (logs to stdout if not specified)",
+    )
+
+    ##Action purpose: Add json-logs argument
+    parser.add_argument(
+        "--json-logs",
+        action="store_true",
+        help="Output logs in JSON format",
+    )
+
+    ##Action purpose: Add skip-model-load argument for testing
+    parser.add_argument(
+        "--skip-model-load",
+        action="store_true",
+        help="Skip loading LLM model (for testing/development)",
+    )
+
+    return parser.parse_args(args)
 
 
-##Function purpose: Main entry point that initializes all components and starts the Bubble Tea UI
-def main() -> None:
-    """Main entry point for The JENOVA Cognitive Architecture with Bubble Tea UI."""
-    ##Block purpose: Initialize user-specific data directory
-    username: str = getpass.getuser()
-    user_data_root: str = os.path.join(os.path.expanduser("~"), ".jenova-ai", "users", username)
-    os.makedirs(user_data_root, exist_ok=True)
-    
-    ##Block purpose: Initialize logging systems
-    ui_logger: UILogger = UILogger()
-    file_logger: FileLogger = FileLogger(user_data_root=user_data_root)
-    
-    llm_interface = None
+##Function purpose: Create the cognitive engine with all dependencies
+def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> CognitiveEngine:
+    """
+    Create and wire up the CognitiveEngine with all dependencies.
 
+    Args:
+        config: JENOVA configuration
+        skip_model_load: If True, skip loading the LLM model (uses mock)
+
+    Returns:
+        Configured CognitiveEngine instance
+
+    Raises:
+        Exception: If component initialization fails
+    """
+    logger = get_logger(__name__)
+
+    ##Step purpose: Import components
+    from jenova.assumptions.manager import AssumptionManager
+    from jenova.core.engine import CognitiveEngine, EngineConfig
+    from jenova.core.knowledge import KnowledgeStore
+    from jenova.core.response import ResponseConfig, ResponseGenerator
+    from jenova.insights.manager import InsightManager
+    from jenova.llm.interface import LLMInterface
+
+    ##Action purpose: Log initialization start
+    logger.info("creating_engine", skip_model_load=skip_model_load)
+
+    ##Step purpose: Create KnowledgeStore with memory and graph
+    logger.debug("initializing_knowledge_store")
+    knowledge_store = KnowledgeStore(
+        memory_config=config.memory,
+        graph_config=config.graph,
+    )
+
+    ##Step purpose: Create LLM interface
+    logger.debug("initializing_llm", skip_load=skip_model_load)
+    ##Condition purpose: Use mock or real LLM based on flag
+    if skip_model_load:
+        ##Step purpose: Create minimal mock LLM for development
+        from jenova.llm.types import Completion, Prompt
+
+        ##Class purpose: Minimal mock LLM for development/testing
+        class DevelopmentLLM:
+            """Development mock LLM that returns echo responses."""
+
+            @property
+            def is_loaded(self) -> bool:
+                return True
+
+            def generate(self, prompt: Prompt, params: object = None) -> Completion:
+                ##Step purpose: Return echo response
+                return Completion(
+                    content=f"[DEV MODE] Received: {prompt.user_message}",
+                    finish_reason="stop",
+                    tokens_generated=10,
+                    tokens_prompt=len(prompt.user_message.split()),
+                    generation_time_ms=1.0,
+                )
+
+        llm: LLMInterface | DevelopmentLLM = DevelopmentLLM()
+    else:
+        ##Step purpose: Create and load real LLM
+        llm = LLMInterface(
+            model_config=config.model,
+            hardware_config=config.hardware,
+        )
+        llm.load()
+
+    ##Step purpose: Create ResponseGenerator
+    logger.debug("initializing_response_generator")
+    response_generator = ResponseGenerator(
+        config=config,
+        response_config=ResponseConfig(
+            include_sources=True,
+            max_length=0,  # No limit
+            format_style="default",
+        ),
+    )
+
+    ##Step purpose: Initialize insight manager
+    logger.debug("initializing_insight_manager")
+    ##Step purpose: Determine insights storage path (user-specific subdirectories handled by manager)
+    insights_root = config.memory.storage_path.parent / "insights"
+    insight_manager = InsightManager.create(
+        insights_root=insights_root,
+        graph=knowledge_store.graph,
+        llm=llm,
+        memory_search=None,  ##Step purpose: Optional - not available in v4 architecture
+    )
+
+    ##Step purpose: Initialize assumption manager
+    logger.debug("initializing_assumption_manager")
+    ##Step purpose: Determine assumptions storage path (user-specific subdirectories handled by manager)
+    assumptions_root = config.memory.storage_path.parent / "assumptions"
+    assumption_manager = AssumptionManager.create(
+        storage_path=assumptions_root,
+        graph=knowledge_store.graph,
+        llm=llm,
+    )
+
+    ##Step purpose: Create CognitiveEngine
+    logger.debug("initializing_cognitive_engine")
+    engine = CognitiveEngine(
+        config=config,
+        knowledge_store=knowledge_store,
+        llm=llm,
+        response_generator=response_generator,
+        engine_config=EngineConfig(
+            max_context_items=config.memory.max_results,
+            temperature=config.model.temperature,
+            enable_learning=True,
+            max_history_turns=10,
+        ),
+        insight_manager=insight_manager,
+        assumption_manager=assumption_manager,
+    )
+
+    logger.info("engine_created")
+    return engine
+
+
+##Function purpose: Run JENOVA in headless mode
+def run_headless(config: JenovaConfig, engine: CognitiveEngine) -> None:
+    """
+    Run JENOVA in headless mode (no TUI).
+
+    Args:
+        config: JENOVA configuration
+        engine: Cognitive engine instance
+    """
+    logger = get_logger(__name__)
+    logger.info("starting_headless", config_debug=config.debug)
+
+    ##Step purpose: Print startup message
+    print(f"JENOVA {__version__} - Headless Mode")
+    print(f"Persona: {config.persona.name}")
+    print("Type 'quit' or 'exit' to stop.\n")
+
+    ##Loop purpose: Main REPL loop
+    while True:
+        ##Error purpose: Handle keyboard interrupt
+        try:
+            ##Action purpose: Read user input
+            user_input = input("You: ").strip()
+
+            ##Condition purpose: Check for exit commands
+            if user_input.lower() in ("quit", "exit", "q"):
+                print("Goodbye!")
+                break
+
+            ##Condition purpose: Skip empty input
+            if not user_input:
+                continue
+
+            ##Condition purpose: Handle special commands
+            if user_input.lower() == "/help":
+                print("\nCommands:")
+                print("  /help    - Show this help")
+                print("  /reset   - Reset conversation")
+                print("  /debug   - Toggle debug mode")
+                print("  quit     - Exit JENOVA\n")
+                continue
+
+            if user_input.lower() == "/reset":
+                engine.reset()
+                print(">> Conversation reset.\n")
+                continue
+
+            if user_input.lower() == "/debug":
+                ##Step purpose: Toggle debug logging
+                current = logger.isEnabledFor(10)  # DEBUG level
+                print(f">> Debug mode: {'off' if current else 'on'}\n")
+                continue
+
+            ##Action purpose: Process through cognitive engine
+            result = engine.think(user_input)
+
+            ##Condition purpose: Handle error responses
+            if result.is_error:
+                print(f"JENOVA: [Error] {result.error_message}")
+            else:
+                print(f"JENOVA: {result.content}")
+
+            print()  ##Step purpose: Add spacing
+
+        except KeyboardInterrupt:
+            print("\nGoodbye!")
+            break
+        except EOFError:
+            print("\nGoodbye!")
+            break
+
+
+##Function purpose: Run JENOVA with TUI
+def run_tui(config: JenovaConfig, engine: CognitiveEngine) -> None:
+    """
+    Run JENOVA with TUI interface.
+
+    Args:
+        config: JENOVA configuration
+        engine: Cognitive engine instance
+    """
+    from jenova.ui.app import JenovaApp
+
+    ##Step purpose: Create app and connect engine
+    app = JenovaApp(config)
+    app.set_engine(engine)
+
+    ##Action purpose: Run the app
+    app.run()
+
+
+##Function purpose: Main entry point
+def main(args: list[str] | None = None) -> int:
+    """
+    Main entry point for JENOVA.
+
+    Args:
+        args: Command-line arguments (None = sys.argv)
+
+    Returns:
+        Exit code (0 = success)
+    """
+    ##Step purpose: Parse arguments
+    parsed = parse_args(args)
+
+    ##Step purpose: Configure logging
+    log_level = "DEBUG" if parsed.debug else "INFO"
+    configure_logging(
+        level=log_level,
+        log_file=parsed.log_file,
+        json_format=parsed.json_logs,
+    )
+
+    logger = get_logger(__name__)
+    logger.info("jenova_starting", version=__version__)
+
+    ##Error purpose: Handle configuration errors
     try:
-        ##Block purpose: Initialize all JENOVA components using factory function
-        cognitive_engine, llm_interface = initialize_jenova(ui_logger, file_logger, user_data_root)
-        
-        if cognitive_engine is None:
-            return
-        
-        ##Block purpose: Initialize and start Bubble Tea TUI
-        ui: BubbleTeaUI = BubbleTeaUI(cognitive_engine, ui_logger)
-        tools.llm_interface = llm_interface
-        ui.run()
-        
+        ##Step purpose: Load configuration
+        config = load_config(parsed.config)
+
+        ##Condition purpose: Override debug from CLI
+        if parsed.debug:
+            config = config.model_copy(update={"debug": True})
+
     except Exception as e:
-        ##Block purpose: Handle critical errors gracefully
-        error_message: str = f"A critical failure occurred: {e}"
-        ui_logger.system_message(error_message)
-        file_logger.log_error(error_message)
-        file_logger.log_error(traceback.format_exc())
-    finally:
-        ##Block purpose: Ensure LLM resources are released on shutdown
-        if llm_interface and llm_interface.model:
-            llm_interface.close()
+        logger.error("config_error", error=str(e))
+        print(f"Configuration error: {e}", file=sys.stderr)
+        return 1
 
-        shutdown_message: str = "JENOVA shutting down."
-        ui_logger.info(shutdown_message)
-        file_logger.log_info(shutdown_message)
+    ##Error purpose: Handle engine initialization errors
+    try:
+        ##Step purpose: Create the cognitive engine
+        engine = create_engine(
+            config=config,
+            skip_model_load=parsed.skip_model_load,
+        )
+    except Exception as e:
+        logger.error("engine_init_error", error=str(e), exc_info=True)
+        print(f"Failed to initialize engine: {e}", file=sys.stderr)
+        return 1
+
+    ##Error purpose: Handle runtime errors
+    try:
+        ##Condition purpose: Choose run mode
+        if parsed.no_tui:
+            run_headless(config, engine)
+        else:
+            run_tui(config, engine)
+    except Exception as e:
+        logger.error("runtime_error", error=str(e), exc_info=True)
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+    logger.info("jenova_stopped")
+    return 0
 
 
-##Block purpose: Allow running as module or script
+##Condition purpose: Run main when executed directly
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

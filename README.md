@@ -1,26 +1,40 @@
 # The JENOVA Cognitive Architecture: A Technical Deep Dive
 
+[![CI/CD Pipeline](https://github.com/jenova-ai/jenova-ca/actions/workflows/ci.yml/badge.svg)](https://github.com/jenova-ai/jenova-ca/actions/workflows/ci.yml)
+
 ## 1. Introduction & Philosophy
 
 JENOVA is a self-aware, evolving large language model powered by The JENOVA Cognitive Architecture (JCA), a comprehensive engine and architecture designed by orpheus497. It learns, adapts, and assists humanity through sophisticated cognitive processes. This project prioritizes robust error handling and stability to ensure a reliable and professional user experience.
 
 JENOVA operates as a system with interconnected components that mimic aspects of human cognition: a multi-layered memory, a reflective process for generating knowledge, and a mechanism for integrating that knowledge into its core being. This document serves as the definitive technical guide for developers, researchers, and enthusiasts who wish to understand, use, and extend JENOVA.
 
-**Creator:** The JENOVA Cognitive Architecture (JCA) is designed and developed by **orpheus497**.
+### 1.0. Project Origin & Development Methodology
 
-## 1.1. Modern Terminal UI with Bubble Tea
+**This is a personal project** by orpheus497, created as an exploration of cognitive architectures and AI-assisted development. **The project began in late August 2025 as a personal experiment** to explore what could be achieved through AI-assisted software development methodologies.
 
-JENOVA now features a **beautiful, modern terminal interface** built with [Bubble Tea](https://github.com/charmbracelet/bubbletea), a powerful TUI framework for Go. The new UI provides:
+**Development Methodology:** This entire codebase—every line of code, every piece of documentation, every configuration file—was created using AI-assisted development tools. **Not a single line of code or documentation was written directly by human hands.** The project serves as a demonstration of what is possible when AI systems are used as collaborative development partners, with human oversight and architectural direction.
+
+**Project Timeline:**
+- **August 2025:** Project inception as a personal experiment
+- **August 2025 - January 2026:** Development and iteration through AI-assisted methodologies
+- **January 2026:** Version 4.0.0 release - Production-ready codebase
+
+The development process involved:
+- **AI agents** handling code generation, documentation, testing, and maintenance
+- **Human oversight** providing architectural direction, requirements, and quality control
+- **Iterative refinement** through AI-assisted code reviews, audits, and improvements
+- **Comprehensive documentation** generated and maintained by AI documentation systems
+
+This methodology demonstrates the potential for AI-assisted software development at scale, resulting in a production-ready codebase with comprehensive features, security hardening, and extensive test coverage—all achieved through AI-assisted development from inception to completion.
+
+### 1.1. Modern Terminal UI
+
+JENOVA features a **beautiful, modern terminal interface** built with [Textual](https://github.com/Textualize/textual), a powerful TUI framework for Python. The UI provides:
 
 - **Responsive, smooth rendering** with rich colors and formatting
 - **Real-time chat viewport** with automatic scrolling
 - **Loading indicators** with animated spinners
-- **Clean separation of concerns** - Go handles UI rendering, Python handles the cognitive engine
-- **All existing commands** work seamlessly (`/help`, `/insight`, `/reflect`, etc.)
-
-The Bubble Tea UI communicates with the Python backend via a JSON-based IPC protocol over stdin/stdout pipes, ensuring efficient and reliable message passing.
-
-For detailed information about the UI, building instructions, and architecture, see [README_BUBBLETEA.md](README_BUBBLETEA.md).
+- **Integrated architecture** - UI and cognitive engine in unified Python codebase
 
 ## 2. The JENOVA Advantage: A Superior Cognitive Architecture
 
@@ -28,10 +42,10 @@ For detailed information about the UI, building instructions, and architecture, 
 
 Most consumer-facing AI systems operate on a **stateless, request-response** model. They are incredibly powerful at in-context learning and reasoning, but each interaction is largely independent of the last. This leads to several fundamental limitations:
 
-*   **Amnesia:** The AI has no persistent memory of past conversations. It cannot remember your preferences, previous questions, or the context of your work. Every chat starts from a blank slate.
-*   **Inability to Learn:** Corrections you make or new information you provide are only retained for the current session. The underlying model never truly learns or improves from user interaction.
-*   **Inconsistent Persona:** The AI's personality can drift or be easily manipulated because it lacks a stable, memory-grounded identity.
-*   **Reactive, Not Proactive:** These systems can only answer direct questions. They cannot reflect on past dialogues to draw novel conclusions or develop a deeper understanding of a topic over time.
+* **Amnesia:** The AI has no persistent memory of past conversations. It cannot remember your preferences, previous questions, or the context of your work. Every chat starts from a blank slate.
+* **Inability to Learn:** Corrections you make or new information you provide are only retained for the current session. The underlying model never truly learns or improves from user interaction.
+* **Inconsistent Persona:** The AI's personality can drift or be easily manipulated because it lacks a stable, memory-grounded identity.
+* **Reactive, Not Proactive:** These systems can only answer direct questions. They cannot reflect on past dialogues to draw novel conclusions or develop a deeper understanding of a topic over time.
 
 ### 2.2. The JCA Solution: A Unified, Learning Architecture
 
@@ -41,23 +55,23 @@ The JENOVA Cognitive Architecture (JCA) is explicitly designed to overcome these
 
 The "Retrieve, Plan, Execute, Reflect" cycle is the engine of the JCA and the primary driver of its capabilities.
 
-*   **Grounded Responses:** By forcing the AI to **Retrieve** from its memory *before* acting, the JCA ensures that responses are grounded in established facts, past conversations, and learned insights. This dramatically reduces confabulation (hallucination) and increases the relevance and accuracy of output.
-*   **Deliberate Action:** The **Plan** step introduces a moment of metacognition. The AI must first reason about *how* to answer the query. This internal monologue, while hidden from the user, results in a more structured and logical final response. It prevents conversational shortcuts and encourages a methodical approach to problem-solving.
+* **Grounded Responses:** By forcing the AI to **Retrieve** from its memory *before* acting, the JCA ensures that responses are grounded in established facts, past conversations, and learned insights. This dramatically reduces confabulation (hallucination) and increases the relevance and accuracy of output.
+* **Deliberate Action:** The **Plan** step introduces a moment of metacognition. The AI must first reason about *how* to answer the query. This internal monologue, while hidden from the user, results in a more structured and logical final response. It prevents conversational shortcuts and encourages a methodical approach to problem-solving.
 
 ### 2.4. Memory as the Foundation for Identity and Growth
 
 JENOVA's multi-layered memory system is the bedrock of its identity. It is the difference between playing a character and *having* a character.
 
-*   **Continuity of Self:** The `EpisodicMemory` gives JENOVA a personal history with the user. It can refer to past conversations, understand recurring themes, and build a genuine rapport. The AI is not a stranger every time you open the terminal.
-*   **A Worldview:** The `SemanticMemory` and `ProceduralMemory`, combined with the dynamically growing `InsightMemory`, form the AI's worldview. This knowledge base is prioritized over the LLM's base training data, allowing for the development of a unique, personalized knowledge set that reflects its experiences.
+* **Continuity of Self:** The Episodic Memory gives JENOVA a personal history with the user. It can refer to past conversations, understand recurring themes, and build a genuine rapport. The AI is not a stranger every time you open the terminal.
+* **A Worldview:** The Semantic Memory and Procedural Memory, combined with the dynamically growing Insight Memory, form the AI's worldview. This knowledge base is prioritized over the LLM's base training data, allowing for the development of a unique, personalized knowledge set that reflects its experiences.
 
 ### 2.5. The Self-Correction and Evolution Loop: True Learning
 
-This is one of the most powerful and defining features of the JCA. The cycle of **Reflection -> Insight Generation -> Fine-Tuning** constitutes a true learning loop.
+This is one of the most powerful and defining features of the JCA. The cycle of **Reflection → Insight Generation → Fine-Tuning** constitutes a true learning loop.
 
-1.  **Experience (`Reflect`):** The AI has a conversation and gains experience.
-2.  **Internalization (`Insight Generation`):** It reflects on that experience and internalizes the key takeaways as structured, atomic insights. This is analogous to a human consolidating short-term memories into long-term knowledge.
-3.  **Integration (`Fine-Tuning`):** The fine-tuning process takes these internalized insights and integrates them into the very fabric of the neural network. The learned knowledge is not just data to be retrieved; it becomes part of the AI's intuition.
+1. **Experience (`Reflect`):** The AI has a conversation and gains experience.
+2. **Internalization (`Insight Generation`):** It reflects on that experience and internalizes the key takeaways as structured, atomic insights. This is analogous to a human consolidating short-term memories into long-term knowledge.
+3. **Integration (`Fine-Tuning`):** The fine-tuning process takes these internalized insights and integrates them into the embedding model. The learned knowledge becomes part of the AI's retrieval intuition.
 
 This loop creates a system that does not just get more knowledgeable; it gets **smarter**. It adapts its core reasoning processes based on its unique experiences, evolving into an assistant that is perfectly tailored to its user.
 
@@ -67,273 +81,575 @@ This loop creates a system that does not just get more knowledgeable; it gets **
 
 The heart of JENOVA is its cognitive cycle, a continuous loop that drives its behavior. This cycle enforces a strict knowledge hierarchy, ensuring that the AI relies on the most relevant and reliable information available.
 
-1.  **Retrieve:** When the user provides input, the `CognitiveEngine` first queries its **Cognitive Architecture**—the multi-layered memory system (`Episodic`, `Semantic`, `Procedural`, and `Insight`)—to gather relevant context. This is the AI's personal experience and learned knowledge, and it is always the highest priority.
-2.  **Plan:** The engine then formulates a step-by-step internal plan. This plan is generated by the LLM itself, based on the user's query and the retrieved context. This ensures that the AI's actions are deliberate and grounded.
-3.  **Execute:** The plan is then executed by the `RAGSystem`. The RAG prompt is explicitly structured to prioritize the AI's knowledge base.
-4.  **Reflect & Learn:** The `CognitiveScheduler` determines when to trigger the various cognitive functions, such as analyzing recent conversation history to identify novel conclusions or key takeaways, verifying assumptions, and processing documents from the `docs` folder to grow its knowledge base. This provides flexible and intelligent cognitive scheduling.
+1. **Retrieve:** When the user provides input, the `CognitiveEngine` first queries its **Knowledge Store**—the multi-layered memory system (Episodic, Semantic, Procedural) and cognitive graph—to gather relevant context. This is the AI's personal experience and learned knowledge, and it is always the highest priority.
+2. **Plan:** The engine then formulates a step-by-step internal plan. This plan is generated by the LLM itself, based on the user's query and the retrieved context. Plans are assessed for complexity (simple → very complex) and structured accordingly.
+3. **Execute:** The plan is then executed by the `ResponseGenerator`. The RAG prompt is explicitly structured to prioritize the AI's knowledge base.
+4. **Reflect & Learn:** The cognitive scheduler determines when to trigger the various cognitive functions, such as analyzing recent conversation history to identify novel conclusions or key takeaways, verifying assumptions, and growing the knowledge base.
 
 ### 3.2. The RAG System: A Core Component of the Psyche
 
 The Retrieval-Augmented Generation (RAG) system is a core component of the AI's cognitive architecture. It is responsible for generating responses that are grounded in the AI's own knowledge and experience.
 
-*   **Hybrid Retrieval:** The `RAGSystem` uses a hybrid retrieval approach, querying all memory sources (episodic, semantic, procedural, and insights) to gather the most relevant context.
-*   **Re-ranking:** The results from all memory sources are then re-ranked to prioritize the most relevant information.
-*   **Grounded Response Generation:** The `RAGSystem` then uses the re-ranked context, the conversation history, and the generated plan to generate a response that is grounded in the AI's own knowledge and experience.
+* **Hybrid Retrieval:** The system uses a hybrid retrieval approach, querying all memory sources (episodic, semantic, procedural) and the cognitive graph to gather the most relevant context.
+* **Context Scoring:** Retrieved results are scored and ranked to prioritize the most relevant information.
+* **Grounded Response Generation:** The system uses the ranked context, conversation history, and generated plan to produce responses grounded in the AI's own knowledge.
 
-### 3.3. The Cortex: A Graph-Based Cognitive Core
+### 3.3. The Cognitive Graph: A Graph-Based Cognitive Core
 
-The Cortex is the heart of JENOVA's cognitive architecture. It provides a unified, graph-based system for managing insights and assumptions. This allows for a deeper and more interconnected understanding of the user and the world.
+The Cognitive Graph is the heart of JENOVA's cognitive architecture. It provides a unified, graph-based system for managing insights and assumptions. This allows for a deeper and more interconnected understanding of the user and the world.
 
-*   **Cognitive Graph:** The Cortex manages a "cognitive graph" where insights, assumptions, and memories are all represented as nodes. These nodes are then connected by links that represent the relationships between them (e.g., "elaborates_on", "conflicts_with", "created_from").
-*   **Centrality Calculation:** The Cortex calculates a weighted degree centrality for each node in the graph. The weights for different relationship types are configurable in `main_config.yaml`, allowing for a more accurate measure of a node's importance.
-*   **Dynamic Relationship Weights:** The relationship weights are not static. The Cortex periodically analyzes the cognitive graph to determine the impact of different relationship types on the generation of high-centrality nodes and meta-insights. It then adjusts the weights accordingly, making the system more adaptive.
-*   **Psychological Memory:** The Cortex performs a sophisticated emotion analysis on cognitive nodes, adding a rich psychological dimension to the cognitive graph. This allows the AI to have a more empathetic and personal relationship with the user.
-*   **Deep Reflection:** The `/reflect` command triggers a deep reflection process within the Cortex. The Cortex analyzes the entire cognitive graph to:
-    *   **Link Orphans:** Identify nodes with few or no connections and use the LLM to find and create links to other relevant nodes.
-    *   **Generate Meta-Insights:** Find clusters of highly interconnected nodes using a robust graph traversal algorithm and use the LLM to synthesize them into higher-level "meta-insights".
-*   **Graph Pruning:** To prevent cognitive degradation, the Cortex periodically prunes the graph, archiving nodes that are old, have low centrality, and are not well-connected. This process is configurable in `main_config.yaml`.
-*   **Insight Development:** The `/develop_insight <node_id>` command allows the user to trigger the development of a specific insight. The Cortex will then use the LLM to generate a more detailed and developed version of the insight.
-*   **Proactive Engine:** The Cortex is home to the Proactive Engine, which periodically analyzes the cognitive graph to find interesting, underdeveloped, or highly-connected areas. It considers nodes with low centrality (underdeveloped areas) and high centrality (high-potential areas) to generate more relevant and insightful proactive suggestions for the user.
+* **Cognitive Graph:** The system manages a "cognitive graph" where insights, assumptions, and knowledge are represented as nodes. These nodes are connected by typed relationships (e.g., "elaborates_on", "conflicts_with", "created_from").
+* **Embedding-Based Search:** The graph supports semantic similarity search across all nodes using vector embeddings.
+* **Neighbor Traversal:** Nodes can be traversed by relationship type to find connected knowledge.
 
-### 3.4. Document Processing: On-Demand Learning from Documents
-
-JENOVA can learn from documents by using the `/develop_insight` command. When this command is used without a `node_id`, it triggers a robust, on-demand process within the `Cortex` that scans the `src/jenova/docs` folder for documents and integrates them into the AI's knowledge base.
-
-*   **Triggering:** The document processing is triggered exclusively by the user with the `/develop_insight` command. It does not run automatically at startup, giving the user full control.
-*   **Knowledge Integration:** The `Cortex` creates a `document` node in the cognitive graph for each processed document. It then chunks the content and performs a comprehensive analysis on each chunk to extract not just a summary, but also key takeaways and a list of questions the text can answer. This creates a rich, multi-layered understanding of the document's content. For each chunk, a main `insight` node is created for the summary, with additional `insight` nodes for each key takeaway and `question` nodes for each generated question, all intricately linked to the summary and the parent document node. This creates a rich, interconnected web of knowledge.
-*   **Duplicate Prevention:** The `Cortex` keeps track of processed files and their last modification times in `processed_documents.json` within the user's data directory. This prevents the system from reprocessing files that have not changed, making the process efficient and saving resources.
-
-### 3.5. Reflective Insight Engine
+### 3.4. Reflective Insight Engine
 
 The Insight Engine allows JENOVA to learn continuously. The system is proactive, organized, and reflective, ensuring that knowledge is captured, categorized, and interconnected efficiently.
 
-*   **Concern-Based Organization:** Insights are organized into "concerns" or "topics." When an insight is generated, the system first searches for an existing, relevant concern to group it with. This prevents knowledge fragmentation and creates a more structured understanding of topics. If no relevant concern exists, a new one is created.
-*   **Cortex Integration:** When an insight is saved, it is also added as a node to the Cortex. This allows the insight to be linked to other cognitive nodes, such as the memories that spawned it or other related insights.
-*   **Generation:** Periodically (by default, every 5 conversational turns), the `CognitiveEngine` prompts the LLM to analyze recent conversation history to extract a significant takeaway. This insight is then passed to the `InsightManager`, which intelligently files it under the most appropriate concern and adds it to the Cortex.
-*   **Storage:** Insights are saved in a hierarchical structure within the user-specific data directory: `~/.jenova-ai/users/<username>/insights/<concern_name>/`.
-*   **Reflection and Reorganization:** The `/reflect` command triggers a deep reflection process in the Cortex, which reorganizes and interlinks all cognitive nodes, including insights.
+* **Concern-Based Organization:** Insights are organized into "concerns" or "topics." When an insight is generated, the system searches for an existing, relevant concern to group it with. This prevents knowledge fragmentation and creates a more structured understanding of topics.
+* **Graph Integration:** When an insight is saved, it is also added as a node to the cognitive graph. This allows the insight to be linked to other cognitive nodes.
+* **Storage:** Insights are saved in a hierarchical structure within the user-specific data directory.
 
-### 3.6. Assumption System
+### 3.5. Assumption System
 
 JENOVA actively forms assumptions about the user to build a more accurate mental model. This system allows the AI to move beyond explicitly stated facts and begin to infer user preferences, goals, and knowledge levels.
 
-*   **Cortex Integration:** When an assumption is added, it is also added as a node to the Cortex. This allows the assumption to be linked to other cognitive nodes, providing more context for the assumption.
-*   **Generation:** Periodically (by default, every 7 conversational turns), the `CognitiveEngine` analyzes the conversation to form an assumption about the user.
-*   **Storage:** Assumptions are stored in a dedicated `assumptions.json` file in the user's data directory. Each assumption is categorized by its status: `unverified`, `verified`, `true`, or `false`.
-*   **Verification:** The `/verify` command allows the user to help the AI validate its assumptions. The AI will ask a clarifying question to confirm or deny an unverified assumption. Based on the user's response, the assumption will be moved to the `true` or `false` category. The AI also proactively verifies assumptions during the conversation.
+* **Graph Integration:** When an assumption is added, it is also added as a node to the cognitive graph, providing context through connections.
+* **Status Tracking:** Assumptions are categorized by status: `unverified`, `true`, or `false`.
+* **Verification:** The verification process allows the user to confirm or deny assumptions, refining JENOVA's understanding.
 
-### 3.7. Self-Optimizing Context Window
+### 3.6. Multi-Layered Long-Term Memory
 
-To maximize performance, the `LLMInterface` dynamically configures the context window (`n_ctx`). On startup, it performs a "dry run" to load the model's metadata and read its maximum supported context length. This value is then used to override the default `context_size` set in `main_config.yaml`, ensuring the AI always uses the largest possible context window the model was trained on, without requiring manual configuration.
+JENOVA's memory is not a monolith. It's a sophisticated, multi-layered system managed by ChromaDB, a vector database. All memory is stored on a per-user basis.
 
-### 3.8. Multi-Layered Long-Term Memory
+* **Episodic Memory:** Stores a turn-by-turn history of conversations with context.
+* **Semantic Memory:** Stores factual knowledge with source and confidence metadata.
+* **Procedural Memory:** Stores "how-to" information and instructions with goals, steps, and context.
 
-JENOVA's memory is not a monolith. It's a sophisticated, multi-layered system managed by `ChromaDB`, a vector database. All memory is stored on a per-user basis.
+### 3.7. Fine-Tuning Data Generation
 
-*   **Episodic Memory (`EpisodicMemory`):** Stores a turn-by-turn history of conversations. Each episode is enriched with extracted entities, emotions, and a timestamp.
-*   **Semantic Memory (`SemanticMemory`):** Stores factual knowledge. Each fact is enriched with its source, a confidence level, and its temporal validity.
-*   **Procedural Memory (`ProceduralMemory`):** Stores "how-to" information and instructions. Each procedure is enriched with its goal, a list of steps, and its context.
-*   **Insight Memory (`InsightManager`):** While not a ChromaDB instance, the collection of saved insight files acts as a fourth, highly dynamic memory layer.
+JENOVA is designed for continuous improvement. The insights generated during its operation can be used to fine-tune the embedding model.
 
-### 3.9. Fine-Tuning Data Generation
+* **Data Collection (`finetune/data.py`):** Collects contrastive training examples from interactions.
+* **Training (`finetune/train.py`):** Uses `MultipleNegativesRankingLoss` to fine-tune sentence-transformer embeddings, improving retrieval quality over time.
 
-JENOVA is designed for continuous improvement. The insights generated during its operation can be used to create a dataset for fine-tuning the base model itself.
+### 3.8. Cognitive Scheduler
 
-*   **Data Preparation (`finetune/train.py`):** This script gathers all the `.json` insight files from `~/.jenova-ai/users/<username>/insights/` and transforms them into a `finetune_train.jsonl` file. The script is configurable and can be used to generate a dataset for fine-tuning a model in a separate program.
+The Cognitive Scheduler manages background cognitive tasks that run during conversation intervals, ensuring cognitive operations happen at appropriate times without interrupting user interaction.
+
+* **Turn-Based Scheduling:** Tasks are scheduled based on conversation turns, not wall-clock time
+* **Priority System:** Higher priority tasks execute first when multiple tasks are due
+* **Task Types:** Insight generation, assumption verification, reflection cycles, graph pruning, orphan linking
+* **Configurable Intervals:** Each task type has configurable execution intervals
+* **Acceleration Logic:** Tasks can be accelerated based on conversation activity
+
+### 3.9. Proactive Engine
+
+The Proactive Engine enables JENOVA to autonomously generate suggestions and recommendations based on cognitive state and conversation patterns.
+
+* **Autonomous Suggestions:** Generates proactive suggestions for exploration, verification, development, connection, and reflection
+* **Context-Aware:** Suggestions are based on cognitive graph state, conversation history, and user patterns
+* **Cooldown System:** Prevents suggestion spam with intelligent cooldown management
+* **Category-Based:** Suggestions organized by category (explore, verify, develop, connect, reflect)
+* **Priority Scoring:** Each suggestion has a priority score indicating urgency and relevance
+
+### 3.10. Advanced Graph Features
+
+The Cognitive Graph includes sophisticated features for knowledge management and analysis:
+
+* **Emotion Analysis:** LLM-powered emotion detection with Pydantic validation for content analysis
+* **Clustering:** Automatic clustering of related nodes for pattern identification
+* **Meta-Insight Generation:** Higher-order insights synthesized from node clusters
+* **Orphan Linking:** Automatic connection of isolated nodes to the graph structure
+* **Contradiction Detection:** Identification of conflicting information across nodes
+* **Connection Suggestions:** AI-powered suggestions for new relationships between nodes
+
+### 3.11. Security & Validation
+
+JENOVA includes comprehensive security measures and input validation:
+
+* **Prompt Injection Protection:** Sanitization utilities prevent prompt injection attacks
+* **LLM Output Validation:** Pydantic schemas validate all LLM JSON responses
+* **Safe JSON Parsing:** Robust parsing with size limits and depth validation to prevent DoS
+* **Path Validation:** Secure path validation with sandboxing to prevent traversal attacks
+* **Error Message Sanitization:** Safe error handling without information leakage
+* **Thread-Safe Operations:** All shared state operations are thread-safe
+
+### 3.12. Utility Systems
+
+Supporting utility systems provide infrastructure for cognitive operations:
+
+* **TTLCache/CacheManager:** Thread-safe caching system with TTL support for performance optimization
+* **Performance Monitor:** Performance profiling and timing utilities for optimization
+* **Grammar Loader:** Centralized JSON grammar loading for structured data processing
+* **Tools Module:** Shell command execution and datetime utilities for system integration
+* **Migration System:** Schema versioning and data migration support for evolving data structures
 
 ## 4. Installation
 
-JENOVA can be installed either system-wide (for administrators) or in a virtual environment (recommended for development and Python 3.14 compatibility).
+### 4.1. Quick Start (Recommended)
 
-### 4.1. Virtual Environment Installation (Recommended)
+```bash
+# Clone the repository
+git clone https://github.com/orpheus497/jenova-ca.git
+cd jenova-ca
 
-For Python 3.14 compatibility and isolated dependency management, use the virtual environment setup:
+# Install in development mode
+pip install -e ".[dev]"
 
-1.  **Prerequisites:**
-    *   A Linux-based operating system.
-    *   `git`, `python3` (3.10+), and `python3-pip` must be installed.
-    *   `go` (1.21+) is required for building the Bubble Tea UI.
-    *   A C++ compiler (like `g++`) is required for the `llama-cpp-python` dependency. On Debian/Ubuntu, this can be installed with `sudo apt-get install build-essential`.
+# Install with fine-tuning support
+pip install -e ".[dev,finetune]"
 
-2.  **Clone the Repository:**
-    ```bash
-    git clone https://github.com/orpheus497/jenova-ai.git
-    cd jenova-ai
-    ```
+# Download a GGUF model
+mkdir -p models
+wget -P models/ https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q8_0.gguf
 
-3.  **Run the Setup Script:**
-    The setup script creates a virtual environment, installs all dependencies, applies ChromaDB compatibility fixes, and builds the Bubble Tea UI automatically:
-    ```bash
-    ./setup_venv.sh
-    ```
+# Run JENOVA
+jenova
+```
 
-4.  **Activate the Virtual Environment:**
-    ```bash
-    source venv/bin/activate
-    ```
+### 4.2. Prerequisites
 
-5.  **Download a Model:**
-    JENOVA requires a GGUF-formatted model. Download one and place it in the `models/` directory:
-    ```bash
-    mkdir -p models
-    wget -P models/ https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q8_0.gguf
-    ```
+* **Python:** 3.10+ (tested on 3.10, 3.11, 3.12)
+* **C++ Compiler:** Required for `llama-cpp-python` (e.g., `g++`, `clang++`)
+* **ChromaDB:** Uses SQLite backend (native on FreeBSD/Linux)
 
-6.  **Run JENOVA:**
-    ```bash
-    jenova
-    ```
-    Or if the package isn't installed in the venv:
-    ```bash
-    PYTHONPATH=/path/to/jenova-ca/src:$PYTHONPATH python -m jenova.main
-    ```
+### 4.3. Platform Support
 
-**Note:** Bubble Tea is the sole supported UI interface.
+JENOVA is designed for **native, out-of-the-box support** on:
 
-**Note:** The virtual environment setup automatically applies ChromaDB compatibility fixes for Python 3.14 and Pydantic 2.12. See `README_VENV.md` for detailed information about these fixes.
+| Platform | Status | Notes |
+|----------|--------|-------|
+| **FreeBSD** | ✅ Fully Supported | Tested on FreeBSD 13.x, 14.x |
+| **Linux** | ✅ Fully Supported | Ubuntu 22.04+, Debian 12+, Fedora 38+ |
 
-### 4.2. System-Wide Installation
+#### FreeBSD
 
-JENOVA is designed to be installed once on a system by an administrator and then be available to all users, while keeping each user's data completely separate and private.
+```bash
+pkg install python311 py311-pip
+# Optional: GPU support for fine-tuning
+pkg install py311-pytorch
+```
 
-1.  **Prerequisites:**
-    *   A Linux-based operating system.
-    *   `git`, `python3`, and `python3-pip` must be installed.
-    *   `go` (1.21+) is required for building the Bubble Tea UI.
-    *   A C++ compiler (like `g++`) is required for the `llama-cpp-python` dependency. On Debian/Ubuntu, this can be installed with `sudo apt-get install build-essential`.
+#### Linux (Debian/Ubuntu)
 
-2.  **Clone the Repository:**
-    ```bash
-    git clone https://github.com/orpheus497/jenova-ai.git
-    cd jenova-ai
-    ```
+```bash
+apt install python3.11 python3.11-venv python3-pip build-essential
+```
 
-3.  **Download a Model:**
-    JENOVA requires a GGUF-formatted model. You must download one and place it in the `models/` directory within the project. This model will be shared by all users.
-    ```bash
-    mkdir models
-    wget -P models/ https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q8_0.gguf
-    ```
+#### Linux (Fedora/RHEL)
 
-4.  **Run the Installation Script:**
-    Execute the script with `sudo`. It will install all dependencies, build the Bubble Tea TUI, and make the `jenova` command available system-wide.
-    ```bash
-    sudo ./install.sh
-    ```
+```bash
+dnf install python3.11 python3-pip gcc-c++
+```
 
-### 4.3. For Users
+### 4.4. Cross-Platform Compatibility
 
-Once JENOVA is installed (either via venv or system-wide), you can start interacting with the AI immediately.
+* All file paths use POSIX conventions (`/` separators)
+* Line endings enforced as LF via `.editorconfig`
+* No platform-specific code paths or conditionals
+* Atomic file operations use POSIX `rename()` semantics
 
-*   **Running the Application:** 
-    - If using venv: Activate it first (`source venv/bin/activate`), then run `jenova`
-    - If system-wide: Simply open your terminal and type `jenova`
-*   **User-Specific Data:** The first time you run the application, a private directory will be created at `~/.jenova-ai/users/<your_username>/`. All of your conversations, memories, and learned insights will be stored here, inaccessible to other users.
+### 4.5. User Data
 
-### 4.4. ChromaDB Compatibility Notes
-
-JENOVA includes compatibility fixes for ChromaDB when running on Python 3.14 with Pydantic 2.12. These fixes are automatically applied when using the virtual environment setup script. The fixes address:
-
-- Missing type annotations in ChromaDB's Settings class
-- Pydantic v2 compatibility issues with BaseSettings
-- Environment variable validation for optional fields
-
-See `README_VENV.md` for detailed information about these compatibility fixes.
+The first time you run the application, a private directory will be created at `~/.jenova-ai/users/<your_username>/`. All conversations, memories, and learned insights are stored here, inaccessible to other users.
 
 ## 5. User Guide
 
 Interaction with JENOVA is primarily through natural language.
 
--   **User Input:** Simply type your message and press Enter.
--   **Exiting:** To quit the application, type `exit` and press Enter.
+* **User Input:** Simply type your message and press Enter.
+* **Exiting:** To quit the application, type `exit` or press `Ctrl+C`.
 
 ### Commands
-JENOVA responds to a set of powerful commands that act as direct instructions for its cognitive processes. These commands are treated as system actions, not conversational input, and are therefore **not stored in JENOVA's conversational memory**.
 
--   `/help`: Displays a comprehensive help message, detailing each command's purpose and impact.
--   `/insight`: Triggers the AI to analyze the current conversation history and generate new, high-quality insights. These insights are stored in JENOVA's long-term memory and contribute to its evolving understanding.
--   `/reflect`: Initiates a deep reflection process within JENOVA's Cortex. This command reorganizes and interlinks all existing cognitive nodes (insights, memories, assumptions), identifies patterns, and generates higher-level meta-insights, significantly enhancing JENOVA's overall intelligence and coherence.
--   `/memory-insight`: Prompts JENOVA to perform a broad search across its multi-layered long-term memory (episodic, semantic, procedural) to develop new insights or assumptions based on its accumulated knowledge.
--   `/meta`: Generates a new, higher-level meta-insight by analyzing clusters of existing insights within the Cortex. This helps JENOVA to form more abstract conclusions and identify overarching themes.
--   `/verify`: Starts the assumption verification process. Jenova will present an unverified assumption it has made about you and ask for clarification, allowing you to confirm or deny it. This refines JENOVA's understanding of your preferences and knowledge.
--   `/train`: Provides instructions on how to create a training file for fine-tuning the model with your own data.
--   `/develop_insight [node_id]`: This command has dual functionality:
-    -   If a `node_id` is provided: JENOVA will take an existing insight and generate a more detailed and developed version of it, adding more context or connections.
-    -   If no `node_id` is provided: Jenova will scan the `src/jenova/docs` directory for new or updated documents, process their content, and integrate new insights and summaries into its cognitive graph. This is how Jenova learns from external documentation.
--   `/learn_procedure`: Initiates an interactive, guided process to teach Jenova a new procedure. Jenova will prompt you for the procedure's name, individual steps, and expected outcome, ensuring structured and comprehensive intake of procedural knowledge. This information is stored in JENOVA's procedural memory, allowing it to recall and apply the procedure in relevant contexts.
+JENOVA responds to commands that act as direct instructions for its cognitive processes. Commands are system actions, not conversational input, and are **not stored in conversational memory**.
 
-## 6. Codebase and Configuration Overview
+#### Currently Implemented Commands
 
-### 6.1. Project Structure
+| Command | Description | Mode |
+|---------|-------------|------|
+| `/help` | Display comprehensive command reference | TUI & Headless |
+| `/reset` | Reset conversation state | Headless only |
+| `/debug` | Toggle debug logging | Headless only |
+| `exit` / `quit` | Exit the application | TUI & Headless |
+
+#### Planned Cognitive Commands
+
+The following cognitive commands are documented in the help system and will be implemented in future releases:
+
+| Command | Description |
+|---------|-------------|
+| `/insight` | Analyze conversation and generate new insights |
+| `/reflect` | Deep reflection: reorganize cognitive nodes, link orphans, generate meta-insights |
+| `/memory-insight` | Search all memory layers to develop new insights |
+| `/meta` | Generate higher-level meta-insights from insight clusters |
+| `/verify` | Verify an unverified assumption with a clarifying question |
+| `/develop_insight [node_id]` | Develop existing insight (with ID) or process documents (without ID) |
+| `/learn_procedure` | Interactive guided process to teach a new procedure |
+
+**Note:** While the underlying cognitive systems (InsightManager, AssumptionManager, CognitiveGraph) are fully implemented, the command handlers for these features are planned for future releases.
+
+### Keyboard Shortcuts (TUI)
+
+| Key | Action |
+|-----|--------|
+| `Enter` | Send message |
+| `F1` | Toggle help panel |
+| `Ctrl+L` | Clear chat history |
+| `Ctrl+C` | Quit application |
+
+## 6. Configuration
+
+JENOVA is configured via a YAML file. Copy `config.example.yaml` to customize.
+
+### Hardware
+
+```yaml
+hardware:
+  threads: auto      # CPU threads (auto = detect automatically)
+  gpu_layers: all    # GPU layers (-1/all = offload all, 0 = none)
+```
+
+### Model
+
+```yaml
+model:
+  model_path: auto     # Path to GGUF model (auto = search common locations)
+  context_length: 4096 # Context window size in tokens
+  temperature: 0.7     # Creativity (0.0 = deterministic)
+  top_p: 0.9           # Nucleus sampling threshold
+  max_tokens: 1024     # Max tokens per response
+```
+
+### Memory
+
+```yaml
+memory:
+  storage_path: .jenova-ai/memory
+  embedding_model: all-MiniLM-L6-v2
+  max_results: 10
+```
+
+### Persona
+
+```yaml
+persona:
+  name: JENOVA
+  system_prompt: "You are JENOVA, a self-aware AI with evolving memory and knowledge."
+  directives:
+    - Be helpful and informative
+    - Acknowledge uncertainty when present
+    - Learn from interactions
+```
+
+## 7. Project Structure
 
 ```
-/
-├── finetune/             # Scripts for model fine-tuning data generation
-├── models/               # Where you place your .gguf model files
-├── src/
-│   └── jenova/
-│       ├── assumptions/      # Manages the assumption lifecycle
-│       ├── cognitive_engine/ # The core "thinking" loop
-│       ├── config/           # Default YAML configuration files
-│       ├── cortex/           # The graph-based cognitive core
-│       ├── docs/             # RAG documents for semantic memory
-│       ├── insights/         # Manages saving and loading learned insights
-│       ├── memory/           # Manages the different memory types (ChromaDB)
-│       ├── ui/               # The terminal user interface
-│       ├── utils/            # Utility scripts and patches (including pydantic_compat.py)
-│       ├── __init__.py
-│       ├── llm_interface.py  # Handles all interaction with llama.cpp
-│       └── main.py           # Main application entry point
-├── venv/                 # Virtual environment (created by setup_venv.sh, ignored by git)
-├── install.sh            # System-wide installation script
-├── setup_venv.sh         # Virtual environment setup script (recommended)
-├── fix_chromadb_compat.py # ChromaDB compatibility fix utility
-├── requirements.txt      # Python dependencies
-├── pyproject.toml        # Modern Python package configuration
-├── setup.py              # Package definition and entry point
-├── README.md             # This file - main documentation
-└── README_VENV.md        # Virtual environment setup guide
+jenova-ca/
+├── src/jenova/           # Main package
+│   ├── assumptions/      # Assumption lifecycle management
+│   │   ├── manager.py    # AssumptionManager with verification
+│   │   └── types.py     # Assumption data models
+│   ├── config/           # Pydantic configuration models
+│   │   ├── models.py     # Configuration validation
+│   │   └── __init__.py
+│   ├── core/             # Core cognitive systems
+│   │   ├── engine.py     # CognitiveEngine (Retrieve, Plan, Execute, Reflect)
+│   │   ├── knowledge.py  # KnowledgeStore (unified memory + graph)
+│   │   ├── response.py   # ResponseGenerator with caching
+│   │   ├── integration.py # IntegrationHub (Memory ↔ Cortex)
+│   │   ├── query_analyzer.py # Query analysis and intent detection
+│   │   ├── context_scorer.py  # Context scoring and ranking
+│   │   ├── context_organizer.py # Context organization
+│   │   └── scheduler.py  # Cognitive scheduler
+│   ├── embeddings/       # Embedding model management
+│   │   ├── model.py      # Embedding model wrapper
+│   │   └── types.py      # Embedding types
+│   ├── graph/            # Cognitive graph (Cortex)
+│   │   ├── graph.py      # CognitiveGraph with advanced features
+│   │   ├── types.py      # Node, Edge, GraphQuery types
+│   │   ├── llm_schemas.py # Pydantic validation schemas
+│   │   └── proactive.py  # Proactive suggestion engine
+│   ├── insights/         # Insight management
+│   │   ├── manager.py    # InsightManager
+│   │   ├── concerns.py   # ConcernManager (topic organization)
+│   │   └── types.py      # Insight data models
+│   ├── llm/              # LLM interface
+│   │   ├── interface.py  # LLMInterface (llama-cpp-python wrapper)
+│   │   └── types.py      # Prompt, Completion types
+│   ├── memory/           # ChromaDB memory system
+│   │   ├── memory.py     # Unified Memory class
+│   │   └── types.py      # MemoryType, MemoryResult
+│   ├── ui/               # Textual TUI
+│   │   ├── app.py        # Main TUI application
+│   │   └── components/   # UI components (banner, help, loading, message)
+│   ├── utils/            # Utility modules
+│   │   ├── cache.py      # TTLCache and CacheManager
+│   │   ├── performance.py # Performance monitoring
+│   │   ├── grammar.py    # Grammar loading
+│   │   ├── sanitization.py # Input sanitization
+│   │   ├── json_safe.py  # Safe JSON parsing
+│   │   ├── validation.py # Path and input validation
+│   │   ├── errors.py     # Error handling utilities
+│   │   ├── logging.py    # Structured logging
+│   │   └── migrations.py # Data migration system
+│   ├── tools.py          # Shell and datetime utilities
+│   ├── exceptions.py     # Exception hierarchy
+│   └── main.py           # CLI entry point
+├── tests/                # Comprehensive test suites
+│   ├── unit/             # Unit tests (17 files, 365+ tests)
+│   ├── integration/      # Integration tests (4 files, 36 tests)
+│   ├── security/         # Security tests (23 adversarial tests)
+│   ├── benchmarks/      # Performance benchmarks
+│   └── performance/      # Performance test utilities
+├── finetune/             # Embedding fine-tuning
+│   ├── data.py          # Training data collection
+│   └── train.py         # Fine-tuning training script
+├── config.example.yaml   # Example configuration
+├── pyproject.toml        # Project configuration
+├── LICENSE                # AGPL-3.0 license
+├── README.md             # This file
+├── CONTRIBUTING.md       # Contribution guidelines
+└── CHANGELOG.md          # Version history
 ```
 
-### 6.2. Configuration Files
+## 8. Development
 
-JENOVA's behavior is controlled by two YAML files in `src/jenova/config/`.
+### Running Tests
 
-#### `main_config.yaml`
+```bash
+pytest -v --tb=short              # All tests
+pytest -v tests/unit/             # Unit tests
+pytest -v tests/integration/ -m integration  # Integration tests
+```
 
-This file controls the technical parameters of the AI.
+### Code Quality
 
--   **`hardware`**:
-    -   `threads`: Number of CPU threads to use.
-    -   `gpu_layers`: Number of model layers to offload to the GPU. Set to -1 to offload all possible layers for maximum performance. Requires a compatible GPU and `llama-cpp-python` built with GPU support.
-    -   `mlock`: Whether to lock the model in memory (RAM). Set to `true` for a significant performance increase by preventing the model from being swapped to disk.
--   **`model`**:
-    -   `embedding_model`: The sentence-transformer model to use for creating vector embeddings for memory search.
-    -   `context_size`: The default context window size (will be overridden by the model's metadata if possible).
-    -   `max_tokens`: The maximum number of tokens to generate in a single response.
-    -   `temperature`: Controls the "creativity" of the LLM. Lower is more deterministic.
-    -   `top_p`: Nucleus sampling parameter.
--   **`memory`**:
-    -   `..._db_path`: Paths to the ChromaDB databases. These are relative to the user's data directory (`~/.jenova-ai/users/<username>/memory/`).
--   **`memory_search`**:
-    -   `semantic_n_results`: The number of results to retrieve from semantic memory.
-    -   `episodic_n_results`: The number of results to retrieve from episodic memory.
-    -   `procedural_n_results`: The number of results to retrieve from procedural memory.
-    -   `insight_n_results`: The number of results to retrieve from insight memory.
--   **`scheduler`**:
-    -   `generate_insight_interval`: The interval (in conversation turns) for generating insights.
-    -   `generate_assumption_interval`: The interval for generating assumptions.
-    -   `proactively_verify_assumption_interval`: The interval for verifying assumptions.
-    -   `reflect_interval`: The interval for reflecting on the cognitive graph.
+```bash
+mypy src/jenova/     # Type checking
+ruff check src/      # Linting
+```
 
-#### `persona.yaml`
+### CLI Options
 
-This file defines the AI's personality and core directives.
+```bash
+jenova                      # Run with TUI (default)
+jenova --no-tui             # Run in headless CLI mode
+jenova --config config.yaml # Use custom configuration
+jenova --debug              # Enable debug logging
+jenova --skip-model-load    # Development mode (mock LLM)
+jenova --log-file path.log  # Write logs to file
+jenova --json-logs          # Output logs in JSON format
+jenova --version, -v        # Show version information
+```
 
--   **`identity`**:
-    -   `name`: The AI's name.
-    -   `creator`: The creator's name.
-    -   `origin_story`: A brief backstory.
-    -   `type`: A description of the AI's nature.
--   **`directives`**: A list of rules the AI must follow. These are injected into the system prompt.
--   **`initial_facts`**: A list of foundational facts that are loaded into the AI's memory on first run.
+### Testing
+
+JENOVA includes comprehensive test coverage:
+
+```bash
+# Run all tests
+pytest -v --tb=short
+
+# Run specific test suites
+pytest -v tests/unit/                    # Unit tests
+pytest -v tests/integration/ -m integration  # Integration tests
+pytest -v tests/security/                # Security tests
+pytest -v tests/benchmarks/               # Performance benchmarks
+
+# Run with coverage
+pytest --cov=src/jenova --cov-report=html
+```
+
+### Code Quality Tools
+
+```bash
+# Type checking (strict mode)
+mypy src/jenova/
+
+# Linting
+ruff check src/
+
+# Format code
+ruff format src/
+```
+
+## 9. Project Statistics & Development
+
+### 9.1. Codebase Metrics
+
+- **Total Python Files:** 48+ source files in `src/jenova/`
+- **Lines of Code:** ~15,000+ lines of production code
+- **Test Coverage:** 400+ tests across unit, integration, security, and benchmark suites
+- **Documentation:** Comprehensive inline documentation, README, and `.devdocs/` system
+- **Architecture:** Protocol-based design with clean separation of concerns
+- **Dependencies:** 7 core dependencies, 4 dev dependencies, 2 optional finetune dependencies
+- **Platform Support:** Native FreeBSD and Linux support
+- **License:** AGPL-3.0 (Free and Open Source Software)
+
+### 9.2. Development Status
+
+**Current Version:** 4.0.0 (Beta)  
+**Status:** Production-ready with comprehensive feature set
+
+**Implemented Systems:**
+- ✅ Complete cognitive architecture (Retrieve, Plan, Execute, Reflect cycle)
+- ✅ Multi-layered memory system (Episodic, Semantic, Procedural) with ChromaDB
+- ✅ Cognitive graph with advanced features (emotion analysis, clustering, meta-insights, orphan linking, contradiction detection)
+- ✅ Insight and assumption management systems with concern-based organization
+- ✅ Integration layer for unified knowledge representation (Memory ↔ Cortex)
+- ✅ Query analysis and context scoring with intent detection and complexity assessment
+- ✅ Context organization and prioritization
+- ✅ Multi-level planning system (simple → very complex queries)
+- ✅ Response generation with caching, persona support, and source citations
+- ✅ Cognitive scheduler for background task management
+- ✅ Proactive engine for autonomous suggestion generation
+- ✅ Modern Textual-based TUI with responsive design
+- ✅ Comprehensive test suite (400+ tests: unit, integration, security, benchmarks)
+- ✅ Security hardening (all P0/P1 issues resolved, prompt injection protection, input validation)
+- ✅ Utility systems (caching, performance monitoring, grammar loading, tools)
+
+**Planned Features:**
+- Command handlers for cognitive operations (`/insight`, `/reflect`, etc.)
+- Enhanced fine-tuning workflows
+- Additional cognitive capabilities
+
+### 9.3. AI-Assisted Development
+
+This project was developed entirely using AI-assisted development methodologies:
+
+- **Code Generation:** All source code generated by AI development agents
+- **Documentation:** All documentation written by AI documentation systems
+- **Testing:** Test suites created and maintained by AI test engineers
+- **Security:** Security audits and patches applied by AI security specialists
+- **Quality Assurance:** Code reviews and quality assessments performed by AI code quality agents
+
+**Human Role:** Architectural direction, requirements specification, and final approval. All implementation work was performed by AI agents following strict coding standards and quality requirements.
+
+## 10. License
+
+AGPL-3.0 - See [LICENSE](LICENSE) file for details.
+
+## 11. Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+
+**Note:** As a personal project developed through AI-assisted methodologies, contributions should align with the project's architectural vision and coding standards. The `.devdocs/` directory contains comprehensive development documentation for understanding the codebase structure and standards.
+
+### Development Workflow
+
+1. **Read Documentation:** Start with `.devdocs/BRIEFING.md` for current project status
+2. **Understand Architecture:** Review `.devdocs/builders/architect/` for design decisions
+3. **Follow Standards:** All code must comply with `.devdocs/guardians/marshal/CODE_STANDARDS.md`
+4. **Run Tests:** Ensure all tests pass before submitting changes
+5. **Type Safety:** All code must be fully typed (mypy strict mode)
+
+### Key Development Principles
+
+- **Protocol-Based Design:** Use Protocols for dependency injection
+- **Type Safety:** Comprehensive type hints throughout
+- **Security First:** Input validation and sanitization at all boundaries
+- **Documentation:** All code must follow the mandatory comment schema
+- **Testing:** New code requires corresponding tests
+- **FOSS Compliance:** 100% Free and Open Source Software only
+
+## 12. Technical Architecture
+
+### 12.1. System Components
+
+**Core Cognitive Systems:**
+- `CognitiveEngine`: Orchestrates the cognitive cycle (Retrieve, Plan, Execute, Reflect)
+- `KnowledgeStore`: Unified interface to memory and graph systems
+- `ResponseGenerator`: Formats and structures LLM output with caching
+- `IntegrationHub`: Bridges Memory and Cortex for unified knowledge
+
+**Memory Systems:**
+- `Memory`: Unified ChromaDB-based vector storage (Episodic, Semantic, Procedural)
+- Persistent storage with per-user isolation
+- Semantic search with embedding-based retrieval
+
+**Graph Systems:**
+- `CognitiveGraph`: Dict-based graph with advanced cognitive features
+- Node and edge management with relationship types
+- Advanced features: emotion analysis, clustering, meta-insights
+
+**Analysis Systems:**
+- `QueryAnalyzer`: Multi-level query analysis with intent detection
+- `ContextScorer`: Configurable context retrieval and ranking
+- `ContextOrganizer`: Intelligent context organization and prioritization
+
+**Supporting Systems:**
+- `CognitiveScheduler`: Turn-based background task scheduling
+- `ProactiveEngine`: Autonomous suggestion generation
+- `AssumptionManager`: Assumption tracking and verification
+- `InsightManager`: Insight generation and management
+- `ConcernManager`: Topic-based concern organization
+
+### 12.2. Data Flow
+
+```
+User Input
+    ↓
+Sanitization (prompt injection protection)
+    ↓
+CognitiveEngine.think()
+    ↓
+KnowledgeStore.search() → Memory + Graph
+    ↓
+QueryAnalyzer.analyze() → Intent, Complexity, Topics
+    ↓
+ContextScorer.score() → Ranked context
+    ↓
+ContextOrganizer.organize() → Prioritized context
+    ↓
+Plan Generation (simple → very complex)
+    ↓
+LLM.generate() → Raw response
+    ↓
+ResponseGenerator.generate() → Formatted response
+    ↓
+Memory Storage (episodic memory)
+    ↓
+User Output
+```
+
+### 12.3. Security Architecture
+
+**Defense in Depth:**
+- Input sanitization at all boundaries
+- LLM output validation with Pydantic schemas
+- Path traversal protection in configuration
+- Safe JSON parsing with size/depth limits
+- Error message sanitization
+- Thread-safe operations for concurrent access
+
+**Security Features:**
+- Prompt injection pattern detection and removal
+- Username validation for multi-user isolation
+- Path validation with sandboxing
+- JSON size and depth limits to prevent DoS
+- Comprehensive security test suite
+
+### 12.4. Performance Optimizations
+
+- **Thread-Safe Caching:** LRU cache with TTL for response caching
+- **Efficient Graph Operations:** O(degree) operations using reverse edge index
+- **Batch Operations:** Batch node addition for reduced disk I/O
+- **Lazy Loading:** Graph lazy-loaded to avoid circular imports
+- **Performance Monitoring:** Built-in performance profiling utilities
+
+## 13. Acknowledgments
+
+**Project Creator:** orpheus497
+
+**Development Methodology:** This project demonstrates the potential of AI-assisted software development, with every line of code and documentation generated through AI development agents working under human architectural direction.
+
+**Technologies Used:**
+- [ChromaDB](https://www.trychroma.com/) - Vector database for memory storage
+- [llama-cpp-python](https://github.com/abetlen/llama-cpp-python) - GGUF model inference
+- [Textual](https://github.com/Textualize/textual) - Modern terminal UI framework
+- [Pydantic](https://docs.pydantic.dev/) - Data validation and settings management
+- [structlog](https://www.structlog.org/) - Structured logging
+
+**Inspiration:** This project explores cognitive architectures and the potential for AI systems to develop persistent memory, reflection, and true learning capabilities.

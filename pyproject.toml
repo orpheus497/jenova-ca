@@ -3,54 +3,108 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "jenova-ai"
-version = "3.2.0"
-authors = [
-    {name = "orpheus497"}
-]
-description = "The JENOVA Cognitive Architecture with a dynamic Insight Engine and self-optimizing context."
+name = "jenova"
+version = "4.0.0"
+description = "Self-aware AI cognitive architecture with graph-based memory and RAG-based response generation"
 readme = "README.md"
-requires-python = ">=3.10"
 license = {text = "AGPL-3.0"}
+requires-python = ">=3.10"
+authors = [
+    {name = "JENOVA Team"}
+]
+keywords = ["ai", "cognitive-architecture", "memory", "rag", "llm"]
 classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Operating System :: POSIX :: BSD :: FreeBSD",
+    "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "License :: OSI Approved :: GNU Affero General Public License v3",
-    "Operating System :: POSIX :: Linux",
-]
-dependencies = [
-    "llama-cpp-python",
-    "chromadb>=0.3.23",  # Our pydantic_compat module handles Pydantic v2 compatibility
-    "sentence-transformers",
-    "torch",
-    "rich",
-    "PyYAML",
-    "numpy",
-    "selenium",
-    "webdriver-manager",
-    "requests",
-    "networkx",
-    "pydantic-settings",
-    "overrides",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
-[project.urls]
-Homepage = "https://github.com/orpheus497/jenova-ai"
-Repository = "https://github.com/orpheus497/jenova-ai"
+dependencies = [
+    "chromadb>=0.5.0",
+    ##Fix: Explicitly declare chromadb transitive dependency - pip doesn't install it automatically
+    "opentelemetry-exporter-otlp-proto-grpc>=1.0.0",
+    ##Note: onnxruntime is optional - not available on FreeBSD, but chromadb handles its absence gracefully
+    ##Tests mock onnxruntime in conftest.py for FreeBSD compatibility
+    "pydantic>=2.0.0,<3.0.0",
+    "structlog>=23.0.0",
+    "textual>=0.40.0",
+    "llama-cpp-python>=0.2.0",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+finetune = [
+    "torch>=2.0.0",
+    "sentence-transformers>=2.2.0,<3.0.0",
+]
 
 [project.scripts]
 jenova = "jenova.main:main"
 
-[tool.setuptools]
-package-dir = {"" = "src"}
-include-package-data = true
+[project.urls]
+Homepage = "https://github.com/jenova-ai/jenova-ca"
+Repository = "https://github.com/jenova-ai/jenova-ca"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+markers = [
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
 addopts = "-v --tb=short"
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["src/jenova"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+show_missing = true
+skip_covered = false
+precision = 2

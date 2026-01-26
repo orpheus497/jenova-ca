@@ -1,0 +1,196 @@
+##Script function and purpose: GitHub Actions CI/CD workflow for JENOVA
+##Action purpose: Automated testing, linting, and security verification
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  ##Job purpose: Run security tests
+  security:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      
+      - name: Run security tests
+        run: |
+          pytest tests/security/ -v --tb=short --junitxml=security-test-results.xml
+      
+      - name: Verify security test coverage
+        run: |
+          pytest tests/security/test_adversarial.py -v --co -q | grep -c "test_" || echo "0"
+      
+      - name: Run pip-audit (dependency vulnerability scanning)
+        run: |
+          python -m pip install pip-audit
+          pip-audit --desc || true
+      
+      - name: Run bandit (security linting)
+        run: |
+          python -m pip install bandit[toml]
+          bandit -r src/jenova -f json -o bandit-report.json || true
+          bandit -r src/jenova -f txt || true
+      
+      - name: Upload security test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-test-results
+          path: |
+            security-test-results.xml
+            bandit-report.json
+          retention-days: 30
+
+  ##Job purpose: Run unit tests
+  unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      
+      - name: Run unit tests
+        run: |
+          pytest tests/unit/ -v --tb=short -m "not slow" --junitxml=unit-test-results.xml
+      
+      - name: Generate coverage report
+        run: |
+          pytest tests/unit/ --cov=src/jenova --cov-report=xml --cov-report=html --cov-report=term --cov-report=json
+      
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: |
+            htmlcov/
+            coverage.xml
+          retention-days: 30
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results
+          path: |
+            unit-test-results.xml
+            coverage.json
+          retention-days: 30
+
+  ##Job purpose: Run integration tests
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      
+      - name: Run integration tests
+        run: |
+          pytest tests/integration/ -v --tb=short -m integration --junitxml=integration-test-results.xml
+      
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: |
+            integration-test-results.xml
+          retention-days: 30
+
+  ##Job purpose: Run linting and type checking
+  lint:
+    name: Linting & Type Checking
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      
+      - name: Run ruff linting
+        run: |
+          ruff check src/ tests/
+      
+      - name: Run mypy type checking
+        run: |
+          mypy src/ --show-error-codes
+        continue-on-error: true  # Allow failures for now, but track them
+
+  ##Job purpose: Run all tests in matrix
+  test-matrix:
+    name: Test Matrix (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      
+      - name: Run all tests
+        run: |
+          pytest tests/ -v --tb=short -m "not slow" --junitxml=test-matrix-results-${{ matrix.python-version }}.xml --maxfail=5
+      
+      - name: Upload test matrix results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-matrix-results-${{ matrix.python-version }}
+          path: |
+            test-matrix-results-${{ matrix.python-version }}.xml
+          retention-days: 30

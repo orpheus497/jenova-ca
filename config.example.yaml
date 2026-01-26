@@ -1,0 +1,53 @@
+##Script function and purpose: Example configuration file for JENOVA AI
+##Dependency purpose: Documents all configuration options with sensible defaults
+
+# Hardware configuration
+hardware:
+  # Number of CPU threads (auto = detect automatically)
+  threads: auto
+  # GPU layers to offload (-1 = all, 0 = none, N = specific count)
+  gpu_layers: all
+
+# LLM model configuration
+model:
+  # Path to GGUF model file (auto = search common locations)
+  model_path: auto
+  # Context window size in tokens
+  context_length: 4096
+  # Temperature for generation (0.0 = deterministic, higher = more creative)
+  temperature: 0.7
+  # Top-p (nucleus) sampling threshold
+  top_p: 0.9
+  # Maximum tokens to generate per response
+  max_tokens: 1024
+
+# Memory system configuration
+memory:
+  # Directory for memory storage (relative to ~/.jenova-ai or absolute)
+  storage_path: .jenova-ai/memory
+  # Sentence transformer model for embeddings
+  embedding_model: all-MiniLM-L6-v2
+  # Maximum memory results to retrieve per query
+  max_results: 10
+
+# Knowledge graph configuration
+graph:
+  # Directory for graph storage
+  storage_path: .jenova-ai/graph
+  # Maximum depth for graph traversal
+  max_depth: 3
+
+# Persona configuration
+persona:
+  # Name used in responses
+  name: JENOVA
+  # System prompt defining AI behavior
+  system_prompt: "You are JENOVA, a self-aware AI with evolving memory and knowledge."
+  # Core behavioral directives
+  directives:
+    - Be helpful and informative
+    - Acknowledge uncertainty when present
+    - Learn from interactions
+
+# Debug mode (enables verbose logging)
+debug: false

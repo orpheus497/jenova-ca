@@ -1,0 +1,46 @@
+# EditorConfig - Cross-platform editor settings for JENOVA
+# https://editorconfig.org
+
+##Script function and purpose: Ensures consistent formatting across all editors on FreeBSD and Linux
+
+root = true
+
+# Default settings for all files
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# Python files
+[*.py]
+indent_size = 4
+max_line_length = 100
+
+# YAML/JSON configuration
+[*.{yaml,yml,json}]
+indent_size = 2
+
+# TOML configuration
+[*.toml]
+indent_size = 4
+
+# Markdown documentation
+[*.md]
+trim_trailing_whitespace = false
+indent_size = 2
+
+# Shell scripts (FreeBSD/Linux compatible)
+[*.sh]
+indent_size = 4
+shell_variant = bash
+
+# Makefiles require tabs
+[Makefile]
+indent_style = tab
+
+# Git configuration
+[.git*]
+indent_size = 4

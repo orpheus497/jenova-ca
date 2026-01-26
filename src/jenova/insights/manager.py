@@ -1,135 +1,578 @@
 ##Script function and purpose: Insight Manager for The JENOVA Cognitive Architecture
-##This module manages creation, storage, and retrieval of topical insights
+"""
+Insight Manager
 
-import os
+Manages creation, storage, and retrieval of topical insights.
+Insights are organized by concerns (topic categories) and linked
+to the cognitive graph.
+"""
+
+from __future__ import annotations
+
 import json
 from datetime import datetime
-from typing import Any, Dict, Optional
-from .concerns import ConcernManager
+from pathlib import Path
+from typing import Protocol, runtime_checkable
+
+import structlog
+
+from jenova.exceptions import InsightSaveError
+from jenova.graph.types import Node
+from jenova.insights.concerns import ConcernManager
+from jenova.insights.types import CortexId, Insight
+from jenova.llm.types import GenerationParams
+from jenova.utils.json_safe import safe_json_loads
+from jenova.utils.validation import (
+    validate_path_within_base,
+    validate_topic,
+    validate_username,
+)
+
+##Step purpose: Get module logger
+logger = structlog.get_logger(__name__)
+
+
+##Class purpose: Protocol for cognitive graph operations
+@runtime_checkable
+class GraphProtocol(Protocol):
+    """Protocol for cognitive graph dependency.
+
+    Defines the minimal graph operations required by InsightManager.
+    Implementations: CognitiveGraph (src/jenova/graph/graph.py)
+
+    Contract:
+        - add_node(node: Node) -> None: Must persist node to graph storage
+        - has_node(node_id: str) -> bool: Must return True if node exists by ID
+    """
+
+    def add_node(self, node: Node) -> None:
+        """Add a node to the graph.
+
+        Args:
+            node: Node object to add (must have valid id, label, content)
+
+        Raises:
+            GraphError: If node cannot be persisted
+        """
+        ...
+
+    def has_node(self, node_id: str) -> bool:
+        """Check if node exists in graph.
+
+        Args:
+            node_id: UUID string of the node
+
+        Returns:
+            True if node exists, False otherwise
+        """
+        ...
+
+
+##Class purpose: Protocol for LLM operations
+@runtime_checkable
+class LLMProtocol(Protocol):
+    """Protocol for LLM dependency.
+
+    Defines text generation interface for topic classification.
+    Implementations: LLMInterface (src/jenova/llm/interface.py)
+
+    Contract:
+        - generate_text: Must return generated text as string
+        - Must handle system_prompt for behavior control
+        - Should respect params for generation settings
+    """
+
+    def generate_text(
+        self,
+        text: str,
+        system_prompt: str = "You are a helpful assistant.",
+        params: GenerationParams | None = None,
+    ) -> str:
+        """Generate text completion from prompt.
+
+        Args:
+            text: The input prompt text
+            system_prompt: System message to control LLM behavior
+            params: Optional generation parameters (temperature, max_tokens, etc.)
+
+        Returns:
+            Generated text response
+
+        Raises:
+            LLMError: If generation fails
+        """
+        ...
+
+
+##Class purpose: Protocol for memory search operations
+@runtime_checkable
+class MemorySearchProtocol(Protocol):
+    """Protocol for memory search dependency.
+
+    Defines semantic search interface for insight retrieval.
+    Implementations: Memory (src/jenova/memory/memory.py)
+
+    Note: The actual Memory.search() returns list[MemoryResult], but this
+    protocol expects list[tuple[str, float]] for backward compatibility.
+    Callers should adapt the return type as needed.
+
+    Contract:
+        - search: Must return (content, distance) tuples sorted by relevance
+        - Lower distance = more relevant
+    """
+
+    def search(
+        self,
+        query: str,
+        n_results: int = 5,
+    ) -> list[tuple[str, float]]:
+        """Search memory for semantically similar content.
+
+        Args:
+            query: Search query text
+            n_results: Maximum number of results to return
+
+        Returns:
+            List of (content, distance) tuples, lower distance = more relevant
+        """
+        ...
+
 
 ##Class purpose: Manages lifecycle of insights including creation, storage, and retrieval
 class InsightManager:
-    """Manages the creation, storage, and retrieval of topical insights."""
-    ##Function purpose: Initialize insight manager with configuration and required components
+    """
+    Manages the creation, storage, and retrieval of topical insights.
+
+    Insights are organized hierarchically by user and topic/concern.
+    Each insight is stored as a JSON file and linked to the cognitive graph.
+    """
+
+    ##Method purpose: Initialize insight manager with dependencies
     def __init__(
-        self, 
-        config: Dict[str, Any], 
-        ui_logger: Any, 
-        file_logger: Any, 
-        insights_root: str, 
-        llm: Any, 
-        cortex: Any, 
-        memory_search: Any, 
-        integration_layer: Optional[Any] = None
+        self,
+        insights_root: Path,
+        graph: GraphProtocol,
+        llm: LLMProtocol,
+        memory_search: MemorySearchProtocol | None = None,
     ) -> None:
-        self.config = config
-        self.ui_logger = ui_logger
-        self.file_logger = file_logger
-        self.insights_root = insights_root
-        self.llm = llm
-        self.cortex = cortex
-        self.memory_search = memory_search
-        self.integration_layer = integration_layer  # Optional integration layer for Cortex-Memory feedback
-        os.makedirs(self.insights_root, exist_ok=True)
-        self.concern_manager = ConcernManager(config, ui_logger, file_logger, insights_root, self.llm)
+        """
+        Initialize insight manager.
 
-    ##Function purpose: Save an insight, finding or creating a concern for it
-    def save_insight(self, insight_content: str, username: str, topic: str = None, linked_to: list = None, insight_data: dict = None):
-        """Saves an insight, finding or creating a concern for it, and adds it to the Cortex."""
-        self.file_logger.log_info(f"Attempting to save insight for user '{username}'. Content: '{insight_content}'")
+        Args:
+            insights_root: Root directory for insight storage
+            graph: Cognitive graph for node linking
+            llm: LLM interface for topic classification
+            memory_search: Optional memory search for semantic retrieval
+        """
+        ##Step purpose: Store dependencies
+        self._insights_root = insights_root
+        self._graph = graph
+        self._llm = llm
+        self._memory_search = memory_search
+
+        ##Step purpose: Ensure root directory exists
+        insights_root.mkdir(parents=True, exist_ok=True)
+
+        ##Action purpose: Initialize concern manager
+        self._concern_manager = ConcernManager(
+            insights_root=insights_root,
+            llm=llm,
+        )
+
+        logger.info(
+            "insight_manager_initialized",
+            storage_path=str(insights_root),
+        )
+
+    ##Method purpose: Save an insight, finding or creating a concern for it
+    def save_insight(
+        self,
+        content: str,
+        username: str,
+        topic: str | None = None,
+        linked_to: list[CortexId] | None = None,
+        cortex_id: CortexId | None = None,
+    ) -> Insight:
+        """
+        Save an insight.
+
+        Finds or creates an appropriate concern/topic for the insight,
+        creates a graph node, and persists to disk.
+
+        Args:
+            content: The insight content
+            username: User this insight relates to
+            topic: Optional topic (auto-classified if None)
+            linked_to: Optional list of cortex IDs to link
+            cortex_id: Optional existing cortex ID to update
+
+        Returns:
+            The saved Insight
+
+        Raises:
+            InsightSaveError: If save operation fails
+        """
+        logger.debug(
+            "saving_insight",
+            username=username,
+            content_preview=content[:50],
+        )
+
+        ##Error purpose: Wrap any failures in InsightSaveError
         try:
+            ##Step purpose: Validate username before use
+            safe_username = validate_username(username)
+
+            ##Step purpose: Determine topic using concern manager
             if not topic:
-                existing_topics = self.concern_manager.get_all_concerns()
-                topic = self.concern_manager.find_or_create_concern(insight_content, existing_topics)
-            self.file_logger.log_info(f"Insight topic determined as: '{topic}'")
+                existing_topics = self._concern_manager.get_all_concerns()
+                topic = self._concern_manager.find_or_create_concern(
+                    content,
+                    existing_topics,
+                )
 
-            if insight_data and 'cortex_id' in insight_data:
-                self.cortex.update_node(insight_data['cortex_id'], content=insight_content, linked_to=linked_to)
-                node_id = insight_data['cortex_id']
-                self.file_logger.log_info(f"Updating existing insight node: {node_id}")
+            ##Step purpose: Validate topic before use
+            safe_topic = validate_topic(topic)
+
+            ##Step purpose: Create or update graph node
+            if cortex_id and self._graph.has_node(cortex_id):
+                node_id = cortex_id
+                logger.debug(
+                    "updating_existing_node",
+                    node_id=node_id,
+                )
             else:
-                node_id = self.cortex.add_node('insight', insight_content, username, linked_to=linked_to)
-                self.file_logger.log_info(f"Created new insight node: {node_id}")
-            
-            ##Block purpose: Provide feedback from Cortex to Memory (if integration layer available)
-            integration_config = self.config.get('cortex', {}).get('integration', {})
-            if integration_config.get('cortex_to_memory_feedback', False) and self.integration_layer:
-                try:
-                    self.integration_layer.feedback_cortex_to_memory(node_id, username)
-                except Exception as e:
-                    self.file_logger.log_error(f"Error providing Cortex-to-Memory feedback for insight {node_id}: {e}")
-            
-            user_insights_dir = os.path.join(self.insights_root, username)
-            topic_dir = os.path.join(user_insights_dir, topic)
-            os.makedirs(topic_dir, exist_ok=True)
-            
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"insight_{timestamp}.json"
-            filepath = os.path.join(topic_dir, filename)
+                node = Node.create(
+                    label=content[:50],
+                    content=content,
+                    node_type="insight",
+                    metadata={"username": safe_username, "topic": safe_topic},
+                )
+                self._graph.add_node(node)
+                node_id = node.id
+                logger.debug(
+                    "created_insight_node",
+                    node_id=node_id,
+                )
 
-            if insight_data is None:
-                insight_data = { "topic": topic, "content": insight_content, "timestamp": datetime.now().isoformat(), "user": username, "related_concerns": [] }
-            
-            insight_data['cortex_id'] = node_id
+            ##Step purpose: Create insight record
+            insight = Insight(
+                content=content,
+                username=safe_username,
+                topic=safe_topic,
+                cortex_id=node_id,
+                related_concerns=[],
+            )
 
-            with open(filepath, 'w', encoding='utf-8') as f:
-                json.dump(insight_data, f, indent=4)
+            ##Step purpose: Persist to file system
+            self._save_insight_file(insight)
 
-            self.ui_logger.info(f"New insight saved for user '{username}' under topic '{topic}'")
-            self.file_logger.log_info(f"New insight saved: {filepath}")
+            logger.info(
+                "insight_saved",
+                username=username,
+                topic=topic,
+                cortex_id=node_id,
+            )
+
+            return insight
+
         except Exception as e:
-            self.file_logger.log_error(f"Error saving insight: {e}")
-            self.ui_logger.system_message("An error occurred while saving the insight.")
+            logger.error(
+                "insight_save_failed",
+                error=str(e),
+                username=username,
+            )
+            raise InsightSaveError(content, str(e)) from e
 
-    ##Function purpose: Deprecated - reorganization is handled by Cortex.reflect
-    def reorganize_insights(self, username: str) -> list[str]:
-        """DEPRECATED: This method is no longer used. Reorganization is handled by Cortex.reflect."""
-        self.file_logger.log_warning("InsightManager.reorganize_insights is deprecated and should not be called.")
-        return ["This function is deprecated."]
+    ##Method purpose: Save insight to filesystem as JSON
+    def _save_insight_file(self, insight: Insight) -> Path:
+        """
+        Save insight to filesystem.
 
-    ##Function purpose: Use semantic search to find most relevant insights for a query
-    def get_relevant_insights(self, query: str, username: str, max_insights: int = 3) -> list[str]:
-        """Uses semantic search to find the most relevant insights for a given query."""
-        insight_results = self.memory_search.search_insights(query, username, max_insights)
-        # Extract documents from (doc, distance) tuples
-        return [doc for doc, dist in insight_results]
+        Args:
+            insight: Insight to save
 
-    ##Function purpose: Retrieve all insights from the insights directory for a user
-    def get_all_insights(self, username: str) -> list[dict]:
-        """Retrieves all insights from the insights directory for a specific user."""
-        self.file_logger.log_info(f"Getting all insights for user '{username}'")
-        all_insights = []
-        user_insights_dir = os.path.join(self.insights_root, username)
+        Returns:
+            Path to saved file
 
-        if not os.path.exists(user_insights_dir):
-            self.file_logger.log_info(f"No insights directory found for user '{username}'")
+        Raises:
+            ValueError: If path traversal is detected
+        """
+        ##Step purpose: Validate username and topic (should already be validated, but double-check)
+        safe_username = validate_username(insight.username)
+        safe_topic = validate_topic(insight.topic)
+
+        ##Step purpose: Build directory path with validated components
+        user_dir = self._insights_root / safe_username
+        topic_dir = user_dir / safe_topic
+
+        ##Step purpose: Verify path is within base directory
+        validate_path_within_base(topic_dir, self._insights_root)
+
+        ##Action purpose: Create directory with secure permissions
+        topic_dir.mkdir(parents=True, exist_ok=True)
+
+        ##Step purpose: Generate filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"insight_{timestamp}.json"
+        filepath = topic_dir / filename
+
+        ##Action purpose: Write insight JSON
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(insight.to_dict(), f, indent=4, ensure_ascii=False)
+
+        ##Action purpose: Set secure file permissions (0o600 = owner read/write only)
+        import os
+
+        os.chmod(filepath, 0o600)
+
+        return filepath
+
+    ##Method purpose: Get relevant insights for a query using semantic search
+    def get_relevant_insights(
+        self,
+        query: str,
+        username: str,
+        max_insights: int = 3,
+    ) -> list[str]:
+        """
+        Get relevant insights for a query using semantic search.
+
+        Args:
+            query: Search query
+            username: Username to filter insights for
+            max_insights: Maximum insights to return
+
+        Returns:
+            List of insight content strings
+        """
+        ##Condition purpose: Return empty if no memory search
+        if self._memory_search is None:
+            logger.debug(
+                "no_memory_search_configured",
+                returning="empty_list",
+            )
             return []
 
-        for topic in os.listdir(user_insights_dir):
-            topic_dir = os.path.join(user_insights_dir, topic)
-            if os.path.isdir(topic_dir):
-                for insight_file in os.listdir(topic_dir):
-                    if insight_file.endswith('.json'):
-                        filepath = os.path.join(topic_dir, insight_file)
-                        try:
-                            with open(filepath, 'r', encoding='utf-8') as f:
-                                data = json.load(f)
-                                data['filepath'] = filepath
-                                all_insights.append(data)
-                        except Exception as e:
-                            self.file_logger.log_error(f"Error reading insight file {filepath}: {e}")
-                            continue
-        self.file_logger.log_info(f"Found {len(all_insights)} insights for user '{username}'")
+        ##Step purpose: Search for insights
+        results = self._memory_search.search(query, n_results=max_insights)
+
+        ##Step purpose: Extract content from results
+        return [content for content, distance in results]
+
+    ##Method purpose: Retrieve all insights for a user
+    def get_all_insights(self, username: str) -> list[Insight]:
+        """
+        Retrieve all insights for a specific user.
+
+        Args:
+            username: Username to get insights for
+
+        Returns:
+            List of Insight objects
+
+        Raises:
+            ValueError: If username is invalid
+        """
+        ##Step purpose: Validate username before use
+        safe_username = validate_username(username)
+
+        logger.debug(
+            "getting_all_insights",
+            username=safe_username,
+        )
+
+        all_insights: list[Insight] = []
+        user_dir = self._insights_root / safe_username
+
+        ##Step purpose: Verify path is within base directory
+        try:
+            validate_path_within_base(user_dir, self._insights_root)
+        except ValueError:
+            ##Step purpose: Invalid path, return empty list
+            logger.warning("invalid_username_path", username=username)
+            return []
+
+        ##Condition purpose: Return empty if user directory doesn't exist
+        if not user_dir.exists():
+            logger.debug(
+                "no_insights_directory",
+                username=username,
+            )
+            return []
+
+        ##Loop purpose: Iterate through topic directories
+        for topic_dir in user_dir.iterdir():
+            ##Condition purpose: Skip non-directories
+            if not topic_dir.is_dir():
+                continue
+
+            ##Loop purpose: Read insight files in topic directory
+            for insight_file in topic_dir.glob("*.json"):
+                ##Error purpose: Handle invalid insight files gracefully
+                try:
+                    with open(insight_file, encoding="utf-8") as f:
+                        ##Sec: Use safe_json_loads for size/depth limits (P2-001)
+                        data = safe_json_loads(f.read())
+
+                    insight = Insight.from_dict(data)
+                    all_insights.append(insight)
+
+                except (json.JSONDecodeError, KeyError) as e:
+                    logger.warning(
+                        "invalid_insight_file",
+                        filepath=str(insight_file),
+                        error=str(e),
+                    )
+                    continue
+
+        logger.debug(
+            "found_insights",
+            username=username,
+            count=len(all_insights),
+        )
+
         return all_insights
 
-    ##Function purpose: Retrieve cortex_id of the most recently saved insight
-    def get_latest_insight_id(self, username: str) -> str | None:
-        """Retrieves the cortex_id of the most recently saved insight for a specific user."""
+    ##Method purpose: Get the most recently saved insight ID for a user
+    def get_latest_insight_id(self, username: str) -> CortexId | None:
+        """
+        Get the cortex ID of the most recently saved insight.
+
+        Args:
+            username: Username to get latest insight for
+
+        Returns:
+            Cortex ID if found, None otherwise
+        """
         all_insights = self.get_all_insights(username)
+
+        ##Condition purpose: Return None if no insights
         if not all_insights:
             return None
 
-        # Sort insights by timestamp in descending order
-        latest_insight = max(all_insights, key=lambda x: x.get('timestamp', ''))
-        
-        return latest_insight.get('cortex_id')
+        ##Step purpose: Sort by timestamp and get latest
+        latest = max(
+            all_insights,
+            key=lambda i: i.timestamp,
+        )
+
+        return latest.cortex_id
+
+    ##Method purpose: Get insights by topic
+    def get_insights_by_topic(
+        self,
+        username: str,
+        topic: str,
+    ) -> list[Insight]:
+        """
+        Get all insights for a specific topic.
+
+        Args:
+            username: Username to filter by
+            topic: Topic name to filter by
+
+        Returns:
+            List of insights for the topic
+
+        Raises:
+            ValueError: If username or topic is invalid
+        """
+        ##Step purpose: Validate username and topic before use
+        safe_username = validate_username(username)
+        safe_topic = validate_topic(topic)
+
+        topic_dir = self._insights_root / safe_username / safe_topic
+
+        ##Step purpose: Verify path is within base directory
+        try:
+            validate_path_within_base(topic_dir, self._insights_root)
+        except ValueError:
+            ##Step purpose: Invalid path, return empty list
+            logger.warning("invalid_path", username=username, topic=topic)
+            return []
+
+        ##Condition purpose: Return empty if topic directory doesn't exist
+        if not topic_dir.exists():
+            return []
+
+        insights: list[Insight] = []
+
+        ##Loop purpose: Read insight files
+        for insight_file in topic_dir.glob("*.json"):
+            try:
+                with open(insight_file, encoding="utf-8") as f:
+                    ##Sec: Use safe_json_loads for size/depth limits (P2-001)
+                    data = safe_json_loads(f.read())
+                insights.append(Insight.from_dict(data))
+            except (json.JSONDecodeError, KeyError):
+                continue
+
+        return insights
+
+    ##Method purpose: Get all topics for a user
+    def get_user_topics(self, username: str) -> list[str]:
+        """
+        Get all topics a user has insights under.
+
+        Args:
+            username: Username to get topics for
+
+        Returns:
+            List of topic names
+
+        Raises:
+            ValueError: If username is invalid
+        """
+        ##Step purpose: Validate username before use
+        safe_username = validate_username(username)
+
+        user_dir = self._insights_root / safe_username
+
+        ##Step purpose: Verify path is within base directory
+        try:
+            validate_path_within_base(user_dir, self._insights_root)
+        except ValueError:
+            ##Step purpose: Invalid path, return empty list
+            logger.warning("invalid_username_path", username=username)
+            return []
+
+        ##Condition purpose: Return empty if user directory doesn't exist
+        if not user_dir.exists():
+            return []
+
+        return [d.name for d in user_dir.iterdir() if d.is_dir()]
+
+    ##Method purpose: Access the concern manager
+    @property
+    def concern_manager(self) -> ConcernManager:
+        """Get the concern manager."""
+        return self._concern_manager
+
+    ##Method purpose: Factory method for production use
+    @classmethod
+    def create(
+        cls,
+        insights_root: Path,
+        graph: GraphProtocol,
+        llm: LLMProtocol,
+        memory_search: MemorySearchProtocol | None = None,
+    ) -> InsightManager:
+        """
+        Factory method to create InsightManager.
+
+        Args:
+            insights_root: Root directory for insight storage
+            graph: Cognitive graph for node linking
+            llm: LLM interface for topic classification
+            memory_search: Optional memory search for semantic retrieval
+
+        Returns:
+            Configured InsightManager instance
+        """
+        return cls(
+            insights_root=insights_root,
+            graph=graph,
+            llm=llm,
+            memory_search=memory_search,
+        )
