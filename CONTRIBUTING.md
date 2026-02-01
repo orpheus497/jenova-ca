@@ -10,6 +10,10 @@ Welcome to the JENOVA Cognitive Architecture project. This guide covers the codi
 2. **Understand the architecture**: Review `.devdocs/builders/architect/` for design decisions
 3. **Follow the standards**: All code must comply with `.devdocs/guardians/marshal/CODE_STANDARDS.md`
 
+### Supported Python Versions (Development & CI)
+
+Use **Python 3.10, 3.11, or 3.12** for local development and running tests. **Python 3.14 is not supported**: the dependency `chromadb` requires `onnxruntime`, which does not ship wheels for Python 3.14, so `pip install -e ".[dev]"` will fail. CI uses Python 3.11. If your system default is 3.14, use `pyenv`, a venv from a supported Python, or a container.
+
 ---
 
 ## Code Standards Quick Reference

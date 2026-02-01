@@ -31,6 +31,9 @@ from jenova.graph.types import Node
 from jenova.memory.types import MemoryType
 from tests.integration.conftest import MockLLMInterface
 
+##Fix: Mark module so Integration CI job runs these tests (pytest tests/integration/ -m integration)
+pytestmark = pytest.mark.integration
+
 
 ##Class purpose: Fixture providing temporary data directory
 @pytest.fixture

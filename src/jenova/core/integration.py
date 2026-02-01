@@ -14,7 +14,8 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 import structlog
 
-from jenova.exceptions import GraphError, IntegrationError, NodeNotFoundError
+##Fix: Re-export ConsistencyError so jenova.core can import from integration (API surface)
+from jenova.exceptions import ConsistencyError, GraphError, IntegrationError, NodeNotFoundError
 
 if TYPE_CHECKING:
     from jenova.graph.types import Node
