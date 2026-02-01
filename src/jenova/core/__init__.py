@@ -1,6 +1,7 @@
 ##Script function and purpose: Core package initialization - exposes cognitive components
 """Core cognitive components for JENOVA."""
 
+from jenova.exceptions import ConsistencyError
 from jenova.core.context_organizer import (
     ContextOrganizer,
     ContextOrganizerConfig,
@@ -24,7 +25,6 @@ from jenova.core.engine import (
     ThinkResult,
 )
 from jenova.core.integration import (
-    ConsistencyError,
     ConsistencyReport,
     CrossReference,
     IntegrationConfig,

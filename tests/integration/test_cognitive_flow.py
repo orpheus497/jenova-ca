@@ -29,7 +29,7 @@ from jenova.core.response import ResponseConfig, ResponseGenerator
 from jenova.graph.graph import CognitiveGraph
 from jenova.graph.types import Node
 from jenova.memory.types import MemoryType
-from tests.integration.conftest import MockLLMInterface
+from .conftest import MockLLMInterface
 
 ##Fix: Mark module so Integration CI job runs these tests (pytest tests/integration/ -m integration)
 pytestmark = pytest.mark.integration

@@ -15,7 +15,7 @@ from typing import Protocol
 
 import structlog
 
-##Class purpose: Define logger for scheduler operations
+##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
 
 

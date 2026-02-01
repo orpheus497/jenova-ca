@@ -109,13 +109,15 @@ class Memory:
         ##Step purpose: Generate unique ID
         doc_id = str(uuid.uuid4())
 
+        ##Fix: ChromaDB requires non-empty metadata; use placeholder when None/empty
+        meta = metadata if metadata and len(metadata) > 0 else {"_source": "jenova"}
         ##Error purpose: Wrap ChromaDB errors
         try:
             ##Action purpose: Add document to collection
             self._collection.add(
                 ids=[doc_id],
                 documents=[content],
-                metadatas=[metadata or {}],
+                metadatas=[meta],
             )
         except Exception as e:
             raise MemoryStoreError(content[:100], str(e)) from e
@@ -263,9 +265,19 @@ class Memory:
     ##Method purpose: Clear all memories of this type
     def clear(self) -> None:
         """Delete all memories in this collection."""
+        ##Fix: Invalidate search cache so results after clear() are not stale
+        self._search_cache.clear()
         ##Action purpose: Delete and recreate collection
         self._client.delete_collection(self.memory_type.value)
-        self._collection = self._client.get_or_create_collection(
-            name=self.memory_type.value,
-            metadata={"memory_type": self.memory_type.value},
-        )
+        ##Fix: Recreate collection with same embedding_function as __init__ (BUG-001)
+        if self._embedding_function is not None:
+            self._collection = self._client.get_or_create_collection(
+                name=self.memory_type.value,
+                metadata={"memory_type": self.memory_type.value},
+                embedding_function=self._embedding_function,
+            )
+        else:
+            self._collection = self._client.get_or_create_collection(
+                name=self.memory_type.value,
+                metadata={"memory_type": self.memory_type.value},
+            )

@@ -429,7 +429,8 @@ class TestInsightManager:
         assert len(insight_files) == 1
 
         ##Step purpose: Verify content
-        with open(insight_files[0]) as f:
+        ##Fix: Use encoding for cross-platform and consistency with insight JSON files
+        with open(insight_files[0], encoding="utf-8") as f:
             data = json.load(f)
 
         assert data["content"] == "Persisted insight"

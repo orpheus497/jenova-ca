@@ -256,7 +256,9 @@ class JenovaApp(App):
         ##Step purpose: Get current username for user-specific operations
         try:
             self._username = validate_username(getpass.getuser())
-        except Exception:
+        except Exception as e:
+            ##Fix: Log failure cause so operators can debug (e.g. USER unset, validation failure)
+            self._logger.warning("username_init_fallback", error=str(e), exc_info=True)
             ##Step purpose: Fallback to default if username validation fails
             self._username = "default"
 

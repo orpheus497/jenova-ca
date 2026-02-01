@@ -7,12 +7,12 @@ Welcome to the JENOVA Cognitive Architecture project. This guide covers the codi
 ## Getting Started
 
 1. **Read the documentation**: Start with `.devdocs/BRIEFING.md` for current project status
-2. **Understand the architecture**: Review `.devdocs/builders/architect/` for design decisions
-3. **Follow the standards**: All code must comply with `.devdocs/guardians/marshal/CODE_STANDARDS.md`
+2. **Understand the architecture**: Review `.devdocs/DECISIONS_LOG.md` for design decisions
+3. **Follow the standards**: All code must comply with standards in `.devdocs/guardians/marshal/`
 
 ### Supported Python Versions (Development & CI)
 
-Use **Python 3.10, 3.11, or 3.12** for local development and running tests. **Python 3.14 is not supported**: the dependency `chromadb` requires `onnxruntime`, which does not ship wheels for Python 3.14, so `pip install -e ".[dev]"` will fail. CI uses Python 3.11. If your system default is 3.14, use `pyenv`, a venv from a supported Python, or a container.
+Use **Python 3.10, 3.11, 3.12, or 3.13** for local development and CI. **Python 3.14 is unsupported** for stable installs: key dependencies (e.g. `onnxruntime` and downstream packages like `lz4`) do not yet provide stable PyPI wheels for 3.14. Nightly `onnxruntime` builds exist, but full ecosystem support is not available. If your system default is Python 3.14, use **Python 3.13** for development (e.g. `pyenv install 3.13 && pyenv local 3.13`, or a venv from 3.13).
 
 ---
 
@@ -163,10 +163,10 @@ Before submitting:
 
 ## Quick Links
 
-- **Full Code Standards**: `.devdocs/guardians/marshal/CODE_STANDARDS.md`
-- **Anti-Patterns to Avoid**: `.devdocs/guardians/critic/ANTI_PATTERNS.md`
+- **Standards and formatting**: `.devdocs/guardians/marshal/`
 - **Current Status**: `.devdocs/BRIEFING.md`
 - **Session Log**: `.devdocs/PROGRESS.md`
+- **Architecture decisions**: `.devdocs/DECISIONS_LOG.md`
 
 ---
 

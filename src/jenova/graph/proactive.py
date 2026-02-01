@@ -19,7 +19,7 @@ import structlog
 
 from jenova.exceptions import GraphError, NodeNotFoundError, ProactiveError
 
-##Class purpose: Define logger for proactive engine operations
+##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
 
 

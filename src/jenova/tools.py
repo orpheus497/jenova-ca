@@ -17,7 +17,7 @@ import structlog
 
 from jenova.exceptions import ToolError
 
-##Class purpose: Define logger for tool operations
+##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
 
 ##Step purpose: Configuration constants

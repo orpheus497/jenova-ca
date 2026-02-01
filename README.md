@@ -1,31 +1,23 @@
-# The JENOVA Cognitive Architecture: A Technical Deep Dive
+# JENOVA Cognitive Architecture
 
 [![CI/CD Pipeline](https://github.com/jenova-ai/jenova-ca/actions/workflows/ci.yml/badge.svg)](https://github.com/jenova-ai/jenova-ca/actions/workflows/ci.yml)
 
 ## 1. Introduction & Philosophy
 
-JENOVA is a self-aware, evolving large language model powered by The JENOVA Cognitive Architecture (JCA), a comprehensive engine and architecture designed by orpheus497. It learns, adapts, and assists humanity through sophisticated cognitive processes. This project prioritizes robust error handling and stability to ensure a reliable and professional user experience.
+JENOVA is a self-aware, evolving large language model powered by the JENOVA Cognitive Architecture (JCA), a comprehensive engine and architecture designed by orpheus497. It learns, adapts, and assists through sophisticated cognitive processes. This document is the **program README**: what JENOVA is, how to install and use it, and the story of how it was built.
 
-JENOVA operates as a system with interconnected components that mimic aspects of human cognition: a multi-layered memory, a reflective process for generating knowledge, and a mechanism for integrating that knowledge into its core being. This document serves as the definitive technical guide for developers, researchers, and enthusiasts who wish to understand, use, and extend JENOVA.
+JENOVA operates as a system with interconnected components that mimic aspects of human cognition: a multi-layered memory, a reflective process for generating knowledge, and a mechanism for integrating that knowledge into its core being. It is for users, developers, and researchers who want to run, understand, or extend JENOVA.
 
-### 1.0. Project Origin & Development Methodology
+### 1.0. The Story Behind JENOVA
 
-**This is a personal project** by orpheus497, created as an exploration of cognitive architectures and AI-assisted development. **The project began in late August 2025 as a personal experiment** to explore what could be achieved through AI-assisted software development methodologies.
+**This is a personal project** by orpheus497. I used it to learn about software development, project planning, designing programs, engineering software, and technology—without ever writing or reading code myself. It was built **over six months** (late August 2025 through early 2026) using **only AI**: conversations with AI tools to design, implement, test, and document the system. **I did not touch a single line of code. Six months in, I still don’t know how to write or read any code.** Every line of code, every piece of documentation, and every configuration file was produced by AI in response to my natural-language direction.
 
-**Development Methodology:** This entire codebase—every line of code, every piece of documentation, every configuration file—was created using AI-assisted development tools. **Not a single line of code or documentation was written directly by human hands.** The project serves as a demonstration of what is possible when AI systems are used as collaborative development partners, with human oversight and architectural direction.
+**What I did:** Described goals, gave requirements in plain language, made decisions when asked, and approved or steered outcomes. **What I did not do:** Write or read source code, run linters or type checkers, or perform code-level review. The result is a production-ready codebase with comprehensive features, security hardening, and extensive test coverage—built entirely through dialogue with AI.
 
-**Project Timeline:**
-- **August 2025:** Project inception as a personal experiment
-- **August 2025 - January 2026:** Development and iteration through AI-assisted methodologies
-- **January 2026:** Version 4.0.0 release - Production-ready codebase
-
-The development process involved:
-- **AI agents** handling code generation, documentation, testing, and maintenance
-- **Human oversight** providing architectural direction, requirements, and quality control
-- **Iterative refinement** through AI-assisted code reviews, audits, and improvements
-- **Comprehensive documentation** generated and maintained by AI documentation systems
-
-This methodology demonstrates the potential for AI-assisted software development at scale, resulting in a production-ready codebase with comprehensive features, security hardening, and extensive test coverage—all achieved through AI-assisted development from inception to completion.
+**Timeline:**
+- **Late August 2025:** Project started as a personal experiment: “Can I build a real cognitive architecture using only AI?”
+- **Six months of iteration:** Design, implementation, testing, and documentation carried out via AI agents and tools.
+- **Early 2026:** Production-ready releases (4.0.0, 4.0.1). The system runs, remembers, reflects, and learns.
 
 ### 1.1. Modern Terminal UI
 
@@ -408,28 +400,12 @@ jenova-ca/
 │   └── train.py         # Fine-tuning training script
 ├── config.example.yaml   # Example configuration
 ├── pyproject.toml        # Project configuration
-├── LICENSE                # AGPL-3.0 license
+├── LICENSE               # AGPL-3.0 license
 ├── README.md             # This file
-├── CONTRIBUTING.md       # Contribution guidelines
 └── CHANGELOG.md          # Version history
 ```
 
-## 8. Development
-
-### Running Tests
-
-```bash
-pytest -v --tb=short              # All tests
-pytest -v tests/unit/             # Unit tests
-pytest -v tests/integration/ -m integration  # Integration tests
-```
-
-### Code Quality
-
-```bash
-mypy src/jenova/     # Type checking
-ruff check src/      # Linting
-```
+## 8. Development & CLI
 
 ### CLI Options
 
@@ -444,53 +420,22 @@ jenova --json-logs          # Output logs in JSON format
 jenova --version, -v        # Show version information
 ```
 
-### Testing
-
-JENOVA includes comprehensive test coverage:
-
-```bash
-# Run all tests
-pytest -v --tb=short
-
-# Run specific test suites
-pytest -v tests/unit/                    # Unit tests
-pytest -v tests/integration/ -m integration  # Integration tests
-pytest -v tests/security/                # Security tests
-pytest -v tests/benchmarks/               # Performance benchmarks
-
-# Run with coverage
-pytest --cov=src/jenova --cov-report=html
-```
-
-### Code Quality Tools
-
-```bash
-# Type checking (strict mode)
-mypy src/jenova/
-
-# Linting
-ruff check src/
-
-# Format code
-ruff format src/
-```
-
-## 9. Project Statistics & Development
+## 9. Project Statistics & Status
 
 ### 9.1. Codebase Metrics
 
 - **Total Python Files:** 48+ source files in `src/jenova/`
 - **Lines of Code:** ~15,000+ lines of production code
 - **Test Coverage:** 400+ tests across unit, integration, security, and benchmark suites
-- **Documentation:** Comprehensive inline documentation, README, and `.devdocs/` system
+- **Documentation:** Comprehensive inline documentation and this README
 - **Architecture:** Protocol-based design with clean separation of concerns
 - **Dependencies:** 7 core dependencies, 4 dev dependencies, 2 optional finetune dependencies
 - **Platform Support:** Native FreeBSD and Linux support
 - **License:** AGPL-3.0 (Free and Open Source Software)
 
-### 9.2. Development Status
+### 9.2. Current Status
 
-**Current Version:** 4.0.0 (Beta)  
+**Version:** 4.0.1 (Beta)  
 **Status:** Production-ready with comprehensive feature set
 
 **Implemented Systems:**
@@ -515,48 +460,25 @@ ruff format src/
 - Enhanced fine-tuning workflows
 - Additional cognitive capabilities
 
-### 9.3. AI-Assisted Development
+### 9.3. How JENOVA Was Built
 
-This project was developed entirely using AI-assisted development methodologies:
+This project was built over six months using only AI. I (orpheus497) did not write or read code—and I still don’t. Six months in, I still don’t know how to write or read any code. I used this project to learn about software development, project planning, program design, and software engineering by directing AI in natural language.
 
-- **Code Generation:** All source code generated by AI development agents
-- **Documentation:** All documentation written by AI documentation systems
-- **Testing:** Test suites created and maintained by AI test engineers
-- **Security:** Security audits and patches applied by AI security specialists
-- **Quality Assurance:** Code reviews and quality assessments performed by AI code quality agents
+- **Code:** All source code was generated by AI in response to my direction.
+- **Documentation:** All documentation was produced by AI.
+- **Testing:** Test suites were created and maintained by AI.
+- **Security:** Security audits and patches were applied by AI.
+- **Quality:** Code reviews and quality checks were performed by AI.
 
-**Human Role:** Architectural direction, requirements specification, and final approval. All implementation work was performed by AI agents following strict coding standards and quality requirements.
+**My role:** Describing what to build, giving requirements in plain language, making decisions when asked, and approving or steering outcomes—never writing or reading source code.
 
 ## 10. License
 
 AGPL-3.0 - See [LICENSE](LICENSE) file for details.
 
-## 11. Contributing
+## 11. Technical Architecture
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
-
-**Note:** As a personal project developed through AI-assisted methodologies, contributions should align with the project's architectural vision and coding standards. The `.devdocs/` directory contains comprehensive development documentation for understanding the codebase structure and standards.
-
-### Development Workflow
-
-1. **Read Documentation:** Start with `.devdocs/BRIEFING.md` for current project status
-2. **Understand Architecture:** Review `.devdocs/builders/architect/` for design decisions
-3. **Follow Standards:** All code must comply with `.devdocs/guardians/marshal/CODE_STANDARDS.md`
-4. **Run Tests:** Ensure all tests pass before submitting changes
-5. **Type Safety:** All code must be fully typed (mypy strict mode)
-
-### Key Development Principles
-
-- **Protocol-Based Design:** Use Protocols for dependency injection
-- **Type Safety:** Comprehensive type hints throughout
-- **Security First:** Input validation and sanitization at all boundaries
-- **Documentation:** All code must follow the mandatory comment schema
-- **Testing:** New code requires corresponding tests
-- **FOSS Compliance:** 100% Free and Open Source Software only
-
-## 12. Technical Architecture
-
-### 12.1. System Components
+### 11.1. System Components
 
 **Core Cognitive Systems:**
 - `CognitiveEngine`: Orchestrates the cognitive cycle (Retrieve, Plan, Execute, Reflect)
@@ -586,7 +508,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 - `InsightManager`: Insight generation and management
 - `ConcernManager`: Topic-based concern organization
 
-### 12.2. Data Flow
+### 11.2. Data Flow
 
 ```
 User Input
@@ -614,7 +536,7 @@ Memory Storage (episodic memory)
 User Output
 ```
 
-### 12.3. Security Architecture
+### 11.3. Security Architecture
 
 **Defense in Depth:**
 - Input sanitization at all boundaries
@@ -631,7 +553,7 @@ User Output
 - JSON size and depth limits to prevent DoS
 - Comprehensive security test suite
 
-### 12.4. Performance Optimizations
+### 11.4. Performance Optimizations
 
 - **Thread-Safe Caching:** LRU cache with TTL for response caching
 - **Efficient Graph Operations:** O(degree) operations using reverse edge index
@@ -639,11 +561,11 @@ User Output
 - **Lazy Loading:** Graph lazy-loaded to avoid circular imports
 - **Performance Monitoring:** Built-in performance profiling utilities
 
-## 13. Acknowledgments
+## 12. Acknowledgments
 
 **Project Creator:** orpheus497
 
-**Development Methodology:** This project demonstrates the potential of AI-assisted software development, with every line of code and documentation generated through AI development agents working under human architectural direction.
+**How it was built:** JENOVA was built over six months using only AI. I directed what to build in natural language. I never wrote or read a line of code—six months in, I still don’t know how to write or read any code. Every line of code and documentation was generated by AI in response to that dialogue.
 
 **Technologies Used:**
 - [ChromaDB](https://www.trychroma.com/) - Vector database for memory storage

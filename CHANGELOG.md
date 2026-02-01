@@ -7,18 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+(None yet.)
+
+## [4.0.1] - 2026-02-01
+
+### Fixed
+
+- **BUG-001:** `Memory.clear()` now preserves custom embedding and clears search cache (`src/jenova/memory/memory.py`).
+- **BUG-002:** `GrammarLoader.load_from_file()` catches `UnicodeDecodeError` and re-raises as `GrammarError` for non-UTF-8 files (`src/jenova/utils/grammar.py`).
+- **BUG-003:** `ScoredContext.top(n)` and `as_strings(n)` clamp negative `n` to avoid surprising slice semantics (`src/jenova/core/context_scorer.py`).
+- **BUG-004:** App username init now logs failure cause before fallback to `"default"` so operators can debug (e.g. `USER` unset, validation failure) (`src/jenova/ui/app.py`).
+- **BUG-005:** Integration `get_centrality_score` guards non-numeric centrality in metadata (e.g. `"high"`) with try/except; uses 0.0 on failure (`src/jenova/core/integration.py`).
+- **BUG-006:** Finetune `load_training_data` skips invalid JSON lines with warning instead of failing entire load (`finetune/train.py`).
+- **BUG-007:** `test_insights` opens insight files with `encoding="utf-8"` for cross-platform consistency (`tests/unit/test_insights.py`).
+- **BUG-008:** `validate_username` and `validate_topic` reject `None` or non-str with `ValueError` instead of allowing `AttributeError` (`src/jenova/utils/validation.py`).
+- **Commenting schema (Marshal B7):** Replaced 6 incorrect `##Class purpose: Define logger for ...` comments (above module-level `logger = ...`) with `##Step purpose: Initialize module logger` in: `src/jenova/utils/grammar.py`, `src/jenova/utils/performance.py`, `src/jenova/utils/cache.py`, `src/jenova/tools.py`, `src/jenova/graph/proactive.py`, `src/jenova/core/scheduler.py`.
+
 ### Changed
-- **Code Quality Improvements (2026-01-26):**
-  - Fixed 3,831 linting violations across entire codebase
-  - Resolved 69 formatting issues for consistent code style
-  - Improved exception handling with proper `from` clauses (7 instances)
-  - Fixed type annotations using TYPE_CHECKING for forward references (3 instances)
-  - Simplified code structure by combining nested conditionals (4 instances)
-  - Organized all imports according to PEP 8 standards
-  - Removed all trailing whitespace
-  - Modernized deprecated import patterns (8 instances)
-  - Added proper noqa comments for intentional test patterns (11 instances)
-  - Enhanced code maintainability and readability
+
+- **Test and CI (Test Extender D5):**
+  - 23 unit-test fixes: grammar patch target (`llama_cpp.LlamaGrammar`), context_scorer `ScoringBreakdown.__lt__`, assumptions mock responses, memory metadata fallback and `_TestEmbedding`, query_analyzer enum (`QueryIntent.CONVERSATION`) and complexity assertion, integration mock query string.
+  - Conftest: Python 3.14 guard with clear fail-fast message; optional `llama_cpp` and `onnxruntime` mocks for CI/FreeBSD compatibility.
+  - CI: integration marker on `test_cognitive_flow`; install step timeout 15m; pytest timeouts 5m/10m for unit/integration and test matrix.
+- **Documentation (Doc Updater C7 and user-directed):**
+  - README and CONTRIBUTING .devdocs paths corrected to match actual layout (`DECISIONS_LOG.md`, `guardians/marshal/`).
+  - Doc Updater (C7) logs created in `.devdocs/maintainers/doc_updater/`; CHANGELOG updated with 2026-02-01 fixes.
+  - **README refocused as program README:** Removed all .devdocs references and Contributing section. README now presents the program (what JENOVA is, install, use, config) and the creator’s personal story: built over six months using only AI; creator did not touch a line of code and does not know how to write or read code—six months in, still doesn’t. Used as a personal project to learn about software development, project planning, program design, engineering software, and technology. First-person narrative throughout; CONTRIBUTING.md removed from project structure in README.
+- **Code quality (2026-01-26):**
+  - Fixed 3,831 linting violations across entire codebase; resolved 69 formatting issues; improved exception handling (proper `from` clauses), type annotations (TYPE_CHECKING), simplified conditionals, PEP 8 imports, no trailing whitespace, modernized imports, noqa for intentional patterns; enhanced maintainability and readability.
 
 ## [4.0.0] - 2026-01-26
 

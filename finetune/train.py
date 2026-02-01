@@ -8,6 +8,7 @@ on learned insights and interactions.
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -32,12 +33,20 @@ def load_training_data(path: Path) -> list[dict[str, str]]:
     
     ##Loop purpose: Read each line as JSON
     with open(path, encoding="utf-8") as f:
-        for line in f:
+        for line_no, line in enumerate(f, 1):
             line = line.strip()
             ##Condition purpose: Skip empty lines
             if line:
-                examples.append(json.loads(line))
-    
+                ##Fix: Skip invalid JSON lines with warning instead of failing entire load
+                try:
+                    examples.append(json.loads(line))
+                except json.JSONDecodeError as e:
+                    warnings.warn(
+                        f"finetune/train: Skipping invalid JSON at line {line_no}: {e}",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+
     return examples
 
 

@@ -19,7 +19,7 @@ from typing import ParamSpec, TypeVar
 
 import structlog
 
-##Class purpose: Define logger for performance operations
+##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
 
 ##Step purpose: Define generic types for decorators

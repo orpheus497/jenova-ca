@@ -18,7 +18,7 @@ from typing import Generic, TypeVar
 
 import structlog
 
-##Class purpose: Define logger for cache operations
+##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
 
 ##Step purpose: Define generic type for cache values
