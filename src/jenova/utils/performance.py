@@ -6,7 +6,6 @@ This module provides infrastructure for monitoring performance of
 JENOVA operations, including timing decorators, statistics collection,
 and performance diagnostics.
 
-Reference: .devdocs/resources/src/jenova/utils/performance_monitor.py
 """
 
 import threading

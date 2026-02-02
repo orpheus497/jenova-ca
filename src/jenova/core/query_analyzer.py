@@ -1163,8 +1163,15 @@ Respond with a valid JSON object:
                         }
                     )
 
+            ##Fix: Guard non-numeric score in sort key (e.g. cache or legacy data)
+            def _score_key(x: dict[str, str | float]) -> float:
+                try:
+                    return float(x.get("score", 0))
+                except (TypeError, ValueError):
+                    return 0.0
+
             ##Step purpose: Sort by score descending
-            matching_nodes.sort(key=lambda x: float(x.get("score", 0)), reverse=True)
+            matching_nodes.sort(key=_score_key, reverse=True)
 
             result = matching_nodes[: self._config.max_entity_links]
 

@@ -107,7 +107,7 @@ config.yml
 /docs/*
 !/docs/.gitkeep
 
-# Development planning and status docs (for AI agent collaboration)
+# Local development notes (not committed)
 /.devdocs/
 
 # Unnecessary vendored code

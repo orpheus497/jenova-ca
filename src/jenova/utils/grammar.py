@@ -5,7 +5,6 @@ Grammar Loader - Loading and caching llama.cpp grammars.
 This module provides utilities for loading GBNF grammars used with
 llama-cpp-python for structured JSON output generation.
 
-Reference: .devdocs/resources/src/jenova/utils/grammar_loader.py
 """
 
 from pathlib import Path

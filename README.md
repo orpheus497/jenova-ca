@@ -202,7 +202,7 @@ jenova
 
 ### 4.2. Prerequisites
 
-* **Python:** 3.10+ (tested on 3.10, 3.11, 3.12)
+* **Python:** 3.10+ (tested on 3.10, 3.11, 3.12, 3.13)
 * **C++ Compiler:** Required for `llama-cpp-python` (e.g., `g++`, `clang++`)
 * **ChromaDB:** Uses SQLite backend (native on FreeBSD/Linux)
 
@@ -262,25 +262,24 @@ JENOVA responds to commands that act as direct instructions for its cognitive pr
 | Command | Description | Mode |
 |---------|-------------|------|
 | `/help` | Display comprehensive command reference | TUI & Headless |
-| `/reset` | Reset conversation state | Headless only |
-| `/debug` | Toggle debug logging | Headless only |
+| `/reset` | Reset conversation state | TUI & Headless |
+| `/debug` | Toggle debug logging | TUI & Headless |
 | `exit` / `quit` | Exit the application | TUI & Headless |
 
-#### Planned Cognitive Commands
+#### Cognitive Commands (TUI)
 
-The following cognitive commands are documented in the help system and will be implemented in future releases:
+The following cognitive commands are implemented in the TUI. Use `/help` in the app for full descriptions.
 
-| Command | Description |
-|---------|-------------|
-| `/insight` | Analyze conversation and generate new insights |
-| `/reflect` | Deep reflection: reorganize cognitive nodes, link orphans, generate meta-insights |
-| `/memory-insight` | Search all memory layers to develop new insights |
-| `/meta` | Generate higher-level meta-insights from insight clusters |
-| `/verify` | Verify an unverified assumption with a clarifying question |
-| `/develop_insight [node_id]` | Develop existing insight (with ID) or process documents (without ID) |
-| `/learn_procedure` | Interactive guided process to teach a new procedure |
-
-**Note:** While the underlying cognitive systems (InsightManager, AssumptionManager, CognitiveGraph) are fully implemented, the command handlers for these features are planned for future releases.
+| Command | Description | Mode |
+|---------|-------------|------|
+| `/insight` | Analyze conversation and generate new insights | TUI |
+| `/reflect` | Deep reflection: reorganize nodes, link orphans, generate meta-insights | TUI |
+| `/memory-insight` | Search all memory layers to develop new insights | TUI |
+| `/meta` | Generate higher-level meta-insights from insight clusters | TUI |
+| `/verify` | Verify an unverified assumption with a clarifying question | TUI |
+| `/develop_insight [node_id]` | Develop existing insight (with ID) or process documents (without ID) | TUI |
+| `/learn_procedure` | Interactive guided process to teach a new procedure | TUI |
+| `/train` | Show instructions for creating fine-tuning training data | TUI |
 
 ### Keyboard Shortcuts (TUI)
 
@@ -390,8 +389,8 @@ jenova-ca/
 │   ├── exceptions.py     # Exception hierarchy
 │   └── main.py           # CLI entry point
 ├── tests/                # Comprehensive test suites
-│   ├── unit/             # Unit tests (17 files, 365+ tests)
-│   ├── integration/      # Integration tests (4 files, 36 tests)
+│   ├── unit/             # Unit tests (19 files, 430+ tests)
+│   ├── integration/      # Integration tests (3 files, 37 tests)
 │   ├── security/         # Security tests (23 adversarial tests)
 │   ├── benchmarks/      # Performance benchmarks
 │   └── performance/      # Performance test utilities
@@ -399,6 +398,9 @@ jenova-ca/
 │   ├── data.py          # Training data collection
 │   └── train.py         # Fine-tuning training script
 ├── config.example.yaml   # Example configuration
+├── CONTRIBUTING.md       # Contribution guidelines
+├── SESSION_HANDOFF.md    # Session handoff and next steps
+├── AUDIT_REPORT.md       # Audit findings and resolution log
 ├── pyproject.toml        # Project configuration
 ├── LICENSE               # AGPL-3.0 license
 ├── README.md             # This file
@@ -424,12 +426,12 @@ jenova --version, -v        # Show version information
 
 ### 9.1. Codebase Metrics
 
-- **Total Python Files:** 48+ source files in `src/jenova/`
+- **Total Python Files:** 50+ source files in `src/jenova/`
 - **Lines of Code:** ~15,000+ lines of production code
-- **Test Coverage:** 400+ tests across unit, integration, security, and benchmark suites
+- **Test Coverage:** 490+ tests (430+ unit, 37 integration, 23 security, plus benchmarks)
 - **Documentation:** Comprehensive inline documentation and this README
 - **Architecture:** Protocol-based design with clean separation of concerns
-- **Dependencies:** 7 core dependencies, 4 dev dependencies, 2 optional finetune dependencies
+- **Dependencies:** 7 core dependencies, 6 dev dependencies, 2 optional finetune dependencies
 - **Platform Support:** Native FreeBSD and Linux support
 - **License:** AGPL-3.0 (Free and Open Source Software)
 
@@ -451,14 +453,14 @@ jenova --version, -v        # Show version information
 - ✅ Cognitive scheduler for background task management
 - ✅ Proactive engine for autonomous suggestion generation
 - ✅ Modern Textual-based TUI with responsive design
-- ✅ Comprehensive test suite (400+ tests: unit, integration, security, benchmarks)
+- ✅ Comprehensive test suite (490+ tests: unit, integration, security, benchmarks)
 - ✅ Security hardening (all P0/P1 issues resolved, prompt injection protection, input validation)
 - ✅ Utility systems (caching, performance monitoring, grammar loading, tools)
 
 **Planned Features:**
-- Command handlers for cognitive operations (`/insight`, `/reflect`, etc.)
 - Enhanced fine-tuning workflows
 - Additional cognitive capabilities
+- Headless support for cognitive commands (e.g. `/insight`, `/reflect`) in CLI mode
 
 ### 9.3. How JENOVA Was Built
 

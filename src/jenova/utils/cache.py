@@ -6,7 +6,6 @@ This module provides caching infrastructure for performance optimization,
 including TTL (time-to-live) expiration and LRU (least-recently-used)
 eviction policies.
 
-Reference: .devdocs/resources/src/jenova/utils/cache.py
 """
 
 import threading

@@ -19,6 +19,7 @@ import structlog
 from jenova.exceptions import InsightSaveError
 from jenova.graph.types import Node
 from jenova.insights.concerns import ConcernManager
+from jenova.memory.types import MemoryResult
 from jenova.insights.types import CortexId, Insight
 from jenova.llm.types import GenerationParams
 from jenova.utils.json_safe import safe_json_loads
@@ -112,20 +113,16 @@ class MemorySearchProtocol(Protocol):
     Defines semantic search interface for insight retrieval.
     Implementations: Memory (src/jenova/memory/memory.py)
 
-    Note: The actual Memory.search() returns list[MemoryResult], but this
-    protocol expects list[tuple[str, float]] for backward compatibility.
-    Callers should adapt the return type as needed.
-
     Contract:
-        - search: Must return (content, distance) tuples sorted by relevance
-        - Lower distance = more relevant
+        - search: Must return list[MemoryResult] sorted by relevance
+        - Higher score = more relevant
     """
 
     def search(
         self,
         query: str,
         n_results: int = 5,
-    ) -> list[tuple[str, float]]:
+    ) -> list[MemoryResult]:
         """Search memory for semantically similar content.
 
         Args:
@@ -133,7 +130,7 @@ class MemorySearchProtocol(Protocol):
             n_results: Maximum number of results to return
 
         Returns:
-            List of (content, distance) tuples, lower distance = more relevant
+            List of MemoryResult, higher score = more relevant
         """
         ...
 
@@ -357,8 +354,8 @@ class InsightManager:
         ##Step purpose: Search for insights
         results = self._memory_search.search(query, n_results=max_insights)
 
-        ##Step purpose: Extract content from results
-        return [content for content, distance in results]
+        ##Fix: Consume list[MemoryResult] (P1-001); use .content instead of tuple unpack
+        return [r.content for r in results]
 
     ##Method purpose: Retrieve all insights for a user
     def get_all_insights(self, username: str) -> list[Insight]:

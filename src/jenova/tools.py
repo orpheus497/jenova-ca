@@ -5,7 +5,6 @@ Tools Module - Utility tools for JENOVA operations.
 This module provides utility functions for common operations like
 datetime handling and shell command execution.
 
-Reference: .devdocs/resources/src/jenova/tools.py
 """
 
 import shlex

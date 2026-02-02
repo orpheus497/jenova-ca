@@ -1,5 +1,6 @@
-##Script function and purpose: Example configuration file for JENOVA AI
-##Dependency purpose: Documents all configuration options with sensible defaults
+# Example configuration file for JENOVA AI
+# Documents all configuration options with sensible defaults.
+# Copy to config.yaml and customize as needed.
 
 # Hardware configuration
 hardware:

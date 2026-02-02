@@ -6,7 +6,6 @@ This module provides the infrastructure for JENOVA to proactively suggest
 topics, questions, and areas for exploration based on the cognitive graph
 state and conversation patterns.
 
-Reference: .devdocs/resources/src/jenova/cortex/proactive_engine.py
 """
 
 import random

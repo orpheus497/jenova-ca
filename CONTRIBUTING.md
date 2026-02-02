@@ -6,13 +6,13 @@ Welcome to the JENOVA Cognitive Architecture project. This guide covers the codi
 
 ## Getting Started
 
-1. **Read the documentation**: Start with `.devdocs/BRIEFING.md` for current project status
-2. **Understand the architecture**: Review `.devdocs/DECISIONS_LOG.md` for design decisions
-3. **Follow the standards**: All code must comply with standards in `.devdocs/guardians/marshal/`
+1. **Read the documentation**: Start with the README for project overview and `src/jenova/` for implementation
+2. **Understand the architecture**: Review docstrings and module structure in the codebase
+3. **Follow the standards**: All code must comply with the standards in this document
 
 ### Supported Python Versions (Development & CI)
 
-Use **Python 3.10, 3.11, 3.12, or 3.13** for local development and CI. **Python 3.14 is unsupported** for stable installs: key dependencies (e.g. `onnxruntime` and downstream packages like `lz4`) do not yet provide stable PyPI wheels for 3.14. Nightly `onnxruntime` builds exist, but full ecosystem support is not available. If your system default is Python 3.14, use **Python 3.13** for development (e.g. `pyenv install 3.13 && pyenv local 3.13`, or a venv from 3.13).
+Use **Python 3.10, 3.11, 3.12, or 3.13** for local development and CI. These versions are tested in the CI matrix and listed in `pyproject.toml` classifiers. **Python 3.14 is unsupported** for stable installs: key dependencies (e.g. `onnxruntime` and downstream packages like `lz4`) do not yet provide stable PyPI wheels for 3.14. If your system default is Python 3.14, use **Python 3.13** for development (e.g. `pyenv install 3.13 && pyenv local 3.13`, or a venv from 3.13).
 
 ---
 
@@ -141,9 +141,7 @@ class GraphProtocol(Protocol):
 When making changes:
 
 1. **Update docstrings** to match new behavior
-2. **Update `.devdocs/PROGRESS.md`** with session summary
-3. **Maintain agent-specific docs** in your agent folder (if applicable)
-4. **Never modify another agent's documentation folder**
+2. **Update this CONTRIBUTING.md or README** if you change contribution or project structure
 
 ---
 
@@ -157,16 +155,7 @@ Before submitting:
 - [ ] All tests pass (`pytest tests/`)
 - [ ] No `Any` types used
 - [ ] Docstrings match implementation
-- [ ] `.devdocs/PROGRESS.md` updated
-
----
-
-## Quick Links
-
-- **Standards and formatting**: `.devdocs/guardians/marshal/`
-- **Current Status**: `.devdocs/BRIEFING.md`
-- **Session Log**: `.devdocs/PROGRESS.md`
-- **Architecture decisions**: `.devdocs/DECISIONS_LOG.md`
+- [ ] Documentation (docstrings, README, or CONTRIBUTING) updated as needed
 
 ---
 

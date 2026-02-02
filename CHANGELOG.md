@@ -7,7 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(None yet.)
+### Changed
+
+- **Documentation and config (audit remediation):**
+  - **README:** Clone URL kept as `orpheus497/jenova-ca` (canonical user repo). Updated Python to 3.10–3.13. Corrected command table: `/reset` and `/debug` now TUI & Headless; cognitive commands (`/insight`, `/reflect`, `/memory-insight`, `/meta`, `/verify`, `/develop_insight`, `/learn_procedure`, `/train`) moved to “Cognitive Commands (TUI)” as implemented. Updated test counts (19 unit files, 430+ unit tests, 3 integration files, 37 integration tests, 490+ total). Updated dependency count (6 dev dependencies). Added CONTRIBUTING.md to project structure. Revised “Planned Features” (removed implemented command handlers; added headless cognitive support as planned).
+  - **CONTRIBUTING:** Clarified Python 3.10–3.13 alignment with CI matrix and pyproject classifiers.
+  - **config.example.yaml:** Replaced Python-style comment schema with standard YAML `#` comments.
+  - **CI:** Upgraded `actions/setup-python` from v5 to v6. Added Python 3.13 to test matrix. Added `ruff format --check` step.
+  - **pyproject.toml:** Added Python 3.13 classifier.
+  - **AUDIT_REPORT.md:** Marked audit items as resolved.
+- **Session handoff:** Added `SESSION_HANDOFF.md` at repo root. Summarizes session work, current state, next steps, and quick reference for the next session or contributor.
 
 ## [4.0.1] - 2026-02-01
 
@@ -30,9 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Conftest: Python 3.14 guard with clear fail-fast message; optional `llama_cpp` and `onnxruntime` mocks for CI/FreeBSD compatibility.
   - CI: integration marker on `test_cognitive_flow`; install step timeout 15m; pytest timeouts 5m/10m for unit/integration and test matrix.
 - **Documentation (Doc Updater C7 and user-directed):**
-  - README and CONTRIBUTING .devdocs paths corrected to match actual layout (`DECISIONS_LOG.md`, `guardians/marshal/`).
-  - Doc Updater (C7) logs created in `.devdocs/maintainers/doc_updater/`; CHANGELOG updated with 2026-02-01 fixes.
-  - **README refocused as program README:** Removed all .devdocs references and Contributing section. README now presents the program (what JENOVA is, install, use, config) and the creator’s personal story: built over six months using only AI; creator did not touch a line of code and does not know how to write or read code—six months in, still doesn’t. Used as a personal project to learn about software development, project planning, program design, engineering software, and technology. First-person narrative throughout; CONTRIBUTING.md removed from project structure in README.
+  - README and CONTRIBUTING paths and wording corrected for public documentation.
+  - CHANGELOG updated with 2026-02-01 fixes.
+  - **README refocused as program README:** README now presents the program (what JENOVA is, install, use, config) and the creator’s personal story: built over six months using only AI; creator did not touch a line of code and does not know how to write or read code—six months in, still doesn’t. Used as a personal project to learn about software development, project planning, program design, engineering software, and technology. First-person narrative throughout; CONTRIBUTING.md removed from project structure in README.
 - **Code quality (2026-01-26):**
   - Fixed 3,831 linting violations across entire codebase; resolved 69 formatting issues; improved exception handling (proper `from` clauses), type annotations (TYPE_CHECKING), simplified conditionals, PEP 8 imports, no trailing whitespace, modernized imports, noqa for intentional patterns; enhanced maintainability and readability.
 
@@ -80,15 +89,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CI/CD Pipeline**: GitHub Actions workflow with automated testing, coverage reporting, and security scanning
 
 #### Documentation
-- **Developer Documentation**: Complete `.devdocs/` structure with agent-specific documentation
-- **Code Standards**: Comprehensive coding standards and anti-patterns documentation
-- **Architecture Documentation**: System architecture, decision logs, and planning documents
-- **Contributing Guide**: Detailed contribution guidelines with code standards
+- **Developer Documentation**: Code standards, architecture notes, and contribution guidelines
+- **Contributing Guide**: Detailed contribution guidelines (CONTRIBUTING.md) with code standards
 
 ### Changed
 
 #### Architecture
-- **Complete Codebase Rebuild**: Legacy codebase archived to `.devdocs/resources/`, new production-ready codebase in `src/jenova/`
+- **Complete Codebase Rebuild**: Legacy codebase archived; new production-ready codebase in `src/jenova/`
 - **Dict-Based Graph**: Replaced networkx dependency with lightweight dict-based graph implementation
 - **Graph Search Algorithm Rebuild**: Rebuilt `CognitiveGraph.search()` with hybrid search (embedding-based semantic search + inverted index keyword matching) replacing O(n) linear scan (P0-002)
 - **Unified Memory System**: Consolidated episodic, semantic, and procedural memory into unified ChromaDB-based system
@@ -145,7 +152,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- **Legacy Codebase**: Archived to `.devdocs/resources/` for reference only
+- **Legacy Codebase**: Archived for reference only
 - **Networkx Dependency**: Replaced with lightweight dict-based graph
 - **Bubble Tea Go TUI**: Replaced with Textual Python TUI
 - **Requirements.txt**: Replaced with pyproject.toml
@@ -182,16 +189,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `##Class purpose:` for class definitions
   - `##Function purpose:` for method definitions
   - `##Block purpose:` for significant code blocks
-- **Developer Documentation:** Added `.devdocs/` directory with comprehensive development documentation:
-  - `ARCHITECTURE.md`: System architecture overview
-  - `BRIEFING.md`: Quick start guide for developers
-  - `DECISIONS_LOG.md`: Architectural decision records
-  - `PLANS.md`: Future development roadmap
-  - `PROGRESS.md`: Development progress tracking
-  - `SESSION_HANDOFF.md`: Context for development sessions
-  - `SUMMARIES.md`: Code review summaries
-  - `TESTS.md`: Testing documentation
-  - `TODOS.md`: Outstanding tasks and improvements
+- **Developer Documentation:** Expanded development documentation and contribution guidelines
 - **Enhanced Query Analysis:** Added multi-level planning support with structured sub-goals and reasoning chains for complex queries
 - **Integration Layer:** New Cortex-Memory integration layer for unified knowledge representation and cross-referencing
 - **Context Scoring:** Enhanced context retrieval with configurable scoring weights and query-aware ranking
@@ -208,4 +206,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-*For earlier versions, see `.devdocs/resources/CHANGELOG.md`*
+*For earlier versions, see the project's version control history.*
