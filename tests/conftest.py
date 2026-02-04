@@ -13,11 +13,12 @@ from unittest.mock import MagicMock
 
 ##Fix: Fail fast on Python 3.14+ so agents/users get a clear message instead of pip resolution
 ##Note: chromadb requires onnxruntime; onnxruntime has no wheels for Python 3.14, so
-##pip install -e ".[dev]" fails. Use Python 3.10, 3.11, or 3.12 (e.g. pyenv, or CI uses 3.11).
+##pip install -e ".[dev]" fails. Use Python 3.10, 3.11, 3.12, or 3.13 (e.g. pyenv, or CI uses 3.11).
 if sys.version_info >= (3, 14):
     raise RuntimeError(
-        "Python 3.14+ is not supported for development: chromadb depends on onnxruntime, "
-        "which has no wheels for 3.14. Use Python 3.10, 3.11, or 3.12 (e.g. pyenv install 3.11; pyenv local 3.11)."
+        "Python 3.14+ is not supported for development: chromadb depends on "
+        "onnxruntime, which has no wheels for 3.14. Use Python 3.10, 3.11, "
+        "3.12, or 3.13 (e.g. pyenv install 3.11; pyenv local 3.11)."
     )
 
 ##Mock purpose: Mock onnxruntime before chromadb imports it (not available on FreeBSD)
@@ -52,8 +53,8 @@ _TEST_EMBED_DIM = 384
 class _TestEmbedding:
     """Minimal embedding for unit tests; avoids chromadb default ONNX."""
 
-    def __call__(self, input: list[str]) -> list[list[float]]:
-        return [[0.0] * _TEST_EMBED_DIM for _ in input]
+    def __call__(self, texts: list[str]) -> list[list[float]]:
+        return [[0.0] * _TEST_EMBED_DIM for _ in texts]
 
 
 ##Function purpose: Provide temporary directory fixture

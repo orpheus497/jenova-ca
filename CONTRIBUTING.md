@@ -136,12 +136,42 @@ class GraphProtocol(Protocol):
 
 ---
 
+## Code Review (CodeRabbit and Local Checks)
+
+### CodeRabbit (optional)
+
+You can run [CodeRabbit](https://coderabbit.ai/) for AI-assisted code review in plain text mode:
+
+```bash
+coderabbit --plain
+```
+
+**Note:** CodeRabbit is a cloud service and may enforce rate limits (e.g. "Rate limit exceeded, please try after N minutes"). If you hit the limit, use the local checks below or retry after the cooldown.
+
+**Do not apply suggestions that change the mandatory comment schema.** CodeRabbit (and other tools) may suggest using a single `#` for comments or folding `##Script function and purpose:` into docstrings. Those suggestions must be **rejected**. The comment schema in this document (e.g. `##Script function and purpose:`, `##Class purpose:`, `##Method purpose:`) is **non-negotiable** and must be kept. When fixing CodeRabbit findings, only apply changes that do not remove or alter the ##-prefixed comment convention.
+
+### Local equivalents (CI-aligned)
+
+Before submitting, run the same checks as CI. From the project root with dev dependencies installed (`pip install -e ".[dev]"`):
+
+```bash
+ruff check src/ tests/
+ruff format --check src/ tests/
+mypy src/ --show-error-codes
+pytest tests/ -m "not slow"
+```
+
+These mirror the CI lint and test jobs and help catch issues before pushing.
+
+---
+
 ## Documentation Requirements
 
 When making changes:
 
 1. **Update docstrings** to match new behavior
 2. **Update this CONTRIBUTING.md or README** if you change contribution or project structure
+3. **After every code review run** (CodeRabbit or local ruff/mypy/pytest): fix any reported issues and update documentation as needed (CHANGELOG, README, CONTRIBUTING, or SESSION_HANDOFF as appropriate)
 
 ---
 
@@ -156,6 +186,7 @@ Before submitting:
 - [ ] No `Any` types used
 - [ ] Docstrings match implementation
 - [ ] Documentation (docstrings, README, or CONTRIBUTING) updated as needed
+- [ ] Code review: run `coderabbit --plain` and/or local checks (ruff, mypy, pytest); after every run, update documentation as needed
 
 ---
 

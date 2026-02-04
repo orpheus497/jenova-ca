@@ -1,4 +1,5 @@
-##Script function and purpose: Query Analysis for user intent, entity extraction, and complexity scoring
+##Script function and purpose: Query Analysis for user intent, entity extraction,
+##                          and complexity scoring
 """
 Query Analyzer
 

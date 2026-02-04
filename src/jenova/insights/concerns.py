@@ -161,14 +161,15 @@ class ConcernManager:
 
         ##Step purpose: Ask LLM to classify insight
         topics_formatted = "\n- ".join(topics)
-        prompt_text = f'''Analyze the following insight and determine if it belongs to any of the existing topics. Respond with the most relevant topic name from the list if a good fit is found. If no existing topic is a good fit, respond with "new".
-
-Existing Topics:
-- {topics_formatted}
-
-Insight: "{insight_content}"
-
-Relevant Topic:'''
+        prompt_text = (
+            "Analyze the following insight and determine if it belongs to "
+            "any of the existing topics. Respond with the most relevant "
+            "topic name from the list if a good fit is found. If no "
+            "existing topic is a good fit, respond with \"new\".\n\n"
+            f"Existing Topics:\n- {topics_formatted}\n\n"
+            f"Insight: \"{insight_content}\"\n\n"
+            "Relevant Topic:"
+        )
 
         ##Error purpose: Handle LLM failure with fallback
         try:
@@ -178,7 +179,10 @@ Relevant Topic:'''
             )
             chosen_topic = self._llm.generate_text(
                 prompt_text,
-                system_prompt="You are a topic classifier. Respond only with the topic name or 'new'.",
+                system_prompt=(
+                    "You are a topic classifier. Respond only with the "
+                    "topic name or 'new'."
+                ),
                 params=params,
             ).strip()
 
@@ -215,11 +219,12 @@ Relevant Topic:'''
         Returns:
             The new topic name
         """
-        prompt_text = f'''Create a short, one or two-word topic name for the following insight. Use underscores instead of spaces.
-
-Insight: "{insight_content}"
-
-Topic:'''
+        prompt_text = (
+            "Create a short, one or two-word topic name for the following "
+            "insight. Use underscores instead of spaces.\n\n"
+            f"Insight: \"{insight_content}\"\n\n"
+            "Topic:"
+        )
 
         ##Error purpose: Handle LLM failure with fallback
         try:
@@ -230,7 +235,10 @@ Topic:'''
             new_topic = (
                 self._llm.generate_text(
                     prompt_text,
-                    system_prompt="You are a topic generator. Respond only with a short topic name using underscores.",
+                    system_prompt=(
+                        "You are a topic generator. Respond only with a "
+                        "short topic name using underscores."
+                    ),
                     params=params,
                 )
                 .strip()

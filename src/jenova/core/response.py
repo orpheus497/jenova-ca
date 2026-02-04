@@ -1,4 +1,5 @@
-##Script function and purpose: ResponseGenerator - Formats and structures LLM output into coherent responses.
+##Script function and purpose: ResponseGenerator - Formats and structures LLM
+##                          output into coherent responses.
 ##Dependency purpose: Takes raw LLM output and context, produces formatted responses with metadata.
 """ResponseGenerator formats LLM output into structured responses.
 
@@ -447,7 +448,8 @@ class SourceCitationFormatter:
         ##Condition purpose: Include source ID if present
         id_part = f" ({citation.source_id[:8]})" if citation.source_id else ""
 
-        return f"[{type_label}{id_part}] {citation.content_preview[:80]}... ({relevance_pct}% relevant)"
+        content = citation.content_preview[:80]
+        return f"[{type_label}{id_part}] {content}... ({relevance_pct}% relevant)"
 
     ##Method purpose: Format multiple citations
     @staticmethod
@@ -953,4 +955,7 @@ class ResponseGenerator:
     ##Method purpose: Get fallback response for invalid LLM output
     def _get_fallback_response(self) -> str:
         """Get a fallback response when LLM output is invalid."""
-        return "I apologize, but I wasn't able to generate a proper response. Could you please rephrase your question?"
+        return (
+            "I apologize, but I wasn't able to generate a proper response. "
+            "Could you please rephrase your question?"
+        )

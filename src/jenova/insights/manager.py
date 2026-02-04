@@ -19,9 +19,9 @@ import structlog
 from jenova.exceptions import InsightSaveError
 from jenova.graph.types import Node
 from jenova.insights.concerns import ConcernManager
-from jenova.memory.types import MemoryResult
 from jenova.insights.types import CortexId, Insight
 from jenova.llm.types import GenerationParams
+from jenova.memory.types import MemoryResult
 from jenova.utils.json_safe import safe_json_loads
 from jenova.utils.validation import (
     validate_path_within_base,

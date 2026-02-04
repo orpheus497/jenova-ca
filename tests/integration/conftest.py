@@ -1,5 +1,7 @@
-##Script function and purpose: Integration test fixtures - Provides real component instances for integration testing.
-##Dependency purpose: Creates actual instances of JENOVA components with temporary storage for testing.
+##Script function and purpose: Integration test fixtures - Provides real
+##                          component instances for integration testing.
+##Dependency purpose: Creates actual instances of JENOVA components with
+##                    temporary storage for testing.
 """Integration test fixtures for JENOVA.
 
 Provides fixtures that create real component instances with:

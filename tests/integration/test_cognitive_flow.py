@@ -29,6 +29,7 @@ from jenova.core.response import ResponseConfig, ResponseGenerator
 from jenova.graph.graph import CognitiveGraph
 from jenova.graph.types import Node
 from jenova.memory.types import MemoryType
+
 from .conftest import MockLLMInterface
 
 ##Fix: Mark module so Integration CI job runs these tests (pytest tests/integration/ -m integration)
@@ -333,11 +334,16 @@ def test_multiple_users_isolation(knowledge_store: KnowledgeStore) -> None:
     knowledge_store.add("Query A Answer A", MemoryType.EPISODIC, metadata={"username": "user1"})
     knowledge_store.add("Query B Answer B", MemoryType.EPISODIC, metadata={"username": "user2"})
 
-    ##Action purpose: Search for each user (note: username filtering via metadata requires direct memory access)
-    # Since KnowledgeStore.search doesn't filter by username, we search all and check metadata
-    all_results = knowledge_store.search("Query", memory_types=[MemoryType.EPISODIC], n_results=10)
+    ##Action purpose: Search for each user (note: username filtering via
+    ##                metadata requires direct memory access)
+    # Since KnowledgeStore.search doesn't filter by username, we search all
+    # and check metadata
+    all_results = knowledge_store.search(
+        "Query", memory_types=[MemoryType.EPISODIC], n_results=10
+    )
 
-    ##Assertion purpose: Verify both users' data exists (isolation would be enforced at application level)
+    ##Assertion purpose: Verify both users' data exists (isolation would be
+    ##                   enforced at application level)
     assert all_results is not None
     assert len(all_results.memories) >= 0  # May find both or neither depending on search
 

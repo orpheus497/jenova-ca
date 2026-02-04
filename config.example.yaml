@@ -52,3 +52,6 @@ persona:
 
 # Debug mode (enables verbose logging)
 debug: false
+
+# Optional: default username for headless mode (used when --user not set)
+# default_username: null

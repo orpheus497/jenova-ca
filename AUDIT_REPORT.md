@@ -18,6 +18,7 @@ All items below were addressed in documentation and config updates:
 - **Planned Features:** README updated; implemented command handlers removed from “Planned”; headless cognitive support added as planned.
 - **CI:** `actions/setup-python` upgraded to v6; Python 3.13 added to matrix; `ruff format --check` step added.
 - **AUDIT_REPORT:** This section added to record resolution.
+- **Code review documentation:** CONTRIBUTING.md now documents CodeRabbit (`coderabbit --plain`), rate-limit note, and local equivalents (ruff, mypy, pytest). README §8 points to CONTRIBUTING for code review. SESSION_HANDOFF and PR checklist updated accordingly.
 
 ---
 

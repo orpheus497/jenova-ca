@@ -228,11 +228,13 @@ class AssumptionManager:
         assumption = user_unverified[0]
 
         ##Step purpose: Generate verification question using LLM
-        prompt_text = f'''You have an unverified assumption about the user '{username}'. Ask them a clear, direct question to confirm or deny this assumption. The user's response will determine if the assumption is true or false.
-
-Assumption: "{assumption.content}"
-
-Your question to the user:'''
+        prompt_text = (
+            f"You have an unverified assumption about the user '{username}'. "
+            "Ask them a clear, direct question to confirm or deny this assumption. "
+            "The user's response will determine if the assumption is true or false.\n\n"
+            f"Assumption: \"{assumption.content}\"\n\n"
+            "Your question to the user:"
+        )
 
         ##Error purpose: Handle LLM generation failure
         try:
@@ -247,7 +249,8 @@ Your question to the user:'''
             )
             return (assumption, question.strip())
         except LLMGenerationError as e:
-            ##Fix: Re-raise LLM errors with context - critical errors should propagate, not be silently swallowed
+            ##Fix: Re-raise LLM errors with context - critical errors should
+            ##     propagate, not be silently swallowed
             logger.error(
                 "assumption_verification_question_failed",
                 error=str(e),
@@ -294,30 +297,29 @@ Your question to the user:'''
             raise AssumptionNotFoundError(assumption.content)
 
         ##Step purpose: Use LLM to analyze response
-        prompt_text = f'''Analyze the user's response to determine if it confirms or denies the assumption. Respond with exactly "true" or "false".
-
-Assumption: "{assumption.content}"
-User Response: "{user_response}"
-
-Result:'''
-
-        ##Step purpose: Determine result from LLM response
-        params = GenerationParams(
-            max_tokens=10,
-            temperature=0.1,
+        prompt_text = (
+            "Analyze the following user response to the assumption "
+            f"\"{assumption.content}\" to determine if it confirms or "
+            "denies the assumption. Respond with exactly \"true\" or \"false\".\n\n"
+            f"User response: \"{user_response}\"\n\n"
+            "Result:"
         )
 
-        ##Error purpose: Handle LLM failure with default to false
+        ##Error purpose: Handle LLM errors gracefully
         try:
-            result = (
-                self._llm.generate_text(
-                    prompt_text,
-                    system_prompt="You are analyzing whether a response confirms or denies an assumption. Respond only with 'true' or 'false'.",
-                    params=params,
-                )
-                .strip()
-                .lower()
+            params = GenerationParams(
+                max_tokens=10,
+                temperature=0.0,
             )
+            result = self._llm.generate_text(
+                prompt_text,
+                system_prompt=(
+                    "You are a classifier determining whether a response "
+                    "confirms or denies an assumption. Respond only with "
+                    "'true' or 'false'."
+                ),
+                params=params,
+            ).strip().lower()
         except LLMGenerationError as e:
             logger.error(
                 "assumption_resolution_failed",

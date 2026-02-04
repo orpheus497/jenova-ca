@@ -95,12 +95,16 @@ class TestQueryComplexityAssessment:
         """Create a QueryAnalyzer instance."""
         return QueryAnalyzer()
 
-    ##Method purpose: Test simple query detection
-    def test_simple_query_detected(self, analyzer: QueryAnalyzer) -> None:
-        """Short queries are classified as simple or moderate."""
+    ##Method purpose: Test short query not classified as complex
+    ##Note: Analyzer may return SIMPLE or MODERATE for short queries;
+    ##      we assert it is not COMPLEX/VERY_COMPLEX
+    def test_short_query_not_classified_as_complex(self, analyzer: QueryAnalyzer) -> None:
+        """Short queries are not classified as complex or very complex."""
         result = analyzer.analyze("What is AI?")
-
-        assert result.complexity in (QueryComplexity.SIMPLE, QueryComplexity.MODERATE)
+        assert result.complexity not in (
+            QueryComplexity.COMPLEX,
+            QueryComplexity.VERY_COMPLEX,
+        )
         assert result.complexity_confidence >= 0.5
 
     ##Method purpose: Test moderate query detection

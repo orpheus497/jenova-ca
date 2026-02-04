@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Comment schema preserved:** Restored mandatory `##Script function and purpose:` (and project comment schema) in `tests/__init__.py` and `tests/integration/__init__.py` after mistaken removal. CONTRIBUTING Code Review section now explicitly requires **rejecting** any CodeRabbit (or other tool) suggestion to remove or change the ##-prefixed comment convention; the schema is non-negotiable.
+
 ### Changed
 
+- **Code review documentation (Cycles 1–10):** CONTRIBUTING.md: added "Code Review (CodeRabbit and Local Checks)" section documenting `coderabbit --plain`, rate-limit note, and local equivalents (ruff, mypy, pytest) aligned with CI. PR checklist: added code-review step and "after every run update documentation as needed." Documentation Requirements: added "after every code review run" fix-and-update-docs step. README §8: added pointer to CONTRIBUTING for code review and contribution standards. SESSION_HANDOFF: added CodeRabbit and local checks to Next Steps and Quick Reference; fixed numbering. AUDIT_REPORT: recorded CodeRabbit/local-check documentation as resolved. .gitignore: added `.coderabbit/` for optional CodeRabbit tool artifacts. Note: `coderabbit --plain` was run repeatedly; cloud rate limits applied, so local checks (ruff, mypy, pytest) are documented as alternatives and "run, fix, then update docs" is required after every review run.
 - **Documentation and config (audit remediation):**
   - **README:** Clone URL kept as `orpheus497/jenova-ca` (canonical user repo). Updated Python to 3.10–3.13. Corrected command table: `/reset` and `/debug` now TUI & Headless; cognitive commands (`/insight`, `/reflect`, `/memory-insight`, `/meta`, `/verify`, `/develop_insight`, `/learn_procedure`, `/train`) moved to “Cognitive Commands (TUI)” as implemented. Updated test counts (19 unit files, 430+ unit tests, 3 integration files, 37 integration tests, 490+ total). Updated dependency count (6 dev dependencies). Added CONTRIBUTING.md to project structure. Revised “Planned Features” (removed implemented command handlers; added headless cognitive support as planned).
   - **CONTRIBUTING:** Clarified Python 3.10–3.13 alignment with CI matrix and pyproject classifiers.

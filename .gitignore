@@ -116,6 +116,9 @@ config.yml
 # Reports
 pylint_report.txt
 
+# CodeRabbit (optional code review tool)
+.coderabbit/
+
 # Old codebase (pre-Phase 7 remediation)
 /jenovaold/
 

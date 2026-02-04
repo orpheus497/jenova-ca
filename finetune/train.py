@@ -28,9 +28,10 @@ def load_training_data(path: Path) -> list[dict[str, str]]:
         List of training examples
     """
     import json
-    
+
     examples: list[dict[str, str]] = []
-    
+    skipped_lines = 0
+
     ##Loop purpose: Read each line as JSON
     with open(path, encoding="utf-8") as f:
         for line_no, line in enumerate(f, 1):
@@ -41,11 +42,19 @@ def load_training_data(path: Path) -> list[dict[str, str]]:
                 try:
                     examples.append(json.loads(line))
                 except json.JSONDecodeError as e:
+                    skipped_lines += 1
                     warnings.warn(
                         f"finetune/train: Skipping invalid JSON at line {line_no}: {e}",
                         UserWarning,
                         stacklevel=2,
                     )
+
+    if skipped_lines > 0:
+        warnings.warn(
+            f"finetune/train: Skipped {skipped_lines} invalid line(s) out of {line_no} total in {path}",
+            UserWarning,
+            stacklevel=2,
+        )
 
     return examples
 

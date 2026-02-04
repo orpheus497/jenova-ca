@@ -12,11 +12,14 @@ import random
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum, auto
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 import structlog
 
 from jenova.exceptions import GraphError, NodeNotFoundError, ProactiveError
+
+if TYPE_CHECKING:
+    from jenova.assumptions.types import Assumption
 
 ##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
@@ -70,6 +73,7 @@ class ProactiveConfig:
         enable_connect: Enable connection suggestions
         enable_reflect: Enable reflection suggestions
         rotation_enabled: Enable category rotation for variety
+        seed: Optional RNG seed for reproducible category/node selection (None = system random)
     """
 
     cooldown_minutes: int = 15
@@ -81,6 +85,8 @@ class ProactiveConfig:
     enable_connect: bool = True
     enable_reflect: bool = True
     rotation_enabled: bool = True
+    ##Update: Optional seed for reproducible proactive suggestions (P3 Daedelus C8)
+    seed: int | None = None
 
 
 ##Class purpose: Protocol for graph access
@@ -110,6 +116,19 @@ class LLMProtocol(Protocol):
     ##Method purpose: Generate text from prompt
     def generate(self, prompt: str) -> str:
         """Generate text from a prompt."""
+        ...
+
+
+##Class purpose: Protocol for assumption verification (P1 Daedelus C1)
+class AssumptionManagerProtocol(Protocol):
+    """Protocol for AssumptionManager: unverified assumptions and verification questions."""
+
+    def get_assumption_to_verify(self, username: str) -> tuple["Assumption", str] | None:
+        """Return (assumption, question) for one unverified assumption, or None."""
+        ...
+
+    def get_pending_verifications(self, username: str) -> list["Assumption"]:
+        """Return list of unverified assumptions for the user."""
         ...
 
 
@@ -180,6 +199,7 @@ class ProactiveEngine:
         config: ProactiveConfig,
         graph: GraphProtocol | None = None,
         llm: LLMProtocol | None = None,
+        assumption_manager: AssumptionManagerProtocol | None = None,
     ) -> None:
         """Initialize the proactive engine.
 
@@ -187,17 +207,25 @@ class ProactiveEngine:
             config: Engine configuration
             graph: Optional graph access (can be set later)
             llm: Optional LLM access (can be set later)
+            assumption_manager: Optional; when set, VERIFY suggestions use
+                specific assumptions (P1 Daedelus C1).
         """
         ##Step purpose: Store configuration and dependencies
         self._config = config
         self._graph = graph
         self._llm = llm
+        ##Update: Optional AssumptionManager for VERIFY suggestions (P1 Daedelus C1)
+        self._assumption_manager = assumption_manager
 
         ##Step purpose: Initialize tracking state
         self._last_suggestion_time: dict[SuggestionCategory, datetime] = {}
         self._session_suggestion_count = 0
         self._engagement = EngagementTracker()
         self._last_category: SuggestionCategory | None = None
+        ##Update: Seeded RNG when config.seed set for reproducibility (P3 Daedelus C8)
+        self._rng: random.Random | None = (
+            random.Random(config.seed) if config.seed is not None else None
+        )
 
         logger.info(
             "proactive_engine_initialized",
@@ -233,6 +261,11 @@ class ProactiveEngine:
     def set_llm(self, llm: LLMProtocol) -> None:
         """Set the LLM dependency."""
         self._llm = llm
+
+    ##Method purpose: Set the assumption manager (VERIFY suggestions)
+    def set_assumption_manager(self, assumption_manager: AssumptionManagerProtocol | None) -> None:
+        """Set the assumption manager for VERIFY suggestions (P1 Daedelus C1)."""
+        self._assumption_manager = assumption_manager
 
     ##Method purpose: Check if a category is on cooldown
     def _is_on_cooldown(self, category: SuggestionCategory) -> bool:
@@ -288,9 +321,10 @@ class ProactiveEngine:
         weights = [self._engagement.get_acceptance_rate(cat) for cat in available]
 
         ##Condition purpose: Use weighted random selection
+        rng = self._rng or random
         total_weight = sum(weights)
         if total_weight > 0:
-            r = random.random() * total_weight
+            r = rng.random() * total_weight
             cumulative = 0.0
             for cat, weight in zip(available, weights, strict=False):
                 cumulative += weight
@@ -298,7 +332,7 @@ class ProactiveEngine:
                     return cat
 
         ##Step purpose: Fallback to random selection
-        return random.choice(available)
+        return rng.choice(available)
 
     ##Method purpose: Generate a suggestion for a category
     def _generate_suggestion(
@@ -388,12 +422,41 @@ class ProactiveEngine:
 
     ##Method purpose: Generate a verification suggestion
     def _generate_verify_suggestion(self, username: str) -> Suggestion | None:
-        """Generate a suggestion to verify assumptions."""
-        ##Step purpose: This would integrate with AssumptionManager
-        # For now, return a generic verification prompt
+        """Generate a suggestion to verify assumptions; uses AssumptionManager
+        when available (P1 Daedelus C1)."""
+        if self._assumption_manager is not None:
+            ##Step purpose: Prefer specific (assumption, question) from AssumptionManager
+            pair = self._assumption_manager.get_assumption_to_verify(username)
+            if pair is not None:
+                _assumption, question = pair
+                return Suggestion(
+                    category=SuggestionCategory.VERIFY,
+                    content=question.strip() or "Would you like to verify this assumption?",
+                    priority=0.6,
+                )
+            ##Step purpose: Fallback to pending list and build content from first assumption
+            pending = self._assumption_manager.get_pending_verifications(username)
+            if pending:
+                a = pending[0]
+                preview = (a.content[:80] + "...") if len(a.content) > 80 else a.content
+                n = len(pending)
+                content = (
+                    f"You have {n} unverified assumption(s). One: \"{preview}\" "
+                    "Would you like to verify it?"
+                )
+                return Suggestion(
+                    category=SuggestionCategory.VERIFY,
+                    content=content,
+                    priority=0.5,
+                )
+            return None
+        ##Step purpose: No AssumptionManager — generic fallback
         return Suggestion(
             category=SuggestionCategory.VERIFY,
-            content="I've made some assumptions about your preferences. Would you like to review them?",
+            content=(
+                "I've made some assumptions about your preferences. "
+                "Would you like to review them?"
+            ),
             priority=0.5,
         )
 
@@ -408,7 +471,8 @@ class ProactiveEngine:
 
         ##Condition purpose: Suggest developing an existing insight
         if insight_nodes:
-            node = random.choice(insight_nodes)
+            ##Update: Prefer low-connectivity (orphan) nodes for DEVELOP (P1 Daedelus C9)
+            node = self._select_develop_node(insight_nodes)
             content = str(node.get("content", ""))[:100]
             return Suggestion(
                 category=SuggestionCategory.DEVELOP,
@@ -419,13 +483,35 @@ class ProactiveEngine:
 
         return None
 
+    ##Method purpose: Select insight node by connectivity (prefer low-connectivity)
+    def _select_develop_node(self, insight_nodes: list[dict[str, object]]) -> dict[str, object]:
+        """Select an insight node for DEVELOP; prefer low-connectivity (orphan) nodes."""
+        get_degree = getattr(self._graph, "get_connection_count", None) if self._graph else None
+        rng = self._rng or random
+        if get_degree is None:
+            return rng.choice(insight_nodes)
+        ##Step purpose: Rank by degree ascending; prefer orphans
+        keyed: list[tuple[int, dict[str, object]]] = []
+        for n in insight_nodes:
+            nid = getattr(n, "id", None) or (n.get("id") if hasattr(n, "get") else None)
+            degree = get_degree(str(nid)) if nid is not None else 0
+            keyed.append((degree, n))
+        keyed.sort(key=lambda x: x[0])
+        ##Step purpose: Pick among lowest degree (random tie-break)
+        low = keyed[0][0]
+        candidates = [n for d, n in keyed if d == low]
+        return rng.choice(candidates)
+
     ##Method purpose: Generate a connection suggestion
     def _generate_connect_suggestion(self, username: str) -> Suggestion | None:
         """Generate a suggestion to connect related concepts."""
         ##Step purpose: Find nodes that could be connected
         return Suggestion(
             category=SuggestionCategory.CONNECT,
-            content="I notice some of your ideas might be related. Would you like me to help connect them?",
+            content=(
+                "I notice some of your ideas might be related. "
+                "Would you like me to help connect them?"
+            ),
             priority=0.4,
         )
 

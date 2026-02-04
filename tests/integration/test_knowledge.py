@@ -1,5 +1,7 @@
-##Script function and purpose: Integration tests for KnowledgeStore - Tests unified memory and graph operations.
-##Dependency purpose: Validates that KnowledgeStore correctly stores, retrieves, and searches knowledge.
+##Script function and purpose: Integration tests for KnowledgeStore - Tests
+##                          unified memory and graph operations.
+##Dependency purpose: Validates that KnowledgeStore correctly stores,
+##                    retrieves, and searches knowledge.
 """Integration tests for KnowledgeStore.
 
 Tests the unified knowledge system including:

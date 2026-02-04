@@ -1,5 +1,7 @@
-##Script function and purpose: Integration tests for CognitiveEngine - Tests full cognitive cycle with real components.
-##Dependency purpose: Validates that CognitiveEngine correctly orchestrates knowledge retrieval, LLM, and response generation.
+##Script function and purpose: Integration tests for CognitiveEngine - Tests full
+##                          cognitive cycle with real components.
+##Dependency purpose: Validates that CognitiveEngine correctly orchestrates
+##                    knowledge retrieval, LLM, and response generation.
 """Integration tests for CognitiveEngine.
 
 Tests the full cognitive cycle including:

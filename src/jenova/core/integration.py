@@ -15,7 +15,18 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 import structlog
 
 ##Fix: Re-export so jenova.core can import from integration (API surface)
-from jenova.exceptions import GraphError, IntegrationError, NodeNotFoundError
+from jenova.exceptions import (
+    ConsistencyError as ConsistencyError,
+)
+from jenova.exceptions import (
+    GraphError as GraphError,
+)
+from jenova.exceptions import (
+    IntegrationError as IntegrationError,
+)
+from jenova.exceptions import (
+    NodeNotFoundError as NodeNotFoundError,
+)
 
 if TYPE_CHECKING:
     from jenova.graph.types import Node
@@ -24,6 +35,21 @@ if TYPE_CHECKING:
 
 ##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
+
+__all__ = [
+    "ConsistencyError",
+    "ConsistencyReport",
+    "CrossReference",
+    "GraphError",
+    "IntegrationConfig",
+    "IntegrationError",
+    "IntegrationHub",
+    "KnowledgeDuplication",
+    "KnowledgeGap",
+    "NodeNotFoundError",
+    "RelatedNodeResult",
+    "UnifiedKnowledgeMap",
+]
 
 
 ##Class purpose: Protocol for graph operations needed by integration

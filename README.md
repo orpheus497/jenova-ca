@@ -334,6 +334,8 @@ persona:
     - Learn from interactions
 ```
 
+Optional for headless mode: `default_username` (string or null) sets the username when `--user` is not passed; default is `"default"`.
+
 ## 7. Project Structure
 
 ```
@@ -409,11 +411,14 @@ jenova-ca/
 
 ## 8. Development & CLI
 
+For contribution standards, code review (including optional CodeRabbit and local ruff/mypy/pytest checks), and PR checklist, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ### CLI Options
 
 ```bash
 jenova                      # Run with TUI (default)
 jenova --no-tui             # Run in headless CLI mode
+jenova --user myname        # Headless username (-u; else config default_username or 'default')
 jenova --config config.yaml # Use custom configuration
 jenova --debug              # Enable debug logging
 jenova --skip-model-load    # Development mode (mock LLM)

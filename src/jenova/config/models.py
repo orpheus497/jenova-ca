@@ -198,6 +198,11 @@ class JenovaConfig(BaseModel):
     graph: GraphConfig = Field(default_factory=GraphConfig)
     persona: PersonaConfig = Field(default_factory=PersonaConfig)
     debug: bool = Field(default=False, description="Enable debug mode.")
+    ##Update: Default username for headless mode when --user not set (P3 Daedelus C8)
+    default_username: str | None = Field(
+        default=None,
+        description="Default username for headless mode when --user not set.",
+    )
 
     ##Method purpose: Load and validate config from YAML file
     @classmethod

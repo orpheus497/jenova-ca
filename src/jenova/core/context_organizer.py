@@ -1,4 +1,5 @@
-##Script function and purpose: Context organization into hierarchical tiers for LLM prompt construction
+##Script function and purpose: Context organization into hierarchical tiers for
+##                          LLM prompt construction
 """
 Context Organizer
 
@@ -395,7 +396,8 @@ Query: "{query}"
 Context Items:
 {items_str}
 
-Respond with a valid JSON object where keys are category names and values are arrays of item numbers (1-indexed).
+Respond with a valid JSON object where keys are category names and values are
+arrays of item numbers (1-indexed).
 Example: {{"Python Programming": [1, 3], "Data Structures": [2, 4]}}
 
 JSON Response:"""
