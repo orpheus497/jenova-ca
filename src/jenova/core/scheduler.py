@@ -6,7 +6,6 @@ This module provides scheduling infrastructure for background cognitive tasks
 that run during conversation intervals. Tasks include insight generation,
 assumption verification, and reflection cycles.
 
-Reference: .devdocs/resources/src/jenova/cognitive_engine/scheduler.py
 """
 
 from dataclasses import dataclass
@@ -15,7 +14,7 @@ from typing import Protocol
 
 import structlog
 
-##Class purpose: Define logger for scheduler operations
+##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
 
 

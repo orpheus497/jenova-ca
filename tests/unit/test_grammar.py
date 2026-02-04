@@ -121,7 +121,7 @@ def test_loader_load_from_string_with_llama(loader: GrammarLoader) -> None:
     """##Test case: load_from_string creates grammar if llama available."""
     ##Step purpose: Patch llama import
     mock_grammar = Mock()
-    with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
+    with patch("llama_cpp.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
 
         ##Step purpose: Set llama available
@@ -139,7 +139,7 @@ def test_loader_caches_from_string(loader: GrammarLoader) -> None:
     ##Step purpose: Create mock grammar
     mock_grammar = Mock()
 
-    with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
+    with patch("llama_cpp.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
 
         with patch.object(loader, "_llama_available", True):
@@ -156,7 +156,7 @@ def test_loader_caches_from_string(loader: GrammarLoader) -> None:
 def test_loader_load_from_string_parse_error(loader: GrammarLoader) -> None:
     """##Test case: Grammar parsing error raises GrammarError."""
     ##Step purpose: Set up error
-    with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
+    with patch("llama_cpp.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(side_effect=ValueError("Invalid grammar"))
 
         with patch.object(loader, "_llama_available", True), pytest.raises(GrammarError):  # noqa: SIM117
@@ -173,7 +173,7 @@ def test_loader_load_from_file(loader: GrammarLoader, grammar_dir: Path) -> None
 
     ##Step purpose: Mock llama
     mock_grammar = Mock()
-    with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
+    with patch("llama_cpp.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
 
         with patch.object(loader, "_llama_available", True):
@@ -228,7 +228,7 @@ def test_loader_load_json_grammar(loader: GrammarLoader) -> None:
     """##Test case: load_json_grammar loads built-in JSON."""
     ##Step purpose: Mock llama
     mock_grammar = Mock()
-    with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
+    with patch("llama_cpp.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
 
         with patch.object(loader, "_llama_available", True):
@@ -245,7 +245,7 @@ def test_loader_load_simple_json_grammar(loader: GrammarLoader) -> None:
     """##Test case: load_simple_json_grammar loads built-in simple JSON."""
     ##Step purpose: Mock llama
     mock_grammar = Mock()
-    with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
+    with patch("llama_cpp.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
 
         with patch.object(loader, "_llama_available", True):
@@ -262,7 +262,7 @@ def test_loader_load_boolean_grammar(loader: GrammarLoader) -> None:
     """##Test case: load_boolean_grammar loads built-in boolean."""
     ##Step purpose: Mock llama
     mock_grammar = Mock()
-    with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
+    with patch("llama_cpp.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
 
         with patch.object(loader, "_llama_available", True):
@@ -279,7 +279,7 @@ def test_loader_load_integer_grammar(loader: GrammarLoader) -> None:
     """##Test case: load_integer_grammar loads built-in integer."""
     ##Step purpose: Mock llama
     mock_grammar = Mock()
-    with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
+    with patch("llama_cpp.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
 
         with patch.object(loader, "_llama_available", True):
@@ -296,7 +296,7 @@ def test_loader_load_confidence_grammar(loader: GrammarLoader) -> None:
     """##Test case: load_confidence_grammar loads built-in confidence."""
     ##Step purpose: Mock llama
     mock_grammar = Mock()
-    with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
+    with patch("llama_cpp.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
 
         with patch.object(loader, "_llama_available", True):
@@ -344,7 +344,7 @@ def test_loader_cache_key_format(loader: GrammarLoader) -> None:
     """##Test case: Cache keys are correct."""
     ##Step purpose: Mock llama and load several
     mock_grammar = Mock()
-    with patch("jenova.utils.grammar.LlamaGrammar") as mock_llama_class:
+    with patch("llama_cpp.LlamaGrammar") as mock_llama_class:
         mock_llama_class.from_string = Mock(return_value=mock_grammar)
 
         with patch.object(loader, "_llama_available", True):

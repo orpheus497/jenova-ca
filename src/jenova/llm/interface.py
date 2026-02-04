@@ -191,18 +191,34 @@ class LLMInterface:
 
             elapsed_ms = (time.perf_counter() - start_time) * 1000
 
-            ##Step purpose: Extract result data
-            choice = result["choices"][0]
-            content = choice["text"]
+            ##Fix: Guard malformed backend response to avoid KeyError/IndexError
+            choices = result.get("choices") if isinstance(result, dict) else None
+            if not choices or not isinstance(choices, list):
+                raise LLMGenerationError(
+                    "Backend returned no choices or invalid format",
+                    prompt_text[:200],
+                )
+            choice = choices[0]
+            if not isinstance(choice, dict):
+                raise LLMGenerationError(
+                    "Backend choice is not a dict",
+                    prompt_text[:200],
+                )
+            content = choice.get("text", "")
             finish_reason = choice.get("finish_reason", "stop")
+            usage = result.get("usage") if isinstance(result, dict) else {}
+            tokens_generated = usage.get("completion_tokens", 0) if isinstance(usage, dict) else 0
+            tokens_prompt = usage.get("prompt_tokens", 0) if isinstance(usage, dict) else 0
 
             return Completion(
-                content=content,
-                finish_reason=finish_reason,
-                tokens_generated=result["usage"]["completion_tokens"],
-                tokens_prompt=result["usage"]["prompt_tokens"],
+                content=content if isinstance(content, str) else str(content),
+                finish_reason=finish_reason if isinstance(finish_reason, str) else "stop",
+                tokens_generated=int(tokens_generated) if tokens_generated is not None else 0,
+                tokens_prompt=int(tokens_prompt) if tokens_prompt is not None else 0,
                 generation_time_ms=elapsed_ms,
             )
+        except LLMGenerationError:
+            raise
         except Exception as e:
             raise LLMGenerationError(str(e), prompt_text[:200]) from e
 

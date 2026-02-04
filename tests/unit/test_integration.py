@@ -201,7 +201,7 @@ class TestIntegrationHub:
     ##Method purpose: Test finding related nodes
     def test_find_related_nodes_returns_matches(self, hub: IntegrationHub) -> None:
         """find_related_nodes returns matching nodes for user."""
-        results = hub.find_related_nodes("Python programming", "testuser")
+        results = hub.find_related_nodes("Python", "testuser")
 
         assert len(results) > 0
         assert any(r.node_id == "node_1" for r in results)

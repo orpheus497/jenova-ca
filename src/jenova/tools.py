@@ -5,7 +5,6 @@ Tools Module - Utility tools for JENOVA operations.
 This module provides utility functions for common operations like
 datetime handling and shell command execution.
 
-Reference: .devdocs/resources/src/jenova/tools.py
 """
 
 import shlex
@@ -17,7 +16,7 @@ import structlog
 
 from jenova.exceptions import ToolError
 
-##Class purpose: Define logger for tool operations
+##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
 
 ##Step purpose: Configuration constants

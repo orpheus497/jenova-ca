@@ -339,7 +339,8 @@ class CognitiveGraph:
         ##Update: Remove from inverted index (P0-002)
         self._remove_from_index(node_id)
 
-        ##Perf: Use _reverse_edges index to find sources with edges TO this node (O(degree) not O(n))
+        ##Perf: Use _reverse_edges index to find sources with edges TO this
+        ##      node (O(degree) not O(n))
         ##      This fixes P1-003 from Daedelus audit - was O(n²), now O(degree)
         if node_id in self._reverse_edges:
             ##Step purpose: Get all edges that point TO this node
@@ -625,7 +626,8 @@ class CognitiveGraph:
         Raises:
             ValueError: If username is invalid
         """
-        ##Sec: Validate username before filtering to prevent injection attacks (P1-002 Daedelus audit)
+        ##Sec: Validate username before filtering to prevent injection attacks
+        ##     (P1-002 Daedelus audit)
         safe_username = validate_username(username)
 
         ##Step purpose: Filter nodes by user metadata
@@ -757,7 +759,9 @@ class CognitiveGraph:
         ##Step purpose: Build emotion analysis prompt
         prompt = f"""Analyze the emotional content of the following text.
 Respond with a valid JSON object containing:
-- "primary_emotion": one of ["joy", "sadness", "anger", "surprise", "fear", "disgust", "love", "curiosity", "neutral"]
+- "primary_emotion": one of ["joy", "sadness", "anger", "surprise",
+  "fear", "disgust", "love", "curiosity", "neutral"]
+
 - "confidence": a number between 0.0 and 1.0
 - "emotion_scores": an object mapping emotion names to scores (0.0-1.0)
 
@@ -888,7 +892,8 @@ JSON Response:"""
             ##Step purpose: Sanitize orphan content to prevent prompt injection
             sanitized_orphan = self._sanitize_for_prompt(orphan.content)
 
-            prompt = f"""Given an isolated node and a list of connected nodes, identify which nodes are most semantically related.
+            prompt = f"""Given an isolated node and a list of connected nodes,
+identify which nodes are most semantically related.
 
 Isolated Node: "{sanitized_orphan}"
 
@@ -1025,8 +1030,10 @@ JSON Response:"""
                 cluster_content_parts.append(f"- {sanitized_node[:150]}")
             cluster_content = "\n".join(cluster_content_parts)
 
-            prompt = f"""Analyze these related pieces of information and synthesize a single, novel meta-insight.
-A meta-insight is a new conclusion or pattern that emerges from combining the information, not just a summary.
+            prompt = f"""Analyze these related pieces of information and synthesize
+a single, novel meta-insight.
+A meta-insight is a new conclusion or pattern that emerges from combining
+the information, not just a summary.
 
 Related Information:
 {cluster_content}
@@ -1173,7 +1180,8 @@ Generate a concise meta-insight (1-2 sentences) that reveals a non-obvious patte
                 ##Step purpose: Remove node (this also cleans edges)
                 del self._nodes[node_id]
 
-                ##Perf: Use _reverse_edges index to find sources with edges TO this node (O(degree) not O(n))
+                ##Perf: Use _reverse_edges index to find sources with edges TO this
+                ##      node (O(degree) not O(n))
                 ##      This fixes P1-003 from Daedelus audit - was O(n²), now O(degree)
                 if node_id in self._reverse_edges:
                     ##Loop purpose: Remove this node from each source's edge list
@@ -1253,7 +1261,10 @@ Generate a concise meta-insight (1-2 sentences) that reveals a non-obvious patte
                     sanitized = self._sanitize_for_prompt(n.content)
                     content_parts.append(sanitized[:50])
                 content_sample = " | ".join(content_parts)
-                prompt = f"Generate a 2-3 word label for this cluster of related content: {content_sample}"
+                prompt = (
+                    f"Generate a 2-3 word label for this cluster of "
+                    f"related content: {content_sample}"
+                )
 
                 ##Error purpose: Fall back to default label on error
                 try:
@@ -1455,14 +1466,16 @@ JSON Response:"""
             candidate_summaries_parts.append(f"- {n.id[:8]}: {sanitized_candidate[:80]}")
         candidate_summaries = "\n".join(candidate_summaries_parts)
 
-        prompt = f"""Given a source node and candidate nodes, identify which candidates are most semantically related to the source.
+        prompt = f"""Given a source node and candidate nodes, identify which
+candidates are most semantically related to the source.
 
 Source Node: "{sanitized_source}"
 
 Candidate Nodes:
 {candidate_summaries}
 
-Respond with JSON: {{"suggested_ids": ["id1", "id2", ...]}} containing the 8-character ID prefixes of the most related nodes (up to {max_suggestions}).
+Respond with JSON: {{"suggested_ids": ["id1", "id2", ...]}} containing the
+8-character ID prefixes of the most related nodes (up to {max_suggestions}).
 
 JSON Response:"""
 

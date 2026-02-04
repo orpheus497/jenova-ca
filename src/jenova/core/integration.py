@@ -14,7 +14,19 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 import structlog
 
-from jenova.exceptions import GraphError, IntegrationError, NodeNotFoundError
+##Fix: Re-export so jenova.core can import from integration (API surface)
+from jenova.exceptions import (
+    ConsistencyError as ConsistencyError,
+)
+from jenova.exceptions import (
+    GraphError as GraphError,
+)
+from jenova.exceptions import (
+    IntegrationError as IntegrationError,
+)
+from jenova.exceptions import (
+    NodeNotFoundError as NodeNotFoundError,
+)
 
 if TYPE_CHECKING:
     from jenova.graph.types import Node
@@ -23,6 +35,21 @@ if TYPE_CHECKING:
 
 ##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
+
+__all__ = [
+    "ConsistencyError",
+    "ConsistencyReport",
+    "CrossReference",
+    "GraphError",
+    "IntegrationConfig",
+    "IntegrationError",
+    "IntegrationHub",
+    "KnowledgeDuplication",
+    "KnowledgeGap",
+    "NodeNotFoundError",
+    "RelatedNodeResult",
+    "UnifiedKnowledgeMap",
+]
 
 
 ##Class purpose: Protocol for graph operations needed by integration
@@ -460,7 +487,11 @@ class IntegrationHub:
 
         ##Loop purpose: Sum weighted centralities
         for result in related:
-            centrality = float(result.metadata.get("centrality", "0"))
+            ##Fix: Guard non-numeric centrality to avoid ValueError (e.g. metadata stores "high")
+            try:
+                centrality = float(result.metadata.get("centrality", "0"))
+            except (ValueError, TypeError):
+                centrality = 0.0
             weight = result.similarity_score
 
             total_centrality += centrality * weight

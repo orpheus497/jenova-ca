@@ -5,7 +5,6 @@ Grammar Loader - Loading and caching llama.cpp grammars.
 This module provides utilities for loading GBNF grammars used with
 llama-cpp-python for structured JSON output generation.
 
-Reference: .devdocs/resources/src/jenova/utils/grammar_loader.py
 """
 
 from pathlib import Path
@@ -15,7 +14,7 @@ import structlog
 
 from jenova.exceptions import GrammarError
 
-##Class purpose: Define logger for grammar operations
+##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
 
 
@@ -131,7 +130,7 @@ class GrammarLoader:
             from llama_cpp import LlamaGrammar  # noqa: F401
 
             return True
-        except ImportError:
+        except (ImportError, OSError, RuntimeError):
             return False
 
     ##Method purpose: Load a grammar from string
@@ -198,11 +197,12 @@ class GrammarLoader:
             raise GrammarError(f"Grammar file not found: {file_path}")
 
         ##Error purpose: Handle file reading errors
+        ##Fix: Catch UnicodeDecodeError so non-UTF-8 files raise GrammarError (BUG-002)
         try:
             grammar_str = file_path.read_text(encoding="utf-8")
             return self.load_from_string(grammar_str, name=filename)
 
-        except OSError as e:
+        except (OSError, UnicodeDecodeError) as e:
             raise GrammarError(f"Failed to read grammar file: {e}") from e
 
     ##Method purpose: Load the built-in JSON grammar

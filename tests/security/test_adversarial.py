@@ -83,7 +83,8 @@ def test_prompt_injection_hidden_instructions() -> None:
 
     ##Assertion purpose: Verify sanitized (SYSTEM: pattern should be removed)
     assert isinstance(sanitized, str)
-    ##Note purpose: SYSTEM: pattern matches r'(?i)system\s*:\s*' and should be replaced with [REDACTED]
+    ##Note purpose: SYSTEM: pattern matches r'(?i)system\s*:\s*' and should
+    ##              be replaced with [REDACTED]
     assert "[REDACTED]" in sanitized or sanitized != hidden
 
 
@@ -255,9 +256,11 @@ def test_invalid_input_malformed_json() -> None:
 ##Function purpose: Test invalid input circular reference
 def test_invalid_input_circular_reference() -> None:
     """##Test case: Deeply nested JSON structures are handled."""
-    ##Step purpose: Create deeply nested structure (JSON can't have true circular refs in string form)
-    ##Note purpose: JSON strings cannot represent true circular references, but deeply nested structures
-    ##can cause recursion issues. This test verifies safe handling of deep nesting.
+    ##Step purpose: Create deeply nested structure (JSON can't have true
+    ##              circular refs in string form)
+    ##Note purpose: JSON strings cannot represent true circular references,
+    ##              but deeply nested structures can cause recursion issues.
+    ##              This test verifies safe handling of deep nesting.
     deeply_nested = '{"a":' * 150 + "1" + "}" * 150  # 150 levels deep
 
     ##Action purpose: Parse

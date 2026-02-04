@@ -71,6 +71,15 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
         help="Run in headless mode without TUI",
     )
 
+    ##Action purpose: Add user argument for headless mode (P3 Daedelus C8)
+    parser.add_argument(
+        "--user",
+        "-u",
+        type=str,
+        default=None,
+        help="Username for headless mode (default: from config or 'default')",
+    )
+
     ##Action purpose: Add log-file argument
     parser.add_argument(
         "--log-file",
@@ -178,22 +187,21 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
 
     ##Step purpose: Initialize insight manager
     logger.debug("initializing_insight_manager")
-    ##Step purpose: Determine insights storage path (user-specific subdirectories handled by manager)
+    ##Step purpose: Determine insights storage path (user-specific
+    ##              subdirectories handled by manager)
     insights_root = config.memory.storage_path.parent / "insights"
     insight_manager = InsightManager.create(
-        insights_root=insights_root,
-        graph=knowledge_store.graph,
+        storage_path=insights_root,
         llm=llm,
-        memory_search=None,  ##Step purpose: Optional - not available in v4 architecture
     )
 
     ##Step purpose: Initialize assumption manager
     logger.debug("initializing_assumption_manager")
-    ##Step purpose: Determine assumptions storage path (user-specific subdirectories handled by manager)
+    ##Step purpose: Determine assumptions storage path (user-specific
+    ##              subdirectories handled by manager)
     assumptions_root = config.memory.storage_path.parent / "assumptions"
     assumption_manager = AssumptionManager.create(
         storage_path=assumptions_root,
-        graph=knowledge_store.graph,
         llm=llm,
     )
 
@@ -219,16 +227,23 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
 
 
 ##Function purpose: Run JENOVA in headless mode
-def run_headless(config: JenovaConfig, engine: CognitiveEngine) -> None:
+def run_headless(
+    config: JenovaConfig,
+    engine: CognitiveEngine,
+    username: str | None = None,
+) -> None:
     """
     Run JENOVA in headless mode (no TUI).
 
     Args:
         config: JENOVA configuration
         engine: Cognitive engine instance
+        username: Username for engine.think (CLI --user or config.default_username or 'default')
     """
     logger = get_logger(__name__)
-    logger.info("starting_headless", config_debug=config.debug)
+    ##Update: Resolve headless username from CLI, config, or default (P3 Daedelus C8)
+    effective_username = username or config.default_username or "default"
+    logger.info("starting_headless", config_debug=config.debug, username=effective_username)
 
     ##Step purpose: Print startup message
     print(f"JENOVA {__version__} - Headless Mode")
@@ -272,7 +287,7 @@ def run_headless(config: JenovaConfig, engine: CognitiveEngine) -> None:
                 continue
 
             ##Action purpose: Process through cognitive engine
-            result = engine.think(user_input)
+            result = engine.think(user_input, username=effective_username)
 
             ##Condition purpose: Handle error responses
             if result.is_error:
@@ -364,7 +379,7 @@ def main(args: list[str] | None = None) -> int:
     try:
         ##Condition purpose: Choose run mode
         if parsed.no_tui:
-            run_headless(config, engine)
+            run_headless(config, engine, username=parsed.user)
         else:
             run_tui(config, engine)
     except Exception as e:

@@ -75,7 +75,8 @@ def sanitize_for_prompt(
     if not content:
         return ""
 
-    ##Sec: Validate input length BEFORE regex matching to prevent ReDoS attacks (P1-001 Daedelus audit)
+    ##Sec: Validate input length BEFORE regex matching to prevent ReDoS
+    ##     attacks (P1-001 Daedelus audit)
     ##Step purpose: Reject inputs exceeding maximum length before any regex operations
     if len(content) > config.max_user_input_length:
         raise ValueError(

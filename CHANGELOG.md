@@ -7,18 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Comment schema preserved:** Restored mandatory `##Script function and purpose:` (and project comment schema) in `tests/__init__.py` and `tests/integration/__init__.py` after mistaken removal. CONTRIBUTING Code Review section now explicitly requires **rejecting** any CodeRabbit (or other tool) suggestion to remove or change the ##-prefixed comment convention; the schema is non-negotiable.
+
 ### Changed
-- **Code Quality Improvements (2026-01-26):**
-  - Fixed 3,831 linting violations across entire codebase
-  - Resolved 69 formatting issues for consistent code style
-  - Improved exception handling with proper `from` clauses (7 instances)
-  - Fixed type annotations using TYPE_CHECKING for forward references (3 instances)
-  - Simplified code structure by combining nested conditionals (4 instances)
-  - Organized all imports according to PEP 8 standards
-  - Removed all trailing whitespace
-  - Modernized deprecated import patterns (8 instances)
-  - Added proper noqa comments for intentional test patterns (11 instances)
-  - Enhanced code maintainability and readability
+
+- **Code review documentation (Cycles 1–10):** CONTRIBUTING.md: added "Code Review (CodeRabbit and Local Checks)" section documenting `coderabbit --plain`, rate-limit note, and local equivalents (ruff, mypy, pytest) aligned with CI. PR checklist: added code-review step and "after every run update documentation as needed." Documentation Requirements: added "after every code review run" fix-and-update-docs step. README §8: added pointer to CONTRIBUTING for code review and contribution standards. SESSION_HANDOFF: added CodeRabbit and local checks to Next Steps and Quick Reference; fixed numbering. AUDIT_REPORT: recorded CodeRabbit/local-check documentation as resolved. .gitignore: added `.coderabbit/` for optional CodeRabbit tool artifacts. Note: `coderabbit --plain` was run repeatedly; cloud rate limits applied, so local checks (ruff, mypy, pytest) are documented as alternatives and "run, fix, then update docs" is required after every review run.
+- **Documentation and config (audit remediation):**
+  - **README:** Clone URL kept as `orpheus497/jenova-ca` (canonical user repo). Updated Python to 3.10–3.13. Corrected command table: `/reset` and `/debug` now TUI & Headless; cognitive commands (`/insight`, `/reflect`, `/memory-insight`, `/meta`, `/verify`, `/develop_insight`, `/learn_procedure`, `/train`) moved to “Cognitive Commands (TUI)” as implemented. Updated test counts (19 unit files, 430+ unit tests, 3 integration files, 37 integration tests, 490+ total). Updated dependency count (6 dev dependencies). Added CONTRIBUTING.md to project structure. Revised “Planned Features” (removed implemented command handlers; added headless cognitive support as planned).
+  - **CONTRIBUTING:** Clarified Python 3.10–3.13 alignment with CI matrix and pyproject classifiers.
+  - **config.example.yaml:** Replaced Python-style comment schema with standard YAML `#` comments.
+  - **CI:** Upgraded `actions/setup-python` from v5 to v6. Added Python 3.13 to test matrix. Added `ruff format --check` step.
+  - **pyproject.toml:** Added Python 3.13 classifier.
+  - **AUDIT_REPORT.md:** Marked audit items as resolved.
+- **Session handoff:** Added `SESSION_HANDOFF.md` at repo root. Summarizes session work, current state, next steps, and quick reference for the next session or contributor.
+
+## [4.0.1] - 2026-02-01
+
+### Fixed
+
+- **BUG-001:** `Memory.clear()` now preserves custom embedding and clears search cache (`src/jenova/memory/memory.py`).
+- **BUG-002:** `GrammarLoader.load_from_file()` catches `UnicodeDecodeError` and re-raises as `GrammarError` for non-UTF-8 files (`src/jenova/utils/grammar.py`).
+- **BUG-003:** `ScoredContext.top(n)` and `as_strings(n)` clamp negative `n` to avoid surprising slice semantics (`src/jenova/core/context_scorer.py`).
+- **BUG-004:** App username init now logs failure cause before fallback to `"default"` so operators can debug (e.g. `USER` unset, validation failure) (`src/jenova/ui/app.py`).
+- **BUG-005:** Integration `get_centrality_score` guards non-numeric centrality in metadata (e.g. `"high"`) with try/except; uses 0.0 on failure (`src/jenova/core/integration.py`).
+- **BUG-006:** Finetune `load_training_data` skips invalid JSON lines with warning instead of failing entire load (`finetune/train.py`).
+- **BUG-007:** `test_insights` opens insight files with `encoding="utf-8"` for cross-platform consistency (`tests/unit/test_insights.py`).
+- **BUG-008:** `validate_username` and `validate_topic` reject `None` or non-str with `ValueError` instead of allowing `AttributeError` (`src/jenova/utils/validation.py`).
+- **Commenting schema (Marshal B7):** Replaced 6 incorrect `##Class purpose: Define logger for ...` comments (above module-level `logger = ...`) with `##Step purpose: Initialize module logger` in: `src/jenova/utils/grammar.py`, `src/jenova/utils/performance.py`, `src/jenova/utils/cache.py`, `src/jenova/tools.py`, `src/jenova/graph/proactive.py`, `src/jenova/core/scheduler.py`.
+
+### Changed
+
+- **Test and CI (Test Extender D5):**
+  - 23 unit-test fixes: grammar patch target (`llama_cpp.LlamaGrammar`), context_scorer `ScoringBreakdown.__lt__`, assumptions mock responses, memory metadata fallback and `_TestEmbedding`, query_analyzer enum (`QueryIntent.CONVERSATION`) and complexity assertion, integration mock query string.
+  - Conftest: Python 3.14 guard with clear fail-fast message; optional `llama_cpp` and `onnxruntime` mocks for CI/FreeBSD compatibility.
+  - CI: integration marker on `test_cognitive_flow`; install step timeout 15m; pytest timeouts 5m/10m for unit/integration and test matrix.
+- **Documentation (Doc Updater C7 and user-directed):**
+  - README and CONTRIBUTING paths and wording corrected for public documentation.
+  - CHANGELOG updated with 2026-02-01 fixes.
+  - **README refocused as program README:** README now presents the program (what JENOVA is, install, use, config) and the creator’s personal story: built over six months using only AI; creator did not touch a line of code and does not know how to write or read code—six months in, still doesn’t. Used as a personal project to learn about software development, project planning, program design, engineering software, and technology. First-person narrative throughout; CONTRIBUTING.md removed from project structure in README.
+- **Code quality (2026-01-26):**
+  - Fixed 3,831 linting violations across entire codebase; resolved 69 formatting issues; improved exception handling (proper `from` clauses), type annotations (TYPE_CHECKING), simplified conditionals, PEP 8 imports, no trailing whitespace, modernized imports, noqa for intentional patterns; enhanced maintainability and readability.
 
 ## [4.0.0] - 2026-01-26
 
@@ -64,15 +94,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CI/CD Pipeline**: GitHub Actions workflow with automated testing, coverage reporting, and security scanning
 
 #### Documentation
-- **Developer Documentation**: Complete `.devdocs/` structure with agent-specific documentation
-- **Code Standards**: Comprehensive coding standards and anti-patterns documentation
-- **Architecture Documentation**: System architecture, decision logs, and planning documents
-- **Contributing Guide**: Detailed contribution guidelines with code standards
+- **Developer Documentation**: Code standards, architecture notes, and contribution guidelines
+- **Contributing Guide**: Detailed contribution guidelines (CONTRIBUTING.md) with code standards
 
 ### Changed
 
 #### Architecture
-- **Complete Codebase Rebuild**: Legacy codebase archived to `.devdocs/resources/`, new production-ready codebase in `src/jenova/`
+- **Complete Codebase Rebuild**: Legacy codebase archived; new production-ready codebase in `src/jenova/`
 - **Dict-Based Graph**: Replaced networkx dependency with lightweight dict-based graph implementation
 - **Graph Search Algorithm Rebuild**: Rebuilt `CognitiveGraph.search()` with hybrid search (embedding-based semantic search + inverted index keyword matching) replacing O(n) linear scan (P0-002)
 - **Unified Memory System**: Consolidated episodic, semantic, and procedural memory into unified ChromaDB-based system
@@ -129,7 +157,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- **Legacy Codebase**: Archived to `.devdocs/resources/` for reference only
+- **Legacy Codebase**: Archived for reference only
 - **Networkx Dependency**: Replaced with lightweight dict-based graph
 - **Bubble Tea Go TUI**: Replaced with Textual Python TUI
 - **Requirements.txt**: Replaced with pyproject.toml
@@ -166,16 +194,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `##Class purpose:` for class definitions
   - `##Function purpose:` for method definitions
   - `##Block purpose:` for significant code blocks
-- **Developer Documentation:** Added `.devdocs/` directory with comprehensive development documentation:
-  - `ARCHITECTURE.md`: System architecture overview
-  - `BRIEFING.md`: Quick start guide for developers
-  - `DECISIONS_LOG.md`: Architectural decision records
-  - `PLANS.md`: Future development roadmap
-  - `PROGRESS.md`: Development progress tracking
-  - `SESSION_HANDOFF.md`: Context for development sessions
-  - `SUMMARIES.md`: Code review summaries
-  - `TESTS.md`: Testing documentation
-  - `TODOS.md`: Outstanding tasks and improvements
+- **Developer Documentation:** Expanded development documentation and contribution guidelines
 - **Enhanced Query Analysis:** Added multi-level planning support with structured sub-goals and reasoning chains for complex queries
 - **Integration Layer:** New Cortex-Memory integration layer for unified knowledge representation and cross-referencing
 - **Context Scoring:** Enhanced context retrieval with configurable scoring weights and query-aware ranking
@@ -192,4 +211,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-*For earlier versions, see `.devdocs/resources/CHANGELOG.md`*
+*For earlier versions, see the project's version control history.*

@@ -38,6 +38,12 @@ def validate_username(username: str) -> str:
     Raises:
         ValueError: If username is invalid
     """
+    ##Fix: Reject None/non-str so callers get ValueError instead of AttributeError
+    if username is None:
+        raise ValueError("Username cannot be empty")
+    if not isinstance(username, str):
+        raise ValueError("Username must be a string")
+
     ##Condition purpose: Check username is not empty
     if not username:
         raise ValueError("Username cannot be empty")
@@ -69,6 +75,12 @@ def validate_topic(topic: str) -> str:
     Raises:
         ValueError: If topic is invalid
     """
+    ##Fix: Reject None/non-str so callers get ValueError instead of AttributeError
+    if topic is None:
+        raise ValueError("Topic cannot be empty")
+    if not isinstance(topic, str):
+        raise ValueError("Topic must be a string")
+
     ##Condition purpose: Check topic is not empty
     if not topic:
         raise ValueError("Topic cannot be empty")

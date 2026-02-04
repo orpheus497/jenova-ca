@@ -1,4 +1,7 @@
-##Script function and purpose: Utility package initialization - exposes logging, migration, validation, sanitization, and error utilities
+##Script function and purpose: Utils package initialization - exposes logging,
+##                          migration, validation, sanitization, and error
+##                          utilities
+
 """Utility modules for JENOVA."""
 
 from jenova.utils.cache import (

@@ -21,6 +21,7 @@ from jenova.insights import (
     InsightManager,
 )
 from jenova.llm.types import GenerationParams
+from jenova.memory.types import MemoryResult, MemoryType
 
 
 ##Class purpose: Mock graph for testing
@@ -61,16 +62,16 @@ class MockLLM:
 
 ##Class purpose: Mock memory search for testing
 class MockMemorySearch:
-    """Mock memory search for testing."""
+    """Mock memory search for testing. Returns list[MemoryResult] (P1-001)."""
 
-    def __init__(self, results: list[tuple[str, float]] | None = None) -> None:
+    def __init__(self, results: list[MemoryResult] | None = None) -> None:
         self.results = results or []
 
     def search(
         self,
         query: str,
         n_results: int = 5,
-    ) -> list[tuple[str, float]]:
+    ) -> list[MemoryResult]:
         """Return mock search results."""
         return self.results[:n_results]
 
@@ -429,7 +430,8 @@ class TestInsightManager:
         assert len(insight_files) == 1
 
         ##Step purpose: Verify content
-        with open(insight_files[0]) as f:
+        ##Fix: Use encoding for cross-platform and consistency with insight JSON files
+        with open(insight_files[0], encoding="utf-8") as f:
             data = json.load(f)
 
         assert data["content"] == "Persisted insight"
@@ -516,10 +518,23 @@ class TestInsightManager:
         tmp_storage: Path,
     ) -> None:
         """get_relevant_insights uses memory search when configured."""
+        ##Fix: Mock must return list[MemoryResult] after P1-001 (Bug Hunter C1)
         memory_search = MockMemorySearch(
             results=[
-                ("Relevant insight 1", 0.1),
-                ("Relevant insight 2", 0.2),
+                MemoryResult(
+                    id="1",
+                    content="Relevant insight 1",
+                    score=0.9,
+                    memory_type=MemoryType.SEMANTIC,
+                    metadata={},
+                ),
+                MemoryResult(
+                    id="2",
+                    content="Relevant insight 2",
+                    score=0.8,
+                    memory_type=MemoryType.SEMANTIC,
+                    metadata={},
+                ),
             ]
         )
 

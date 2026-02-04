@@ -282,7 +282,8 @@ class TestGraphPerformance:
             assert elapsed < 1.0, f"Component finding too slow: {elapsed:.3f}s"
 
             print(
-                f"\nComponent finding test: {elapsed:.3f}s for 200 nodes, found {len(components)} clusters"
+                f"\nComponent finding test: {elapsed:.3f}s for 200 nodes, "
+                f"found {len(components)} clusters"
             )
 
 

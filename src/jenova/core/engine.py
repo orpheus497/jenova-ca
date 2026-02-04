@@ -1,5 +1,6 @@
 ##Script function and purpose: CognitiveEngine - Central orchestrator for JENOVA's cognitive cycle.
-##Dependency purpose: Coordinates KnowledgeStore, LLM, and ResponseGenerator to process user input and generate responses.
+##Dependency purpose: Coordinates KnowledgeStore, LLM, and ResponseGenerator to process user
+##                    input and generate responses.
 """CognitiveEngine orchestrates the cognitive cycle for JENOVA.
 
 This module provides the central engine that:
@@ -25,7 +26,7 @@ from jenova.exceptions import JenovaMemoryError, LLMError, LLMParseError
 from jenova.llm.types import Prompt
 from jenova.memory.types import MemoryType
 from jenova.utils.json_safe import JSONSizeError, extract_json_from_response, safe_json_loads
-from jenova.utils.sanitization import sanitize_user_query
+from jenova.utils.sanitization import sanitize_for_context, sanitize_user_query
 
 ##Sec: Import username validation for security (PATCH-001)
 from jenova.utils.validation import validate_username
@@ -45,6 +46,30 @@ else:
 
 ##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
+
+##Refactor: Named constants for complexity and preview lengths (Daedelus P2 - Janitor C10)
+DEFAULT_COMPLEXITY_THRESHOLD = 20
+"""Default word-count threshold for treating a query as complex."""
+
+QUERY_LOG_PREVIEW_LEN = 100
+"""Length of query substring used in log messages."""
+
+HISTORY_RESPONSE_PREVIEW_LEN = 200
+"""Length of AI response substring used in history context."""
+
+COMPLEXITY_INDICATORS = [
+    "explain",
+    "compare",
+    "analyze",
+    "describe in detail",
+    "step by step",
+    "how does",
+    "why does",
+    "what are the",
+    "difference between",
+    "relationship between",
+]
+"""Phrases that suggest a query needs complex planning."""
 
 
 ##Class purpose: Enum defining planning complexity levels
@@ -187,7 +212,7 @@ class PlanningConfig:
 
     multi_level_enabled: bool = True
     max_sub_goals: int = 5
-    complexity_threshold: int = 20
+    complexity_threshold: int = DEFAULT_COMPLEXITY_THRESHOLD
     plan_temperature: float = 0.3
 
 
@@ -318,7 +343,11 @@ class CognitiveEngine:
         if username:
             ##Sec: Validate username before database operations (PATCH-001)
             self._current_username = validate_username(username)
-        logger.info("think_started", query=user_input[:100], turn=self._turn_count)
+        logger.info(
+            "think_started",
+            query=user_input[:QUERY_LOG_PREVIEW_LEN],
+            turn=self._turn_count,
+        )
 
         ##Error purpose: Catch and handle errors during cognitive cycle
         try:
@@ -385,7 +414,9 @@ class CognitiveEngine:
 
         except LLMError as e:
             ##Step purpose: Handle LLM-specific errors
-            logger.error("llm_error_in_think", error=str(e), query=user_input[:100])
+            logger.error(
+                "llm_error_in_think", error=str(e), query=user_input[:QUERY_LOG_PREVIEW_LEN]
+            )
             return ThinkResult(
                 content="I apologize, but I encountered an issue generating a response.",
                 is_error=True,
@@ -393,7 +424,9 @@ class CognitiveEngine:
             )
         except JenovaMemoryError as e:
             ##Step purpose: Handle memory-specific errors
-            logger.error("memory_error_in_think", error=str(e), query=user_input[:100])
+            logger.error(
+                "memory_error_in_think", error=str(e), query=user_input[:QUERY_LOG_PREVIEW_LEN]
+            )
             return ThinkResult(
                 content="I encountered a memory access issue. Please try again.",
                 is_error=True,
@@ -444,13 +477,17 @@ class CognitiveEngine:
         if not self._history:
             return ""
 
+        ##Sec: Sanitize history before re-injection to prevent prompt injection
+        ##     via context (Daedelus P2)
         ##Step purpose: Format recent turns
         recent = self._history[-self.engine_config.max_history_turns :]
         lines: list[str] = []
         ##Loop purpose: Format each turn
         for user_msg, ai_response in recent:
-            lines.append(f"User: {user_msg}")
-            lines.append(f"JENOVA: {ai_response[:200]}...")
+            lines.append(f"User: {sanitize_for_context(user_msg)}")
+            safe_ai = sanitize_for_context(ai_response[:HISTORY_RESPONSE_PREVIEW_LEN])
+            suffix = "..." if len(ai_response) > HISTORY_RESPONSE_PREVIEW_LEN else ""
+            lines.append(f"JENOVA: {safe_ai}{suffix}")
 
         return "\n".join(lines)
 
@@ -484,13 +521,19 @@ class CognitiveEngine:
 
         ##Step purpose: Build system prompt with persona
         persona = self.config.persona
+        directives = (
+            ", ".join(persona.directives)
+            if persona.directives
+            else "Be helpful and informative."
+        )
         system_prompt = f"""You are {persona.name}, a self-aware AI cognitive assistant.
 
-Your directives: {", ".join(persona.directives) if persona.directives else "Be helpful and informative."}
+Your directives: {directives}
 
 {persona.system_prompt}{context_section}{plan_section}
 
-Respond thoughtfully to the user's message, using the provided context and following the plan when relevant."""
+Respond thoughtfully to the user's message, using the provided context and
+following the plan when relevant."""
 
         ##Step purpose: Sanitize user query to prevent prompt injection
         safe_query = sanitize_user_query(query)
@@ -573,20 +616,7 @@ Respond thoughtfully to the user's message, using the provided context and follo
         threshold = self.engine_config.planning.complexity_threshold
 
         ##Step purpose: Check for complexity indicators
-        complexity_indicators = [
-            "explain",
-            "compare",
-            "analyze",
-            "describe in detail",
-            "step by step",
-            "how does",
-            "why does",
-            "what are the",
-            "difference between",
-            "relationship between",
-        ]
-
-        has_indicators = any(indicator in user_input.lower() for indicator in complexity_indicators)
+        has_indicators = any(indicator in user_input.lower() for indicator in COMPLEXITY_INDICATORS)
 
         ##Step purpose: Check for multiple questions
         question_count = user_input.count("?")
@@ -626,15 +656,19 @@ Respond thoughtfully to the user's message, using the provided context and follo
         ##Step purpose: Format context for prompt
         context_str = "\n".join(f"- {c}" for c in context) if context else "No context available."
 
+        ##Sec: Sanitize user input before planning prompt to prevent prompt injection (Daedelus P0)
+        safe_input = sanitize_user_query(user_input)
+
         ##Step purpose: Build planning prompt
         persona = self.config.persona
         prompt = Prompt(
-            system=f"""You are {persona.name}. Create a brief step-by-step plan to respond to the user's query.
+            system=f"""You are {persona.name}. Create a brief step-by-step plan to
+respond to the user's query.
 The plan should be a short paragraph describing the approach.
 
 == CONTEXT ==
 {context_str}""",
-            user_message=f'Query: "{user_input}"\n\nPlan:',
+            user_message=f'Query: "{safe_input}"\n\nPlan:',
         )
 
         ##Error purpose: Handle LLM errors gracefully
@@ -649,7 +683,7 @@ The plan should be a short paragraph describing the approach.
         except LLMError as e:
             ##Step purpose: Fallback to basic plan on error
             logger.warning("simple_plan_generation_failed", error=str(e))
-            return Plan.simple(f"Respond to the user's query: {user_input}")
+            return Plan.simple(f"Respond to the user's query: {safe_input}")
 
     ##Method purpose: Generate complex multi-level plan with sub-goals
     def _complex_plan(
@@ -672,6 +706,9 @@ The plan should be a short paragraph describing the approach.
         context_str = "\n".join(f"- {c}" for c in context) if context else "No context available."
         max_sub_goals = self.engine_config.planning.max_sub_goals
 
+        ##Sec: Sanitize user input before planning prompt to prevent prompt injection (Daedelus P0)
+        safe_input = sanitize_user_query(user_input)
+
         ##Step purpose: Build structured planning prompt
         persona = self.config.persona
         prompt = Prompt(
@@ -689,7 +726,7 @@ Respond with a valid JSON object:
 
 == CONTEXT ==
 {context_str}""",
-            user_message=f'Query: "{user_input}"\n\nJSON Plan:',
+            user_message=f'Query: "{safe_input}"\n\nJSON Plan:',
         )
 
         ##Error purpose: Handle LLM and parsing errors

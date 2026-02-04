@@ -24,7 +24,6 @@ from jenova.core.engine import (
     ThinkResult,
 )
 from jenova.core.integration import (
-    ConsistencyError,
     ConsistencyReport,
     CrossReference,
     IntegrationConfig,
@@ -67,6 +66,7 @@ from jenova.core.scheduler import (
     TaskState,
     TaskType,
 )
+from jenova.exceptions import ConsistencyError
 
 __all__ = [
     # Engine

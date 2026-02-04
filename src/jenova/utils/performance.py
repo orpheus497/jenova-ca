@@ -6,7 +6,6 @@ This module provides infrastructure for monitoring performance of
 JENOVA operations, including timing decorators, statistics collection,
 and performance diagnostics.
 
-Reference: .devdocs/resources/src/jenova/utils/performance_monitor.py
 """
 
 import threading
@@ -19,7 +18,7 @@ from typing import ParamSpec, TypeVar
 
 import structlog
 
-##Class purpose: Define logger for performance operations
+##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
 
 ##Step purpose: Define generic types for decorators

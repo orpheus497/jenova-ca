@@ -30,6 +30,16 @@ if TYPE_CHECKING:
 ##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
 
+##Refactor: Named constants for cache and error preview (Daedelus P2 - Janitor C10)
+MEMORY_SEARCH_CACHE_MAX_SIZE = 100
+"""Maximum number of search results to cache."""
+
+MEMORY_SEARCH_CACHE_TTL_SEC = 300
+"""TTL in seconds for search cache entries (5 minutes)."""
+
+MEMORY_ERROR_CONTENT_PREVIEW_LEN = 100
+"""Length of content substring included in MemoryStoreError messages."""
+
 
 ##Class purpose: Unified memory interface wrapping ChromaDB collection
 class Memory:
@@ -68,23 +78,12 @@ class Memory:
         )
 
         ##Action purpose: Get or create collection for this memory type
-        ##Condition purpose: Pass embedding function only if provided
-        if embedding_function is not None:
-            self._collection = self._client.get_or_create_collection(
-                name=memory_type.value,
-                metadata={"memory_type": memory_type.value},
-                embedding_function=embedding_function,
-            )
-        else:
-            self._collection = self._client.get_or_create_collection(
-                name=memory_type.value,
-                metadata={"memory_type": memory_type.value},
-            )
+        self._create_collection()
 
         ##Update: Add search result cache for performance (P1-005)
         self._search_cache: TTLCache[str, list[MemoryResult]] = TTLCache(
-            max_size=100,
-            default_ttl=300,  # 5 minutes
+            max_size=MEMORY_SEARCH_CACHE_MAX_SIZE,
+            default_ttl=MEMORY_SEARCH_CACHE_TTL_SEC,
         )
 
     ##Method purpose: Add content to memory with metadata
@@ -109,16 +108,18 @@ class Memory:
         ##Step purpose: Generate unique ID
         doc_id = str(uuid.uuid4())
 
+        ##Fix: ChromaDB requires non-empty metadata; use placeholder when None/empty
+        meta = metadata if metadata and len(metadata) > 0 else {"_source": "jenova"}
         ##Error purpose: Wrap ChromaDB errors
         try:
             ##Action purpose: Add document to collection
             self._collection.add(
                 ids=[doc_id],
                 documents=[content],
-                metadatas=[metadata or {}],
+                metadatas=[meta],
             )
         except Exception as e:
-            raise MemoryStoreError(content[:100], str(e)) from e
+            raise MemoryStoreError(content[:MEMORY_ERROR_CONTENT_PREVIEW_LEN], str(e)) from e
 
         ##Update: Invalidate search cache when new content is added (P1-005)
         self._search_cache.clear()
@@ -255,6 +256,21 @@ class Memory:
         self._collection.delete(ids=[memory_id])
         return True
 
+    ##Method purpose: Create or recreate collection with configured embedding
+    def _create_collection(self) -> None:
+        """Create or recreate the collection with the configured embedding function."""
+        if self._embedding_function is not None:
+            self._collection = self._client.get_or_create_collection(
+                name=self.memory_type.value,
+                metadata={"memory_type": self.memory_type.value},
+                embedding_function=self._embedding_function,
+            )
+        else:
+            self._collection = self._client.get_or_create_collection(
+                name=self.memory_type.value,
+                metadata={"memory_type": self.memory_type.value},
+            )
+
     ##Method purpose: Get total count of memories
     def count(self) -> int:
         """Get total number of memories stored."""
@@ -263,9 +279,9 @@ class Memory:
     ##Method purpose: Clear all memories of this type
     def clear(self) -> None:
         """Delete all memories in this collection."""
+        ##Fix: Invalidate search cache so results after clear() are not stale
+        self._search_cache.clear()
         ##Action purpose: Delete and recreate collection
         self._client.delete_collection(self.memory_type.value)
-        self._collection = self._client.get_or_create_collection(
-            name=self.memory_type.value,
-            metadata={"memory_type": self.memory_type.value},
-        )
+        ##Fix: Recreate collection with same embedding_function as __init__ (BUG-001)
+        self._create_collection()

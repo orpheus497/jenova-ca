@@ -84,6 +84,14 @@ class ScoringBreakdown:
     type_score: float = 0.0
     """Query type match score."""
 
+    ##Fix: heapq compares breakdowns when scores tie; use total_score then content for ordering
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, ScoringBreakdown):
+            return NotImplemented
+        if self.total_score != other.total_score:
+            return self.total_score < other.total_score
+        return self.content < other.content
+
 
 ##Class purpose: Result of context scoring operation
 @dataclass
@@ -99,6 +107,8 @@ class ScoredContext:
     ##Method purpose: Get top N items
     def top(self, n: int) -> list[ScoringBreakdown]:
         """Get top N scored items."""
+        ##Fix: Clamp negative n to avoid surprising slice semantics (BUG-003)
+        n = max(0, n)
         return self.items[:n]
 
     ##Method purpose: Get items above threshold
@@ -109,7 +119,8 @@ class ScoredContext:
     ##Method purpose: Get content strings only
     def as_strings(self, n: int | None = None) -> list[str]:
         """Get content strings, optionally limited to top N."""
-        items = self.items[:n] if n else self.items
+        ##Fix: Clamp negative n to avoid surprising slice semantics (BUG-003)
+        items = self.items[: max(0, n)] if n is not None else self.items
         return [item.content for item in items]
 
 

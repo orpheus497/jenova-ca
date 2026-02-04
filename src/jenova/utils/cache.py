@@ -6,7 +6,6 @@ This module provides caching infrastructure for performance optimization,
 including TTL (time-to-live) expiration and LRU (least-recently-used)
 eviction policies.
 
-Reference: .devdocs/resources/src/jenova/utils/cache.py
 """
 
 import threading
@@ -18,7 +17,7 @@ from typing import Generic, TypeVar
 
 import structlog
 
-##Class purpose: Define logger for cache operations
+##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
 
 ##Step purpose: Define generic type for cache values

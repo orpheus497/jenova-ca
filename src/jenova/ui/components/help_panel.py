@@ -33,48 +33,89 @@ class CommandInfo:
 IMPLEMENTED_COMMANDS: list[CommandInfo] = [
     CommandInfo(
         name="/help",
-        description="Display this comprehensive command reference guide with all available commands and their descriptions.",
+        description=(
+            "Display this comprehensive command reference guide with all "
+            "available commands and their descriptions."
+        ),
     ),
     CommandInfo(
         name="/reset",
-        description="Reset the conversation state. Clears the conversation history and starts a fresh session. All session data is preserved.",
+        description=(
+            "Reset the conversation state. Clears the conversation history and "
+            "starts a fresh session. All session data is preserved."
+        ),
     ),
     CommandInfo(
         name="/debug",
-        description="Toggle debug logging mode. Switches between INFO and DEBUG log levels for troubleshooting and development.",
+        description=(
+            "Toggle debug logging mode. Switches between INFO and DEBUG "
+            "log levels for troubleshooting and development."
+        ),
     ),
     CommandInfo(
         name="/insight",
-        description="Analyze the current conversation and generate new insights. JENOVA extracts key takeaways and stores them as structured insights in long-term memory.",
+        description=(
+            "Analyze the current conversation and generate new insights. "
+            "JENOVA extracts key takeaways and stores them as structured "
+            "insights in long-term memory."
+        ),
     ),
     CommandInfo(
         name="/reflect",
-        description="Initiate deep reflection within the cognitive architecture. Reorganizes and interlinks cognitive nodes, identifies patterns, and generates higher-level meta-insights.",
+        description=(
+            "Initiate deep reflection within the cognitive architecture. "
+            "Reorganizes and interlinks cognitive nodes, identifies patterns, "
+            "and generates higher-level meta-insights."
+        ),
     ),
     CommandInfo(
         name="/memory-insight",
-        description="Perform comprehensive search across all memory layers. Scans episodic, semantic, and procedural memory to develop new insights from accumulated knowledge.",
+        description=(
+            "Perform comprehensive search across all memory layers. Scans "
+            "episodic, semantic, and procedural memory to develop new "
+            "insights from accumulated knowledge."
+        ),
     ),
     CommandInfo(
         name="/meta",
-        description="Generate higher-level meta-insights from existing knowledge. Analyzes clusters of related insights to form abstract conclusions and identify overarching themes.",
+        description=(
+            "Generate higher-level meta-insights from existing knowledge. "
+            "Analyzes clusters of related insights to form abstract "
+            "conclusions and identify overarching themes."
+        ),
     ),
     CommandInfo(
         name="/verify",
-        description="Start the assumption verification process. JENOVA presents an unverified assumption and asks for clarification. Respond with 'yes' or 'no'.",
+        description=(
+            "Start the assumption verification process. JENOVA presents an "
+            "unverified assumption and asks for clarification. Respond with "
+            "'yes' or 'no'."
+        ),
     ),
     CommandInfo(
         name="/develop_insight",
-        description="Dual-purpose command: with node_id expands an existing insight with more context; without node_id scans docs directory for new documents to learn from.",
+        description=(
+            "Dual-purpose command: with node_id expands an existing insight "
+            "with more context; without node_id scans docs directory for new "
+            "documents to learn from."
+        ),
         usage="/develop_insight [node_id]",
     ),
     CommandInfo(
         name="/learn_procedure",
-        description="Interactive guided process to teach JENOVA a new procedure. Prompts for procedure name, individual steps, and expected outcome.",
+        description=(
+            "Interactive guided process to teach JENOVA a new procedure. "
+            "Prompts for procedure name, individual steps, and expected "
+            "outcome."
+        ),
     ),
     CommandInfo(
         name="/train",
-        description="Show instructions for creating fine-tuning training data from your interactions for personalizing the underlying language model.",
+        description=(
+            "Show instructions for creating fine-tuning training data from "
+            "your interactions for personalizing the underlying language "
+            "model."
+        ),
     ),
 ]
 
