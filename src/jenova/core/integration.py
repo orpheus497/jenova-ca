@@ -21,6 +21,9 @@ from jenova.exceptions import (
     NodeNotFoundError,
 )
 
+##Fix: Re-export ConsistencyError for API surface (BUG-INTEGRATION-001)
+__all__ = ["ConsistencyError"]
+
 if TYPE_CHECKING:
     from jenova.graph.types import Node
     from jenova.memory.types import MemoryResult
@@ -28,6 +31,13 @@ if TYPE_CHECKING:
 
 ##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
+
+##Step purpose: Define constants for similarity calculations
+SIMILARITY_DECAY_RATE = 0.2
+"""Rate at which similarity decays with search result position."""
+
+MAX_CENTRALITY_NORMALIZATION = 10.0
+"""Maximum expected centrality value for normalization."""
 
 
 ##Class purpose: Protocol for graph operations needed by integration
@@ -126,6 +136,19 @@ class GraphProtocol(Protocol):
 
         Returns:
             List of connected Node objects
+        """
+        ...
+
+    ##Fix: Add missing method to Protocol (BUG-INTEGRATION-002)
+    ##Method purpose: Get all nodes belonging to a user
+    def get_nodes_by_user(self, username: str) -> list[Node]:
+        """Get all nodes belonging to a specific user.
+
+        Args:
+            username: Username to filter by
+
+        Returns:
+            List of Node objects for the user
         """
         ...
 
@@ -407,9 +430,10 @@ class IntegrationHub:
                     if node_user and node_user != username:
                         continue
 
+                    ##Fix: Use named constant for similarity calculation (BUG-INTEGRATION-004)
                     ##Step purpose: Calculate similarity score based on position
                     ##Note: Simple position-based scoring; could be enhanced with embeddings
-                    similarity = 1.0 / (1.0 + i * 0.2)
+                    similarity = 1.0 / (1.0 + i * SIMILARITY_DECAY_RATE)
 
                     ##Fix: Guard against None metadata
                     related.append(
@@ -426,9 +450,15 @@ class IntegrationHub:
                     if len(related) >= max_nodes:
                         break
 
-                except Exception as e:
+                ##Fix: Improve error handling - catch expected exceptions separately (BUG-INTEGRATION-003)
+                except (NodeNotFoundError, GraphError, AttributeError, KeyError) as e:
+                    ##Error purpose: Handle expected node access errors gracefully
                     logger.warning("failed_to_get_node", node_id=node_id, error=str(e))
                     continue
+                except Exception as e:
+                    ##Error purpose: Re-raise unexpected exceptions with context
+                    logger.error("unexpected_error_in_find_related", node_id=node_id, error=str(e))
+                    raise IntegrationError(f"Unexpected error processing node {node_id}") from e
 
             return related
 
@@ -477,8 +507,9 @@ class IntegrationHub:
 
         avg_centrality = total_centrality / total_weight
 
-        ##Step purpose: Normalize to 0-1 range (assuming max centrality ~10)
-        normalized = min(avg_centrality / 10.0, 1.0)
+        ##Fix: Use named constant for normalization (BUG-INTEGRATION-004)
+        ##Step purpose: Normalize to 0-1 range
+        normalized = min(avg_centrality / MAX_CENTRALITY_NORMALIZATION, 1.0)
 
         return normalized
 

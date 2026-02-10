@@ -68,9 +68,13 @@ class MockGraph:
     ) -> list[dict[str, str]]:
         """Search nodes by query."""
         results = []
-        query_lower = query.lower()
+        ##Fix: Improve search to match any word in query (BUG-INTEGRATION-003)
+        query_words = query.lower().split()
         for node in self._nodes.values():
-            if query_lower in node.content.lower() or query_lower in node.label.lower():
+            content_lower = node.content.lower()
+            label_lower = node.label.lower()
+            ##Step purpose: Match if any query word appears in content or label
+            if any(word in content_lower or word in label_lower for word in query_words):
                 results.append(
                     {
                         "id": node.id,
@@ -102,6 +106,11 @@ class MockGraph:
     def neighbors(self, node_id: str, direction: str = "out") -> list[MockNode]:
         """Get neighbors (returns empty for mock)."""
         return []
+
+    ##Fix: Add missing get_nodes_by_user method for mock (BUG-INTEGRATION-003)
+    def get_nodes_by_user(self, username: str) -> list[MockNode]:
+        """Get nodes belonging to a specific user."""
+        return [node for node in self._nodes.values() if node.metadata.get("user") == username]
 
 
 ##Class purpose: Mock memory implementation for testing

@@ -256,9 +256,11 @@ class JenovaApp(App):
         ##Step purpose: Get current username for user-specific operations
         try:
             self._username = validate_username(getpass.getuser())
-        except Exception:
+        except Exception as e:
+            ##Fix: Add exception binding and logging (BUG-APP-001)
             ##Step purpose: Fallback to default if username validation fails
             self._username = "default"
+            self._logger.warning("username_validation_failed", error=str(e), fallback="default")
 
     ##Method purpose: Compose the UI layout
     def compose(self) -> ComposeResult:
@@ -436,6 +438,8 @@ class JenovaApp(App):
             ##Error purpose: Display error message
             output.write(f"[bold red]ERROR:[/bold red] {e}")
             status_bar.set_error(f"Error: {type(e).__name__}")
+            ##Fix: Add logging for consistency with other exception handlers (BUG-APP-002)
+            self._logger.error("message_processing_failed", error=str(e), exc_info=True)
 
     ##Method purpose: Generate response using engine
     async def _generate_response(self, message: str) -> str:

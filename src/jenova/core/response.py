@@ -316,16 +316,21 @@ class PersonaFormatter:
         Args:
             persona_config: Persona configuration dict with identity/directives
         """
-        ##Step purpose: Extract persona components
-        identity = persona_config.get("identity", {})
+        ##Step purpose: Extract persona components with type safety
+        identity_raw = persona_config.get("identity", {})
 
-        ##Step purpose: Check identity type once (consolidate scattered checks)
-        is_identity_dict = isinstance(identity, dict)
-
-        self._name = identity.get("name", "JENOVA") if is_identity_dict else "JENOVA"
-        self._type = identity.get("type", "AI assistant") if is_identity_dict else "AI assistant"
-        self._origin = identity.get("origin_story", "") if is_identity_dict else ""
-        self._creator = identity.get("creator", "") if is_identity_dict else ""
+        ##Fix: Cast to dict after type check for mypy compliance (BUG-RESPONSE-001)
+        if isinstance(identity_raw, dict):
+            identity: dict[str, object] = identity_raw
+            self._name = str(identity.get("name", "JENOVA"))
+            self._type = str(identity.get("type", "AI assistant"))
+            self._origin = str(identity.get("origin_story", ""))
+            self._creator = str(identity.get("creator", ""))
+        else:
+            self._name = "JENOVA"
+            self._type = "AI assistant"
+            self._origin = ""
+            self._creator = ""
 
         directives = persona_config.get("directives", [])
         self._directives = directives if isinstance(directives, list) else []
@@ -574,6 +579,9 @@ class ResponseGenerator:
     Attributes:
         config: Response configuration.
     """
+
+    ##Fix: Add explicit type annotation for optional cache (BUG-RESPONSE-002)
+    _cache: ResponseCache | None
 
     ##Method purpose: Initialize with configuration
     def __init__(

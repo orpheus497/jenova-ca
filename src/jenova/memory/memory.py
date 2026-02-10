@@ -300,7 +300,20 @@ class Memory:
         """Delete all memories in this collection."""
         ##Action purpose: Delete and recreate collection
         self._client.delete_collection(self.memory_type.value)
-        self._collection = self._client.get_or_create_collection(
-            name=self.memory_type.value,
-            metadata={"memory_type": self.memory_type.value},
-        )
+        
+        ##Fix: Restore embedding function when recreating collection (BUG-MEMORY-001)
+        ##Condition purpose: Pass embedding function only if provided
+        if self._embedding_function is not None:
+            self._collection = self._client.get_or_create_collection(
+                name=self.memory_type.value,
+                metadata={"memory_type": self.memory_type.value},
+                embedding_function=self._embedding_function,
+            )
+        else:
+            self._collection = self._client.get_or_create_collection(
+                name=self.memory_type.value,
+                metadata={"memory_type": self.memory_type.value},
+            )
+        
+        ##Fix: Invalidate search cache after clearing collection (BUG-MEMORY-002)
+        self._search_cache.clear()

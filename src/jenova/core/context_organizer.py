@@ -404,7 +404,8 @@ JSON Response:"""
         try:
             response = self._llm.generate(prompt, temperature=0.3)
             return self._parse_llm_categorization(response, items)
-        except Exception as e:
+        except (ValueError, RuntimeError, OSError) as e:
+            ##Fix: Narrow exception handling to LLM-specific errors (was: broad Exception)
             logger.warning("llm_categorization_failed", error=str(e))
             return self._heuristic_categorize(items, query)
 

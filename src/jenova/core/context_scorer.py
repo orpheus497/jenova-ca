@@ -233,7 +233,8 @@ class ContextScorer:
                         else list(query_emb_raw[0])
                     )
                     self._embedding_cache.set(query_cache_key, query_embedding)
-                except Exception as e:
+                except (ValueError, RuntimeError, OSError, IndexError) as e:
+                    ##Fix: Narrow exception handling to embedding-specific errors (was: broad Exception)
                     logger.warning("query_embedding_failed", error=str(e))
                     query_embedding = None
 
@@ -255,12 +256,14 @@ class ContextScorer:
                     batch_embeddings = self._embedding_model.encode(
                         items_to_embed, convert_to_numpy=True
                     )
-                    for item, emb in zip(items_to_embed, batch_embeddings, strict=False):
+                    for item, emb in zip(items_to_embed, batch_embeddings, strict=True):
+                        ##Fix: Changed to strict=True to catch length mismatches (was: strict=False)
                         emb_list = emb.tolist() if hasattr(emb, "tolist") else list(emb)
                         item_cache_key = hashlib.sha256(item.encode()).hexdigest()
                         item_embeddings[item] = emb_list
                         self._embedding_cache.set(item_cache_key, emb_list)
-                except Exception as e:
+                except (ValueError, RuntimeError, OSError) as e:
+                    ##Fix: Narrow exception handling to embedding-specific errors (was: broad Exception)
                     logger.warning("batch_embedding_failed", error=str(e))
 
         ##Step purpose: Score items with early termination
@@ -422,7 +425,8 @@ class ContextScorer:
             ##Error purpose: Handle embedding errors gracefully
             try:
                 return self._embedding_similarity(item, query)
-            except Exception as e:
+            except (ValueError, RuntimeError, OSError, IndexError) as e:
+                ##Fix: Narrow exception handling to embedding-specific errors (was: broad Exception)
                 logger.warning("embedding_similarity_failed", error=str(e))
 
         ##Step purpose: Fallback to word overlap
