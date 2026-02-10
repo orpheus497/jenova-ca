@@ -14,7 +14,11 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 import structlog
 
-from jenova.exceptions import GraphError, IntegrationError, NodeNotFoundError
+from jenova.exceptions import (
+    GraphError,
+    IntegrationError,
+    NodeNotFoundError,
+)
 
 if TYPE_CHECKING:
     from jenova.graph.types import Node

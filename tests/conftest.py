@@ -45,6 +45,28 @@ def config(tmp_storage: Path) -> JenovaConfig:
     )
 
 
+##Class purpose: Mock embedding function for testing
+class MockEmbeddingFunction:
+    """Mock embedding function for tests to avoid external dependencies."""
+
+    def __call__(self, input: list[str]) -> list[list[float]]:
+        """Generate fake embeddings."""
+        # Return constant vector of dimension 3 for predictable testing
+        return [[0.1, 0.2, 0.3] for _ in input]
+
+    def embed_query(self, input: list[str]) -> list[list[float]]:
+        """Alias for __call__ to satisfy ChromaDB interface."""
+        return self(input)
+
+    def embed_documents(self, input: list[str]) -> list[list[float]]:
+        """Alias for __call__ to satisfy ChromaDB interface."""
+        return self(input)
+
+    def name(self) -> str:
+        """Return name of embedding function."""
+        return "mock_embedding"
+
+
 ##Function purpose: Provide episodic memory fixture
 @pytest.fixture
 def episodic_memory(tmp_storage: Path) -> Memory:
@@ -52,6 +74,7 @@ def episodic_memory(tmp_storage: Path) -> Memory:
     return Memory(
         memory_type=MemoryType.EPISODIC,
         storage_path=tmp_storage / "episodic",
+        embedding_function=MockEmbeddingFunction(),  # type: ignore
     )
 
 
@@ -62,4 +85,5 @@ def semantic_memory(tmp_storage: Path) -> Memory:
     return Memory(
         memory_type=MemoryType.SEMANTIC,
         storage_path=tmp_storage / "semantic",
+        embedding_function=MockEmbeddingFunction(),  # type: ignore
     )

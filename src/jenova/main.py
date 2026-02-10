@@ -118,8 +118,28 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
     from jenova.core.engine import CognitiveEngine, EngineConfig
     from jenova.core.knowledge import KnowledgeStore
     from jenova.core.response import ResponseConfig, ResponseGenerator
+    from jenova.exceptions import LLMLoadError
     from jenova.insights.manager import InsightManager
     from jenova.llm.interface import LLMInterface
+    from jenova.llm.types import Completion, Prompt
+
+    ##Class purpose: Minimal mock LLM for development/testing
+    class DevelopmentLLM:
+        """Development mock LLM that returns echo responses."""
+
+        @property
+        def is_loaded(self) -> bool:
+            return True
+
+        def generate(self, prompt: Prompt, params: object = None) -> Completion:
+            ##Step purpose: Return echo response
+            return Completion(
+                content=f"[DEV MODE] Received: {prompt.user_message}",
+                finish_reason="stop",
+                tokens_generated=10,
+                tokens_prompt=len(prompt.user_message.split()),
+                generation_time_ms=1.0,
+            )
 
     ##Action purpose: Log initialization start
     logger.info("creating_engine", skip_model_load=skip_model_load)
@@ -135,35 +155,22 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
     logger.debug("initializing_llm", skip_load=skip_model_load)
     ##Condition purpose: Use mock or real LLM based on flag
     if skip_model_load:
-        ##Step purpose: Create minimal mock LLM for development
-        from jenova.llm.types import Completion, Prompt
-
-        ##Class purpose: Minimal mock LLM for development/testing
-        class DevelopmentLLM:
-            """Development mock LLM that returns echo responses."""
-
-            @property
-            def is_loaded(self) -> bool:
-                return True
-
-            def generate(self, prompt: Prompt, params: object = None) -> Completion:
-                ##Step purpose: Return echo response
-                return Completion(
-                    content=f"[DEV MODE] Received: {prompt.user_message}",
-                    finish_reason="stop",
-                    tokens_generated=10,
-                    tokens_prompt=len(prompt.user_message.split()),
-                    generation_time_ms=1.0,
-                )
-
         llm: LLMInterface | DevelopmentLLM = DevelopmentLLM()
     else:
         ##Step purpose: Create and load real LLM
-        llm = LLMInterface(
+        real_llm = LLMInterface(
             model_config=config.model,
             hardware_config=config.hardware,
         )
-        llm.load()
+        try:
+            real_llm.load()
+            llm = real_llm
+        except LLMLoadError as e:
+            logger.warning("llm_load_failed_using_mock", error=str(e))
+            print(f"\n[WARNING] Failed to load LLM: {e}", file=sys.stderr)
+            print("[INFO] Falling back to Mock LLM (Development Mode).", file=sys.stderr)
+            print("[INFO] To use a real model, place a GGUF file in 'models/'.\n", file=sys.stderr)
+            llm = DevelopmentLLM()
 
     ##Step purpose: Create ResponseGenerator
     logger.debug("initializing_response_generator")

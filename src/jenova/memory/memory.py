@@ -9,9 +9,44 @@ Replaces the legacy copy-paste pattern of three nearly-identical classes.
 from __future__ import annotations
 
 import hashlib
+
+##Fix: Patch Pydantic V1 for Python 3.14 compatibility with ChromaDB (P0-CRIT)
+import sys
 import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
+if sys.version_info >= (3, 14):
+    try:
+        import pydantic.v1.fields
+        from pydantic.v1.errors import ConfigError
+
+        _orig_infer = pydantic.v1.fields.ModelField.infer
+
+        def _patched_infer(name, value, annotation, class_validators, config):
+            try:
+                return _orig_infer(
+                    name=name,
+                    value=value,
+                    annotation=annotation,
+                    class_validators=class_validators,
+                    config=config,
+                )
+            except ConfigError:
+                if value is None:
+                    return pydantic.v1.fields.ModelField(
+                        name=name,
+                        type_=Any,
+                        class_validators=class_validators,
+                        default=None,
+                        required=False,
+                        model_config=config,
+                    )
+                raise
+
+        pydantic.v1.fields.ModelField.infer = _patched_infer
+    except (ImportError, AttributeError):
+        pass
 
 import chromadb
 import structlog
@@ -115,7 +150,7 @@ class Memory:
             self._collection.add(
                 ids=[doc_id],
                 documents=[content],
-                metadatas=[metadata or {}],
+                metadatas=[metadata] if metadata else None,
             )
         except Exception as e:
             raise MemoryStoreError(content[:100], str(e)) from e

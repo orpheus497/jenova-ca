@@ -631,7 +631,9 @@ class JenovaApp(App):
         """
         ##Condition purpose: Check if engine is available
         if self._engine is None:
-            output.write("[bold yellow]>>[/bold yellow] Cannot generate insights: No engine connected.")
+            output.write(
+                "[bold yellow]>>[/bold yellow] Cannot generate insights: No engine connected."
+            )
             return
 
         ##Condition purpose: Check if insight manager is available
@@ -757,7 +759,9 @@ Focus on novel observations, not just summaries."""
         """
         ##Condition purpose: Check if engine is available
         if self._engine is None:
-            output.write("[bold yellow]>>[/bold yellow] Cannot generate memory insights: No engine connected.")
+            output.write(
+                "[bold yellow]>>[/bold yellow] Cannot generate memory insights: No engine connected."
+            )
             return
 
         ##Condition purpose: Check if insight manager is available
@@ -786,8 +790,7 @@ Focus on novel observations, not just summaries."""
 
             ##Step purpose: Use LLM to generate insight from memory patterns
             memory_content = "\n".join(
-                f"- [{m.memory_type.value}] {m.content[:100]}"
-                for m in memory_results.memories[:5]
+                f"- [{m.memory_type.value}] {m.content[:100]}" for m in memory_results.memories[:5]
             )
 
             prompt_text = f"""Analyze these memories and extract a key insight or pattern.
@@ -845,7 +848,9 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
         """
         ##Condition purpose: Check if engine is available
         if self._engine is None:
-            output.write("[bold yellow]>>[/bold yellow] Cannot generate meta-insights: No engine connected.")
+            output.write(
+                "[bold yellow]>>[/bold yellow] Cannot generate meta-insights: No engine connected."
+            )
             return
 
         ##Action purpose: Set loading state
@@ -870,12 +875,16 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
 
             ##Condition purpose: Check if any meta-insights generated
             if not meta_insights:
-                output.write("[bold yellow]>>[/bold yellow] No meta-insights generated. Need more connected knowledge nodes.")
+                output.write(
+                    "[bold yellow]>>[/bold yellow] No meta-insights generated. Need more connected knowledge nodes."
+                )
                 status_bar.set_ready("Ready")
                 return
 
             ##Action purpose: Display meta-insights
-            output.write(f"[bold green]>>[/bold green] Generated {len(meta_insights)} meta-insight(s):")
+            output.write(
+                f"[bold green]>>[/bold green] Generated {len(meta_insights)} meta-insight(s):"
+            )
             for idx, insight in enumerate(meta_insights, 1):
                 output.write(f"[white]  {idx}. {insight}[/white]")
             output.write("")  ##Step purpose: Add spacing
@@ -915,7 +924,9 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
         """
         ##Condition purpose: Check if engine is available
         if self._engine is None:
-            output.write("[bold yellow]>>[/bold yellow] Cannot verify assumptions: No engine connected.")
+            output.write(
+                "[bold yellow]>>[/bold yellow] Cannot verify assumptions: No engine connected."
+            )
             return
 
         ##Condition purpose: Check if assumption manager is available
@@ -997,7 +1008,9 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
         try:
             ##Condition purpose: Check if assumption is still pending
             if self._pending_assumption is None:
-                output.write("[bold yellow]>>[/bold yellow] No pending assumption. Verification cancelled.")
+                output.write(
+                    "[bold yellow]>>[/bold yellow] No pending assumption. Verification cancelled."
+                )
                 self._interactive_mode = "normal"
                 status_bar.set_ready("Ready")
                 return
@@ -1053,7 +1066,9 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
         """
         ##Condition purpose: Check if engine is available
         if self._engine is None:
-            output.write("[bold yellow]>>[/bold yellow] Cannot develop insight: No engine connected.")
+            output.write(
+                "[bold yellow]>>[/bold yellow] Cannot develop insight: No engine connected."
+            )
             return
 
         ##Condition purpose: Check if insight manager is available
@@ -1105,8 +1120,12 @@ Expanded insight:"""
 
             else:
                 ##Step purpose: Mode 2: Process documents (placeholder - docs directory not implemented)
-                output.write("[bold yellow]>>[/bold yellow] Document processing not yet implemented.")
-                output.write("[dim]  Use /develop_insight [node_id] to expand an existing insight.[/dim]")
+                output.write(
+                    "[bold yellow]>>[/bold yellow] Document processing not yet implemented."
+                )
+                output.write(
+                    "[dim]  Use /develop_insight [node_id] to expand an existing insight.[/dim]"
+                )
                 output.write("")  ##Step purpose: Add spacing
 
             ##Action purpose: Set ready state
@@ -1150,7 +1169,9 @@ Expanded insight:"""
 
         ##Condition purpose: Validate name is not empty
         if not name:
-            output.write("[bold yellow]>>[/bold yellow] Procedure name cannot be empty. Please enter a name:")
+            output.write(
+                "[bold yellow]>>[/bold yellow] Procedure name cannot be empty. Please enter a name:"
+            )
             return
 
         ##Step purpose: Store name and transition to steps
@@ -1159,7 +1180,9 @@ Expanded insight:"""
 
         ##Action purpose: Display confirmation and next prompt
         output.write(f"[bold green]>>[/bold green] Procedure name set to: {name}")
-        output.write("[white]  Enter procedure steps one by one. Type 'done' when finished.[/white]")
+        output.write(
+            "[white]  Enter procedure steps one by one. Type 'done' when finished.[/white]"
+        )
         output.write(f"[dim]  Step {len(self._procedure_steps) + 1}:[/dim]")
         output.write("")  ##Step purpose: Add spacing
 
@@ -1177,26 +1200,34 @@ Expanded insight:"""
         if step.lower() == "done":
             ##Condition purpose: Validate at least one step
             if not self._procedure_steps:
-                output.write("[bold yellow]>>[/bold yellow] No steps entered. Please enter at least one step:")
+                output.write(
+                    "[bold yellow]>>[/bold yellow] No steps entered. Please enter at least one step:"
+                )
                 return
 
             ##Step purpose: Transition to outcome collection
             self._interactive_mode = "learn_procedure_outcome"
-            output.write(f"[bold green]>>[/bold green] Recorded {len(self._procedure_steps)} step(s).")
+            output.write(
+                f"[bold green]>>[/bold green] Recorded {len(self._procedure_steps)} step(s)."
+            )
             output.write("[white]  Please enter the expected outcome:[/white]")
             output.write("")  ##Step purpose: Add spacing
             return
 
         ##Condition purpose: Validate step is not empty
         if not step:
-            output.write("[bold yellow]>>[/bold yellow] Empty step entered. Please enter a step or type 'done':")
+            output.write(
+                "[bold yellow]>>[/bold yellow] Empty step entered. Please enter a step or type 'done':"
+            )
             return
 
         ##Step purpose: Add step to list
         self._procedure_steps.append(step)
 
         ##Action purpose: Display confirmation and prompt for next
-        output.write(f"[bold green]>>[/bold green] Step {len(self._procedure_steps)} recorded: {step}")
+        output.write(
+            f"[bold green]>>[/bold green] Step {len(self._procedure_steps)} recorded: {step}"
+        )
         output.write(f"[dim]  Step {len(self._procedure_steps) + 1} (or type 'done'):[/dim]")
         output.write("")  ##Step purpose: Add spacing
 
@@ -1218,7 +1249,9 @@ Expanded insight:"""
 
         ##Condition purpose: Validate outcome is not empty
         if not outcome:
-            output.write("[bold yellow]>>[/bold yellow] Expected outcome cannot be empty. Please enter an outcome:")
+            output.write(
+                "[bold yellow]>>[/bold yellow] Expected outcome cannot be empty. Please enter an outcome:"
+            )
             return
 
         ##Step purpose: Store outcome
@@ -1231,7 +1264,9 @@ Expanded insight:"""
         try:
             ##Condition purpose: Check if engine is available
             if self._engine is None:
-                output.write("[bold yellow]>>[/bold yellow] Cannot save procedure: No engine connected.")
+                output.write(
+                    "[bold yellow]>>[/bold yellow] Cannot save procedure: No engine connected."
+                )
                 self._interactive_mode = "normal"
                 status_bar.set_ready("Ready")
                 return
@@ -1240,7 +1275,7 @@ Expanded insight:"""
             procedure_content = f"""Procedure: {self._procedure_name}
 
 Steps:
-{chr(10).join(f"{i+1}. {step}" for i, step in enumerate(self._procedure_steps))}
+{chr(10).join(f"{i + 1}. {step}" for i, step in enumerate(self._procedure_steps))}
 
 Expected Outcome: {self._procedure_outcome}"""
 
@@ -1253,7 +1288,9 @@ Expected Outcome: {self._procedure_outcome}"""
             )
 
             ##Action purpose: Display success message
-            output.write(f"[bold green]>>[/bold green] Procedure '{self._procedure_name}' saved to memory.")
+            output.write(
+                f"[bold green]>>[/bold green] Procedure '{self._procedure_name}' saved to memory."
+            )
             output.write(f"[white]  Steps: {len(self._procedure_steps)}[/white]")
             output.write(f"[white]  Memory ID: {memory_id}[/white]")
             output.write("")  ##Step purpose: Add spacing
