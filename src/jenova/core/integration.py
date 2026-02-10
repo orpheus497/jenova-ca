@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 import structlog
 
 from jenova.exceptions import (
+    ConsistencyError,
     GraphError,
     IntegrationError,
     NodeNotFoundError,

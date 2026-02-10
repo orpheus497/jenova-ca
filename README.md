@@ -270,25 +270,28 @@ JENOVA responds to commands that act as direct instructions for its cognitive pr
 | Command | Description | Mode |
 |---------|-------------|------|
 | `/help` | Display comprehensive command reference | TUI & Headless |
-| `/reset` | Reset conversation state | Headless only |
-| `/debug` | Toggle debug logging | Headless only |
+| `/reset` | Reset conversation state | TUI & Headless |
+| `/debug` | Toggle debug logging | TUI & Headless |
+| `/insight` | Analyze conversation and generate new insights | TUI only |
+| `/reflect` | Deep reflection: reorganize cognitive nodes, link orphans, generate meta-insights | TUI only |
+| `/memory-insight` | Search all memory layers to develop new insights | TUI only |
+| `/meta` | Generate higher-level meta-insights from insight clusters | TUI only |
+| `/verify` | Verify an unverified assumption with a clarifying question | TUI only |
+| `/develop_insight [node_id]` | Develop existing insight (with ID) or process documents (without ID) | TUI only |
+| `/learn_procedure` | Interactive guided process to teach a new procedure | TUI only |
 | `exit` / `quit` | Exit the application | TUI & Headless |
+| `q` | Exit the application | Headless only |
 
 #### Planned Cognitive Commands
 
-The following cognitive commands are documented in the help system and will be implemented in future releases:
+The following features are planned for future releases to enhance headless mode and overall capabilities:
 
 | Command | Description |
 |---------|-------------|
-| `/insight` | Analyze conversation and generate new insights |
-| `/reflect` | Deep reflection: reorganize cognitive nodes, link orphans, generate meta-insights |
-| `/memory-insight` | Search all memory layers to develop new insights |
-| `/meta` | Generate higher-level meta-insights from insight clusters |
-| `/verify` | Verify an unverified assumption with a clarifying question |
-| `/develop_insight [node_id]` | Develop existing insight (with ID) or process documents (without ID) |
-| `/learn_procedure` | Interactive guided process to teach a new procedure |
+| Headless Support | Port all cognitive commands to the headless CLI mode |
+| Document Processing | Full implementation of document-based insight development |
 
-**Note:** While the underlying cognitive systems (InsightManager, AssumptionManager, CognitiveGraph) are fully implemented, the command handlers for these features are planned for future releases.
+**Note:** While the underlying cognitive systems (InsightManager, AssumptionManager, CognitiveGraph) are fully implemented, some command handlers are currently exclusive to the TUI.
 
 ### Keyboard Shortcuts (TUI)
 

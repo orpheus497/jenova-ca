@@ -12,16 +12,15 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import structlog
+
 from jenova.config.models import HardwareConfig, ModelConfig
-from jenova.exceptions import LLMGenerationError, LLMLoadError
-from jenova.llm.types import Completion, GenerationParams, Prompt
-from jenova.utils.errors import sanitize_path_for_error
-
-if TYPE_CHECKING:
-    from llama_cpp import Llama
-
+...
 ##Step purpose: Define constant for llama.cpp "all layers" GPU offload value
 LLAMA_CPP_ALL_LAYERS: int = -1  # llama.cpp convention: -1 means offload all layers to GPU
+
+##Step purpose: Initialize module logger
+logger = structlog.get_logger(__name__)
 
 
 ##Class purpose: LLM wrapper for GGUF model inference
@@ -101,6 +100,7 @@ class LLMInterface:
         """Find a GGUF model file in common locations."""
         ##Step purpose: Define search paths
         search_paths = [
+            Path("."),
             Path("models"),
             Path(".jenova-ai/models"),
             Path.home() / ".cache" / "jenova" / "models",
@@ -112,10 +112,19 @@ class LLMInterface:
             if not search_path.exists():
                 continue
 
-            ##Step purpose: Find GGUF files
-            gguf_files = list(search_path.glob("*.gguf"))
+            ##Step purpose: Find GGUF files (recursive in 'models' folders)
+            if search_path.name == "models" or search_path.name == ".jenova-ai":
+                gguf_files = list(search_path.rglob("*.gguf"))
+            else:
+                gguf_files = list(search_path.glob("*.gguf"))
+
+            ##Step purpose: Filter out files smaller than 100MB (likely placeholders/corrupt)
+            gguf_files = [f for f in gguf_files if f.stat().st_size > 100 * 1024 * 1024]
+
             ##Condition purpose: Return first found
             if gguf_files:
+                ##Update: Log the found model for debugging (P2-001)
+                logger.debug("model_discovered", path=str(gguf_files[0]))
                 return gguf_files[0]
 
         raise LLMLoadError("auto", "No GGUF files found in search paths")
