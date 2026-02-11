@@ -9,6 +9,10 @@ Wires together all components: CognitiveEngine, KnowledgeStore, LLM, UI.
 
 from __future__ import annotations
 
+##Fix: Import Python 3.14 compatibility patches FIRST (BH-2026-02-11T02:12:55Z)
+##Note: This must come before any imports that use ChromaDB/Pydantic V1
+import jenova.compat_py314  # noqa: F401
+
 import argparse
 import sys
 from pathlib import Path

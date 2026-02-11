@@ -7,18 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Documentation Reorganization (2026-02-11T02:36:00Z):**
+  - Created `docs/` folder for project documentation
+  - Added `docs/ROADMAP.md` with future enhancement plans
+  - Separated contributing guidelines to `docs/CONTRIBUTING.md`
+  - Updated README structure with additional documentation section
+
 ### Changed
-- **Code Quality Improvements (2026-01-26):**
-  - Fixed 3,831 linting violations across entire codebase
-  - Resolved 69 formatting issues for consistent code style
-  - Improved exception handling with proper `from` clauses (7 instances)
-  - Fixed type annotations using TYPE_CHECKING for forward references (3 instances)
-  - Simplified code structure by combining nested conditionals (4 instances)
-  - Organized all imports according to PEP 8 standards
-  - Removed all trailing whitespace
-  - Modernized deprecated import patterns (8 instances)
-  - Added proper noqa comments for intentional test patterns (11 instances)
-  - Enhanced code maintainability and readability
+- **Python 3.14 Compatibility (2026-02-11T02:24:00Z):**
+  - Fixed Python 3.14 compatibility issues in ChromaDB integration
+  - Updated Pydantic v2 migration compatibility layer
+  - Enhanced Python 3.14 guard in test configuration
+  - Added ChromaDB Python 3.14 compatibility patch (`fix_chromadb_py314_compat.py`)
+
+- **Bug Fixes and Maintenance (2026-02-10 - 2026-02-11):**
+  - Fixed 18 bugs across 53 files (94.7% fix rate) via Bug Hunter C1 comprehensive audit
+  - Resolved `zip(strict=False)` → `strict=True` issues (4 instances)
+  - Fixed broad exception handling → specific exceptions (6 instances)
+  - Added missing `dict.get()` None handling (2 instances)
+  - Improved cache invalidation logic
+  - Enhanced logging statements across codebase
+
+- **Security Hardening (2026-02-10T18:30:00Z):**
+  - P0 (CRITICAL): User input sanitization in planning prompts
+  - P2 (HIGH): History context sanitization in context organizer
+  - Enhanced prompt injection protection
+  - Added security tracking tags (`##Sec:`)
+
+- **Code Quality and Consistency (2026-02-10):**
+  - Fixed all E501 line length violations (100+ instances)
+  - Resolved import sorting inconsistencies
+  - Achieved 100% Ruff linting compliance
+  - Stabilized ConsistencyError re-export for mypy
+  - Enhanced code uniformity across entire codebase
+
+- **Testing Infrastructure (2026-02-10):**
+  - 23 unit-test fixes applied
+  - Added Python 3.14 compatibility guards in conftest.py
+  - Enhanced llama_cpp and onnxruntime test mocks
+  - Configured CI integration markers and timeouts
+  - Achieved 100% coverage for validation.py and sanitization.py (51 tests)
+
+- **Configuration and Optimization (2026-02-10):**
+  - Enhanced ProactiveEngine seeding configuration
+  - Improved headless mode `--user` support
+  - Updated CI Makefile with new patterns
+  - P1 connectivity-based DEVELOP selection optimization
+  - Performance benchmarking across utility modules
+
+- **Code Cleanup (2026-02-10):**
+  - Extracted magic numbers to constants (8 instances)
+  - Verified zero dead code in codebase
+  - Enhanced maintainability metrics
 
 ## [4.0.0] - 2026-01-26
 

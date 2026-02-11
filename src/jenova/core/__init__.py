@@ -24,17 +24,17 @@ from jenova.core.engine import (
     ThinkResult,
 )
 from jenova.core.integration import (
-    ConsistencyError,
     ConsistencyReport,
     CrossReference,
     IntegrationConfig,
-    IntegrationError,
     IntegrationHub,
     KnowledgeDuplication,
     KnowledgeGap,
     RelatedNodeResult,
     UnifiedKnowledgeMap,
 )
+##Fix: ConsistencyError and IntegrationError are in exceptions.py, not integration.py (BH-2026-02-11T02:14:00Z)
+from jenova.exceptions import ConsistencyError, IntegrationError
 from jenova.core.knowledge import KnowledgeStore
 from jenova.core.query_analyzer import (
     AnalyzedQuery,
