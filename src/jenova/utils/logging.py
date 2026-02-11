@@ -36,6 +36,36 @@ def configure_logging(
         level=getattr(logging, level.upper()),
     )
 
+    ##Fix: Patch structlog BoundLogger classes BEFORE configuration (2026-02-11T06:32:20Z)
+    ##Note: Must patch BEFORE structlog.configure() to affect logger instances
+    def _patch_bound_logger_for_textual():
+        """Patch all structlog BoundLogger classes for Textual framework compatibility."""
+        def system(self, event=None, **kw):
+            """System-level logging for Textual framework."""
+            return self.debug(event, **kw)
+        
+        def call_method(self, event=None, **kw):
+            """Make logger callable for Textual framework."""
+            return self.debug(event, **kw)
+        
+        # Patch all BoundLogger variant classes
+        for cls_name in dir(structlog._native):
+            cls = getattr(structlog._native, cls_name)
+            if isinstance(cls, type) and "BoundLogger" in cls_name:
+                if not hasattr(cls, "system"):
+                    cls.system = system
+                if not hasattr(cls, "__call__"):
+                    cls.__call__ = call_method
+        
+        # Also patch the lazy proxy - ALWAYS set it (hasattr checks don't work reliably on proxies)
+        def proxy_call(self, event=None, **kw):
+            """Make logger proxy callable."""
+            return self.bind().debug(event, **kw)
+        
+        structlog._config.BoundLoggerLazyProxy.__call__ = proxy_call
+    
+    _patch_bound_logger_for_textual()
+
     ##Step purpose: Build processor chain for structlog
     processors: list[structlog.types.Processor] = [
         structlog.stdlib.filter_by_level,

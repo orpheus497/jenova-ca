@@ -191,7 +191,8 @@ class JenovaApp(App):
         layer: overlay;
         width: 80%;
         height: 80%;
-        margin: 2 auto;
+        /* Fix: Textual doesn't support 'auto' margins - use fixed values (2026-02-11T06:32:20Z) */
+        margin: 2 10;
         border: double $primary;
         background: $surface;
         padding: 1;
