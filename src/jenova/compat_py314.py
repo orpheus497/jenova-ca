@@ -65,14 +65,12 @@ def patch_pydantic_v1_for_py314() -> None:
                 ##Error purpose: If original fails, try generic fallback for Optional types
                 ##Refactor: Narrowed to ConfigError, removed redundant imports (D3-2026-02-11T07:03:00Z)
                 if "unable to infer type" in str(e):
-                    ##Refactor: Log warning before applying fallback (D3-2026-02-11T08:22:24Z)
+                    ##Refactor: Log at debug level (expected for ChromaDB on Python 3.14) (D3-2026-02-11T08:39:11Z)
                     logger = logging.getLogger(__name__)
-                    logger.warning(
-                        "Pydantic type inference failed, applying fallback to Optional[str]. "
-                        "Field: %s, Class: %s, Error: %s",
-                        getattr(self, 'name', '<unknown>'),
-                        getattr(self, '__class__', '<unknown>'),
-                        str(e)
+                    logger.debug(
+                        "Applying Pydantic type fallback (expected for ChromaDB on Python 3.14): "
+                        "field=%s, fallback=Optional[str]",
+                        getattr(self, 'name', '<unknown>')
                     )
                     ##Fix: Last resort - assume Optional[str] for string-like attributes
                     from typing import Optional

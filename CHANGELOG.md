@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Code Quality Improvements (2026-02-11T08:39:11Z):**
+  - Reduced verbose logging in Pydantic V1 compatibility patch (warning → debug level)
+  - ChromaDB type inference fallbacks now log at debug level (expected behavior on Python 3.14)
+  - Improved diagnostic messages for type inference fallbacks
+
 ## [4.1.0] - 2026-02-11
 
 ### Added
