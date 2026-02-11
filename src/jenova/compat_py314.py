@@ -25,7 +25,7 @@ def patch_pydantic_v1_for_py314() -> None:
         ##Refactor: Alphabetized pydantic imports (D3-2026-02-11T07:30:05Z)
         from pydantic.v1 import fields
         from pydantic.v1.errors import ConfigError
-        from pydantic.v1.fields import ModelField
+        from pydantic.v1.fields import ModelField, Undefined
 
         ##Step purpose: Store original _set_default_and_type method
         original_set_default_and_type = ModelField._set_default_and_type
@@ -35,7 +35,8 @@ def patch_pydantic_v1_for_py314() -> None:
         def patched_set_default_and_type(self) -> None:
             """Patched version that handles ChromaDB's Settings attributes with type inference issues."""
             ##Condition purpose: Check if this is a ChromaDB Settings attribute with undefined type
-            if hasattr(self, 'outer_type_') and str(self.outer_type_) == 'PydanticUndefined':
+            ##Refactor: Use sentinel identity check instead of string comparison (D3-2026-02-11T08:22:24Z)
+            if hasattr(self, 'outer_type_') and self.outer_type_ is Undefined:
                 ##Fix: Manually infer types for Optional attributes with defaults
                 import types
                 from typing import Optional, Union, get_args, get_origin
@@ -64,6 +65,15 @@ def patch_pydantic_v1_for_py314() -> None:
                 ##Error purpose: If original fails, try generic fallback for Optional types
                 ##Refactor: Narrowed to ConfigError, removed redundant imports (D3-2026-02-11T07:03:00Z)
                 if "unable to infer type" in str(e):
+                    ##Refactor: Log warning before applying fallback (D3-2026-02-11T08:22:24Z)
+                    logger = logging.getLogger(__name__)
+                    logger.warning(
+                        "Pydantic type inference failed, applying fallback to Optional[str]. "
+                        "Field: %s, Class: %s, Error: %s",
+                        getattr(self, 'name', '<unknown>'),
+                        getattr(self, '__class__', '<unknown>'),
+                        str(e)
+                    )
                     ##Fix: Last resort - assume Optional[str] for string-like attributes
                     from typing import Optional
                     if self.default is None:
@@ -78,13 +88,28 @@ def patch_pydantic_v1_for_py314() -> None:
         ##Action purpose: Replace the method with our patched version
         ModelField._set_default_and_type = patched_set_default_and_type
 
-    except (ImportError, AttributeError):
-        ##Error purpose: Log but don't crash if patch fails
-        ##Refactor: Use stdlib logger with narrow exceptions (D3-2026-02-11T07:03:00Z)
+    except ImportError as e:
+        ##Error purpose: Log warning if Pydantic V1 not available (expected in some environments)
+        ##Refactor: Separate ImportError (warning) from AttributeError (error) (D3-2026-02-11T08:22:24Z)
         logging.getLogger(__name__).warning(
-            "Failed to apply Pydantic V1 patch for Python 3.14 compatibility",
+            "Pydantic V1 not available, skipping Python 3.14 compatibility patch: %s",
+            str(e),
             exc_info=True
         )
+    except AttributeError as e:
+        ##Error purpose: Log error and re-raise if ModelField API changed (breaking change)
+        ##Refactor: AttributeError now fails fast to surface API changes (D3-2026-02-11T08:22:24Z)
+        logger = logging.getLogger(__name__)
+        logger.error(
+            "CRITICAL: Pydantic V1 ModelField._set_default_and_type is missing or changed. "
+            "This indicates a breaking internal API change in Pydantic. "
+            "Error: %s",
+            str(e),
+            exc_info=True
+        )
+        raise RuntimeError(
+            f"Failed to patch Pydantic V1: ModelField._set_default_and_type missing or changed: {e}"
+        ) from e
 
 
 ##Action purpose: Apply patch immediately when module is imported

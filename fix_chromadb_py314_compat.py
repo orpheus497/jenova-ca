@@ -15,7 +15,12 @@ ISSUE: ChromaDB 1.5.0 uses Pydantic V1 which has breaking changes in Python 3.14
 FIX: Reorder the Settings class to declare attributes before validators.
 
 SAFETY: This script creates a backup before patching and can be re-run safely.
+
+##Note: Targeted ChromaDB versions - 1.5.0, 1.5.1 (D3-2026-02-11T08:22:24Z)
 """
+
+##Note: Supported ChromaDB versions for this patch (D3-2026-02-11T08:22:24Z)
+SUPPORTED_CHROMADB_VERSIONS = {"1.5.0", "1.5.1"}
 
 ##Refactor: Alphabetized stdlib imports per PEP 8 (D3-2026-02-11T07:30:05Z)
 import os
@@ -31,8 +36,18 @@ def find_chromadb_config() -> Path | None:
     """Locate the ChromaDB config.py file in site-packages."""
     ##Action purpose: Search for chromadb config in common locations
     import site
+    import sysconfig
 
-    site_packages = site.getsitepackages()
+    ##Refactor: Add defensive guard for getsitepackages() (D3-2026-02-11T08:22:24Z)
+    site_packages = []
+    if hasattr(site, 'getsitepackages'):
+        site_packages = site.getsitepackages()
+    else:
+        ##Fallback purpose: Use sysconfig if getsitepackages unavailable
+        purelib = sysconfig.get_path('purelib')
+        if purelib:
+            site_packages = [purelib]
+    
     if hasattr(site, 'getusersitepackages'):
         site_packages.append(site.getusersitepackages())
 
@@ -49,8 +64,16 @@ def backup_file(filepath: Path) -> Path:
     """Create a backup of the file with .orig extension."""
     backup_path = filepath.with_suffix(filepath.suffix + '.orig')
     if not backup_path.exists():
-        shutil.copy2(filepath, backup_path)
-        print(f"✓ Created backup: {backup_path}")
+        ##Refactor: Added error handling for filesystem operations (D3-2026-02-11T08:22:24Z)
+        try:
+            shutil.copy2(filepath, backup_path)
+            print(f"✓ Created backup: {backup_path}")
+        except (OSError, PermissionError) as e:
+            print(f"✗ ERROR: Cannot create backup — check file permissions or run with elevated privileges")
+            print(f"  File: {filepath}")
+            print(f"  Backup: {backup_path}")
+            print(f"  Error: {e}")
+            raise
     else:
         print(f"✓ Backup already exists: {backup_path}")
     return backup_path
@@ -117,19 +140,26 @@ def apply_patch(filepath: Path) -> bool:
         r'        return v'
     )
 
+    ##Refactor: Version check before applying substitution (D3-2026-02-11T08:22:24Z)
+    ##Step purpose: Get ChromaDB version to verify patch applicability
+    try:
+        import importlib.metadata as md
+        chromadb_version = md.version('chromadb')
+    except (ModuleNotFoundError, md.PackageNotFoundError):
+        chromadb_version = "unknown"
+    
+    ##Condition purpose: Only apply patch to supported ChromaDB versions
+    if chromadb_version not in SUPPORTED_CHROMADB_VERSIONS and chromadb_version != "unknown":
+        print(f"⚠ Warning: ChromaDB version {chromadb_version} is not in supported versions: {SUPPORTED_CHROMADB_VERSIONS}")
+        print("   Skipping patch to avoid potential issues.")
+        print("   This patch is designed for ChromaDB 1.5.0 and 1.5.1.")
+        return False
+
     ##Step purpose: Apply substitution and check if pattern matched
     new_content, num_subs = pattern.subn(replacement, new_content)
 
     ##Condition purpose: Log diagnostic if pattern not found (upstream changes)
     if num_subs == 0:
-        ##Step purpose: Get ChromaDB version for diagnostics
-        ##Refactor: Narrowed exception to package/import errors only (D3-2026-02-11T07:30:05Z)
-        try:
-            import importlib.metadata as md
-            chromadb_version = md.version('chromadb')
-        except (ModuleNotFoundError, md.PackageNotFoundError):
-            chromadb_version = "unknown"
-
         print("⚠ Warning: Pattern not matched in config.py")
         print(f"   ChromaDB version: {chromadb_version}")
         print("   This may indicate upstream changes in ChromaDB.")
@@ -138,6 +168,8 @@ def apply_patch(filepath: Path) -> bool:
 
     ##Step purpose: Write patched content to file with atomic write pattern
     ##Refactor: Implemented atomic write with temp file and os.replace (D3-2026-02-11T07:03:00Z)
+    ##Refactor: Initialize tmp_path before try to avoid fragile locals() check (D3-2026-02-11T08:22:24Z)
+    tmp_path = None
     try:
         ##Step purpose: Create temp file in same directory for atomic replacement
         with tempfile.NamedTemporaryFile(
@@ -164,7 +196,7 @@ def apply_patch(filepath: Path) -> bool:
     ##Refactor: Narrowed to OSError for file I/O, removed dead code (D3-2026-02-11T07:30:05Z)
     except OSError as e:
         ##Error purpose: Clean up temp file on failure
-        if 'tmp_path' in locals() and os.path.exists(tmp_path):
+        if tmp_path and os.path.exists(tmp_path):
             try:
                 os.remove(tmp_path)
             except OSError:

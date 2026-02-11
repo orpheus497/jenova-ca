@@ -538,7 +538,6 @@ AGPL-3.0 - See [LICENSE](LICENSE) file for details.
 - **[Contributing Guidelines](docs/CONTRIBUTING.md)** - Code standards, testing requirements, and contribution workflow
 - **[Roadmap](docs/ROADMAP.md)** - Future enhancements and development plans
 - **[Changelog](CHANGELOG.md)** - Detailed version history
-5. **Type Safety:** All code must be fully typed (mypy strict mode)
 
 ### Key Development Principles
 
