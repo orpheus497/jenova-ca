@@ -470,7 +470,8 @@ class CognitiveGraph:
             node_emb = self._embedding_model.embed_raw(node_text)
 
             ##Step purpose: Calculate cosine similarity
-            dot_product = sum(a * b for a, b in zip(query_emb, node_emb, strict=False))
+            ##Fix: Use strict=True to catch embedding dimension mismatches (BUG-GRAPH-001)
+            dot_product = sum(a * b for a, b in zip(query_emb, node_emb, strict=True))
             norm_query = sum(a * a for a in query_emb) ** 0.5
             norm_node = sum(b * b for b in node_emb) ** 0.5
 

@@ -293,7 +293,8 @@ class ProactiveEngine:
         if total_weight > 0:
             r = random.random() * total_weight
             cumulative = 0.0
-            for cat, weight in zip(available, weights, strict=False):
+            ##Fix: Use strict=True to catch programming errors (BUG-PROACTIVE-001)
+            for cat, weight in zip(available, weights, strict=True):
                 cumulative += weight
                 if r <= cumulative:
                     return cat

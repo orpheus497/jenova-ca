@@ -200,16 +200,26 @@ class LLMInterface:
 
             elapsed_ms = (time.perf_counter() - start_time) * 1000
 
-            ##Step purpose: Extract result data
+            ##Step purpose: Extract result data with defensive checks
+            ##Fix: Defensive extraction to handle malformed LLM responses (BUG-LLM-001)
+            ##Error purpose: Validate response structure before access
+            if not result.get("choices") or len(result["choices"]) == 0:
+                raise LLMGenerationError("LLM returned no choices", prompt_text[:200])
+
             choice = result["choices"][0]
-            content = choice["text"]
+            content = choice.get("text", "")
             finish_reason = choice.get("finish_reason", "stop")
+
+            ##Error purpose: Extract token counts with fallback for missing usage data
+            usage = result.get("usage", {})
+            completion_tokens = usage.get("completion_tokens", 0)
+            prompt_tokens = usage.get("prompt_tokens", 0)
 
             return Completion(
                 content=content,
                 finish_reason=finish_reason,
-                tokens_generated=result["usage"]["completion_tokens"],
-                tokens_prompt=result["usage"]["prompt_tokens"],
+                tokens_generated=completion_tokens,
+                tokens_prompt=prompt_tokens,
                 generation_time_ms=elapsed_ms,
             )
         except Exception as e:

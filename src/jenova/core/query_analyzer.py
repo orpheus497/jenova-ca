@@ -385,7 +385,8 @@ Respond with a valid JSON object:
         try:
             response = self._llm.generate(prompt, temperature=0.2)
             return self._parse_llm_response(response, query)
-        except Exception as e:
+        except (ValueError, RuntimeError, OSError, JSONDecodeError, JSONSizeError) as e:
+            ##Fix: Narrow exception handling to LLM-specific errors (was: broad Exception)
             logger.warning("llm_analysis_failed", error=str(e), query=query[:50])
             return self._heuristic_analysis(query)
 
@@ -1106,7 +1107,8 @@ Respond with a valid JSON object:
                             relationship="unlinked",
                         )
                     )
-            except Exception as e:
+            except (ValueError, RuntimeError, KeyError, AttributeError) as e:
+                ##Fix: Narrow exception handling to graph access errors (was: broad Exception)
                 logger.warning("entity_link_failed", entity=entity, error=str(e))
                 entity_links.append(
                     EntityLink(
@@ -1173,7 +1175,8 @@ Respond with a valid JSON object:
 
             return result
 
-        except Exception as e:
+        except (ValueError, RuntimeError, AttributeError) as e:
+            ##Fix: Narrow exception handling to graph iteration errors (was: broad Exception)
             logger.warning("graph_search_failed", entity=entity, error=str(e))
             return []
 

@@ -113,6 +113,7 @@ class JenovaEmbedding:
         embeddings = self._model.encode(texts, convert_to_numpy=True)
 
         ##Step purpose: Convert to results
+        ##Fix: Use strict=True to catch model output length mismatches (BUG-EMBED-001)
         return [
             EmbeddingResult(
                 text=text,
@@ -120,7 +121,7 @@ class JenovaEmbedding:
                 model_name=self.model_name,
                 dimensions=self._dimensions,
             )
-            for text, emb in zip(texts, embeddings, strict=False)
+            for text, emb in zip(texts, embeddings, strict=True)
         ]
 
     ##Method purpose: Get raw embedding vector

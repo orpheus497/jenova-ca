@@ -157,12 +157,19 @@ class Edge:
     @classmethod
     def from_dict(cls, data: dict[str, object]) -> Edge:
         """Create from dictionary."""
+        ##Fix: Handle None values from JSON for weight and metadata (BUG-TYPES-001, BUG-TYPES-002)
+        weight_raw = data.get("weight", 1.0)
+        weight = float(weight_raw) if weight_raw is not None else 1.0
+        
+        metadata_raw = data.get("metadata", {})
+        metadata = dict(metadata_raw) if metadata_raw else {}
+        
         return cls(
             source_id=data["source_id"],
             target_id=data["target_id"],
             edge_type=EdgeType(data["edge_type"]),
-            weight=data.get("weight", 1.0),
-            metadata=data.get("metadata", {}),
+            weight=weight,
+            metadata=metadata,
         )
 
 

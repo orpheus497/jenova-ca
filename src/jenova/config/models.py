@@ -221,7 +221,8 @@ class JenovaConfig(BaseModel):
         ##Error purpose: Handle Pydantic validation errors
         try:
             return cls.model_validate(data)
-        except Exception as e:
+        except ValueError as e:
+            ##Fix: Narrow exception handling to validation errors (was: broad Exception)
             ##Step purpose: Extract error details from Pydantic
             if hasattr(e, "errors"):
                 raise ConfigValidationError(e.errors()) from e
