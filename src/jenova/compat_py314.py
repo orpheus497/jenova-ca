@@ -19,7 +19,7 @@ def patch_pydantic_v1_for_py314() -> None:
     ##Condition purpose: Only patch if Python 3.14+
     if sys.version_info < (3, 14):
         return  # Not needed for Python < 3.14
-    
+
     try:
         ##Step purpose: Import Pydantic V1 components
         ##Refactor: Alphabetized pydantic imports (D3-2026-02-11T07:30:05Z)
@@ -29,7 +29,7 @@ def patch_pydantic_v1_for_py314() -> None:
 
         ##Step purpose: Store original _set_default_and_type method
         original_set_default_and_type = ModelField._set_default_and_type
-        
+
         ##Fix: Wrap the problematic method to handle ChromaDB Settings attributes
         ##Refactor: Added return type annotation (D3-2026-02-11T07:30:05Z)
         def patched_set_default_and_type(self) -> None:
@@ -37,8 +37,8 @@ def patch_pydantic_v1_for_py314() -> None:
             ##Condition purpose: Check if this is a ChromaDB Settings attribute with undefined type
             if hasattr(self, 'outer_type_') and str(self.outer_type_) == 'PydanticUndefined':
                 ##Fix: Manually infer types for Optional attributes with defaults
-                from typing import Optional, Union, get_origin, get_args
                 import types
+                from typing import Optional, Union, get_args, get_origin
 
                 ##Step purpose: Try to infer from field_info
                 if hasattr(self, 'field_info') and hasattr(self.field_info, 'annotation'):
@@ -74,11 +74,11 @@ def patch_pydantic_v1_for_py314() -> None:
                         self.allow_none = True
                         return
                 raise
-        
+
         ##Action purpose: Replace the method with our patched version
         ModelField._set_default_and_type = patched_set_default_and_type
 
-    except (ImportError, AttributeError) as e:
+    except (ImportError, AttributeError):
         ##Error purpose: Log but don't crash if patch fails
         ##Refactor: Use stdlib logger with narrow exceptions (D3-2026-02-11T07:03:00Z)
         logging.getLogger(__name__).warning(
