@@ -36,34 +36,40 @@ def configure_logging(
         level=getattr(logging, level.upper()),
     )
 
-    ##Fix: Patch structlog BoundLogger classes BEFORE configuration (2026-02-11T06:32:20Z)
+    ##Fix: Patch structlog BoundLogger classes BEFORE configuration (see PR BH-2026-02-11)
     ##Note: Must patch BEFORE structlog.configure() to affect logger instances
-    def _patch_bound_logger_for_textual():
+    ##Refactor: Removed stale ISO timestamp from comment (D3-2026-02-11T07:03:00Z)
+    def _patch_bound_logger_for_textual() -> None:
         """Patch all structlog BoundLogger classes for Textual framework compatibility."""
-        def system(self, event=None, **kw):
+        def system(self, event: str | None = None, **kw: object) -> object:
             """System-level logging for Textual framework."""
             return self.debug(event, **kw)
-        
-        def call_method(self, event=None, **kw):
+
+        def call_method(self, event: str | None = None, **kw: object) -> object:
             """Make logger callable for Textual framework."""
             return self.debug(event, **kw)
-        
+
         # Patch all BoundLogger variant classes
         for cls_name in dir(structlog._native):
             cls = getattr(structlog._native, cls_name)
             if isinstance(cls, type) and "BoundLogger" in cls_name:
-                if not hasattr(cls, "system"):
+                if "system" not in cls.__dict__:
                     cls.system = system
-                if not hasattr(cls, "__call__"):
+                if "__call__" not in cls.__dict__:
                     cls.__call__ = call_method
-        
-        # Also patch the lazy proxy - ALWAYS set it (hasattr checks don't work reliably on proxies)
-        def proxy_call(self, event=None, **kw):
-            """Make logger proxy callable."""
-            return self.bind().debug(event, **kw)
-        
-        structlog._config.BoundLoggerLazyProxy.__call__ = proxy_call
-    
+
+        # Also patch the lazy proxy - check class dict and wrap in try/except for safety
+        try:
+            if "__call__" not in structlog._config.BoundLoggerLazyProxy.__dict__:
+                def proxy_call(self, event: str | None = None, **kw: object) -> object:
+                    """Make logger proxy callable."""
+                    return self.bind().debug(event, **kw)
+
+                structlog._config.BoundLoggerLazyProxy.__call__ = proxy_call
+        except (AttributeError, ImportError) as e:
+            ##Note: Structlog API changed - skip proxy patching
+            pass
+
     _patch_bound_logger_for_textual()
 
     ##Step purpose: Build processor chain for structlog

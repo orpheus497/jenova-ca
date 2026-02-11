@@ -9,9 +9,11 @@ It monkey-patches Pydantic V1's type inference to work with Python 3.14.
 """
 
 import sys
+import logging
 
 
-def patch_pydantic_v1_for_py314():
+##Function purpose: Monkey-patch Pydantic V1 for Python 3.14 type inference compatibility
+def patch_pydantic_v1_for_py314() -> None:
     """Patch Pydantic V1 to handle Python 3.14 type inference issues."""
     ##Condition purpose: Only patch if Python 3.14+
     if sys.version_info < (3, 14):
@@ -21,7 +23,8 @@ def patch_pydantic_v1_for_py314():
         ##Step purpose: Import Pydantic V1 components
         from pydantic.v1 import fields
         from pydantic.v1.fields import ModelField
-        
+        from pydantic.v1.errors import ConfigError
+
         ##Step purpose: Store original _set_default_and_type method
         original_set_default_and_type = ModelField._set_default_and_type
         
@@ -31,33 +34,35 @@ def patch_pydantic_v1_for_py314():
             ##Condition purpose: Check if this is a ChromaDB Settings attribute with undefined type
             if hasattr(self, 'outer_type_') and str(self.outer_type_) == 'PydanticUndefined':
                 ##Fix: Manually infer types for Optional attributes with defaults
-                from typing import Optional, get_origin, get_args
-                import sys
-                
+                from typing import Optional, Union, get_origin, get_args
+                import types
+
                 ##Step purpose: Try to infer from field_info
                 if hasattr(self, 'field_info') and hasattr(self.field_info, 'annotation'):
                     annotation = self.field_info.annotation
                     if annotation is not None:
                         ##Condition purpose: Handle Optional[T] = None pattern
-                        if get_origin(annotation) in (type(Optional[int]), type(int | None)):
+                        origin = get_origin(annotation)
+                        ##Fix: Correctly detect Union/Optional types (D3-2026-02-11T07:03:00Z)
+                        if origin is Union or (hasattr(types, 'UnionType') and origin is types.UnionType):
                             args = get_args(annotation)
-                            if args and args[0] in (int, str, bool):
+                            if args and isinstance(args[0], type):
                                 self.type_ = args[0]
                                 self.outer_type_ = annotation
                                 self.shape = fields.SHAPE_SINGLETON
                                 self.required = False
                                 self.allow_none = True
                                 return
-            
+
             ##Step purpose: Call original method for all other attributes
             try:
                 return original_set_default_and_type(self)
-            except Exception as e:
+            except ConfigError as e:
                 ##Error purpose: If original fails, try generic fallback for Optional types
+                ##Refactor: Narrowed to ConfigError, removed redundant imports (D3-2026-02-11T07:03:00Z)
                 if "unable to infer type" in str(e):
-                    import sys
-                    from typing import Optional
                     ##Fix: Last resort - assume Optional[str] for string-like attributes
+                    from typing import Optional
                     if self.default is None:
                         self.type_ = str
                         self.outer_type_ = Optional[str]
@@ -69,10 +74,14 @@ def patch_pydantic_v1_for_py314():
         
         ##Action purpose: Replace the method with our patched version
         ModelField._set_default_and_type = patched_set_default_and_type
-        
-    except Exception as e:
+
+    except (ImportError, AttributeError) as e:
         ##Error purpose: Log but don't crash if patch fails
-        print(f"⚠ Warning: Failed to apply Pydantic V1 patch: {e}", file=sys.stderr)
+        ##Refactor: Use stdlib logger with narrow exceptions (D3-2026-02-11T07:03:00Z)
+        logging.getLogger(__name__).warning(
+            "Failed to apply Pydantic V1 patch for Python 3.14 compatibility",
+            exc_info=True
+        )
 
 
 ##Action purpose: Apply patch immediately when module is imported

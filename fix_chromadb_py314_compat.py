@@ -21,8 +21,11 @@ import re
 import shutil
 import sys
 from pathlib import Path
+import tempfile
+import os
 
 
+##Function purpose: Locate the ChromaDB config.py file in site-packages
 def find_chromadb_config() -> Path | None:
     """Locate the ChromaDB config.py file in site-packages."""
     ##Action purpose: Search for chromadb config in common locations
@@ -40,6 +43,7 @@ def find_chromadb_config() -> Path | None:
     return None
 
 
+##Function purpose: Create a backup of the file with .orig extension
 def backup_file(filepath: Path) -> Path:
     """Create a backup of the file with .orig extension."""
     backup_path = filepath.with_suffix(filepath.suffix + '.orig')
@@ -51,17 +55,20 @@ def backup_file(filepath: Path) -> Path:
     return backup_path
 
 
+##Function purpose: Check if the file has already been patched
 def check_if_patched(content: str) -> bool:
     """Check if the file has already been patched."""
     ##Condition purpose: Look for our patch marker comment
     return "##Fix: Python 3.14 compatibility" in content
 
 
+##Function purpose: Apply the Python 3.14 compatibility patch to ChromaDB config.py
 def apply_patch(filepath: Path) -> bool:
     """Apply the Python 3.14 compatibility patch to ChromaDB config.py."""
     
-    ##Step purpose: Read current file content
-    content = filepath.read_text()
+    ##Step purpose: Read current file content with explicit UTF-8 encoding
+    ##Refactor: Added UTF-8 encoding specification (D3-2026-02-11T07:03:00Z)
+    content = filepath.read_text(encoding="utf-8")
     
     ##Condition purpose: Skip if already patched
     if check_if_patched(content):
@@ -72,56 +79,103 @@ def apply_patch(filepath: Path) -> bool:
     backup_file(filepath)
     
     ##Fix: Move attribute BEFORE validator (Python 3.14 requires this order)
-    ##Pattern 1: Add Field import if not present
+    ##Pattern 1: Add Field import if not present (check for duplicates first)
+    ##Refactor: Added duplicate import check (D3-2026-02-11T07:03:00Z)
     import_pattern = r'(from pydantic\.v1 import BaseSettings)'
     import_replacement = r'\1, Field'
     
-    new_content = re.sub(import_pattern, import_replacement, content)
+    ##Step purpose: Check if Field is already imported to avoid duplicates
+    field_already_imported = re.search(r'from pydantic\.v1 import.*\bField\b', content)
+    
+    if not field_already_imported:
+        new_content = re.sub(import_pattern, import_replacement, content)
+    else:
+        new_content = content
+        print("✓ Field import already present, skipping...")
     
     ##Pattern 2: Find the validator+attribute block and reorder them
     ##Note: The attribute must come BEFORE the validator for Python 3.14 type inference
+    ##Refactor: Relaxed regex for flexible whitespace, added diagnostics (D3-2026-02-11T07:03:00Z)
     pattern = re.compile(
-        r'(    )@validator\("chroma_server_nofile", pre=True, always=True, allow_reuse=True\)\n'
-        r'(    )def empty_str_to_none\(cls, v: str\) -> Optional\[str\]:\n'
-        r'(        )if type\(v\) is str and v\.strip\(\) == "":\n'
-        r'(            )return None\n'
-        r'(        )return v\n'
-        r'\n'
-        r'(    )chroma_server_nofile: Optional\[int\] = None',
-        re.MULTILINE
+        r'@validator\("chroma_server_nofile",\s+pre=True,\s+always=True,\s+allow_reuse=True\)\s+'
+        r'def\s+empty_str_to_none\([^)]+\)[^:]+:\s+'
+        r'.*?return\s+v\s+'
+        r'chroma_server_nofile:\s*Optional\[int\]\s*=\s*None',
+        re.DOTALL | re.MULTILINE
     )
     
     ##Step purpose: Reorder: attribute FIRST, then validator
     replacement = (
-        r'\1##Fix: Python 3.14 compatibility - attribute must be declared before validator (2026-02-11T02:02:44Z)\n'
-        r'\1chroma_server_nofile: Optional[int] = Field(default=None)\n'
+        r'##Fix: Python 3.14 compatibility - attribute must be declared before validator (2026-02-11T02:02:44Z)\n'
+        r'    chroma_server_nofile: Optional[int] = Field(default=None)\n'
         r'\n'
-        r'\1@validator("chroma_server_nofile", pre=True, always=True, allow_reuse=True)\n'
-        r'\2def empty_str_to_none(cls, v: str) -> Optional[str]:\n'
-        r'\3if type(v) is str and v.strip() == "":\n'
-        r'\4return None\n'
-        r'\5return v'
+        r'    @validator("chroma_server_nofile", pre=True, always=True, allow_reuse=True)\n'
+        r'    def empty_str_to_none(cls, v: str) -> Optional[str]:\n'
+        r'        if type(v) is str and v.strip() == "":\n'
+        r'            return None\n'
+        r'        return v'
     )
     
-    ##Action purpose: Apply the patch
-    new_content, count = pattern.subn(replacement, new_content)
+    ##Step purpose: Apply substitution and check if pattern matched
+    new_content, num_subs = pattern.subn(replacement, new_content)
     
-    if count == 0:
-        print("✗ Pattern not found. ChromaDB structure may have changed.")
+    ##Condition purpose: Log diagnostic if pattern not found (upstream changes)
+    if num_subs == 0:
+        ##Step purpose: Get ChromaDB version for diagnostics
+        try:
+            import importlib.metadata
+            chromadb_version = importlib.metadata.version('chromadb')
+        except Exception:
+            chromadb_version = "unknown"
+        
+        print(f"⚠ Warning: Pattern not matched in config.py")
+        print(f"   ChromaDB version: {chromadb_version}")
+        print(f"   This may indicate upstream changes in ChromaDB.")
+        print(f"   The patch may need to be updated.")
         return False
     
-    ##Action purpose: Write patched content
-    filepath.write_text(new_content)
-    print(f"✓ Successfully patched {filepath}")
-    print(f"  - Added Field import to Pydantic V1")
-    print(f"  - Moved chroma_server_nofile declaration BEFORE validator")
-    print(f"  - Used Field(default=None) for explicit type hint")
-    print(f"  - {count} occurrence(s) fixed")
-    
-    return True
+    ##Step purpose: Write patched content to file with atomic write pattern
+    ##Refactor: Implemented atomic write with temp file and os.replace (D3-2026-02-11T07:03:00Z)
+    try:
+        ##Step purpose: Create temp file in same directory for atomic replacement
+        with tempfile.NamedTemporaryFile(
+            dir=filepath.parent,
+            delete=False,
+            mode="w",
+            encoding="utf-8",
+            prefix=".tmp_chromadb_patch_",
+            suffix=".py"
+        ) as tmp_file:
+            tmp_file.write(new_content)
+            tmp_file.flush()
+            os.fsync(tmp_file.fileno())
+            tmp_path = tmp_file.name
+        
+        ##Step purpose: Atomically replace original file with patched version
+        os.replace(tmp_path, filepath)
+        print(f"✓ Patched: {filepath}")
+        print(f"  - Added Field import (if not present)")
+        print(f"  - Moved chroma_server_nofile declaration BEFORE validator")
+        print(f"  - {num_subs} occurrence(s) fixed")
+        return True
+        
+    except Exception as e:
+        ##Error purpose: Clean up temp file on failure
+        if 'tmp_path' in locals() and os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
+        raise RuntimeError(f"Failed to write patched file: {e}") from e
+        sys.exit(1)
 
 
-def main():
+if __name__ == "__main__":
+    main()
+
+
+##Function purpose: Main entry point for ChromaDB Python 3.14 compatibility patcher
+def main() -> None:
     """Main execution function."""
     print("ChromaDB Python 3.14 Compatibility Patcher")
     print("=" * 50)

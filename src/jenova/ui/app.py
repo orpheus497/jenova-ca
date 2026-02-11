@@ -33,7 +33,7 @@ Animation Timing:
   - Fast: 80ms (spinner frames)
   - Normal: 100ms (default animations)
   - Slow: 150ms (emphasis animations)
-  - Transitions: 150-200ms ease-in-out
+  - Transitions: 150-200ms in_out_cubic
 """
 
 from __future__ import annotations
@@ -189,10 +189,9 @@ class JenovaApp(App):
     #help-overlay {
         display: none;
         layer: overlay;
-        width: 80%;
+        align: center middle;
+        width: auto;
         height: 80%;
-        /* Fix: Textual doesn't support 'auto' margins - use fixed values (2026-02-11T06:32:20Z) */
-        margin: 2 10;
         border: double $primary;
         background: $surface;
         padding: 1;
