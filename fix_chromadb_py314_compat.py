@@ -17,12 +17,13 @@ FIX: Reorder the Settings class to declare attributes before validators.
 SAFETY: This script creates a backup before patching and can be re-run safely.
 """
 
+##Refactor: Alphabetized stdlib imports per PEP 8 (D3-2026-02-11T07:30:05Z)
+import os
 import re
 import shutil
 import sys
-from pathlib import Path
 import tempfile
-import os
+from pathlib import Path
 
 
 ##Function purpose: Locate the ChromaDB config.py file in site-packages
@@ -122,10 +123,11 @@ def apply_patch(filepath: Path) -> bool:
     ##Condition purpose: Log diagnostic if pattern not found (upstream changes)
     if num_subs == 0:
         ##Step purpose: Get ChromaDB version for diagnostics
+        ##Refactor: Narrowed exception to package/import errors only (D3-2026-02-11T07:30:05Z)
         try:
-            import importlib.metadata
-            chromadb_version = importlib.metadata.version('chromadb')
-        except Exception:
+            import importlib.metadata as md
+            chromadb_version = md.version('chromadb')
+        except (ModuleNotFoundError, md.PackageNotFoundError):
             chromadb_version = "unknown"
         
         print(f"⚠ Warning: Pattern not matched in config.py")
@@ -159,19 +161,15 @@ def apply_patch(filepath: Path) -> bool:
         print(f"  - {num_subs} occurrence(s) fixed")
         return True
         
-    except Exception as e:
+    ##Refactor: Narrowed to OSError for file I/O, removed dead code (D3-2026-02-11T07:30:05Z)
+    except OSError as e:
         ##Error purpose: Clean up temp file on failure
         if 'tmp_path' in locals() and os.path.exists(tmp_path):
             try:
                 os.remove(tmp_path)
-            except Exception:
+            except OSError:
                 pass
-        raise RuntimeError(f"Failed to write patched file: {e}") from e
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
+        raise OSError(f"Failed to write patched file: {e}") from e
 
 
 ##Function purpose: Main entry point for ChromaDB Python 3.14 compatibility patcher

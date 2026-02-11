@@ -8,8 +8,9 @@ This module MUST be imported before any code that uses ChromaDB.
 It monkey-patches Pydantic V1's type inference to work with Python 3.14.
 """
 
-import sys
+##Refactor: Alphabetized stdlib imports per PEP 8 (D3-2026-02-11T07:30:05Z)
 import logging
+import sys
 
 
 ##Function purpose: Monkey-patch Pydantic V1 for Python 3.14 type inference compatibility
@@ -21,15 +22,17 @@ def patch_pydantic_v1_for_py314() -> None:
     
     try:
         ##Step purpose: Import Pydantic V1 components
+        ##Refactor: Alphabetized pydantic imports (D3-2026-02-11T07:30:05Z)
         from pydantic.v1 import fields
-        from pydantic.v1.fields import ModelField
         from pydantic.v1.errors import ConfigError
+        from pydantic.v1.fields import ModelField
 
         ##Step purpose: Store original _set_default_and_type method
         original_set_default_and_type = ModelField._set_default_and_type
         
         ##Fix: Wrap the problematic method to handle ChromaDB Settings attributes
-        def patched_set_default_and_type(self):
+        ##Refactor: Added return type annotation (D3-2026-02-11T07:30:05Z)
+        def patched_set_default_and_type(self) -> None:
             """Patched version that handles ChromaDB's Settings attributes with type inference issues."""
             ##Condition purpose: Check if this is a ChromaDB Settings attribute with undefined type
             if hasattr(self, 'outer_type_') and str(self.outer_type_) == 'PydanticUndefined':
