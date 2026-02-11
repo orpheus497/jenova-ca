@@ -141,7 +141,8 @@ class StatusBar(Static):
         background: $surface;
         color: $text-muted;
         /* Animation purpose: Smooth color transitions between states */
-        transition: color 200ms ease-in-out, background 200ms ease-in-out;
+        /* Fix: Use 'in_out_cubic' instead of 'ease-in-out' for Textual (2026-02-11T06:32:20Z) */
+        transition: color 200ms in_out_cubic, background 200ms in_out_cubic;
     }
 
     StatusBar.-loading {

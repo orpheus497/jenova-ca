@@ -408,9 +408,11 @@ jenova-ca/
 │   └── train.py         # Fine-tuning training script
 ├── config.example.yaml   # Example configuration
 ├── pyproject.toml        # Project configuration
+├── docs/                  # Project documentation
+│   ├── CONTRIBUTING.md   # Contribution guidelines
+│   └── ROADMAP.md        # Future plans and enhancements
 ├── LICENSE                # AGPL-3.0 license
 ├── README.md             # This file
-├── CONTRIBUTING.md       # Contribution guidelines
 └── CHANGELOG.md          # Version history
 ```
 
@@ -531,19 +533,11 @@ This project was developed entirely using AI-assisted development methodologies:
 
 AGPL-3.0 - See [LICENSE](LICENSE) file for details.
 
-## 11. Contributing
+## 11. Additional Documentation
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
-
-**Note:** As a personal project developed through AI-assisted methodologies, contributions should align with the project's architectural vision and coding standards. The `.devdocs/` directory contains comprehensive development documentation for understanding the codebase structure and standards.
-
-### Development Workflow
-
-1. **Read Documentation:** Start with `.devdocs/BRIEFING.md` for current project status
-2. **Understand Architecture:** Review `.devdocs/builders/architect/` for design decisions
-3. **Follow Standards:** All code must comply with `.devdocs/guardians/marshal/CODE_STANDARDS.md`
-4. **Run Tests:** Ensure all tests pass before submitting changes
-5. **Type Safety:** All code must be fully typed (mypy strict mode)
+- **[Contributing Guidelines](docs/CONTRIBUTING.md)** - Code standards, testing requirements, and contribution workflow
+- **[Roadmap](docs/ROADMAP.md)** - Future enhancements and development plans
+- **[Changelog](CHANGELOG.md)** - Detailed version history
 
 ### Key Development Principles
 

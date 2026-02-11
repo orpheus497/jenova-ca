@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jenova"
-version = "4.0.0"
+version = "4.1.0"
 description = "Self-aware AI cognitive architecture with graph-based memory and RAG-based response generation"
 readme = "README.md"
 license = {text = "AGPL-3.0"}

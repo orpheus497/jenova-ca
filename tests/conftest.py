@@ -11,6 +11,10 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
+##Fix: Import Python 3.14 compatibility patch BEFORE any ChromaDB usage (D3-2026-02-11T07:36:09Z)
+##Note: This must be imported before jenova.memory or any ChromaDB-dependent modules
+import jenova.compat_py314  # noqa: F401  # Monkey-patches Pydantic V1 for Python 3.14
+
 ##Mock purpose: Mock onnxruntime before chromadb imports it (not available on FreeBSD)
 ##Note: This mock is required because chromadb creates DefaultEmbeddingFunction at class
 ##definition time, which requires onnxruntime. JENOVA uses its own embedding functions.

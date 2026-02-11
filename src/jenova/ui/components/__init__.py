@@ -13,10 +13,10 @@ from jenova.ui.components.banner import (
     TitleBanner,
     WelcomePanel,
 )
+##Fix: Replace removed COGNITIVE_COMMANDS/LEARNING_COMMANDS with IMPLEMENTED_COMMANDS (2026-02-11T06:30:50Z)
 from jenova.ui.components.help_panel import (
-    COGNITIVE_COMMANDS,
+    IMPLEMENTED_COMMANDS,
     KEYBOARD_SHORTCUTS,
-    LEARNING_COMMANDS,
     SYSTEM_COMMANDS,
     CommandInfo,
     HelpHint,
@@ -51,8 +51,7 @@ __all__ = [
     "HelpPanel",
     "HelpHint",
     "CommandInfo",
-    "COGNITIVE_COMMANDS",
-    "LEARNING_COMMANDS",
+    "IMPLEMENTED_COMMANDS",
     "SYSTEM_COMMANDS",
     "KEYBOARD_SHORTCUTS",
     ##Step purpose: Export loading components

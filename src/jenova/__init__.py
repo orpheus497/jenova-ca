@@ -12,5 +12,5 @@ A cognitive architecture providing:
 
 from jenova.exceptions import JenovaError
 
-__version__ = "4.0.0"
+__version__ = "4.1.0"
 __all__ = ["JenovaError", "__version__"]

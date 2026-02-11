@@ -15,6 +15,42 @@ from pathlib import Path
 import structlog
 
 
+##Refactor: Custom BoundLogger subclass for Textual compatibility (D3-2026-02-11T08:22:24Z)
+##Class purpose: Extend structlog BoundLogger with Textual framework methods
+class JenovaBoundLogger(structlog.stdlib.BoundLogger):
+    """Custom BoundLogger with Textual framework compatibility methods."""
+    
+    def system(self, event: str | None = None, **kw: object) -> object:
+        """System-level logging for Textual framework."""
+        return self.debug(event, **kw)
+    
+    def __call__(self, event: str | None = None, **kw: object) -> object:
+        """Make logger callable for Textual framework."""
+        return self.debug(event, **kw)
+
+
+##Refactor: Extracted to module scope for testability (D3-2026-02-11T08:22:24Z)
+##Function purpose: Patch structlog lazy proxy for Textual framework compatibility
+def _patch_structlog_lazy_proxy() -> None:
+    """Patch structlog lazy proxy for Textual framework compatibility."""
+    # Patch the lazy proxy - check class dict and wrap in try/except for safety
+    try:
+        if "__call__" not in structlog._config.BoundLoggerLazyProxy.__dict__:
+            def proxy_call(self, event: str | None = None, **kw: object) -> object:
+                """Make logger proxy callable."""
+                return self.bind().debug(event, **kw)
+
+            structlog._config.BoundLoggerLazyProxy.__call__ = proxy_call
+    except (AttributeError, ImportError) as e:
+        ##Refactor: Added diagnostic logging instead of silent pass (D3-2026-02-11T08:22:24Z)
+        logger = logging.getLogger(__name__)
+        logger.debug(
+            "Skipped structlog BoundLoggerLazyProxy patching (API may have changed): %s",
+            str(e),
+            exc_info=True
+        )
+
+
 ##Function purpose: Configure application-wide logging settings
 def configure_logging(
     level: str = "INFO",
@@ -36,6 +72,11 @@ def configure_logging(
         level=getattr(logging, level.upper()),
     )
 
+    ##Fix: Patch structlog lazy proxy BEFORE configuration (see PR BH-2026-02-11)
+    ##Note: Must patch BEFORE structlog.configure() to affect logger instances
+    ##Refactor: Replaced monkey-patching loop with custom subclass (D3-2026-02-11T08:22:24Z)
+    _patch_structlog_lazy_proxy()
+
     ##Step purpose: Build processor chain for structlog
     processors: list[structlog.types.Processor] = [
         structlog.stdlib.filter_by_level,
@@ -52,10 +93,11 @@ def configure_logging(
     else:
         processors.append(structlog.dev.ConsoleRenderer())
 
-    ##Action purpose: Apply structlog configuration
+    ##Action purpose: Apply structlog configuration with custom wrapper class
+    ##Refactor: Use JenovaBoundLogger subclass instead of monkey-patching (D3-2026-02-11T08:22:24Z)
     structlog.configure(
         processors=processors,
-        wrapper_class=structlog.stdlib.BoundLogger,
+        wrapper_class=JenovaBoundLogger,
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
