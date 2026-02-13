@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Protocol
 import structlog
 
 from jenova.core.scheduler import TaskType
+from jenova.exceptions import AssumptionDuplicateError
 
 if TYPE_CHECKING:
     from jenova.assumptions.manager import AssumptionManager
@@ -132,7 +133,10 @@ class CognitiveTaskExecutor:
         lines: list[str] = []
         for user_msg, ai_response in recent:
             lines.append(f"User: {user_msg}")
-            lines.append(f"JENOVA: {ai_response[:_MAX_RESPONSE_PREVIEW_LENGTH]}")
+            preview = ai_response[:_MAX_RESPONSE_PREVIEW_LENGTH]
+            if len(ai_response) > _MAX_RESPONSE_PREVIEW_LENGTH:
+                preview += "..."
+            lines.append(f"JENOVA: {preview}")
         return "\n".join(lines)
 
     ##Method purpose: Generate and save an insight from recent conversation
@@ -158,13 +162,14 @@ class CognitiveTaskExecutor:
         try:
             prompt = f"Recent conversation:\n{history_summary}\n\nGenerate an insight:"
             content = self._llm.generate_text(prompt, system_prompt=_INSIGHT_SYSTEM_PROMPT)
+            stripped = content.strip() if content else ""
 
-            if not content or len(content.strip()) < 10:
+            if not stripped or len(stripped) < 10:
                 logger.debug("task_executor_skip_insight", reason="empty_generation")
                 return False
 
             self._insight_manager.save_insight(
-                content=content.strip(),
+                content=stripped,
                 username=username,
             )
 
@@ -211,9 +216,12 @@ class CognitiveTaskExecutor:
             logger.info("task_executor_assumption_generated", username=username)
             return True
 
+        except AssumptionDuplicateError:
+            # Duplicate assumptions are expected and not failures
+            logger.debug("task_executor_assumption_skipped", reason="duplicate")
+            return False
         except Exception as e:
-            ##Note: Duplicate assumptions raise AssumptionDuplicateError — not a failure
-            logger.debug("task_executor_assumption_skipped", error=str(e))
+            logger.error("task_executor_assumption_failed", error=str(e), exc_info=True)
             return False
 
     ##Method purpose: Check and log pending assumption verifications

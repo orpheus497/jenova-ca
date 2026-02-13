@@ -188,6 +188,47 @@ class PersonaConfig(BaseModel):
     )
 
 
+##Class purpose: Integration system configuration
+class IntegrationConfig(BaseModel):
+    """Integration system configuration."""
+
+    enabled: bool = Field(
+        default=True,
+        description="Whether integration is enabled.",
+    )
+    max_related_nodes: int = Field(
+        default=5,
+        ge=1,
+        description="Maximum related nodes to find per query.",
+    )
+    max_context_expansion: int = Field(
+        default=3,
+        ge=1,
+        description="Maximum items to add during context expansion.",
+    )
+    similarity_threshold: float = Field(
+        default=0.7,
+        ge=0.0,
+        le=1.0,
+        description="Minimum similarity for creating cross-references.",
+    )
+    high_centrality_threshold: float = Field(
+        default=2.0,
+        ge=0.0,
+        description="Centrality threshold for identifying important nodes.",
+    )
+    duplication_threshold: float = Field(
+        default=0.9,
+        ge=0.0,
+        le=1.0,
+        description="Similarity threshold for flagging duplications.",
+    )
+    memory_to_cortex_feedback: bool = Field(
+        default=True,
+        description="Whether to create Memory → Cortex feedback links.",
+    )
+
+
 ##Class purpose: Root configuration for JENOVA
 class JenovaConfig(BaseModel):
     """Root configuration for JENOVA."""
@@ -196,6 +237,7 @@ class JenovaConfig(BaseModel):
     model: ModelConfig = Field(default_factory=ModelConfig)
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
     graph: GraphConfig = Field(default_factory=GraphConfig)
+    integration: IntegrationConfig = Field(default_factory=IntegrationConfig)
     persona: PersonaConfig = Field(default_factory=PersonaConfig)
     debug: bool = Field(default=False, description="Enable debug mode.")
 

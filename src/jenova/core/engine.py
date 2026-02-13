@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -319,6 +320,7 @@ class CognitiveEngine:
             JenovaMemoryError: If memory operations fail.
         """
         ##Step purpose: Increment turn counter and set username
+        start_time = time.perf_counter()
         self._turn_count += 1
         if username:
             ##Sec: Validate username before database operations (PATCH-001)
@@ -371,6 +373,7 @@ class CognitiveEngine:
                     )
 
             ##Action purpose: Log successful completion
+            duration_ms = (time.perf_counter() - start_time) * 1000
             logger.info(
                 "think_completed",
                 turn=self._turn_count,
@@ -378,6 +381,7 @@ class CognitiveEngine:
                 response_length=len(response.content),
                 plan_complexity=plan.complexity.value,
                 plan_steps=len(plan.sub_goals),
+                duration_ms=round(duration_ms, 2),
             )
 
             ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Fire scheduler after successful turn
@@ -389,9 +393,9 @@ class CognitiveEngine:
                         else 0
                     )
                     self._scheduler.on_turn_complete(self._current_username, unverified)
-                except Exception:
+                except (RuntimeError, ValueError, OSError) as e:
                     ##Note: Scheduler errors must not break the think() response
-                    logger.warning("scheduler_post_turn_error", exc_info=True)
+                    logger.warning("scheduler_post_turn_error", error=str(e), exc_info=True)
 
             return ThinkResult(
                 content=response.content,

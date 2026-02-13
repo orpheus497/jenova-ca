@@ -13,12 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Created `CognitiveTaskExecutor` dispatching 6 autonomous task types (GENERATE_INSIGHT, GENERATE_ASSUMPTION, VERIFY_ASSUMPTION, REFLECT, PRUNE_GRAPH, LINK_ORPHANS)
   - Wired `CognitiveScheduler` into engine pipeline — fires after every successful `think()` call
   - Autonomous insight and assumption generation from conversation history
+  - **User Impact:** CognitiveScheduler now enables proactive suggestions and summarized insights in conversations, improving relevance without manual prompting.
 
 - **IntegrationHub Wiring (2026-02-13T13:05:14Z):**
   - Wired `IntegrationHub` into engine pipeline with semantic memory and Cortex graph
   - Context expansion via graph relationships now active on every `think()` call
   - Memory→Cortex bidirectional feedback loop now operational
   - Unified Knowledge Map, consistency checking, and centrality scoring now available
+  - **User Impact:** IntegrationHub context expansion via `think()` delivers more context-aware responses and fewer clarifying questions, while the Unified Knowledge Map ensures consistent recommendations across long conversations.
 
 ### Fixed
 

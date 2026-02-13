@@ -122,7 +122,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
     ##Update: WIRING-002 (2026-02-13T13:05:14Z) — Added IntegrationHub import
     from jenova.assumptions.manager import AssumptionManager
     from jenova.core.engine import CognitiveEngine, EngineConfig
-    from jenova.core.integration import IntegrationConfig, IntegrationHub
+    from jenova.core.integration import IntegrationHub
     from jenova.core.knowledge import KnowledgeStore
     from jenova.core.response import ResponseConfig, ResponseGenerator
     from jenova.core.scheduler import CognitiveScheduler, SchedulerConfig
@@ -236,13 +236,20 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
 
     ##Update: WIRING-002 (2026-02-13T13:05:14Z) — Wire IntegrationHub into engine
     logger.debug("initializing_integration_hub")
-    semantic_memory = knowledge_store.get_memory(MemoryType.SEMANTIC)
-    integration_hub = IntegrationHub(
-        graph=knowledge_store.graph,
-        memory=semantic_memory,
-        config=IntegrationConfig(),
-    )
-    engine.set_integration_hub(integration_hub)
+    try:
+        semantic_memory = knowledge_store.get_memory(MemoryType.SEMANTIC)
+        integration_hub = IntegrationHub(
+            graph=knowledge_store.graph,
+            memory=semantic_memory,
+            config=config.integration,
+        )
+        engine.set_integration_hub(integration_hub)
+    except Exception as e:
+        logger.warning(
+            "integration_hub_init_failed",
+            error=str(e),
+            msg="Continuing without integration subsystem",
+        )
 
     ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Wire CognitiveScheduler into engine
     logger.debug("initializing_scheduler")

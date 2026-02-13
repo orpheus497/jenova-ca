@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 import structlog
 
+from jenova.config.models import IntegrationConfig
 from jenova.exceptions import GraphError, IntegrationError, NodeNotFoundError
 
 if TYPE_CHECKING:
@@ -281,33 +282,6 @@ class ConsistencyReport:
             parts.append(f"{len(self.duplications)} duplications found")
 
         return "; ".join(parts) if parts else "No issues found."
-
-
-##Class purpose: Configuration for IntegrationHub
-@dataclass
-class IntegrationConfig:
-    """Configuration for IntegrationHub."""
-
-    enabled: bool = True
-    """Whether integration is enabled."""
-
-    max_related_nodes: int = 5
-    """Maximum related nodes to find per query."""
-
-    max_context_expansion: int = 3
-    """Maximum items to add during context expansion."""
-
-    similarity_threshold: float = 0.7
-    """Minimum similarity for creating cross-references."""
-
-    high_centrality_threshold: float = 2.0
-    """Centrality threshold for identifying important nodes."""
-
-    duplication_threshold: float = 0.9
-    """Similarity threshold for flagging duplications."""
-
-    memory_to_cortex_feedback: bool = True
-    """Whether to create Memory → Cortex feedback links."""
 
 
 ##Class purpose: Central hub coordinating Memory, Cortex, and Insights integration
