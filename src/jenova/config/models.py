@@ -199,11 +199,13 @@ class IntegrationConfig(BaseModel):
     max_related_nodes: int = Field(
         default=5,
         ge=1,
+        le=50,
         description="Maximum related nodes to find per query.",
     )
     max_context_expansion: int = Field(
         default=3,
         ge=1,
+        le=20,
         description="Maximum items to add during context expansion.",
     )
     similarity_threshold: float = Field(
@@ -229,6 +231,36 @@ class IntegrationConfig(BaseModel):
     )
 
 
+##Class purpose: Proactive system configuration
+class ProactiveConfig(BaseModel):
+    """Proactive system configuration."""
+
+    cooldown_minutes: int = Field(
+        default=15,
+        ge=1,
+        le=1440,
+        description="Minimum minutes between suggestions of same category.",
+    )
+    max_suggestions_per_session: int = Field(
+        default=10,
+        ge=1,
+        le=100,
+        description="Maximum suggestions to generate per session.",
+    )
+    priority_threshold: float = Field(
+        default=0.3,
+        ge=0.0,
+        le=1.0,
+        description="Minimum priority to show suggestion (0-1).",
+    )
+    enable_explore: bool = Field(default=True, description="Enable exploration suggestions.")
+    enable_verify: bool = Field(default=True, description="Enable verification suggestions.")
+    enable_develop: bool = Field(default=True, description="Enable development suggestions.")
+    enable_connect: bool = Field(default=True, description="Enable connection suggestions.")
+    enable_reflect: bool = Field(default=True, description="Enable reflection suggestions.")
+    rotation_enabled: bool = Field(default=True, description="Enable category rotation for variety.")
+
+
 ##Class purpose: Root configuration for JENOVA
 class JenovaConfig(BaseModel):
     """Root configuration for JENOVA."""
@@ -238,6 +270,7 @@ class JenovaConfig(BaseModel):
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
     graph: GraphConfig = Field(default_factory=GraphConfig)
     integration: IntegrationConfig = Field(default_factory=IntegrationConfig)
+    proactive: ProactiveConfig = Field(default_factory=ProactiveConfig)
     persona: PersonaConfig = Field(default_factory=PersonaConfig)
     debug: bool = Field(default=False, description="Enable debug mode.")
 

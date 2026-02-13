@@ -524,6 +524,10 @@ class CognitiveGraph:
             logger.debug("graph_search_cache_hit", query_preview=query[:50])
             return cached_result
 
+        ##Sec: Validate username if provided (consistent with get_nodes_by_user)
+        if username:
+            username = validate_username(username)
+
         ##Update: Build inverted index if needed (P0-002)
         self._build_inverted_index()
 

@@ -228,10 +228,17 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
         def generate(self, prompt: str) -> str:
             return self._llm.generate_text(prompt, system_prompt="You are a proactive cognitive assistant.")
 
+    ##Update: Source proactive configuration from centralized JenovaConfig (Coderabbit review)
     proactive_config = ProactiveConfig(
-        max_suggestions_per_session=10,
-        cooldown_minutes=15,
-        priority_threshold=0.3,
+        cooldown_minutes=config.proactive.cooldown_minutes,
+        max_suggestions_per_session=config.proactive.max_suggestions_per_session,
+        priority_threshold=config.proactive.priority_threshold,
+        enable_explore=config.proactive.enable_explore,
+        enable_verify=config.proactive.enable_verify,
+        enable_develop=config.proactive.enable_develop,
+        enable_connect=config.proactive.enable_connect,
+        enable_reflect=config.proactive.enable_reflect,
+        rotation_enabled=config.proactive.rotation_enabled,
     )
     proactive_engine = ProactiveEngine(
         config=proactive_config,
@@ -276,15 +283,23 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
 
     ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Wire CognitiveScheduler into engine
     logger.debug("initializing_scheduler")
-    task_executor = CognitiveTaskExecutor(
-        insight_manager=insight_manager,
-        assumption_manager=assumption_manager,
-        knowledge_store=knowledge_store,
-        llm=llm,
-        get_recent_history=engine.get_recent_history,
-    )
-    scheduler = CognitiveScheduler(SchedulerConfig(), executor=task_executor)
-    engine.set_scheduler(scheduler)
+    try:
+        task_executor = CognitiveTaskExecutor(
+            insight_manager=insight_manager,
+            assumption_manager=assumption_manager,
+            knowledge_store=knowledge_store,
+            llm=llm,
+            get_recent_history=engine.get_recent_history,
+        )
+        scheduler = CognitiveScheduler(SchedulerConfig(), executor=task_executor)
+        engine.set_scheduler(scheduler)
+    except Exception as e:
+        ##Fix: Handle scheduler initialization failure (Coderabbit review)
+        logger.warning(
+            "scheduler_init_failed",
+            error=str(e),
+            msg="Continuing without scheduler subsystem",
+        )
 
     logger.info("engine_created")
     return engine

@@ -203,13 +203,14 @@ class CognitiveTaskExecutor:
         try:
             prompt = f"Recent conversation:\n{history_summary}\n\nGenerate an assumption:"
             content = self._llm.generate_text(prompt, system_prompt=_ASSUMPTION_SYSTEM_PROMPT)
+            stripped_content = content.strip() if content else ""
 
-            if not content or len(content.strip()) < 10:
+            if not stripped_content or len(stripped_content) < 10:
                 logger.debug("task_executor_skip_assumption", reason="empty_generation")
                 return False
 
             self._assumption_manager.add_assumption(
-                content=content.strip(),
+                content=stripped_content,
                 username=username,
             )
 
@@ -240,14 +241,19 @@ class CognitiveTaskExecutor:
         if self._assumption_manager is None:
             return False
 
-        count = self._assumption_manager.unverified_count(username)
-        if count > 0:
-            logger.info(
-                "task_executor_pending_verifications",
-                username=username,
-                count=count,
-            )
-        return True
+        try:
+            count = self._assumption_manager.unverified_count(username)
+            if count > 0:
+                logger.info(
+                    "task_executor_pending_verifications",
+                    username=username,
+                    count=count,
+                )
+            return True
+        except Exception as e:
+            ##Fix: Handle unexpected errors in verification check
+            logger.error("task_executor_verification_check_failed", error=str(e), exc_info=True)
+            return False
 
     ##Method purpose: Run a full reflection cycle on the knowledge graph
     def _reflect(self, username: str) -> bool:

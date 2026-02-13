@@ -17,10 +17,21 @@ from typing import Protocol
 
 import structlog
 
+from jenova.assumptions.types import Assumption
 from jenova.exceptions import GraphError, NodeNotFoundError, ProactiveError
 
 ##Class purpose: Define logger for proactive engine operations
 logger = structlog.get_logger(__name__)
+
+
+##Class purpose: Protocol for assumption manager access
+class AssumptionManagerProtocol(Protocol):
+    """Protocol for AssumptionManager access."""
+
+    ##Method purpose: Get assumption to verify
+    def get_assumption_to_verify(self, username: str) -> tuple[Assumption, str] | None:
+        """Get an unverified assumption and generate a verification question."""
+        ...
 
 
 ##Class purpose: Categories of proactive suggestions
@@ -181,6 +192,7 @@ class ProactiveEngine:
         config: ProactiveConfig,
         graph: GraphProtocol | None = None,
         llm: LLMProtocol | None = None,
+        assumption_manager: AssumptionManagerProtocol | None = None,
     ) -> None:
         """Initialize the proactive engine.
 
@@ -188,11 +200,13 @@ class ProactiveEngine:
             config: Engine configuration
             graph: Optional graph access (can be set later)
             llm: Optional LLM access (can be set later)
+            assumption_manager: Optional assumption manager (can be set later)
         """
         ##Step purpose: Store configuration and dependencies
         self._config = config
         self._graph = graph
         self._llm = llm
+        self._assumption_manager = assumption_manager
 
         ##Step purpose: Initialize tracking state
         self._last_suggestion_time: dict[SuggestionCategory, datetime] = {}
@@ -234,6 +248,11 @@ class ProactiveEngine:
     def set_llm(self, llm: LLMProtocol) -> None:
         """Set the LLM dependency."""
         self._llm = llm
+
+    ##Method purpose: Set the assumption manager dependency
+    def set_assumption_manager(self, manager: AssumptionManagerProtocol) -> None:
+        """Set the assumption manager dependency."""
+        self._assumption_manager = manager
 
     ##Method purpose: Check if a category is on cooldown
     def _is_on_cooldown(self, category: SuggestionCategory) -> bool:
@@ -390,8 +409,21 @@ class ProactiveEngine:
     ##Method purpose: Generate a verification suggestion
     def _generate_verify_suggestion(self, username: str) -> Suggestion | None:
         """Generate a suggestion to verify assumptions."""
-        ##Step purpose: This would integrate with AssumptionManager
-        # For now, return a generic verification prompt
+        ##Step purpose: Check if assumption manager is available
+        if self._assumption_manager:
+            result = self._assumption_manager.get_assumption_to_verify(username)
+            if result:
+                assumption, question = result
+                node_ids = (assumption.cortex_id,) if assumption.cortex_id else ()
+                return Suggestion(
+                    category=SuggestionCategory.VERIFY,
+                    content=question,
+                    priority=0.8,
+                    node_ids=node_ids,
+                )
+
+        # Fallback to a generic verification prompt if no specific assumption found
+        # or manager not available
         return Suggestion(
             category=SuggestionCategory.VERIFY,
             content="I've made some assumptions about your preferences. Would you like to review them?",

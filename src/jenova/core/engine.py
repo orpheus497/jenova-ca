@@ -22,7 +22,12 @@ from typing import TYPE_CHECKING
 import structlog
 
 ##Sec: Use JenovaMemoryError to avoid shadowing Python builtin MemoryError (P0-001)
-from jenova.exceptions import JenovaMemoryError, LLMError, LLMParseError
+from jenova.exceptions import (
+    JenovaMemoryError,
+    LLMError,
+    LLMParseError,
+    ProactiveError,
+)
 from jenova.llm.types import Prompt
 from jenova.memory.types import MemoryType
 from jenova.utils.json_safe import JSONSizeError, extract_json_from_response, safe_json_loads
@@ -386,8 +391,13 @@ class CognitiveEngine:
             if self._proactive_engine:
                 try:
                     suggestion = self._proactive_engine.get_suggestion(self._current_username)
-                except Exception as e:
+                except ProactiveError as e:
+                    ##Fix: Narrow exception handling to ProactiveError
                     logger.warning("proactive_suggestion_failed", error=str(e))
+                except Exception as e:
+                    ##Sec: Handle unexpected errors by logging with stack trace and re-raising (defense-in-depth)
+                    logger.exception("unexpected_error_in_proactive_suggestions", error=str(e))
+                    raise
 
             ##Action purpose: Log successful completion
             duration_ms = (time.perf_counter() - start_time) * 1000
@@ -797,15 +807,53 @@ Respond with a valid JSON object:
         self._scheduler = scheduler
         logger.info("scheduler_set")
 
+    ##Method purpose: Set the proactive engine for autonomous suggestions
+    def set_proactive_engine(self, engine: ProactiveEngine) -> None:
+        """Set the proactive engine for autonomous suggestions.
+
+        Args:
+            engine: ProactiveEngine instance.
+        """
+        self._proactive_engine = engine
+        logger.info("proactive_engine_set")
+
     ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Expose history for task executor
     ##Method purpose: Get recent conversation history for external consumers
-    def get_recent_history(self) -> list[tuple[str, str]]:
+    def get_recent_history(self, redact: bool = True) -> list[tuple[str, str]]:
         """Get recent conversation history.
+
+        Args:
+            redact: Whether to redact potential PII (default: True).
 
         Returns:
             List of (user_message, ai_response) tuples.
         """
-        return list(self._history)
+        history = list(self._history)
+        if redact:
+            return [self._redact_pii(item) for item in history]
+        return history
+
+    ##Method purpose: Redact potential PII from a history item
+    def _redact_pii(self, item: tuple[str, str]) -> tuple[str, str]:
+        """Redact potential PII (Email, Phone) from a history item.
+
+        Args:
+            item: (user_message, ai_response) tuple.
+
+        Returns:
+            Sanitized tuple.
+        """
+        user_msg, ai_msg = item
+        ##Sec: Simple regex-based redaction for PII protection
+        email_pattern = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"
+        phone_pattern = r"\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}"
+
+        def redact(text: str) -> str:
+            text = re.sub(email_pattern, "[EMAIL]", text)
+            text = re.sub(phone_pattern, "[PHONE]", text)
+            return text
+
+        return (redact(user_msg), redact(ai_msg))
 
     ##Method purpose: Reset engine state for new conversation
     def reset(self) -> None:

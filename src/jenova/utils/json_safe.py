@@ -71,7 +71,7 @@ def safe_json_loads(
     max_size: int = MAX_JSON_SIZE,
     max_depth: int = MAX_JSON_DEPTH,
     timeout: float = JSON_PARSE_TIMEOUT,
-) -> dict[str, Any]:
+) -> Any:
     """Safely parse JSON with size and depth limits.
 
     Prevents denial of service attacks by limiting the size and
