@@ -118,10 +118,13 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
     logger = get_logger(__name__)
 
     ##Step purpose: Import components
+    ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Added scheduler and executor imports
     from jenova.assumptions.manager import AssumptionManager
     from jenova.core.engine import CognitiveEngine, EngineConfig
     from jenova.core.knowledge import KnowledgeStore
     from jenova.core.response import ResponseConfig, ResponseGenerator
+    from jenova.core.scheduler import CognitiveScheduler, SchedulerConfig
+    from jenova.core.task_executor import CognitiveTaskExecutor
     from jenova.insights.manager import InsightManager
     from jenova.llm.interface import LLMInterface
 
@@ -159,6 +162,16 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
                     tokens_prompt=len(prompt.user_message.split()),
                     generation_time_ms=1.0,
                 )
+
+            ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Satisfy graph.LLMProtocol for scheduler tasks
+            def generate_text(
+                self,
+                text: str,
+                system_prompt: str = "You are a helpful assistant.",
+                params: object = None,
+            ) -> str:
+                """Simple text generation for dev mode."""
+                return f"[DEV MODE] {text[:100]}"
 
         llm: LLMInterface | DevelopmentLLM = DevelopmentLLM()
     else:
@@ -217,6 +230,18 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
         insight_manager=insight_manager,
         assumption_manager=assumption_manager,
     )
+
+    ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Wire CognitiveScheduler into engine
+    logger.debug("initializing_scheduler")
+    task_executor = CognitiveTaskExecutor(
+        insight_manager=insight_manager,
+        assumption_manager=assumption_manager,
+        knowledge_store=knowledge_store,
+        llm=llm,
+        get_recent_history=engine.get_recent_history,
+    )
+    scheduler = CognitiveScheduler(SchedulerConfig(), executor=task_executor)
+    engine.set_scheduler(scheduler)
 
     logger.info("engine_created")
     return engine

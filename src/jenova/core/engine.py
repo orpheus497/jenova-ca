@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from jenova.core.integration import IntegrationHub
     from jenova.core.knowledge import KnowledgeStore
     from jenova.core.response import ResponseGenerator
+    from jenova.core.scheduler import CognitiveScheduler
     from jenova.insights.manager import InsightManager
     from jenova.llm.interface import LLMInterface
 else:
@@ -262,6 +263,7 @@ class CognitiveEngine:
         integration_hub: IntegrationHub | None = None,
         insight_manager: InsightManager | None = None,
         assumption_manager: AssumptionManager | None = None,
+        scheduler: CognitiveScheduler | None = None,
     ) -> None:
         """Initialize the CognitiveEngine.
 
@@ -274,6 +276,7 @@ class CognitiveEngine:
             integration_hub: Optional integration hub for unified knowledge.
             insight_manager: Optional insight manager for insight generation.
             assumption_manager: Optional assumption manager for assumption verification.
+            scheduler: Optional cognitive scheduler for turn-based background tasks.
         """
         ##Step purpose: Store configuration and dependencies
         self.config = config
@@ -284,6 +287,8 @@ class CognitiveEngine:
         self.integration_hub = integration_hub
         self._insight_manager = insight_manager
         self._assumption_manager = assumption_manager
+        ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Scheduler for turn-based cognitive tasks
+        self._scheduler: CognitiveScheduler | None = scheduler
 
         ##Step purpose: Initialize conversation state
         self._history: list[tuple[str, str]] = []
@@ -374,6 +379,19 @@ class CognitiveEngine:
                 plan_complexity=plan.complexity.value,
                 plan_steps=len(plan.sub_goals),
             )
+
+            ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Fire scheduler after successful turn
+            if self._scheduler:
+                try:
+                    unverified = (
+                        self._assumption_manager.unverified_count(self._current_username)
+                        if self._assumption_manager
+                        else 0
+                    )
+                    self._scheduler.on_turn_complete(self._current_username, unverified)
+                except Exception:
+                    ##Note: Scheduler errors must not break the think() response
+                    logger.warning("scheduler_post_turn_error", exc_info=True)
 
             return ThinkResult(
                 content=response.content,
@@ -744,6 +762,27 @@ Respond with a valid JSON object:
         """
         self.integration_hub = hub
         logger.info("integration_hub_set")
+
+    ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Scheduler setter mirroring set_integration_hub
+    ##Method purpose: Set cognitive scheduler for turn-based background tasks
+    def set_scheduler(self, scheduler: CognitiveScheduler) -> None:
+        """Set the cognitive scheduler for turn-based background tasks.
+
+        Args:
+            scheduler: CognitiveScheduler instance.
+        """
+        self._scheduler = scheduler
+        logger.info("scheduler_set")
+
+    ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Expose history for task executor
+    ##Method purpose: Get recent conversation history for external consumers
+    def get_recent_history(self) -> list[tuple[str, str]]:
+        """Get recent conversation history.
+
+        Returns:
+            List of (user_message, ai_response) tuples.
+        """
+        return list(self._history)
 
     ##Method purpose: Reset engine state for new conversation
     def reset(self) -> None:
