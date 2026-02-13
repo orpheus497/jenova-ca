@@ -40,10 +40,12 @@ if TYPE_CHECKING:
     from jenova.core.scheduler import CognitiveScheduler
     from jenova.insights.manager import InsightManager
     from jenova.llm.interface import LLMInterface
+    from jenova.graph.proactive import ProactiveEngine, Suggestion
 else:
     ##Step purpose: Import managers for runtime use
     from jenova.assumptions.manager import AssumptionManager
     from jenova.insights.manager import InsightManager
+    from jenova.graph.proactive import ProactiveEngine, Suggestion
 
 ##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
@@ -225,6 +227,7 @@ class ThinkResult:
         error_message: Error message if is_error is True.
         plan_complexity: Complexity level of the plan used.
         plan_steps: Number of plan steps (for structured plans).
+        suggestion: Optional proactive suggestion for the user.
     """
 
     content: str
@@ -233,6 +236,7 @@ class ThinkResult:
     error_message: str | None = None
     plan_complexity: PlanComplexity = PlanComplexity.SIMPLE
     plan_steps: int = 0
+    suggestion: Suggestion | None = None
 
 
 ##Class purpose: Central orchestrator for JENOVA's cognitive processing
@@ -265,6 +269,7 @@ class CognitiveEngine:
         insight_manager: InsightManager | None = None,
         assumption_manager: AssumptionManager | None = None,
         scheduler: CognitiveScheduler | None = None,
+        proactive_engine: ProactiveEngine | None = None,
     ) -> None:
         """Initialize the CognitiveEngine.
 
@@ -278,6 +283,7 @@ class CognitiveEngine:
             insight_manager: Optional insight manager for insight generation.
             assumption_manager: Optional assumption manager for assumption verification.
             scheduler: Optional cognitive scheduler for turn-based background tasks.
+            proactive_engine: Optional proactive engine for autonomous suggestions.
         """
         ##Step purpose: Store configuration and dependencies
         self.config = config
@@ -290,6 +296,8 @@ class CognitiveEngine:
         self._assumption_manager = assumption_manager
         ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Scheduler for turn-based cognitive tasks
         self._scheduler: CognitiveScheduler | None = scheduler
+        ##Update: WIRING-003 (2026-02-14) — Proactive engine for suggestions
+        self._proactive_engine: ProactiveEngine | None = proactive_engine
 
         ##Step purpose: Initialize conversation state
         self._history: list[tuple[str, str]] = []
@@ -302,6 +310,7 @@ class CognitiveEngine:
             max_context_items=self.engine_config.max_context_items,
             enable_learning=self.engine_config.enable_learning,
             multi_level_planning=self.engine_config.planning.multi_level_enabled,
+            proactive_enabled=self._proactive_engine is not None,
         )
 
     ##Method purpose: Process user input and generate a response
@@ -372,6 +381,14 @@ class CognitiveEngine:
                         episode_content, "episodic", self._current_username
                     )
 
+            ##Step purpose: Check for proactive suggestion
+            suggestion = None
+            if self._proactive_engine:
+                try:
+                    suggestion = self._proactive_engine.get_suggestion(self._current_username)
+                except Exception as e:
+                    logger.warning("proactive_suggestion_failed", error=str(e))
+
             ##Action purpose: Log successful completion
             duration_ms = (time.perf_counter() - start_time) * 1000
             logger.info(
@@ -382,6 +399,7 @@ class CognitiveEngine:
                 plan_complexity=plan.complexity.value,
                 plan_steps=len(plan.sub_goals),
                 duration_ms=round(duration_ms, 2),
+                has_suggestion=suggestion is not None,
             )
 
             ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Fire scheduler after successful turn
@@ -403,6 +421,7 @@ class CognitiveEngine:
                 is_error=False,
                 plan_complexity=plan.complexity,
                 plan_steps=len(plan.sub_goals),
+                suggestion=suggestion,
             )
 
         except LLMError as e:

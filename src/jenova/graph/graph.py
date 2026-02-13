@@ -493,6 +493,7 @@ class CognitiveGraph:
         query: str,
         max_results: int = 10,
         node_types: list[str] | None = None,
+        username: str | None = None,
     ) -> list[dict[str, str]]:
         """
         Search for nodes matching query text using hybrid search.
@@ -504,6 +505,7 @@ class CognitiveGraph:
             query: Text to search for in labels and content
             max_results: Maximum number of results to return
             node_types: Filter by node types (None = all types)
+            username: Filter by username (None = all users)
 
         Returns:
             List of dicts with 'id', 'label', 'content' keys, sorted by relevance
@@ -513,6 +515,7 @@ class CognitiveGraph:
             query,
             str(sorted(node_types) if node_types else "all"),
             str(max_results),
+            str(username),
         ]
         cache_key = hashlib.sha256("|".join(cache_key_parts).encode()).hexdigest()
 
@@ -551,6 +554,10 @@ class CognitiveGraph:
 
             ##Condition purpose: Filter by node type if specified
             if node_types and node.node_type not in node_types:
+                continue
+
+            ##Condition purpose: Filter by username if specified
+            if username and node.metadata.get("user") != username:
                 continue
 
             ##Update: Hybrid scoring: semantic + keyword (P0-002)

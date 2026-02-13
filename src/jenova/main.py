@@ -120,6 +120,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
     ##Step purpose: Import components
     ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Added scheduler and executor imports
     ##Update: WIRING-002 (2026-02-13T13:05:14Z) — Added IntegrationHub import
+    ##Update: WIRING-003 (2026-02-14) — Added ProactiveEngine import
     from jenova.assumptions.manager import AssumptionManager
     from jenova.core.engine import CognitiveEngine, EngineConfig
     from jenova.core.integration import IntegrationHub
@@ -127,6 +128,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
     from jenova.core.response import ResponseConfig, ResponseGenerator
     from jenova.core.scheduler import CognitiveScheduler, SchedulerConfig
     from jenova.core.task_executor import CognitiveTaskExecutor
+    from jenova.graph.proactive import ProactiveConfig, ProactiveEngine
     from jenova.insights.manager import InsightManager
     from jenova.llm.interface import LLMInterface
     from jenova.memory.types import MemoryType
@@ -217,6 +219,26 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
         llm=llm,
     )
 
+    ##Update: WIRING-003 (2026-02-14) — Initialize ProactiveEngine
+    logger.debug("initializing_proactive_engine")
+    ##Class purpose: Adapter for LLMInterface to match ProactiveEngine LLMProtocol
+    class ProactiveLLMWrapper:
+        def __init__(self, llm_interface: LLMInterface | DevelopmentLLM):
+            self._llm = llm_interface
+        def generate(self, prompt: str) -> str:
+            return self._llm.generate_text(prompt, system_prompt="You are a proactive cognitive assistant.")
+
+    proactive_config = ProactiveConfig(
+        max_suggestions_per_session=10,
+        cooldown_minutes=15,
+        priority_threshold=0.3,
+    )
+    proactive_engine = ProactiveEngine(
+        config=proactive_config,
+        graph=knowledge_store.graph,
+        llm=ProactiveLLMWrapper(llm),
+    )
+
     ##Step purpose: Create CognitiveEngine
     logger.debug("initializing_cognitive_engine")
     engine = CognitiveEngine(
@@ -232,6 +254,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
         ),
         insight_manager=insight_manager,
         assumption_manager=assumption_manager,
+        proactive_engine=proactive_engine,
     )
 
     ##Update: WIRING-002 (2026-02-13T13:05:14Z) — Wire IntegrationHub into engine
