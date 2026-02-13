@@ -500,13 +500,13 @@ ruff format src/
 - ✅ Multi-layered memory system (Episodic, Semantic, Procedural) with ChromaDB
 - ✅ Cognitive graph with advanced features (emotion analysis, clustering, meta-insights, orphan linking, contradiction detection)
 - ✅ Insight and assumption management systems with concern-based organization
-- ✅ Integration layer for unified knowledge representation (Memory ↔ Cortex)
+- ✅ **Integration Hub:** Fully wired Context ↔ Memory bridge; active context expansion and feedback loops
 - ✅ Query analysis and context scoring with intent detection and complexity assessment
 - ✅ Context organization and prioritization
 - ✅ Multi-level planning system (simple → very complex queries)
 - ✅ Response generation with caching, persona support, and source citations
-- ✅ Cognitive scheduler for background task management
-- ✅ Proactive engine for autonomous suggestion generation
+- ✅ **Cognitive Scheduler:** Fully wired and active; manages background tasks (insights, assumptions, pruning) on turn intervals
+- ✅ **Proactive Engine:** Fully wired and active; autonomously generates suggestions based on graph state
 - ✅ Modern Textual-based TUI with responsive design
 - ✅ Comprehensive test suite (400+ tests: unit, integration, security, benchmarks)
 - ✅ Security hardening (all P0/P1 issues resolved, prompt injection protection, input validation)
@@ -587,9 +587,9 @@ User Input
     ↓
 Sanitization (prompt injection protection)
     ↓
-CognitiveEngine.think()
+CognitiveEngine.think() ← [Proactive Suggestion Poll]
     ↓
-KnowledgeStore.search() → Memory + Graph
+KnowledgeStore.search() ↔ IntegrationHub (Context Expansion)
     ↓
 QueryAnalyzer.analyze() → Intent, Complexity, Topics
     ↓
@@ -603,7 +603,9 @@ LLM.generate() → Raw response
     ↓
 ResponseGenerator.generate() → Formatted response
     ↓
-Memory Storage (episodic memory)
+Memory Storage (episodic memory) ↔ IntegrationHub (Cortex Feedback)
+    ↓
+CognitiveScheduler (Post-Turn Tasks) → Insight/Assumption Generation
     ↓
 User Output
 ```
