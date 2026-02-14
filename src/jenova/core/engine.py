@@ -434,7 +434,7 @@ class CognitiveEngine:
                         else 0
                     )
                     self._scheduler.on_turn_complete(self._current_username, unverified)
-                except (RuntimeError, ValueError, OSError) as e:
+                except Exception as e:
                     ##Note: Scheduler errors must not break the think() response
                     logger.warning("scheduler_post_turn_error", error=str(e), exc_info=True)
 

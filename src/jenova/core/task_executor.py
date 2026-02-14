@@ -92,6 +92,16 @@ class CognitiveTaskExecutor:
         self._llm = llm
         self._get_recent_history = get_recent_history
 
+        ##Refactor: Move dispatch dictionary to instance level (2026-02-14)
+        self._task_dispatch: dict[TaskType, Callable[[str], bool]] = {
+            TaskType.GENERATE_INSIGHT: self._generate_insight,
+            TaskType.GENERATE_ASSUMPTION: self._generate_assumption,
+            TaskType.VERIFY_ASSUMPTION: self._check_pending_verifications,
+            TaskType.REFLECT: self._reflect,
+            TaskType.PRUNE_GRAPH: self._prune_graph,
+            TaskType.LINK_ORPHANS: self._link_orphans,
+        }
+
     ##Method purpose: Dispatch a cognitive task to the appropriate handler
     def execute_task(self, task_type: TaskType, username: str) -> bool:
         """Execute a cognitive task.
@@ -103,16 +113,7 @@ class CognitiveTaskExecutor:
         Returns:
             True if task completed successfully, False otherwise
         """
-        dispatch = {
-            TaskType.GENERATE_INSIGHT: self._generate_insight,
-            TaskType.GENERATE_ASSUMPTION: self._generate_assumption,
-            TaskType.VERIFY_ASSUMPTION: self._check_pending_verifications,
-            TaskType.REFLECT: self._reflect,
-            TaskType.PRUNE_GRAPH: self._prune_graph,
-            TaskType.LINK_ORPHANS: self._link_orphans,
-        }
-
-        handler = dispatch.get(task_type)
+        handler = self._task_dispatch.get(task_type)
         if handler is None:
             logger.warning("task_executor_unknown_type", task_type=task_type.name)
             return False
