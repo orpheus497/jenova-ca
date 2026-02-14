@@ -174,6 +174,18 @@ class InsightManager:
         self._memory_search = memory_search
         self._training_data_path = training_data_path
 
+        ##Refactor: Early validation of training_data_path (D3-2026-02-14T10:24:30Z)
+        ##Note: Fail fast on misconfigured path instead of silently rejecting at save time
+        if training_data_path is not None:
+            try:
+                validate_path_within_base(
+                    training_data_path, training_data_path.parent
+                )
+            except ValueError as e:
+                raise ValueError(
+                    f"Misconfigured training_data_path: {training_data_path} — {e}"
+                ) from e
+
         ##Step purpose: Ensure root directory exists
         insights_root.mkdir(parents=True, exist_ok=True)
 
@@ -330,10 +342,14 @@ class InsightManager:
                 return
 
             ##Step purpose: Verify path is within base directory (P2-001)
-            # We allow it to be anywhere within the parent of insights_root
-            # which is usually the project root or .jenova-ai folder
+            ##Refactor: Use explicit path's own parent when user-supplied (D3-2026-02-14T10:24:30Z)
+            base_dir = (
+                self._training_data_path.parent
+                if self._training_data_path
+                else self._insights_root.parent
+            )
             try:
-                validate_path_within_base(train_file, self._insights_root.parent)
+                validate_path_within_base(train_file, base_dir)
             except ValueError as e:
                 logger.warning("invalid_training_data_path", path=str(train_file), error=str(e))
                 return

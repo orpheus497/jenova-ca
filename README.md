@@ -210,7 +210,7 @@ jenova
 
 ### 4.2. Prerequisites
 
-* **Python:** 3.10+ (tested on 3.10, 3.11, 3.12)
+* **Python:** 3.10+ (tested on 3.10, 3.11, 3.12, 3.14)
 * **C++ Compiler:** Required for `llama-cpp-python` (e.g., `g++`, `clang++`)
 * **ChromaDB:** Uses SQLite backend (native on FreeBSD/Linux)
 
@@ -265,7 +265,7 @@ Interaction with JENOVA is primarily through natural language.
 
 JENOVA responds to commands that act as direct instructions for its cognitive processes. Commands are system actions, not conversational input, and are **not stored in conversational memory**.
 
-#### Currently Implemented Commands
+#### System Commands
 
 | Command | Description | Mode |
 |---------|-------------|------|
@@ -274,9 +274,7 @@ JENOVA responds to commands that act as direct instructions for its cognitive pr
 | `/debug` | Toggle debug logging | Headless only |
 | `exit` / `quit` | Exit the application | TUI & Headless |
 
-#### Planned Cognitive Commands
-
-The following cognitive commands are documented in the help system and will be implemented in future releases:
+#### Cognitive Commands (TUI)
 
 | Command | Description |
 |---------|-------------|
@@ -284,11 +282,11 @@ The following cognitive commands are documented in the help system and will be i
 | `/reflect` | Deep reflection: reorganize cognitive nodes, link orphans, generate meta-insights |
 | `/memory-insight` | Search all memory layers to develop new insights |
 | `/meta` | Generate higher-level meta-insights from insight clusters |
+| `/assume <text>` | Manually add an assumption about the user |
 | `/verify` | Verify an unverified assumption with a clarifying question |
-| `/develop_insight [node_id]` | Develop existing insight (with ID) or process documents (without ID) |
+| `/develop_insight [node_id]` | Develop existing insight node with additional context |
 | `/learn_procedure` | Interactive guided process to teach a new procedure |
-
-**Note:** While the underlying cognitive systems (InsightManager, AssumptionManager, CognitiveGraph) are fully implemented, the command handlers for these features are planned for future releases.
+| `/train` | Display fine-tuning instructions |
 
 ### Keyboard Shortcuts (TUI)
 
@@ -362,7 +360,9 @@ jenova-ca/
 │   │   ├── query_analyzer.py # Query analysis and intent detection
 │   │   ├── context_scorer.py  # Context scoring and ranking
 │   │   ├── context_organizer.py # Context organization
-│   │   └── scheduler.py  # Cognitive scheduler
+│   │   ├── scheduler.py  # Cognitive scheduler
+│   │   ├── task_executor.py # Cognitive task dispatch
+│   │   └── planning.py   # Multi-level planning system
 │   ├── embeddings/       # Embedding model management
 │   │   ├── model.py      # Embedding model wrapper
 │   │   └── types.py      # Embedding types
@@ -394,12 +394,15 @@ jenova-ca/
 │   │   ├── errors.py     # Error handling utilities
 │   │   ├── logging.py    # Structured logging
 │   │   └── migrations.py # Data migration system
-│   ├── tools.py          # Shell and datetime utilities
+│   ├── tools/             # Utility tools
+│   │   ├── __init__.py   # Shell and datetime utilities
+│   │   └── web_search.py # DuckDuckGo web search provider
+│   ├── compat_py314.py   # Python 3.14 compatibility patches
 │   ├── exceptions.py     # Exception hierarchy
 │   └── main.py           # CLI entry point
 ├── tests/                # Comprehensive test suites
-│   ├── unit/             # Unit tests (17 files, 365+ tests)
-│   ├── integration/      # Integration tests (4 files, 36 tests)
+│   ├── unit/             # Unit tests (410+ tests)
+│   ├── integration/      # Integration tests (36 tests)
 │   ├── security/         # Security tests (23 adversarial tests)
 │   ├── benchmarks/      # Performance benchmarks
 │   └── performance/      # Performance test utilities
@@ -481,12 +484,12 @@ ruff format src/
 
 ### 9.1. Codebase Metrics
 
-- **Total Python Files:** 48+ source files in `src/jenova/`
+- **Total Python Files:** 50+ source files in `src/jenova/`
 - **Lines of Code:** ~15,000+ lines of production code
-- **Test Coverage:** 400+ tests across unit, integration, security, and benchmark suites
+- **Test Coverage:** 410+ tests across unit, integration, security, and benchmark suites
 - **Documentation:** Comprehensive inline documentation, README, and `.devdocs/` system
 - **Architecture:** Protocol-based design with clean separation of concerns
-- **Dependencies:** 7 core dependencies, 4 dev dependencies, 2 optional finetune dependencies
+- **Dependencies:** 8 core dependencies, 7 dev dependencies, 2 optional finetune dependencies
 - **Platform Support:** Native FreeBSD and Linux support
 - **License:** AGPL-3.0 (Free and Open Source Software)
 
@@ -512,8 +515,8 @@ ruff format src/
 - ✅ Security hardening (all P0/P1 issues resolved, prompt injection protection, input validation)
 - ✅ Utility systems (caching, performance monitoring, grammar loading, tools)
 
-**Planned Features:**
-- Command handlers for cognitive operations (`/insight`, `/reflect`, etc.)
+**Pending Work:**
+- Async cognitive engine (plan drafted, ISSUE-004)
 - Enhanced fine-tuning workflows
 - Additional cognitive capabilities
 

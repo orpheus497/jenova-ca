@@ -48,6 +48,7 @@ from textual.containers import Container, ScrollableContainer, Vertical
 from textual.widgets import Footer, Header, Input, RichLog, Static
 
 from jenova.assumptions.types import Assumption
+from jenova.exceptions import AssumptionDuplicateError
 from jenova.llm.types import GenerationParams
 from jenova.memory.types import MemoryType
 from jenova.ui.components import (
@@ -973,6 +974,16 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
 
             ##Action purpose: Set ready state
             status_bar.set_ready("Ready")
+
+        ##Refactor: Catch duplicate assumption explicitly for friendly UX (D3-2026-02-14T10:24:30Z)
+        except AssumptionDuplicateError as dup_err:
+            output.write("[bold yellow]>>[/bold yellow] This assumption already exists.")
+            status_bar.set_error("Duplicate assumption")
+            self._logger.error(
+                "assume_command_duplicate",
+                assumption=content,
+                error=str(dup_err),
+            )
 
         except Exception as e:
             output.write(f"[bold red]>>[/bold red] Error adding assumption: {e}")

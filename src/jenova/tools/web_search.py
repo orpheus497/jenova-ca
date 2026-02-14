@@ -119,6 +119,9 @@ class MockSearchProvider:
         return True
 
     def search(self, query: str, max_results: int = 5) -> list[WebSearchResult]:
+        ##Refactor: Mirror DuckDuckGoSearchProvider empty-query guard (D3-2026-02-14T10:24:30Z)
+        if not query.strip():
+            return []
         if max_results <= 0:
             return []
 

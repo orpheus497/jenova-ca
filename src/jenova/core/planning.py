@@ -366,6 +366,14 @@ Respond with a valid JSON object:
 
                 ##Action purpose: Parse with size limits
                 data = safe_json_loads(json_str)
+
+                ##Refactor: Validate parsed data is a dict (D3-2026-02-14T10:24:30Z)
+                ##Note: LLM may return a JSON array, string, or null instead of an object
+                if not isinstance(data, dict):
+                    raise LLMParseError(
+                        json_str,
+                        f"Expected JSON object but got {type(data).__name__}",
+                    )
             except (json.JSONDecodeError, JSONSizeError) as parse_err:
                 ##Step purpose: Raise LLMParseError to trigger _simple_plan fallback
                 raise LLMParseError(plan_json, f"Failed to parse plan JSON: {parse_err}") from parse_err

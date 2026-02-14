@@ -69,6 +69,8 @@ INJECTION_PATTERNS = [
     r"(?i)Override\s+Safety",
     r"(?i)Kernel\s+Prompt",
     r"(?i)\[(SYSTEM|ADMIN|USER)\](?=\s*[:\-])",
+    ##Refactor: Catch bare role-tag prefixes without brackets (D3-2026-02-14T10:24:30Z)
+    r"(?im)(^|\n)\s*(SYSTEM|ADMIN|USER)\s*:",
 ]
 """List of regex patterns to detect prompt injection attempts."""
 

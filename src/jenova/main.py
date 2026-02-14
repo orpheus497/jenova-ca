@@ -21,8 +21,9 @@ from jenova.config import JenovaConfig, load_config
 from jenova.utils.logging import configure_logging, get_logger
 
 ##Step purpose: Common exception tuple for optional subsystem initialization
+##Refactor: Removed AttributeError/TypeError so programming bugs propagate (D3-2026-02-14T10:24:30Z)
 _SUBSYSTEM_INIT_EXCEPTIONS = (
-    RuntimeError, ValueError, KeyError, ImportError, AttributeError, TypeError
+    RuntimeError, ValueError, KeyError, ImportError
 )
 
 if TYPE_CHECKING:
@@ -274,10 +275,11 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
 
     ##Step purpose: Create CognitiveEngine
     logger.debug("initializing_cognitive_engine")
-    ##Step purpose: Verify LLM satisfies the protocol before passing to engine
-    assert isinstance(llm, EngineLLMProtocol), (
-        f"{type(llm).__name__} does not implement EngineLLMProtocol"
-    )
+    ##Refactor: Explicit check replaces assert for -O safety (D3-2026-02-14T10:24:30Z)
+    if not isinstance(llm, EngineLLMProtocol):
+        raise TypeError(
+            f"{type(llm).__name__} does not implement EngineLLMProtocol"
+        )
     engine = CognitiveEngine(
         config=config,
         knowledge_store=knowledge_store,

@@ -13,6 +13,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `to_proactive_config()` to Pydantic `ProactiveConfig` model to centralize mapping to the engine's dataclass.
   - Added coupling documentation and `TODO` in `main.py` regarding the Pydantic-dataclass relationship.
 
+- **Web Search Provider (2026-02-14T03:10:00Z):**
+  - Implemented `DuckDuckGoSearchProvider` in `src/jenova/tools/web_search.py`.
+  - Refactored `tools.py` to `tools/` package with `__init__.py` + `web_search.py`.
+  - Added `duckduckgo-search` dependency to `pyproject.toml`.
+
+- **Finetune Data Collection (2026-02-14T03:10:00Z):**
+  - Added automated training data export from `InsightManager` to `.jenova-ai/training_data.jsonl`.
+
+- **Assume Command (2026-02-14T03:10:00Z):**
+  - Added `/assume <text>` command handler in TUI (`src/jenova/ui/app.py`).
+  - Handles duplicates gracefully with `AssumptionDuplicateError`.
+
+- **Planning Configuration (2026-02-14T15:40:00Z):**
+  - Added `PlanningConfig` to Pydantic configuration model (`models.py`).
+  - Exposed `complexity_threshold`, `max_sub_goals`, `plan_temperature`, `multi_level_enabled` in `config.example.yaml`.
+
+- **Planning Module Extraction (2026-02-14T16:00:00Z):**
+  - Extracted `Planner` class (~200 lines) from `engine.py` to `src/jenova/core/planning.py`.
+  - Dedicated test file `tests/unit/test_engine_planning.py` (25 tests passing).
+
 ### Changed
 
 - **Architectural Refinements (2026-02-14T12:10:00Z):**
@@ -23,6 +43,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cognitive Engine & Task Executor (2026-02-14T15:00:00Z):**
   - **Engine Robustness:** Broadened scheduler exception handling in `think()` loop to catch all exceptions, ensuring conversation flow continuity even if background tasks fail.
   - **Task Dispatch Optimization:** Moved task dispatch dictionary to instance level in `CognitiveTaskExecutor` to reduce per-call overhead.
+  - Moved PII redaction regexes to module-level constants (avoid per-call recompilation).
+  - Added `hasattr` guard in `task_executor.py` to prevent crash on dynamic dispatch.
+
+- **Security Hardening (2026-02-14T12:25:00Z):**
+  - **ISSUE-005:** Expanded `INJECTION_PATTERNS` in `sanitization.py` with modern vectors (DAN, Jailbreak, ChatML, bare role-tags).
+  - Context-aware injection pattern matching (PATCH-010).
+  - AsyncIO deprecation fix (`get_running_loop`) in TUI.
+  - Proactive engine fail-soft robustness.
+  - Planning regex fix for dict type-checking after JSON parsing.
+  - Initialization resilience with broadened exception handling.
+  - PII redaction boundary hardening (PATCH-004).
+
+- **CodeRabbit Review Improvements (2026-02-14T03:10:00Z):**
+  - Bug Hunter (C1): 9 surgical improvements across 5 core files (upper bounds on IntegrationConfig, username validation in graph search, PII redaction helper, narrowed exception handling).
+  - Feature Sprinter (D2): Cross-platform `which`, TZ handling, tightened sanitization regexes, web search timeout/log sanitization, InsightManager path validation.
+  - Refactorer (D3): IntegrationConfig validation constraints, engine timing logs, AssumptionDuplicateError handling, history truncation feedback.
+
+- **Hardening Patches (2026-02-14T10:24:30Z):**
+  - Dict type-check after JSON parsing in `planning.py` raises `LLMParseError`.
+  - Early training data path validation in `InsightManager`.
+  - Narrowed exception tuple in `main.py` (removed AttributeError, TypeError).
+  - Replaced `assert isinstance` with explicit `TypeError` raise.
+  - Empty/whitespace query guard in `MockSearchProvider`.
+  - Explicit `AssumptionDuplicateError` catch in `app.py`.
+  - Bare role-tag regex for injection detection in `sanitization.py`.
 
 ## [4.1.0] - 2026-02-11
 

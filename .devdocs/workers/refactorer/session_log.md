@@ -48,3 +48,28 @@
 ## Verification Plan
 
 -   Ran `tests/unit/test_engine_planning.py`: 25 passed.
+
+# Session Log - 2026-02-14T10:24:30Z
+
+## Session Details
+
+- **Agent:** Refactorer (D3)
+- **Session:** 225
+- **Task:** Hardening & Validation Refactoring (7 patches across 6 files)
+- **Goal:** Type safety, validation correctness, input sanitization, error handling — all behavior-preserving.
+
+## Actions Executed
+
+1. **planning.py** — dict type-check after `safe_json_loads` → `LLMParseError` fallback
+2. **manager.py** — Early `training_data_path` validation in `__init__`; correct base dir in `save_insight`
+3. **main.py** — Narrowed `_SUBSYSTEM_INIT_EXCEPTIONS` (removed `AttributeError`, `TypeError`)
+4. **main.py** — Replaced `assert isinstance(llm, EngineLLMProtocol)` with explicit `TypeError` raise
+5. **web_search.py** — Empty/whitespace query guard in `MockSearchProvider.search`
+6. **app.py** — `AssumptionDuplicateError` explicit catch + friendly message
+7. **sanitization.py** — Bare role-tag regex `(^|\n)\s*(SYSTEM|ADMIN|USER)\s*:`
+
+## Verification
+
+- ✅ All 6 files parse (AST check passed)
+- ✅ 73 targeted tests passed (planning, sanitization, insights, assumptions, security, tools)
+- ✅ Pre-existing failures unrelated (benchmark `add_edge` API, numpy/chromadb Py3.14 compat)
