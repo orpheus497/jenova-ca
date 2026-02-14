@@ -8,17 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - **ProactiveConfig Synchronization (2026-02-14T12:00:00Z):**
   - Added `to_proactive_config()` to Pydantic `ProactiveConfig` model to centralize mapping to the engine's dataclass.
   - Added coupling documentation and `TODO` in `main.py` regarding the Pydantic-dataclass relationship.
 
 ### Changed
+
 - **Architectural Refinements (2026-02-14T12:10:00Z):**
   - Alphabetized imports in `engine.py` and `main.py` to satisfy `I001` and PEP8 standards.
   - Broadened `safe_json_loads` typing and documentation to support all JSON-serializable types (lists, primitives).
   - Improved diagnostic logging in `main.py` by adding `exc_info=True` to initialization warnings for non-critical subsystems.
 
 ### Fixed
+
 - **Security & Robustness (2026-02-14T12:15:00Z):**
   - **PII Redaction:** Updated `_redact_pii` with stricter, global regex patterns for emails and international phone numbers (PATCH-004).
   - **Fault Tolerance:** Refactored `think()` to log unexpected proactive errors without re-raising, preventing cognitive cycle crashes (PATCH-005).

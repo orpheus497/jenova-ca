@@ -124,7 +124,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
     from jenova.core.response import ResponseConfig, ResponseGenerator
     from jenova.core.scheduler import CognitiveScheduler, SchedulerConfig
     from jenova.core.task_executor import CognitiveTaskExecutor
-    from jenova.graph.proactive import ProactiveConfig, ProactiveEngine
+    from jenova.graph.proactive import ProactiveEngine
     from jenova.insights.manager import InsightManager
     from jenova.llm.interface import LLMInterface
     from jenova.memory.types import MemoryType
@@ -283,7 +283,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
         )
         scheduler = CognitiveScheduler(SchedulerConfig(), executor=task_executor)
         engine.set_scheduler(scheduler)
-    except Exception as e:
+    except (RuntimeError, ValueError, KeyError, ImportError) as e:
         ##Fix: Handle scheduler initialization failure and log traceback (PATCH-008)
         logger.warning(
             "scheduler_init_failed",

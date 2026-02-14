@@ -10,13 +10,16 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import yaml
 from pydantic import BaseModel, Field, field_validator
 
 from jenova.exceptions import ConfigNotFoundError, ConfigParseError, ConfigValidationError
 from jenova.utils.errors import sanitize_path_for_error
+
+if TYPE_CHECKING:
+    from jenova.graph.proactive import ProactiveConfig as ProactiveConfigDataclass
 
 
 ##Class purpose: Hardware resource configuration
@@ -261,7 +264,7 @@ class ProactiveConfig(BaseModel):
     rotation_enabled: bool = Field(default=True, description="Enable category rotation for variety.")
 
     ##Update: WIRING-003 (2026-02-14) — Conversion method for ProactiveEngine compatibility
-    def to_proactive_config(self) -> object:
+    def to_proactive_config(self) -> ProactiveConfigDataclass:
         """
         Convert to the dataclass version expected by ProactiveEngine.
 

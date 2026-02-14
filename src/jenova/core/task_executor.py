@@ -144,6 +144,72 @@ class CognitiveTaskExecutor:
             lines.append(f"JENOVA: {preview}")
         return "\n".join(lines)
 
+    ##Refactor: Extracted common logic for history-based generation (WIRING-001)
+    def _generate_from_history(
+        self,
+        username: str,
+        manager: object | None,
+        system_prompt: str,
+        item_name: str,
+        save_method_name: str,
+        log_success: str,
+        log_skip: str,
+        log_fail: str,
+        min_length: int = 10,
+    ) -> bool:
+        """Generate and save an item from recent conversation history.
+
+        Args:
+            username: User context.
+            manager: Manager instance (checked for None).
+            system_prompt: System prompt for LLM.
+            item_name: Name of item to generate (e.g. 'insight', 'assumption').
+            save_method_name: Name of the method on manager to save the item.
+            log_success: Logger event name for success.
+            log_skip: Logger event name for skip.
+            log_fail: Logger event name for failure.
+            min_length: Minimum content length.
+
+        Returns:
+            True if generated and saved.
+        """
+        if manager is None:
+            logger.debug(log_skip, reason=f"no_{item_name}_manager")
+            return False
+
+        ##Fix: Ensure sanitize_for_prompt errors are caught (BH-2026-02-14)
+        try:
+            history_summary = self._build_history_summary()
+            if not history_summary:
+                logger.debug(log_skip, reason="no_history")
+                return False
+
+            ##Step purpose: Ask LLM to generate item from conversation context
+            prompt = f"Recent conversation:\n{history_summary}\n\nGenerate an {item_name}:"
+            content = self._llm.generate_text(prompt, system_prompt=system_prompt)
+            stripped = content.strip() if content else ""
+
+            if not stripped or len(stripped) < min_length:
+                logger.debug(log_skip, reason="empty_generation")
+                return False
+
+            ##Step purpose: Save the generated item via the manager
+            getattr(manager, save_method_name)(
+                content=stripped,
+                username=username,
+            )
+
+            logger.info(log_success, username=username)
+            return True
+
+        except AssumptionDuplicateError:
+            # Duplicate assumptions are expected and not failures
+            logger.debug(log_skip, reason="duplicate")
+            return False
+        except Exception as e:
+            logger.error(log_fail, error=str(e), exc_info=True)
+            return False
+
     ##Method purpose: Generate and save an insight from recent conversation
     def _generate_insight(self, username: str) -> bool:
         """Generate an insight from recent conversation history.
@@ -154,36 +220,16 @@ class CognitiveTaskExecutor:
         Returns:
             True if insight was generated and saved
         """
-        if self._insight_manager is None:
-            logger.debug("task_executor_skip_insight", reason="no_insight_manager")
-            return False
-
-        history_summary = self._build_history_summary()
-        if not history_summary:
-            logger.debug("task_executor_skip_insight", reason="no_history")
-            return False
-
-        ##Step purpose: Ask LLM to generate insight from conversation context
-        try:
-            prompt = f"Recent conversation:\n{history_summary}\n\nGenerate an insight:"
-            content = self._llm.generate_text(prompt, system_prompt=_INSIGHT_SYSTEM_PROMPT)
-            stripped = content.strip() if content else ""
-
-            if not stripped or len(stripped) < 10:
-                logger.debug("task_executor_skip_insight", reason="empty_generation")
-                return False
-
-            self._insight_manager.save_insight(
-                content=stripped,
-                username=username,
-            )
-
-            logger.info("task_executor_insight_generated", username=username)
-            return True
-
-        except Exception as e:
-            logger.error("task_executor_insight_failed", error=str(e), exc_info=True)
-            return False
+        return self._generate_from_history(
+            username=username,
+            manager=self._insight_manager,
+            system_prompt=_INSIGHT_SYSTEM_PROMPT,
+            item_name="insight",
+            save_method_name="save_insight",
+            log_success="task_executor_insight_generated",
+            log_skip="task_executor_skip_insight",
+            log_fail="task_executor_insight_failed",
+        )
 
     ##Method purpose: Generate and save an assumption from recent conversation
     def _generate_assumption(self, username: str) -> bool:
@@ -195,40 +241,16 @@ class CognitiveTaskExecutor:
         Returns:
             True if assumption was generated and saved
         """
-        if self._assumption_manager is None:
-            logger.debug("task_executor_skip_assumption", reason="no_assumption_manager")
-            return False
-
-        history_summary = self._build_history_summary()
-        if not history_summary:
-            logger.debug("task_executor_skip_assumption", reason="no_history")
-            return False
-
-        ##Step purpose: Ask LLM to generate assumption from conversation context
-        try:
-            prompt = f"Recent conversation:\n{history_summary}\n\nGenerate an assumption:"
-            content = self._llm.generate_text(prompt, system_prompt=_ASSUMPTION_SYSTEM_PROMPT)
-            stripped_content = content.strip() if content else ""
-
-            if not stripped_content or len(stripped_content) < 10:
-                logger.debug("task_executor_skip_assumption", reason="empty_generation")
-                return False
-
-            self._assumption_manager.add_assumption(
-                content=stripped_content,
-                username=username,
-            )
-
-            logger.info("task_executor_assumption_generated", username=username)
-            return True
-
-        except AssumptionDuplicateError:
-            # Duplicate assumptions are expected and not failures
-            logger.debug("task_executor_assumption_skipped", reason="duplicate")
-            return False
-        except Exception as e:
-            logger.error("task_executor_assumption_failed", error=str(e), exc_info=True)
-            return False
+        return self._generate_from_history(
+            username=username,
+            manager=self._assumption_manager,
+            system_prompt=_ASSUMPTION_SYSTEM_PROMPT,
+            item_name="assumption",
+            save_method_name="add_assumption",
+            log_success="task_executor_assumption_generated",
+            log_skip="task_executor_assumption_skipped",
+            log_fail="task_executor_assumption_failed",
+        )
 
     ##Method purpose: Check and log pending assumption verifications
     def _check_pending_verifications(self, username: str) -> bool:
