@@ -109,6 +109,9 @@ def sanitize_for_prompt(
     ##Step purpose: Limit length first to prevent processing large inputs
     sanitized = content[: config.max_content_length]
 
+    ##Step purpose: Remove control characters (except newline and tab) before pattern matching
+    sanitized = "".join(char for char in sanitized if ord(char) >= 32 or char in "\n\t")
+
     ##Step purpose: Replace code block markers that could break JSON/prompts
     sanitized = sanitized.replace("```", "'''")
     sanitized = sanitized.replace("`", "'")
@@ -118,13 +121,10 @@ def sanitize_for_prompt(
     flagged = False
     matched: list[str] = []
     for i, pattern in enumerate(INJECTION_PATTERNS):
-        if re.search(pattern, sanitized):
+        sanitized, count = re.subn(pattern, "[REDACTED]", sanitized)
+        if count > 0:
             flagged = True
             matched.append(f"INJECTION_PATTERN_{i}")
-            sanitized = re.sub(pattern, "[REDACTED]", sanitized)
-
-    ##Step purpose: Remove control characters (except newline and tab)
-    sanitized = "".join(char for char in sanitized if ord(char) >= 32 or char in "\n\t")
 
     return SanitizationResult(text=sanitized, flagged_injection=flagged, matched_patterns=matched)
 

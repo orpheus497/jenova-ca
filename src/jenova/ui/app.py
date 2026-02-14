@@ -358,61 +358,61 @@ class JenovaApp(App):
             return
 
         ##Step purpose: Handle special commands
-        if message.lower() in ("exit", "quit"):
+        msg_lower = message.lower().lstrip()
+        if msg_lower in ("exit", "quit"):
             self.exit()
             return
 
-        if message.lower() == "/help":
+        if msg_lower == "/help":
             self.action_toggle_help()
             return
 
         ##Update: Add /reset command handler
-        if message.lower() == "/reset":
+        if msg_lower == "/reset":
             self._handle_reset()
             return
 
         ##Update: Add /debug command handler
-        if message.lower() == "/debug":
+        if msg_lower == "/debug":
             self._handle_debug()
             return
 
         ##Step purpose: Handle Phase 1 commands (simple, no interactive flow)
-        if message.lower() == "/insight":
+        if msg_lower == "/insight":
             await self._handle_insight_command(output, status_bar)
             return
 
-        if message.lower() == "/reflect":
+        if msg_lower == "/reflect":
             await self._handle_reflect_command(output, status_bar)
             return
 
-        if message.lower() == "/memory-insight":
+        if msg_lower == "/memory-insight":
             await self._handle_memory_insight_command(output, status_bar)
             return
 
-        if message.lower() == "/meta":
+        if msg_lower == "/meta":
             await self._handle_meta_command(output, status_bar)
             return
 
         ##Update: WIRING-008 (2026-02-14) - Add /assume command
-        msg_lower = message.lower().lstrip()
         if msg_lower == "/assume" or msg_lower.startswith("/assume "):
             await self._handle_assume_command(message, output, status_bar)
             return
 
-        if message.lower() == "/train":
+        if msg_lower == "/train":
             self._handle_train_command(output)
             return
 
         ##Step purpose: Handle Phase 2 commands (interactive flows)
-        if message.lower() == "/verify":
+        if msg_lower == "/verify":
             await self._handle_verify_command(output, status_bar)
             return
 
-        if message.lower() == "/develop_insight" or message.lower().startswith("/develop_insight "):
+        if msg_lower == "/develop_insight" or msg_lower.startswith("/develop_insight "):
             await self._handle_develop_insight_command(message, output, status_bar)
             return
 
-        if message.lower() == "/learn_procedure":
+        if msg_lower == "/learn_procedure":
             self._handle_learn_procedure_start(output)
             return
 
@@ -725,7 +725,7 @@ Focus on novel observations, not just summaries."""
             loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(
                 None,
-                graph.reflect,
+                lambda: graph.reflect(self._username, self._engine.llm),
             )
 
             ##Action purpose: Display reflection results

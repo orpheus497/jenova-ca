@@ -366,9 +366,14 @@ Respond with a valid JSON object:
 
                 ##Action purpose: Parse with size limits
                 data = safe_json_loads(json_str)
-            except (json.JSONDecodeError, JSONSizeError):
+            except (json.JSONDecodeError, JSONSizeError) as parse_err:
                 ##Step purpose: Raise LLMParseError to trigger _simple_plan fallback
-                raise LLMParseError(plan_json, "Failed to parse plan JSON") from None
+                raise LLMParseError(plan_json, f"Failed to parse plan JSON: {parse_err}") from parse_err
+
+            ##Step purpose: Enforce max_sub_goals limit on parsed data
+            data["sub_goals"] = data.get("sub_goals", [])[: self.config.max_sub_goals]
+            if "reasoning_chain" in data:
+                data["reasoning_chain"] = data["reasoning_chain"][: self.config.max_sub_goals]
 
             ##Step purpose: Create structured plan from parsed data
             plan = Plan.from_dict(data, complexity)

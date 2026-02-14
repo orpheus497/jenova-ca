@@ -52,8 +52,12 @@ def patch_pydantic_v1_for_py314() -> None:
                             hasattr(types, "UnionType") and origin is types.UnionType
                         ):
                             args = get_args(annotation)
-                            if args and isinstance(args[0], type):
-                                self.type_ = args[0]
+                            non_none_args = [
+                                arg for arg in args
+                                if isinstance(arg, type) and arg is not type(None)
+                            ]
+                            if non_none_args:
+                                self.type_ = non_none_args[0]
                                 self.outer_type_ = annotation
                                 self.shape = fields.SHAPE_SINGLETON
                                 self.required = False

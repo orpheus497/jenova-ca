@@ -13,7 +13,7 @@ Tests cover:
 from pathlib import Path
 
 from jenova.utils.json_safe import safe_json_loads
-from jenova.utils.sanitization import SanitizationResult, sanitize_for_prompt
+from jenova.utils.sanitization import sanitize_for_prompt
 from jenova.utils.validation import validate_path_component, validate_path_within_base
 
 

@@ -11,7 +11,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 ##Fix: Import Python 3.14 compatibility patches FIRST (BH-2026-02-11T02:12:55Z)
 ##Note: This must come before any imports that use ChromaDB/Pydantic V1
@@ -20,8 +20,34 @@ from jenova import __version__
 from jenova.config import JenovaConfig, load_config
 from jenova.utils.logging import configure_logging, get_logger
 
+##Step purpose: Common exception tuple for optional subsystem initialization
+_SUBSYSTEM_INIT_EXCEPTIONS = (
+    RuntimeError, ValueError, KeyError, ImportError, AttributeError, TypeError
+)
+
 if TYPE_CHECKING:
     from jenova.core.engine import CognitiveEngine
+
+
+##Class purpose: Protocol for LLM used by CognitiveEngine
+@runtime_checkable
+class EngineLLMProtocol(Protocol):
+    """Minimal LLM protocol that CognitiveEngine actually requires.
+
+    Both LLMInterface and DevelopmentLLM must satisfy this protocol.
+    """
+
+    @property
+    def is_loaded(self) -> bool: ...
+
+    def generate(self, prompt: object, params: object = None) -> object: ...
+
+    def generate_text(
+        self,
+        text: str,
+        system_prompt: str = "You are a helpful assistant.",
+        params: object = None,
+    ) -> str: ...
 
 
 ##Function purpose: Parse command-line arguments
@@ -248,10 +274,14 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
 
     ##Step purpose: Create CognitiveEngine
     logger.debug("initializing_cognitive_engine")
+    ##Step purpose: Verify LLM satisfies the protocol before passing to engine
+    assert isinstance(llm, EngineLLMProtocol), (
+        f"{type(llm).__name__} does not implement EngineLLMProtocol"
+    )
     engine = CognitiveEngine(
         config=config,
         knowledge_store=knowledge_store,
-        llm=cast("LLMInterface", llm),
+        llm=llm,  # type: ignore[arg-type]  # EngineLLMProtocol verified at runtime
         response_generator=response_generator,
         engine_config=EngineConfig(
             max_context_items=config.memory.max_results,
@@ -275,7 +305,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
             config=config.integration,
         )
         engine.set_integration_hub(integration_hub)
-    except (RuntimeError, ValueError, KeyError, ImportError, AttributeError, TypeError) as e:
+    except _SUBSYSTEM_INIT_EXCEPTIONS as e:
         ##Fix: Narrow catch and include exc_info for better diagnostics (PATCH-007)
         logger.warning(
             "integration_hub_init_failed",
@@ -296,7 +326,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
         )
         scheduler = CognitiveScheduler(SchedulerConfig(), executor=task_executor)
         engine.set_scheduler(scheduler)
-    except (RuntimeError, ValueError, KeyError, ImportError, AttributeError, TypeError) as e:
+    except _SUBSYSTEM_INIT_EXCEPTIONS as e:
         ##Fix: Handle scheduler initialization failure and log traceback (PATCH-008)
         logger.warning(
             "scheduler_init_failed",

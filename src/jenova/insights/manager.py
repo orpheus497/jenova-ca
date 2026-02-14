@@ -9,6 +9,7 @@ to the cognitive graph.
 
 from __future__ import annotations
 
+import contextlib
 import json
 from datetime import datetime
 from pathlib import Path
@@ -361,10 +362,8 @@ class InsightManager:
                         f.write(json.dumps(example, ensure_ascii=False) + "\n")
                         f.flush()
                     finally:
-                        try:
+                        with contextlib.suppress(OSError):
                             fcntl.flock(f.fileno(), fcntl.LOCK_UN)
-                        except OSError:
-                            pass
                 except (ImportError, OSError):
                     # Fallback for systems without fcntl or where flock fails
                     f.write(json.dumps(example, ensure_ascii=False) + "\n")
@@ -650,6 +649,7 @@ class InsightManager:
         graph: GraphProtocol,
         llm: LLMProtocol,
         memory_search: MemorySearchProtocol | None = None,
+        training_data_path: Path | None = None,
     ) -> InsightManager:
         """
         Factory method to create InsightManager.
@@ -659,6 +659,7 @@ class InsightManager:
             graph: Cognitive graph for node linking
             llm: LLM interface for topic classification
             memory_search: Optional memory search for semantic retrieval
+            training_data_path: Optional explicit path for training data JSONL
 
         Returns:
             Configured InsightManager instance
@@ -668,4 +669,5 @@ class InsightManager:
             graph=graph,
             llm=llm,
             memory_search=memory_search,
+            training_data_path=training_data_path,
         )

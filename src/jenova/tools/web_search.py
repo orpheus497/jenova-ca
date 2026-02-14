@@ -36,6 +36,9 @@ class DuckDuckGoSearchProvider:
         Args:
             timeout: Search timeout in seconds.
         """
+        if timeout <= 0:
+            raise ValueError(f"timeout must be positive, got {timeout}")
+
         self._available = False
         self._ddgs = None
         self._timeout = timeout
@@ -74,6 +77,9 @@ class DuckDuckGoSearchProvider:
         Returns:
             List of WebSearchResult objects
         """
+        if max_results <= 0 or not query.strip():
+            return []
+
         if not self._available or not self._ddgs:
             logger.warning("web_search_unavailable_call", query_hash=sanitize_query(query))
             return []

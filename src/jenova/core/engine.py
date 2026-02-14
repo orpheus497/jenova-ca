@@ -286,12 +286,17 @@ class CognitiveEngine:
 
             ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Fire scheduler after successful turn
             if self._scheduler:
+                unverified = 0
+                if self._assumption_manager:
+                    try:
+                        unverified = self._assumption_manager.unverified_count(
+                            self._current_username
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            "assumption_manager_count_error", error=str(e), exc_info=True
+                        )
                 try:
-                    unverified = (
-                        self._assumption_manager.unverified_count(self._current_username)
-                        if self._assumption_manager
-                        else 0
-                    )
                     self._scheduler.on_turn_complete(self._current_username, unverified)
                 except Exception as e:
                     ##Note: Scheduler errors must not break the think() response
@@ -512,13 +517,10 @@ Respond thoughtfully to the user's message, using the provided context and follo
         user_msg, ai_msg = item
 
         ##Refactor: Use pre-compiled regex for performance (D3-2026-02-14)
-        def redact(text: str) -> str:
-            ##Step purpose: Apply redaction patterns
-            text = _EMAIL_RE.sub("[EMAIL]", text)
-            text = _PHONE_RE.sub("[PHONE]", text)
-            return text
-
-        return (redact(user_msg), redact(ai_msg))
+        return (
+            _PHONE_RE.sub("[PHONE]", _EMAIL_RE.sub("[EMAIL]", user_msg)),
+            _PHONE_RE.sub("[PHONE]", _EMAIL_RE.sub("[EMAIL]", ai_msg)),
+        )
 
     ##Method purpose: Reset engine state for new conversation
     def reset(self) -> None:

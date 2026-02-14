@@ -1093,7 +1093,7 @@ Respond with a valid JSON object:
                         EntityLink(
                             entity=entity,
                             node_id=str(id_val) if id_val is not None else None,
-                            node_type=str(type_val) if type_val is not None else "unknown",
+                            node_type=str(type_val) if type_val is not None else None,
                             confidence=float(score),
                             relationship="related_to",
                         )

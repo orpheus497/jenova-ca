@@ -19,6 +19,7 @@ from jenova.exceptions import ConfigNotFoundError, ConfigParseError, ConfigValid
 from jenova.utils.errors import sanitize_path_for_error
 
 if TYPE_CHECKING:
+    from jenova.core.planning import PlanningConfig as PlanningConfigDataclass
     from jenova.graph.proactive import ProactiveConfig as ProactiveConfigDataclass
 
 
@@ -322,7 +323,7 @@ class PlanningConfig(BaseModel):
     )
 
     ##Method purpose: Convert to the dataclass PlanningConfig used by Planner/EngineConfig
-    def to_planning_config(self) -> PlanningConfig:
+    def to_planning_config(self) -> PlanningConfigDataclass:
         """Convert to the dataclass version expected by Planner.
 
         Returns:
