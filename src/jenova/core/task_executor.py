@@ -40,7 +40,15 @@ _MAX_RESPONSE_PREVIEW_LENGTH = 200
 class TaskExecutorLLMProtocol(Protocol):
     """Protocol for LLM text generation used by CognitiveTaskExecutor."""
 
-    def generate_text(self, text: str, system_prompt: str = ...) -> str: ...
+    def generate_text(self, text: str, system_prompt: str = "You are a helpful assistant.") -> str: ...
+
+
+##Class purpose: Protocol for managers (insights, assumptions) used in history generation
+class ManagerProtocol(Protocol):
+    """Protocol for manager-like classes with saving capabilities."""
+
+    def save_insight(self, content: str, username: str) -> None: ...
+    def add_assumption(self, content: str, username: str) -> bool: ...
 
 ##Note: System prompts for autonomous cognitive generation
 _INSIGHT_SYSTEM_PROMPT = (
@@ -149,7 +157,7 @@ class CognitiveTaskExecutor:
     def _generate_from_history(
         self,
         username: str,
-        manager: object | None,
+        manager: ManagerProtocol | None,
         system_prompt: str,
         item_name: str,
         save_method_name: str,
