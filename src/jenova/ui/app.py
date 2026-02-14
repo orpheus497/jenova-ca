@@ -359,7 +359,8 @@ class JenovaApp(App):
             return
 
         ##Step purpose: Handle special commands
-        msg_lower = message.lower().lstrip()
+        message = message.lstrip()
+        msg_lower = message.lower()
         if msg_lower in ("exit", "quit"):
             self.exit()
             return
@@ -978,8 +979,8 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
         ##Refactor: Catch duplicate assumption explicitly for friendly UX (D3-2026-02-14T10:24:30Z)
         except AssumptionDuplicateError as dup_err:
             output.write("[bold yellow]>>[/bold yellow] This assumption already exists.")
-            status_bar.set_error("Duplicate assumption")
-            self._logger.error(
+            status_bar.set_ready("Ready")
+            self._logger.warning(
                 "assume_command_duplicate",
                 assumption=content,
                 error=str(dup_err),

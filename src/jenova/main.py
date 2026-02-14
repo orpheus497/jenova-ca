@@ -51,6 +51,52 @@ class EngineLLMProtocol(Protocol):
     ) -> str: ...
 
 
+##Class purpose: Minimal mock LLM for development/testing
+class DevelopmentLLM:
+    """Development mock LLM that returns echo responses."""
+
+    @property
+    def is_loaded(self) -> bool:
+        return True
+
+    def generate(self, prompt: object, params: object = None) -> object:
+        from jenova.llm.types import Completion
+        from jenova.llm.types import Prompt as LLMPrompt
+
+        ##Step purpose: Return echo response
+        user_msg = prompt.user_message if isinstance(prompt, LLMPrompt) else str(prompt)
+        return Completion(
+            content=f"[DEV MODE] Received: {user_msg}",
+            finish_reason="stop",
+            tokens_generated=10,
+            tokens_prompt=len(user_msg.split()),
+            generation_time_ms=1.0,
+        )
+
+    ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Satisfy graph.LLMProtocol for scheduler tasks
+    def generate_text(
+        self,
+        text: str,
+        system_prompt: str = "You are a helpful assistant.",
+        params: object = None,
+    ) -> str:
+        """Simple text generation for dev mode."""
+        return f"[DEV MODE] {text[:100]}"
+
+
+##Class purpose: Adapter for LLMInterface to match ProactiveEngine LLMProtocol
+class ProactiveLLMWrapper:
+    """Wraps an LLMInterface (or DevelopmentLLM) for ProactiveEngine."""
+
+    def __init__(self, llm_interface: object) -> None:
+        self._llm = llm_interface
+
+    def generate(self, prompt: str) -> str:
+        return self._llm.generate_text(
+            prompt, system_prompt="You are a proactive cognitive assistant."
+        )
+
+
 ##Function purpose: Parse command-line arguments
 def parse_args(args: list[str] | None = None) -> argparse.Namespace:
     """
@@ -172,37 +218,6 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
     logger.debug("initializing_llm", skip_load=skip_model_load)
     ##Condition purpose: Use mock or real LLM based on flag
     if skip_model_load:
-        ##Step purpose: Create minimal mock LLM for development
-        from jenova.llm.types import Completion, Prompt
-
-        ##Class purpose: Minimal mock LLM for development/testing
-        class DevelopmentLLM:
-            """Development mock LLM that returns echo responses."""
-
-            @property
-            def is_loaded(self) -> bool:
-                return True
-
-            def generate(self, prompt: Prompt, params: object = None) -> Completion:
-                ##Step purpose: Return echo response
-                return Completion(
-                    content=f"[DEV MODE] Received: {prompt.user_message}",
-                    finish_reason="stop",
-                    tokens_generated=10,
-                    tokens_prompt=len(prompt.user_message.split()),
-                    generation_time_ms=1.0,
-                )
-
-            ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Satisfy graph.LLMProtocol for scheduler tasks
-            def generate_text(
-                self,
-                text: str,
-                system_prompt: str = "You are a helpful assistant.",
-                params: object = None,
-            ) -> str:
-                """Simple text generation for dev mode."""
-                return f"[DEV MODE] {text[:100]}"
-
         llm: LLMInterface | DevelopmentLLM = DevelopmentLLM()
     else:
         ##Step purpose: Create and load real LLM
@@ -251,16 +266,6 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
 
     ##Update: WIRING-003 (2026-02-14) — Initialize ProactiveEngine
     logger.debug("initializing_proactive_engine")
-
-    ##Class purpose: Adapter for LLMInterface to match ProactiveEngine LLMProtocol
-    class ProactiveLLMWrapper:
-        def __init__(self, llm_interface: LLMInterface | DevelopmentLLM):
-            self._llm = llm_interface
-
-        def generate(self, prompt: str) -> str:
-            return self._llm.generate_text(
-                prompt, system_prompt="You are a proactive cognitive assistant."
-            )
 
     ##Note: ProactiveConfig (Pydantic) and ProactiveConfig (dataclass) must stay in sync.
     ##TODO: Centralize canonical schema in a shared location if divergence becomes frequent.

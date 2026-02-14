@@ -458,7 +458,7 @@ class ProactiveEngine:
         ##Condition purpose: Suggest developing an existing insight
         if insight_nodes:
             node = random.choice(insight_nodes)
-            content = node.content[:100]
+            content = (node.content or "")[:100]
             return Suggestion(
                 category=SuggestionCategory.DEVELOP,
                 content=f'We could develop this insight further: "{content}..."',

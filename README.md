@@ -210,7 +210,7 @@ jenova
 
 ### 4.2. Prerequisites
 
-* **Python:** 3.10+ (tested on 3.10, 3.11, 3.12, 3.14)
+* **Python:** 3.10+ (tested on 3.10, 3.11, 3.12)
 * **C++ Compiler:** Required for `llama-cpp-python` (e.g., `g++`, `clang++`)
 * **ChromaDB:** Uses SQLite backend (native on FreeBSD/Linux)
 
@@ -511,7 +511,7 @@ ruff format src/
 - ✅ **Cognitive Scheduler:** Fully wired and active; manages background tasks (insights, assumptions, pruning) on turn intervals
 - ✅ **Proactive Engine:** Fully wired and active; autonomously generates suggestions based on graph state
 - ✅ Modern Textual-based TUI with responsive design
-- ✅ Comprehensive test suite (400+ tests: unit, integration, security, benchmarks)
+- ✅ Comprehensive test suite (430+ tests: unit, integration, security, benchmarks)
 - ✅ Security hardening (all P0/P1 issues resolved, prompt injection protection, input validation)
 - ✅ Utility systems (caching, performance monitoring, grammar loading, tools)
 

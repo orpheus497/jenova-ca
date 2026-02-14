@@ -179,7 +179,7 @@ class InsightManager:
         if training_data_path is not None:
             try:
                 validate_path_within_base(
-                    training_data_path, training_data_path.parent
+                    training_data_path, insights_root.parent
                 )
             except ValueError as e:
                 raise ValueError(

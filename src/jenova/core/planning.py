@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 import structlog
 
 from jenova.exceptions import LLMError, LLMParseError
-from jenova.llm.types import Prompt
+from jenova.llm.types import GenerationParams, Prompt
 from jenova.utils.json_safe import JSONSizeError, extract_json_from_response, safe_json_loads
 
 if TYPE_CHECKING:
@@ -299,7 +299,10 @@ The plan should be a short paragraph describing the approach.
 
         ##Error purpose: Handle LLM errors gracefully
         try:
-            completion = self.llm.generate(prompt)
+            completion = self.llm.generate(
+                prompt,
+                GenerationParams(temperature=self.config.plan_temperature),
+            )
             plan_text = completion.content.strip()
 
             logger.debug("simple_plan_generated", plan_length=len(plan_text))
@@ -353,7 +356,10 @@ Respond with a valid JSON object:
 
         ##Error purpose: Handle LLM and parsing errors
         try:
-            completion = self.llm.generate(prompt)
+            completion = self.llm.generate(
+                prompt,
+                GenerationParams(temperature=self.config.plan_temperature),
+            )
             plan_json = completion.content.strip()
 
             ##Step purpose: Parse JSON response with size limits
@@ -379,9 +385,10 @@ Respond with a valid JSON object:
                 raise LLMParseError(plan_json, f"Failed to parse plan JSON: {parse_err}") from parse_err
 
             ##Step purpose: Enforce max_sub_goals limit on parsed data
-            data["sub_goals"] = data.get("sub_goals", [])[: self.config.max_sub_goals]
-            if "reasoning_chain" in data:
-                data["reasoning_chain"] = data["reasoning_chain"][: self.config.max_sub_goals]
+            raw_sub_goals = data.get("sub_goals", [])
+            data["sub_goals"] = raw_sub_goals[: self.config.max_sub_goals] if isinstance(raw_sub_goals, list) else []
+            raw_reasoning = data.get("reasoning_chain", [])
+            data["reasoning_chain"] = raw_reasoning[: self.config.max_sub_goals] if isinstance(raw_reasoning, list) else []
 
             ##Step purpose: Create structured plan from parsed data
             plan = Plan.from_dict(data, complexity)
