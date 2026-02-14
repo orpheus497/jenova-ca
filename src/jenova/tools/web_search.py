@@ -8,12 +8,11 @@ Implements the WebSearchProtocol defined in jenova.core.response.
 
 import hashlib
 
-import structlog
-
 from jenova.core.response import WebSearchResult
+from jenova.utils.logging import get_logger
 
 ##Step purpose: Get module logger
-logger = structlog.get_logger(__name__)
+logger = get_logger(__name__)
 
 
 ##Function purpose: Sanitize query for logging to prevent PII leakage
@@ -44,7 +43,7 @@ class DuckDuckGoSearchProvider:
         try:
             from duckduckgo_search import DDGS
 
-            self._ddgs = DDGS()
+            self._ddgs = DDGS(timeout=timeout)
             self._available = True
             logger.info("web_search_provider_initialized", provider="duckduckgo", timeout=timeout)
         except ImportError:
@@ -84,7 +83,7 @@ class DuckDuckGoSearchProvider:
         try:
             logger.debug("executing_web_search", query_hash=sanitize_query(query))
             # DDGS.text() returns a generator of dicts
-            search_gen = self._ddgs.text(query, max_results=max_results, timeout=self._timeout)
+            search_gen = self._ddgs.text(query, max_results=max_results)
 
             for r in search_gen:
                 results.append(

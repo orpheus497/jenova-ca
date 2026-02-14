@@ -76,8 +76,10 @@ def patch_pydantic_v1_for_py314() -> None:
                     )
                     ##Fix: Last resort - assume Optional[str] for string-like attributes
                     if self.default is None:
+                        from typing import Optional
+
                         self.type_ = str
-                        self.outer_type_ = str | None
+                        self.outer_type_ = Optional[str]
                         self.shape = fields.SHAPE_SINGLETON
                         self.required = False
                         self.allow_none = True

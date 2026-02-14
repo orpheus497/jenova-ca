@@ -321,6 +321,22 @@ class PlanningConfig(BaseModel):
         description="LLM temperature for plan generation.",
     )
 
+    ##Method purpose: Convert to the dataclass PlanningConfig used by Planner/EngineConfig
+    def to_planning_config(self) -> PlanningConfig:
+        """Convert to the dataclass version expected by Planner.
+
+        Returns:
+            core.planning.PlanningConfig dataclass instance
+        """
+        from jenova.core.planning import PlanningConfig as PlanningConfigDataclass
+
+        return PlanningConfigDataclass(
+            multi_level_enabled=self.multi_level_enabled,
+            max_sub_goals=self.max_sub_goals,
+            complexity_threshold=self.complexity_threshold,
+            plan_temperature=self.plan_temperature,
+        )
+
 
 ##Class purpose: Root configuration for JENOVA
 class JenovaConfig(BaseModel):

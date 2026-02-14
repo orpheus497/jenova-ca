@@ -138,8 +138,8 @@ class CognitiveTaskExecutor:
         lines: list[str] = []
         for user_msg, ai_response in recent:
             ##Sec: Sanitize messages before injecting into generation prompts (PATCH-006)
-            safe_user = sanitize_for_prompt(user_msg)
-            safe_ai = sanitize_for_prompt(ai_response)
+            safe_user = sanitize_for_prompt(user_msg).text
+            safe_ai = sanitize_for_prompt(ai_response).text
 
             lines.append(f"User: {safe_user}")
             preview = safe_ai[:_MAX_RESPONSE_PREVIEW_LENGTH]

@@ -394,7 +394,8 @@ class JenovaApp(App):
             return
 
         ##Update: WIRING-008 (2026-02-14) - Add /assume command
-        if message.lower().startswith("/assume"):
+        msg_lower = message.lower().lstrip()
+        if msg_lower == "/assume" or msg_lower.startswith("/assume "):
             await self._handle_assume_command(message, output, status_bar)
             return
 
@@ -407,7 +408,7 @@ class JenovaApp(App):
             await self._handle_verify_command(output, status_bar)
             return
 
-        if message.lower().startswith("/develop_insight"):
+        if message.lower() == "/develop_insight" or message.lower().startswith("/develop_insight "):
             await self._handle_develop_insight_command(message, output, status_bar)
             return
 

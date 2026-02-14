@@ -36,6 +36,7 @@ from jenova.utils.performance import (
 )
 from jenova.utils.sanitization import (
     SanitizationConfig,
+    SanitizationResult,
     sanitize_for_context,
     sanitize_for_prompt,
     sanitize_user_query,
@@ -64,6 +65,7 @@ __all__ = [
     "sanitize_user_query",
     "sanitize_for_context",
     "SanitizationConfig",
+    "SanitizationResult",
     # JSON utilities
     "safe_json_loads",
     "extract_json_from_response",

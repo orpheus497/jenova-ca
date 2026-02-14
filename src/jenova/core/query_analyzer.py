@@ -1086,12 +1086,15 @@ Respond with a valid JSON object:
                 ##Condition purpose: Create link for best match
                 if matching_nodes:
                     best_match = matching_nodes[0]
+                    id_val = best_match.get("id")
+                    type_val = best_match.get("type")
+                    score = best_match.get("score", 0.0)
                     entity_links.append(
                         EntityLink(
                             entity=entity,
-                            node_id=str(best_match["id"]) if best_match["id"] is not None else None,
-                            node_type=str(best_match.get("type")) if best_match.get("type") is not None else "unknown",
-                            confidence=float(best_match.get("score", 0.0)),
+                            node_id=str(id_val) if id_val is not None else None,
+                            node_type=str(type_val) if type_val is not None else "unknown",
+                            confidence=float(score),
                             relationship="related_to",
                         )
                     )

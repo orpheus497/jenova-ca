@@ -55,8 +55,8 @@ class TestWebSearchProvider:
             assert results[0].source == "DuckDuckGo"
 
             # Verify the mock was called correctly
-            mock_ddgs_cls.assert_called_once()
-            mock_ddgs_instance.text.assert_called_once_with("test query", max_results=5, timeout=10)
+            mock_ddgs_cls.assert_called_once_with(timeout=10)
+            mock_ddgs_instance.text.assert_called_once_with("test query", max_results=5)
 
 
 class TestInsightTrainingExport:

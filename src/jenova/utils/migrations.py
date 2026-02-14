@@ -153,7 +153,7 @@ def save_json_atomic(path: Path, data: dict[str, object]) -> None:
 
         ##Action purpose: Ensure permissions are preserved after rename
         os.chmod(path, 0o600)
-    except (OSError, PermissionError, TypeError, ValueError) as e:
+    except (OSError, TypeError, ValueError) as e:
         ##Fix: Catch specific exceptions instead of bare Exception - preserves error context and security visibility
         ##Action purpose: Remove temp file if write failed
         temp_path.unlink(missing_ok=True)

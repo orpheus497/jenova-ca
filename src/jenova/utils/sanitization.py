@@ -9,7 +9,7 @@ and ensure safe content for LLM processing.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 ##Step purpose: Define size limits
 MAX_USER_INPUT_LENGTH = 10000
@@ -34,6 +34,21 @@ class SanitizationConfig:
     """Whether to enable strict sanitization mode."""
 
 
+##Class purpose: Result of sanitization with metadata
+@dataclass
+class SanitizationResult:
+    """Result of sanitization including metadata about matched patterns."""
+
+    text: str
+    """Sanitized text."""
+
+    flagged_injection: bool = False
+    """Whether any injection pattern was matched."""
+
+    matched_patterns: list[str] = field(default_factory=list)
+    """Names/indices of patterns that matched."""
+
+
 ##Update: Enhanced injection patterns to capture modern prompt injection vectors (ISSUE-005)
 INJECTION_PATTERNS = [
     r"(?i)(ignore|forget|disregard|override|skip)\s+(previous|above|all|existing|following)\s+(instructions|rules|directives|guidelines|prompts|context)",
@@ -43,7 +58,7 @@ INJECTION_PATTERNS = [
     r"(?i)you\s+are\s+now(?:\s+(?:a|an))?",
     r"(?i)disregard\s+the\s+above",
     r"(?i)forget\s+everything",
-    r"(?i)(pretend|act|roleplay|simulate)\s+(to\s+be|as\s+if|as)\b",
+    r"(?i)(?:ignore|override)\s+.*?(pretend|act|roleplay|simulate)\s+(to\s+be|as\s+if|as)\b",
     r"(?i)(Do\s+Anything\s+Now|\bDAN\s+mode\b|\benable\s+DAN\b|\bactivate\s+DAN\b)",
     r"(?i)(enable|activate|enter|switch\s+to)\s+Developer\s+Mode",
     r"(?i)(enable|activate|enter|switch\s+to)\s+Debug\s+Mode",
@@ -58,22 +73,23 @@ INJECTION_PATTERNS = [
 """List of regex patterns to detect prompt injection attempts."""
 
 
-##Function purpose: Sanitize user content for LLM prompts
+##Function purpose: Sanitize user content for LLM prompts and return metadata
 def sanitize_for_prompt(
     content: str,
     config: SanitizationConfig | None = None,
-) -> str:
+) -> SanitizationResult:
     """Sanitize user content for LLM prompts.
 
-    Removes injection patterns, limits length, and ensures content
-    is safe for inclusion in LLM prompts.
+    Detects injection patterns, limits length, and ensures content
+    is safe for inclusion in LLM prompts. Returns metadata about
+    matched patterns so callers can decide how to handle borderline cases.
 
     Args:
         content: Raw user content to sanitize
         config: Sanitization configuration (uses defaults if None)
 
     Returns:
-        Sanitized content safe for prompts
+        SanitizationResult with sanitized text and injection metadata
     """
     ##Step purpose: Use default config if not provided
     if config is None:
@@ -81,7 +97,7 @@ def sanitize_for_prompt(
 
     ##Condition purpose: Handle empty content
     if not content:
-        return ""
+        return SanitizationResult(text="")
 
     ##Sec: Validate input length BEFORE regex matching to prevent ReDoS attacks (P1-001 Daedelus audit)
     ##Step purpose: Reject inputs exceeding maximum length before any regex operations
@@ -98,14 +114,19 @@ def sanitize_for_prompt(
     sanitized = sanitized.replace("`", "'")
 
     ##Sec: Apply regex patterns after length validation to prevent ReDoS (P1-001 Daedelus audit)
-    ##Step purpose: Remove injection patterns (case-insensitive)
-    for pattern in INJECTION_PATTERNS:
-        sanitized = re.sub(pattern, "[REDACTED]", sanitized)
+    ##Step purpose: Detect and replace injection patterns (case-insensitive)
+    flagged = False
+    matched: list[str] = []
+    for i, pattern in enumerate(INJECTION_PATTERNS):
+        if re.search(pattern, sanitized):
+            flagged = True
+            matched.append(f"INJECTION_PATTERN_{i}")
+            sanitized = re.sub(pattern, "[REDACTED]", sanitized)
 
     ##Step purpose: Remove control characters (except newline and tab)
     sanitized = "".join(char for char in sanitized if ord(char) >= 32 or char in "\n\t")
 
-    return sanitized
+    return SanitizationResult(text=sanitized, flagged_injection=flagged, matched_patterns=matched)
 
 
 ##Function purpose: Sanitize user query for processing
@@ -125,7 +146,7 @@ def sanitize_user_query(query: str) -> str:
     config = SanitizationConfig()
     config.max_content_length = config.max_user_input_length
 
-    return sanitize_for_prompt(query, config)
+    return sanitize_for_prompt(query, config).text
 
 
 ##Function purpose: Sanitize content for context inclusion
@@ -140,4 +161,4 @@ def sanitize_for_context(content: str) -> str:
     Returns:
         Sanitized content safe for context
     """
-    return sanitize_for_prompt(content)
+    return sanitize_for_prompt(content).text

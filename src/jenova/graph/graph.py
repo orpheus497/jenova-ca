@@ -142,7 +142,7 @@ class CognitiveGraph:
             Sanitized content safe for LLM prompts
         """
         ##Action purpose: Use centralized sanitization function
-        return sanitize_for_prompt(content)
+        return sanitize_for_prompt(content).text
 
     ##Method purpose: Load graph from persistent storage
     def _load(self) -> None:

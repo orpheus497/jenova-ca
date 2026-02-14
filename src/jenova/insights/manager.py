@@ -311,23 +311,14 @@ class InsightManager:
             else:
                 ##Logic: Find .jenova-ai directory in the path hierarchy
                 jenova_dir = None
-                path = self._insights_root.resolve()
-                for parent in path.parents:
+                for parent in self._insights_root.resolve().parents:
                     if parent.name == ".jenova-ai":
                         jenova_dir = parent
                         break
 
                 ##Fallback: If not found in parents
                 if not jenova_dir:
-                    # Check simple relative path case
-                    if ".jenova-ai" in self._insights_root.parts:
-                        # Construct path to .jenova-ai
-                        parts = list(self._insights_root.parts)
-                        idx = parts.index(".jenova-ai")
-                        jenova_dir = Path(*parts[: idx + 1])
-                    else:
-                        # Default to parent of insights folder
-                        jenova_dir = self._insights_root.parent
+                    jenova_dir = self._insights_root.resolve().parent
 
                 train_file = jenova_dir / "training_data.jsonl"
 
@@ -366,9 +357,14 @@ class InsightManager:
                     import fcntl
 
                     fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-                    f.write(json.dumps(example, ensure_ascii=False) + "\n")
-                    f.flush()
-                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+                    try:
+                        f.write(json.dumps(example, ensure_ascii=False) + "\n")
+                        f.flush()
+                    finally:
+                        try:
+                            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+                        except OSError:
+                            pass
                 except (ImportError, OSError):
                     # Fallback for systems without fcntl or where flock fails
                     f.write(json.dumps(example, ensure_ascii=False) + "\n")

@@ -71,7 +71,7 @@ def backup_file(filepath: Path) -> Path:
         try:
             shutil.copy2(filepath, backup_path)
             print(f"✓ Created backup: {backup_path}")
-        except (OSError, PermissionError) as e:
+        except OSError as e:
             print(
                 "✗ ERROR: Cannot create backup — check file permissions or run with elevated privileges"
             )
@@ -125,11 +125,14 @@ def apply_patch(filepath: Path) -> bool:
     ##Pattern 2: Find the validator+attribute block and reorder them
     ##Note: The attribute must come BEFORE the validator for Python 3.14 type inference
     ##Refactor: Relaxed regex for flexible whitespace, added diagnostics (D3-2026-02-11T07:03:00Z)
+    ##Refactor: Pre-check for expected symbols before regex match (D3-2026-02-14)
+    has_validator = "empty_str_to_none" in new_content
+    has_attr = "chroma_server_nofile" in new_content
     pattern = re.compile(
-        r'@validator\("chroma_server_nofile",\s+pre=True,\s+always=True,\s+allow_reuse=True\)\s+'
-        r"def\s+empty_str_to_none\([^)]+\)[^:]+:\s+"
+        r'@validator\("chroma_server_nofile"[^)]*\)\s+'
+        r"def\s+empty_str_to_none\s*\([^)]*\)[^:]*:\s+"
         r".*?return\s+v\s+"
-        r"chroma_server_nofile:\s*Optional\[int\]\s*=\s*None",
+        r"chroma_server_nofile\s*:\s*Optional\[int\]\s*=\s*None",
         re.DOTALL | re.MULTILINE,
     )
 
@@ -170,7 +173,12 @@ def apply_patch(filepath: Path) -> bool:
     if num_subs == 0:
         print("⚠ Warning: Pattern not matched in config.py")
         print(f"   ChromaDB version: {chromadb_version}")
-        print("   This may indicate upstream changes in ChromaDB.")
+        if not has_validator:
+            print("   Diagnostic: 'empty_str_to_none' validator not found in source.")
+        if not has_attr:
+            print("   Diagnostic: 'chroma_server_nofile' attribute not found in source.")
+        if has_validator and has_attr:
+            print("   Both symbols present but regex did not match — formatting may have changed.")
         print("   The patch may need to be updated.")
         return False
 

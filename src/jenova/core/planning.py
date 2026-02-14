@@ -246,7 +246,8 @@ class Planner:
             "relationship between",
         ]
 
-        has_indicators = any(indicator in user_input.lower() for indicator in complexity_indicators)
+        user_input_lower = user_input.lower()
+        has_indicators = any(indicator in user_input_lower for indicator in complexity_indicators)
 
         ##Step purpose: Check for multiple questions
         question_count = user_input.count("?")
