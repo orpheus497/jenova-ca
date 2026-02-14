@@ -12,8 +12,10 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
+from chromadb.api.types import EmbeddingFunction
 
 from jenova.config.models import (
     GraphConfig,
@@ -27,6 +29,35 @@ from jenova.core.engine import CognitiveEngine, EngineConfig
 from jenova.core.knowledge import KnowledgeStore
 from jenova.core.response import ResponseConfig, ResponseGenerator
 from jenova.llm.types import Completion, GenerationParams, Prompt
+from jenova.memory import Memory
+
+
+##Class purpose: Mock embedding function to avoid ChromaDB ONNX/numpy incompatibility in CI
+class MockEmbeddingFunction(EmbeddingFunction):
+    """Mock embedding function returning fixed-dimension vectors."""
+
+    def __call__(self, input: list[str]) -> list[list[float]]:
+        return [[0.1] * 384 for _ in input]
+
+
+_original_memory_init = Memory.__init__
+
+
+def _patched_memory_init(self, memory_type, storage_path, embedding_function=None):
+    """Patch Memory.__init__ to always use MockEmbeddingFunction in integration tests."""
+    _original_memory_init(
+        self,
+        memory_type=memory_type,
+        storage_path=storage_path,
+        embedding_function=MockEmbeddingFunction(),
+    )
+
+
+##Function purpose: Auto-patch Memory to use mock embeddings for all integration tests
+@pytest.fixture(autouse=True)
+def _use_mock_embeddings(monkeypatch):
+    """Ensure all Memory instances use MockEmbeddingFunction to avoid ONNX/numpy issues."""
+    monkeypatch.setattr(Memory, "__init__", _patched_memory_init)
 
 
 ##Class purpose: Mock LLM interface for deterministic testing
