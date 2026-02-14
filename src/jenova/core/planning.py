@@ -368,7 +368,7 @@ Respond with a valid JSON object:
                 data = safe_json_loads(json_str)
             except (json.JSONDecodeError, JSONSizeError) as e:
                 ##Step purpose: Try to extract JSON from response as fallback
-                json_match = re.search(r"{{[^{{}}]*}}", plan_json, re.DOTALL)
+                json_match = re.search(r"\{[^{}]*\}", plan_json, re.DOTALL)
                 if json_match:
                     try:
                         data = safe_json_loads(json_match.group())

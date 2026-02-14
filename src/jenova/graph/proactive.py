@@ -411,16 +411,20 @@ class ProactiveEngine:
         """Generate a suggestion to verify assumptions."""
         ##Step purpose: Check if assumption manager is available
         if self._assumption_manager:
-            result = self._assumption_manager.get_assumption_to_verify(username)
-            if result:
-                assumption, question = result
-                node_ids = (assumption.cortex_id,) if assumption.cortex_id else ()
-                return Suggestion(
-                    category=SuggestionCategory.VERIFY,
-                    content=question,
-                    priority=0.8,
-                    node_ids=node_ids,
-                )
+            try:
+                result = self._assumption_manager.get_assumption_to_verify(username)
+                if result:
+                    assumption, question = result
+                    node_ids = (assumption.cortex_id,) if assumption.cortex_id else ()
+                    return Suggestion(
+                        category=SuggestionCategory.VERIFY,
+                        content=question,
+                        priority=0.8,
+                        node_ids=node_ids,
+                    )
+            except Exception as e:
+                logger.warning("assumption_manager_error", error=str(e))
+                # Fall through to generic suggestion
 
         # Fallback to a generic verification prompt if no specific assumption found
         # or manager not available

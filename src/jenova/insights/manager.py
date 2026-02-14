@@ -154,6 +154,7 @@ class InsightManager:
         graph: GraphProtocol,
         llm: LLMProtocol,
         memory_search: MemorySearchProtocol | None = None,
+        training_data_path: Path | None = None,
     ) -> None:
         """
         Initialize insight manager.
@@ -163,12 +164,14 @@ class InsightManager:
             graph: Cognitive graph for node linking
             llm: LLM interface for topic classification
             memory_search: Optional memory search for semantic retrieval
+            training_data_path: Optional explicit path for training data JSONL
         """
         ##Step purpose: Store dependencies
         self._insights_root = insights_root
         self._graph = graph
         self._llm = llm
         self._memory_search = memory_search
+        self._training_data_path = training_data_path
 
         ##Step purpose: Ensure root directory exists
         insights_root.mkdir(parents=True, exist_ok=True)
@@ -182,6 +185,7 @@ class InsightManager:
         logger.info(
             "insight_manager_initialized",
             storage_path=str(insights_root),
+            training_data_path=str(training_data_path) if training_data_path else "auto",
         )
 
     ##Method purpose: Save an insight, finding or creating a concern for it
@@ -267,6 +271,9 @@ class InsightManager:
             ##Step purpose: Persist to file system
             self._save_insight_file(insight)
 
+            ##Update: WIRING-007 (2026-02-14) - Collect training data
+            self._append_to_training_data(insight)
+
             logger.info(
                 "insight_saved",
                 username=username,
@@ -283,6 +290,75 @@ class InsightManager:
                 username=username,
             )
             raise InsightSaveError(content, str(e)) from e
+
+    ##Update: WIRING-007 (2026-02-14) - Training data collection method
+    ##Method purpose: Append insight to training data file for fine-tuning
+    def _append_to_training_data(self, insight: Insight) -> None:
+        """
+        Append insight to training data file (JSONL format).
+        
+        Creates a training example for contrastive learning:
+        - Anchor: The insight topic/question
+        - Positive: The insight content
+        
+        Args:
+            insight: The insight to export
+        """
+        try:
+            ##Step purpose: Define training data path
+            if self._training_data_path:
+                train_file = self._training_data_path
+            else:
+                ##Logic: Find .jenova-ai directory in the path hierarchy
+                jenova_dir = None
+                path = self._insights_root.resolve()
+                for parent in path.parents:
+                    if parent.name == ".jenova-ai":
+                        jenova_dir = parent
+                        break
+                
+                ##Fallback: If not found in parents
+                if not jenova_dir:
+                    # Check simple relative path case
+                    if ".jenova-ai" in self._insights_root.parts:
+                        # Construct path to .jenova-ai
+                        parts = list(self._insights_root.parts)
+                        idx = parts.index(".jenova-ai")
+                        jenova_dir = Path(*parts[:idx+1])
+                    else:
+                        # Default to parent of insights folder
+                        jenova_dir = self._insights_root.parent
+
+                train_file = jenova_dir / "training_data.jsonl"
+            
+            ##Sec: Validate path before writing (P2-001)
+            # Ensure we are writing to a .jsonl file and not traversing
+            if not train_file.name.endswith(".jsonl"):
+                logger.warning("invalid_training_data_filename", path=str(train_file))
+                return
+
+            ##Step purpose: Create simple training example
+            ##We use the topic as a rough anchor or "question" about the domain
+            example = {
+                "anchor": f"What do we know about {insight.topic}?",
+                "positive": insight.content,
+                "metadata": {
+                    "source": "insight_manager",
+                    "id": insight.cortex_id,
+                    "timestamp": insight.timestamp  # Insight.timestamp is already a string
+                }
+            }
+            
+            ##Action purpose: Append to file with atomic-like append if possible, 
+            ##but simple append is standard for JSONL.
+            with open(train_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(example, ensure_ascii=False) + "\n")
+                
+            logger.debug("training_data_appended", path=str(train_file), insight_id=insight.cortex_id)
+            
+        except Exception as e:
+            ##Note: Training data collection is non-critical, log warning but don't fail
+            logger.warning("training_data_collection_failed", error=str(e))
 
     ##Method purpose: Save insight to filesystem as JSON
     def _save_insight_file(self, insight: Insight) -> Path:

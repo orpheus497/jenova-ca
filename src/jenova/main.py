@@ -128,6 +128,8 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
     from jenova.insights.manager import InsightManager
     from jenova.llm.interface import LLMInterface
     from jenova.memory.types import MemoryType
+    ##Update: WIRING-005 (2026-02-14) - Import Web Search Provider
+    from jenova.tools.web_search import DuckDuckGoSearchProvider
 
     ##Action purpose: Log initialization start
     logger.info("creating_engine", skip_model_load=skip_model_load)
@@ -185,6 +187,10 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
 
     ##Step purpose: Create ResponseGenerator
     logger.debug("initializing_response_generator")
+    ##Update: WIRING-005 (2026-02-14) - Wire Web Search
+    # Note: Use standard 10s timeout, could be moved to config if needed
+    web_search_provider = DuckDuckGoSearchProvider(timeout=10)
+    
     response_generator = ResponseGenerator(
         config=config,
         response_config=ResponseConfig(
@@ -192,6 +198,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
             max_length=0,  # No limit
             format_style="default",
         ),
+        web_search=web_search_provider,
     )
 
     ##Step purpose: Initialize insight manager
@@ -268,7 +275,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
             config=config.integration,
         )
         engine.set_integration_hub(integration_hub)
-    except (RuntimeError, ValueError, KeyError, ImportError) as e:
+    except (RuntimeError, ValueError, KeyError, ImportError, AttributeError, TypeError) as e:
         ##Fix: Narrow catch and include exc_info for better diagnostics (PATCH-007)
         logger.warning(
             "integration_hub_init_failed",
@@ -289,7 +296,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
         )
         scheduler = CognitiveScheduler(SchedulerConfig(), executor=task_executor)
         engine.set_scheduler(scheduler)
-    except (RuntimeError, ValueError, KeyError, ImportError) as e:
+    except (RuntimeError, ValueError, KeyError, ImportError, AttributeError, TypeError) as e:
         ##Fix: Handle scheduler initialization failure and log traceback (PATCH-008)
         logger.warning(
             "scheduler_init_failed",

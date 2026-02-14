@@ -20,19 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Broadened `safe_json_loads` typing and documentation to support all JSON-serializable types (lists, primitives).
   - Improved diagnostic logging in `main.py` by adding `exc_info=True` to initialization warnings for non-critical subsystems.
 
-### Fixed
-
-- **Security & Robustness (2026-02-14T12:15:00Z):**
-  - **PII Redaction:** Updated `_redact_pii` with stricter, global regex patterns for emails and international phone numbers (PATCH-004).
-  - **Fault Tolerance:** Refactored `think()` to log unexpected proactive errors without re-raising, preventing cognitive cycle crashes (PATCH-005).
-  - **Prompt Sanitization:** Integrated `sanitize_for_prompt` into autonomous history summaries to prevent injection (PATCH-006).
-  - **Startup Resilience:** Narrowed exception catching during `IntegrationHub` initialization to prevent shadowing legitimate programming errors (PATCH-007).
-
-### Refactored
-
 - **Cognitive Engine & Task Executor (2026-02-14T15:00:00Z):**
   - **Engine Robustness:** Broadened scheduler exception handling in `think()` loop to catch all exceptions, ensuring conversation flow continuity even if background tasks fail.
   - **Task Dispatch Optimization:** Moved task dispatch dictionary to instance level in `CognitiveTaskExecutor` to reduce per-call overhead.
+
+### Fixed
 
 ## [4.1.0] - 2026-02-11
 

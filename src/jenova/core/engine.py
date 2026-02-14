@@ -58,7 +58,7 @@ _EMAIL_RE = re.compile(
 )
 ##Note: Global phone pattern capturing optional international prefixes and groupings
 _PHONE_RE = re.compile(
-    r"(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{4,6}"
+    r"(?<![/\d])(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{4,6}(?![/\d])"
 )
 
 

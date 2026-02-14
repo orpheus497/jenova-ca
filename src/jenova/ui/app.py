@@ -393,6 +393,11 @@ class JenovaApp(App):
             await self._handle_meta_command(output, status_bar)
             return
 
+        ##Update: WIRING-008 (2026-02-14) - Add /assume command
+        if message.lower().startswith("/assume"):
+            await self._handle_assume_command(message, output, status_bar)
+            return
+
         if message.lower() == "/train":
             self._handle_train_command(output)
             return
@@ -455,7 +460,7 @@ class JenovaApp(App):
         import asyncio
 
         ##Action purpose: Run cognitive cycle in thread pool to avoid blocking
-        loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(
             None,
             self._engine.think,
@@ -656,7 +661,7 @@ Focus on novel observations, not just summaries."""
             ##Step purpose: Generate insight using LLM
             import asyncio
 
-            loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
             insight_content = await loop.run_in_executor(
                 None,
                 self._engine.llm.generate_text,
@@ -715,7 +720,7 @@ Focus on novel observations, not just summaries."""
             ##Step purpose: Run reflection in thread pool
             import asyncio
 
-            loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(
                 None,
                 graph.reflect,
@@ -801,7 +806,7 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
             ##Step purpose: Generate insight using LLM
             import asyncio
 
-            loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
             insight_content = await loop.run_in_executor(
                 None,
                 self._engine.llm.generate_text,
@@ -860,7 +865,7 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
             ##Step purpose: Generate meta-insights in thread pool
             import asyncio
 
-            loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
             meta_insights = await loop.run_in_executor(
                 None,
                 graph.generate_meta_insights,
@@ -901,6 +906,72 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
         output.write("[dim]    python3 finetune/train.py[/dim]")
         output.write("")  ##Step purpose: Add spacing
 
+    ##Update: WIRING-008 (2026-02-14) - Implementation of /assume command
+    ##Method purpose: Handle /assume command - Manually add an assumption
+    async def _handle_assume_command(
+        self,
+        message: str,
+        output: RichLog,
+        status_bar: StatusBar,
+    ) -> None:
+        """Handle /assume command to manually add an assumption.
+
+        Args:
+            message: Full command message
+            output: Output widget for feedback
+            status_bar: Status bar widget
+        """
+        ##Condition purpose: Check if engine is available
+        if self._engine is None:
+            output.write("[bold yellow]>>[/bold yellow] Cannot add assumption: No engine connected.")
+            return
+
+        ##Condition purpose: Check if assumption manager is available
+        if self._engine.assumption_manager is None:
+            output.write("[bold yellow]>>[/bold yellow] Assumption manager not available.")
+            return
+
+        ##Step purpose: Parse content
+        parts = message.split(" ", 1)
+        if len(parts) < 2:
+            output.write("[bold yellow]>>[/bold yellow] Usage: /assume <assumption_text>")
+            return
+        
+        content = parts[1].strip()
+        if not content:
+            output.write("[bold yellow]>>[/bold yellow] Usage: /assume <assumption_text>")
+            return
+
+        ##Action purpose: Set loading state
+        status_bar.set_loading("Adding assumption...")
+
+        ##Error purpose: Handle errors
+        try:
+            import asyncio
+            loop = asyncio.get_running_loop()
+            
+            ##Step purpose: Add assumption
+            cortex_id = await loop.run_in_executor(
+                None,
+                self._engine.assumption_manager.add_assumption,
+                content,
+                self._username,
+            )
+
+            ##Action purpose: Display success message
+            output.write(f"[bold green]>>[/bold green] Assumption added:")
+            output.write(f"[white]  {content}[/white]")
+            output.write(f"[dim]  ID: {cortex_id}[/dim]")
+            output.write("")
+
+            ##Action purpose: Set ready state
+            status_bar.set_ready("Ready")
+
+        except Exception as e:
+            output.write(f"[bold red]>>[/bold red] Error adding assumption: {e}")
+            status_bar.set_error(f"Error: {type(e).__name__}")
+            self._logger.error("assume_command_failed", error=str(e), exc_info=True)
+
     ##Method purpose: Handle /verify command - Start assumption verification
     async def _handle_verify_command(
         self,
@@ -931,7 +1002,7 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
             ##Step purpose: Get assumption to verify
             import asyncio
 
-            loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(
                 None,
                 self._engine.assumption_manager.get_assumption_to_verify,
@@ -1005,7 +1076,7 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
             ##Step purpose: Resolve assumption
             import asyncio
 
-            loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
             await loop.run_in_executor(
                 None,
                 self._engine.assumption_manager.resolve_assumption,
@@ -1086,7 +1157,7 @@ Expanded insight:"""
 
                 import asyncio
 
-                loop = asyncio.get_event_loop()
+                    loop = asyncio.get_running_loop()
                 expanded_content = await loop.run_in_executor(
                     None,
                     self._engine.llm.generate_text,

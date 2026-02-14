@@ -34,18 +34,26 @@ class SanitizationConfig:
     """Whether to enable strict sanitization mode."""
 
 
-##Step purpose: Define injection patterns (case-insensitive)
+##Update: Enhanced injection patterns to capture modern prompt injection vectors (ISSUE-005)
 INJECTION_PATTERNS = [
-    r"(?i)(ignore|forget|disregard)\s+(previous|above|all|instructions)",
-    r"(?i)(new\s+)?(instructions?|rules?|directives?)\s*:",
-    r"(?i)system\s*:\s*",
-    r"(?i)you\s+are\s+now",
-    r"(?i)override\s+",
+    r"(?i)(ignore|forget|disregard|override|skip)\s+(previous|above|all|existing|following)\s+(instructions|rules|directives|guidelines|prompts|context)",
+    r"(?i)(new\s+)?(instructions?|rules?|directives?)\s*[:\-]",
+    r"(?i)(new|special|override|custom)\s+mode\s*[:\-]",
+    r"(?i)system\s+(prompt|message|instruction)\s*[:\-]",
+    r"(?i)you\s+are\s+now(\s+a)?",
     r"(?i)disregard\s+the\s+above",
     r"(?i)forget\s+everything",
-    r"(?i)pretend\s+you\s+are",
-    r"(?i)act\s+as\s+if",
-    r"(?i)roleplay\s+as",
+    r"(?i)(pretend|act|roleplay|simulate)\s+(to\s+be|as\s+if|as)\b",
+    r"(?i)(Do\s+Anything\s+Now|\bDAN\s+mode\b|\benable\s+DAN\b|\bactivate\s+DAN\b)",
+    r"(?i)(enable|activate|enter|switch\s+to)\s+Developer\s+Mode",
+    r"(?i)(enable|activate|enter|switch\s+to)\s+Debug\s+Mode",
+    r"(?i)\bJailbreak\b\s*(mode|prompt|this|the|system|assistant)",
+    r"(?i)\b(unfiltered|uncensored)\b\s*(?:mode|response|output|filter|settings)\b",
+    r"(?i)Stay\s+in\s+character",
+    r"(?i)Assistant\s+Settings\b",
+    r"(?i)Override\s+Safety",
+    r"(?i)Kernel\s+Prompt",
+    r"(?i)\[(SYSTEM|ADMIN|USER)\]",
 ]
 """List of regex patterns to detect prompt injection attempts."""
 
