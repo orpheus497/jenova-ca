@@ -25,6 +25,7 @@ from jenova.graph.proactive import (
     Suggestion,
     SuggestionCategory,
 )
+from jenova.graph.types import Node
 
 
 ##Class purpose: Fixture providing mock graph
@@ -266,10 +267,10 @@ def test_generate_explore_suggestion_with_nodes(engine: ProactiveEngine, mock_gr
     """##Test case: Explore suggestion identifies underexplored topics."""
     ##Step purpose: Set up mock with topic data
     nodes = [
-        {"type": "question", "id": "1"},
-        {"type": "question", "id": "2"},
-        {"type": "question", "id": "3"},
-        {"type": "insight", "id": "4"},  # Only 1 insight
+        Node(id="1", label="q1", content="", node_type="question"),
+        Node(id="2", label="q2", content="", node_type="question"),
+        Node(id="3", label="q3", content="", node_type="question"),
+        Node(id="4", label="i1", content="", node_type="insight"),  # Only 1 insight
     ]
     mock_graph.get_nodes_by_user = Mock(return_value=nodes)
 
@@ -297,8 +298,8 @@ def test_generate_develop_suggestion(engine: ProactiveEngine, mock_graph: Mock) 
     """##Test case: Develop suggestion generated from insights."""
     ##Step purpose: Set up mock with insight nodes
     nodes = [
-        {"type": "insight", "id": "1", "content": "Important insight about learning"},
-        {"type": "insight", "id": "2", "content": "Another insight"},
+        Node(id="1", label="i1", content="Important insight about learning", node_type="insight"),
+        Node(id="2", label="i2", content="Another insight", node_type="insight"),
     ]
     mock_graph.get_nodes_by_user = Mock(return_value=nodes)
 
@@ -315,8 +316,8 @@ def test_generate_develop_suggestion_no_insights(engine: ProactiveEngine, mock_g
     """##Test case: Develop suggestion returns None if no insights."""
     ##Step purpose: Set up mock with no insight nodes
     nodes = [
-        {"type": "question", "id": "1"},
-        {"type": "reference", "id": "2"},
+        Node(id="1", label="q1", content="", node_type="question"),
+        Node(id="2", label="r1", content="", node_type="reference"),
     ]
     mock_graph.get_nodes_by_user = Mock(return_value=nodes)
 
@@ -392,7 +393,7 @@ def test_get_suggestion_full_flow(engine: ProactiveEngine, mock_graph: Mock) -> 
     """##Test case: get_suggestion executes complete flow."""
     ##Step purpose: Set up mock with insight node to ensure DEVELOP works
     mock_graph.get_nodes_by_user = Mock(
-        return_value=[{"type": "insight", "id": "1", "content": "Test insight"}]
+        return_value=[Node(id="1", label="i1", content="Test insight", node_type="insight")]
     )
 
     ##Action purpose: Get suggestion

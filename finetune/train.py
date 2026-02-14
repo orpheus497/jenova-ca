@@ -86,6 +86,12 @@ def train(
             )
 
     ##Step purpose: Create dataloader
+    if not train_examples:
+        raise ValueError(
+            f"No valid training examples found in {training_data_path}. "
+            "Ensure the file contains entries with 'anchor' and 'positive' keys."
+        )
+
     train_dataloader = DataLoader(
         train_examples,
         shuffle=True,

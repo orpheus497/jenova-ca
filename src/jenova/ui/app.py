@@ -869,7 +869,7 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
             loop = asyncio.get_running_loop()
             meta_insights = await loop.run_in_executor(
                 None,
-                graph.generate_meta_insights,
+                lambda: graph.generate_meta_insights(self._username, self._engine.llm),
             )
 
             ##Condition purpose: Check if any meta-insights generated

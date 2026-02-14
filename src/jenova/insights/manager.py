@@ -340,8 +340,6 @@ class InsightManager:
             ##Step purpose: Verify path is within base directory (P2-001)
             # We allow it to be anywhere within the parent of insights_root
             # which is usually the project root or .jenova-ai folder
-            from jenova.utils.validation import validate_path_within_base
-
             try:
                 validate_path_within_base(train_file, self._insights_root.parent)
             except ValueError as e:
@@ -362,6 +360,7 @@ class InsightManager:
 
             ##Action purpose: Append to file with atomic-like append if possible.
             ##We use fcntl.flock on POSIX systems for multi-process safety.
+            train_file.parent.mkdir(parents=True, exist_ok=True)
             with open(train_file, "a", encoding="utf-8") as f:
                 try:
                     import fcntl

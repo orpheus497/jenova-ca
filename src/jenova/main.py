@@ -11,7 +11,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 ##Fix: Import Python 3.14 compatibility patches FIRST (BH-2026-02-11T02:12:55Z)
 ##Note: This must come before any imports that use ChromaDB/Pydantic V1
@@ -245,8 +245,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
         graph=knowledge_store.graph,
         llm=ProactiveLLMWrapper(llm),
     )
-
-    from typing import cast
+    proactive_engine.set_assumption_manager(assumption_manager)
 
     ##Step purpose: Create CognitiveEngine
     logger.debug("initializing_cognitive_engine")

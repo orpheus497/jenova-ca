@@ -14,16 +14,12 @@ import os
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
-from typing import TypeVar
 
 from jenova.exceptions import MigrationError, MigrationFailedError, SchemaVersionError
 from jenova.utils.json_safe import safe_json_loads
 
 ##Step purpose: Define current schema version constant
 SCHEMA_VERSION: int = 1
-
-##Step purpose: Type variable for generic data loading
-T = TypeVar("T", bound=dict[str, object])
 
 
 ##Function purpose: Load JSON with automatic schema migration

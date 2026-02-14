@@ -10,7 +10,7 @@ knowledge graph). Created as part of WIRING-001.
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 import structlog
 
@@ -43,14 +43,6 @@ class TaskExecutorLLMProtocol(Protocol):
     def generate_text(
         self, text: str, system_prompt: str = "You are a helpful assistant."
     ) -> str: ...
-
-
-##Class purpose: Protocol for managers (insights, assumptions) used in history generation
-class ManagerProtocol(Protocol):
-    """Protocol for manager-like classes with saving capabilities."""
-
-    def save_insight(self, content: str, username: str) -> None: ...
-    def add_assumption(self, content: str, username: str) -> bool: ...
 
 
 ##Note: System prompts for autonomous cognitive generation
@@ -160,7 +152,7 @@ class CognitiveTaskExecutor:
     def _generate_from_history(
         self,
         username: str,
-        manager: ManagerProtocol | None,
+        manager: Any,
         system_prompt: str,
         item_name: str,
         save_method_name: str,
@@ -317,12 +309,18 @@ class CognitiveTaskExecutor:
             graph = self._knowledge_store.graph
             result = graph.reflect(username, self._llm)
 
+            orphans_linked = result.get("orphans_linked", 0)
+            insights_val = result.get("insights_generated", [])
+            if not isinstance(insights_val, (list, tuple)):
+                insights_val = []
+            nodes_pruned = result.get("nodes_pruned", 0)
+
             logger.info(
                 "task_executor_reflect_completed",
                 username=username,
-                orphans_linked=result.get("orphans_linked", 0),
-                insights_generated=len(result.get("insights_generated", [])),
-                nodes_pruned=result.get("nodes_pruned", 0),
+                orphans_linked=orphans_linked,
+                insights_generated=len(insights_val),
+                nodes_pruned=nodes_pruned,
             )
             return True
 

@@ -24,9 +24,18 @@ if "onnxruntime" not in sys.modules:
     sys.modules["onnxruntime"] = onnxruntime_mock
 
 import pytest
+from chromadb.api.types import EmbeddingFunction
 
 from jenova.config.models import GraphConfig, JenovaConfig, MemoryConfig
 from jenova.memory import Memory, MemoryType
+
+
+##Class purpose: Shared mock embedding function for test fixtures
+class MockEmbeddingFunction(EmbeddingFunction):
+    """Mock embedding function returning fixed-dimension vectors."""
+
+    def __call__(self, input: list[str]) -> list[list[float]]:
+        return [[0.1] * 384 for _ in input]
 
 
 ##Function purpose: Provide temporary directory fixture
@@ -53,12 +62,6 @@ def config(tmp_storage: Path) -> JenovaConfig:
 @pytest.fixture
 def episodic_memory(tmp_storage: Path) -> Memory:
     """Provide an episodic memory instance."""
-    from chromadb.api.types import EmbeddingFunction
-
-    class MockEmbeddingFunction(EmbeddingFunction):
-        def __call__(self, input: list[str]) -> list[list[float]]:
-            return [[0.1] * 384 for _ in input]
-
     return Memory(
         memory_type=MemoryType.EPISODIC,
         storage_path=tmp_storage / "episodic",
@@ -70,12 +73,6 @@ def episodic_memory(tmp_storage: Path) -> Memory:
 @pytest.fixture
 def semantic_memory(tmp_storage: Path) -> Memory:
     """Provide a semantic memory instance."""
-    from chromadb.api.types import EmbeddingFunction
-
-    class MockEmbeddingFunction(EmbeddingFunction):
-        def __call__(self, input: list[str]) -> list[list[float]]:
-            return [[0.1] * 384 for _ in input]
-
     return Memory(
         memory_type=MemoryType.SEMANTIC,
         storage_path=tmp_storage / "semantic",

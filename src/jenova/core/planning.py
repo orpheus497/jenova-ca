@@ -10,7 +10,6 @@ and multi-level plan generation using LLMs.
 from __future__ import annotations
 
 import json
-import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -366,16 +365,9 @@ Respond with a valid JSON object:
 
                 ##Action purpose: Parse with size limits
                 data = safe_json_loads(json_str)
-            except (json.JSONDecodeError, JSONSizeError) as e:
-                ##Step purpose: Try to extract JSON from response as fallback
-                json_match = re.search(r"\{[^{}]*\}", plan_json, re.DOTALL)
-                if json_match:
-                    try:
-                        data = safe_json_loads(json_match.group())
-                    except (json.JSONDecodeError, JSONSizeError) as inner_e:
-                        raise LLMParseError(plan_json, f"Invalid JSON: {inner_e}") from inner_e
-                else:
-                    raise LLMParseError(plan_json, f"Invalid JSON: {e}") from e
+            except (json.JSONDecodeError, JSONSizeError):
+                ##Step purpose: Raise LLMParseError to trigger _simple_plan fallback
+                raise LLMParseError(plan_json, "Failed to parse plan JSON") from None
 
             ##Step purpose: Create structured plan from parsed data
             plan = Plan.from_dict(data, complexity)

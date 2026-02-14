@@ -1089,8 +1089,8 @@ Respond with a valid JSON object:
                     entity_links.append(
                         EntityLink(
                             entity=entity,
-                            node_id=str(best_match["id"]),
-                            node_type=str(best_match.get("type", "unknown")),
+                            node_id=str(best_match["id"]) if best_match["id"] is not None else None,
+                            node_type=str(best_match.get("type")) if best_match.get("type") is not None else "unknown",
                             confidence=float(best_match.get("score", 0.0)),
                             relationship="related_to",
                         )

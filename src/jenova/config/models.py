@@ -290,7 +290,13 @@ class ProactiveConfig(BaseModel):
 
 ##Class purpose: Planning system configuration
 class PlanningConfig(BaseModel):
-    """Planning system configuration."""
+    """Planning system configuration.
+
+    Note: This Pydantic model is used for YAML config loading/validation only.
+    The canonical PlanningConfig used by Planner and EngineConfig is the
+    dataclass in core/planning.py. Values from this model are passed to that
+    dataclass during engine construction in main.py.
+    """
 
     multi_level_enabled: bool = Field(
         default=True,

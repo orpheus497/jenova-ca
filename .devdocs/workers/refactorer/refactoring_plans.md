@@ -6,9 +6,11 @@
 **Related Issue:** ISSUE-004 (Async CognitiveEngine)
 
 ## 1. Objective
+
 Transition the `CognitiveEngine` and its core dependencies from synchronous execution to an asynchronous architecture using Python's `asyncio`.
 
 ## 2. Motivation
+
 *   **Responsiveness:** The current synchronous model blocks the main thread during LLM generation (which can take seconds) and vector database searches. This freezes the UI/CLI.
 *   **Concurrency:** Enables parallel execution of independent tasks (e.g., retrieving context from multiple sources, background memory updates, concurrent assumption verification).
 *   **Future-Proofing:** Modern Python tooling and AI frameworks are increasingly async-first.
@@ -16,6 +18,7 @@ Transition the `CognitiveEngine` and its core dependencies from synchronous exec
 ## 3. Architecture Transition Plan
 
 ### Phase 1: Foundation (Async Interfaces)
+
 Create asynchronous counterparts for core interfaces. Maintain synchronous wrappers for backward compatibility where necessary during transition.
 
 *   **`src/jenova/llm/interface.py`**
@@ -33,6 +36,7 @@ Create asynchronous counterparts for core interfaces. Maintain synchronous wrapp
     *   Update logic to `await self.llm.generate_async(...)`.
 
 ### Phase 2: Engine Asyncification
+
 Refactor the core engine loop to be non-blocking.
 
 *   **`src/jenova/core/engine.py`**
@@ -46,6 +50,7 @@ Refactor the core engine loop to be non-blocking.
     *   Update `CognitiveTaskExecutor` to handle async execution of background tasks.
 
 ### Phase 3: Wiring & Entry Points
+
 Update application entry points to drive the async engine.
 
 *   **`src/jenova/ui/app.py` (Textual)**
@@ -67,14 +72,11 @@ Update application entry points to drive the async engine.
 | **Error Handling** | Unawaited coroutines swallow exceptions. | Enforce strict `await` usage; use `asyncio.TaskGroup` (Py3.11+) or `gather` with error handling. |
 
 ## 5. Execution Order
-1.  **Refactor LLM Interface:** The bottleneck. High value.
-2.  **Refactor Knowledge Store:** I/O bound.
-3.  **Refactor Planner:** Depends on LLM.
-4.  **Refactor Engine:** The orchestrator.
-5.  **Refactor UI/CLI:** The consumer.
-6.  **Refactor Tests:** Parallel effort or per-component.
+
+1.  **Refactor:** LLM Interface (High value), Knowledge Store (I/O bound), Planner (Depends on LLM), Engine (Orchestrator), UI/CLI (Consumer), Tests (Parallel/per-component).
 
 ## 6. Verification
+
 *   All unit tests pass (migrated to async where needed).
 *   UI remains responsive during long LLM generation.
 *   Background tasks (scheduler) do not block conversation.

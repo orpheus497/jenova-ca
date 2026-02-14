@@ -95,7 +95,7 @@ class GraphProtocol(Protocol):
             username: The username to filter by.
 
         Returns:
-            List of Node objects.
+            List of Node objects. Returns empty list if user has no nodes.
         """
         ...
 

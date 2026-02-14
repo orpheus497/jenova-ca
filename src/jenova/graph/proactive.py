@@ -25,6 +25,7 @@ from jenova.exceptions import (
     NodeNotFoundError,
     ProactiveError,
 )
+from jenova.graph.types import Node
 
 ##Class purpose: Define logger for proactive engine operations
 logger = structlog.get_logger(__name__)
@@ -106,17 +107,22 @@ class GraphProtocol(Protocol):
     """Protocol for CognitiveGraph access."""
 
     ##Method purpose: Get nodes for a user
-    def get_nodes_by_user(self, username: str) -> list[dict[str, object]]:
+    def get_nodes_by_user(self, username: str) -> list[Node]:
         """Get all nodes for a user."""
         ...
 
     ##Method purpose: Search nodes by content
-    def search(self, query: str, username: str, limit: int = 10) -> list[dict[str, object]]:
+    def search(
+        self,
+        query: str,
+        max_results: int = 10,
+        node_types: list[str] | None = None,
+    ) -> list[dict[str, str]]:
         """Search nodes by content."""
         ...
 
     ##Method purpose: Get node by ID
-    def get_node(self, node_id: str) -> dict[str, object] | None:
+    def get_node(self, node_id: str) -> Node:
         """Get a node by ID."""
         ...
 
@@ -397,7 +403,7 @@ class ProactiveEngine:
         ##Step purpose: Find topics with few connections
         topic_counts: dict[str, int] = {}
         for node in nodes:
-            node_type = str(node.get("type", ""))
+            node_type = node.node_type
             topic_counts[node_type] = topic_counts.get(node_type, 0) + 1
 
         ##Condition purpose: Suggest exploring less-developed areas
@@ -447,17 +453,17 @@ class ProactiveEngine:
         nodes = self._graph.get_nodes_by_user(username) if self._graph else []
 
         ##Step purpose: Find nodes with potential for development
-        insight_nodes = [n for n in nodes if str(n.get("type", "")) == "insight"]
+        insight_nodes = [n for n in nodes if n.node_type == "insight"]
 
         ##Condition purpose: Suggest developing an existing insight
         if insight_nodes:
             node = random.choice(insight_nodes)
-            content = str(node.get("content", ""))[:100]
+            content = node.content[:100]
             return Suggestion(
                 category=SuggestionCategory.DEVELOP,
                 content=f'We could develop this insight further: "{content}..."',
                 priority=0.5,
-                node_ids=(str(node.get("id", "")),),
+                node_ids=(node.id,),
             )
 
         return None

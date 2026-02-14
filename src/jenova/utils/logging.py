@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
+from typing import Any
 
 import structlog
 
@@ -37,7 +38,7 @@ def _patch_structlog_lazy_proxy() -> None:
     try:
         if "__call__" not in structlog._config.BoundLoggerLazyProxy.__dict__:
 
-            def proxy_call(self, event: str | None = None, **kw: object) -> object:
+            def proxy_call(self: Any, event: str | None = None, **kw: object) -> object:
                 """Make logger proxy callable."""
                 return self.bind().debug(event, **kw)
 

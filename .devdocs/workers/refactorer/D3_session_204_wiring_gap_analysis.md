@@ -110,48 +110,56 @@ A meticulous user-provided review of the JENOVA codebase against the README has 
 These are the critical findings from the user's review that have **no existing task assignments:**
 
 ### WIRING-001: CognitiveScheduler not wired into main.py
+
 - **Priority:** P1 (HIGH)
 - **Impact:** The entire autonomous "heartbeat" — GENERATE_INSIGHT, REFLECT, PRUNE_GRAPH, LINK_ORPHANS, VERIFY_ASSUMPTION — never fires
 - **Fix:** Instantiate CognitiveScheduler in create_engine(); call scheduler.on_turn_complete() after engine.think() in both headless and TUI paths
 - **Recommended Agent:** **D2 (Feature Sprinter)** — this is integration/wiring work, not a bug
 
 ### WIRING-002: IntegrationHub not wired into main.py
+
 - **Priority:** P1 (HIGH)
 - **Impact:** "Unified Knowledge Map" and "Memory → Cortex feedback" are dormant despite engine hooks existing
 - **Fix:** Instantiate IntegrationHub in create_engine(); call engine.set_integration_hub(hub)
 - **Recommended Agent:** **D2 (Feature Sprinter)** — integration wiring
 
 ### WIRING-003: ProactiveEngine not wired into main.py
+
 - **Priority:** P2 (MEDIUM)
 - **Impact:** JENOVA never proactively makes suggestions to the user
 - **Fix:** Instantiate ProactiveEngine in create_engine(); wire to scheduler or post-think() callback; surface suggestions in UI/headless
 - **Recommended Agent:** **D2 (Feature Sprinter)** — feature integration
 
 ### WIRING-004: Insight/Assumption creation path dormant
+
 - **Priority:** P1 (HIGH)
 - **Impact:** System never "learns" new structural insights or forms assumptions autonomously during conversation
 - **Fix:** Depends on WIRING-001 (Scheduler triggers creation). Once Scheduler fires, InsightManager.save_insight() and AssumptionManager.add_assumption() will be called by scheduled tasks
 - **Recommended Agent:** **D2 (Feature Sprinter)** — blocked by WIRING-001
 
 ### WIRING-005: Web Search provider not instantiated
+
 - **Priority:** P3 (LOW)
 - **Impact:** RAG limited to local files/memory; ResponseGenerator's WebSearch protocol unused
 - **Fix:** Implement a web search provider (DDG/Searx) and wire into ResponseGenerator
 - **Recommended Agent:** **D2 (Feature Sprinter)** — new feature integration
 
 ### WIRING-006: README claims "Reflect" step but it's not in the cycle
+
 - **Priority:** P2 (MEDIUM)
 - **Impact:** README accuracy; the "Retrieve, Plan, Execute, Reflect" claim is 75% true
 - **Fix:** Two options: (a) Wire Scheduler which triggers REFLECT, or (b) Update README to reflect current state
 - **Recommended Agent:** **C7 (Doc Updater)** for README update; **D2 (Feature Sprinter)** for actual wiring
 
 ### WIRING-007: Finetune pipeline has no data collection
+
 - **Priority:** P3 (LOW)
 - **Impact:** "Learned knowledge becomes part of AI's retrieval intuition" — not happening because insights aren't generated, so no training data flows
 - **Fix:** Depends on WIRING-001 + WIRING-004. Once insights generate, add automated export to training format
 - **Recommended Agent:** **D2 (Feature Sprinter)** — blocked by WIRING-001/004
 
 ### WIRING-008: /assume command missing from UI
+
 - **Priority:** P3 (LOW)
 - **Impact:** Users can't interact with the assumption system directly
 - **Fix:** Add /assume command to app.py command handler
@@ -162,6 +170,7 @@ These are the critical findings from the user's review that have **no existing t
 ## 5. Unified Task List — All Pending Work
 
 ### Priority 0 (CRITICAL)
+
 *None remaining — all P0s completed.*
 
 ### Priority 1 (HIGH) — The Wiring Gap
@@ -198,6 +207,7 @@ These are the critical findings from the user's review that have **no existing t
 ## 6. Recommended Execution Order
 
 ### Phase 1: "The Nervous System" (P1 Wiring)
+
 1. **D2 (Feature Sprinter):** WIRING-001 → Wire CognitiveScheduler
 2. **D2 (Feature Sprinter):** WIRING-002 → Wire IntegrationHub
 3. **D2 (Feature Sprinter):** WIRING-004 → Enable autonomous insight/assumption creation
@@ -205,6 +215,7 @@ These are the critical findings from the user's review that have **no existing t
 5. **C8 (Configurator):** ISSUE-003 → Config-driven complexity threshold
 
 ### Phase 2: "The Autonomy Layer" (P2)
+
 6. **D2 (Feature Sprinter):** WIRING-003 → Wire ProactiveEngine
 7. **C7 (Doc Updater):** WIRING-006 → Sync README with reality (or defer until D2 wires Reflect)
 8. **C6 (Security Patcher):** ISSUE-005 → Improve injection patterns
@@ -212,12 +223,14 @@ These are the critical findings from the user's review that have **no existing t
 10. **D3 (Refactorer):** ISSUE-004 → Async CognitiveEngine plan
 
 ### Phase 3: "Polish & Extend" (P3)
+
 11. **D2 (Feature Sprinter):** WIRING-005 → Web Search provider
 12. **D2 (Feature Sprinter):** WIRING-008 → /assume UI command
 13. **D2 (Feature Sprinter):** WIRING-007 → Finetune data pipeline (blocked by Phase 1)
 14. **C1 (Bug Hunter):** BUG-JSON-001 → json_safe.py type annotation
 
 ### Post-Wiring: Guardian Review
+
 15. **D5 (Test Extender):** Tests for new wiring (Scheduler, Hub, ProactiveEngine integration)
 16. **B7 (Marshal):** Lint all modified files
 17. **B9 (Critic):** Code quality review of wiring changes

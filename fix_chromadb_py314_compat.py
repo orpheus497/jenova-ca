@@ -50,7 +50,9 @@ def find_chromadb_config() -> Path | None:
             site_packages = [purelib]
 
     if hasattr(site, "getusersitepackages"):
-        site_packages.append(site.getusersitepackages())
+        user_site = site.getusersitepackages()
+        if user_site:
+            site_packages.append(user_site)
 
     for sp in site_packages:
         config_path = Path(sp) / "chromadb" / "config.py"

@@ -85,7 +85,7 @@ def safe_json_loads(
         timeout: Maximum time allowed for parsing in seconds
 
     Returns:
-        Parsed JSON value
+        Parsed JSON value (dict, list, string, number, boolean, or None)
 
     Raises:
         JSONSizeError: If size or depth exceeds limits
