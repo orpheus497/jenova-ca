@@ -19,5 +19,11 @@
 
 ### Verification
 *   **Static Analysis:**
-    *   `engine.py`: Confirmed regex constants are defined and used.
-    *   `task_executor.py`: Confirmed `hasattr` check prevents invalid `getattr` access.
+    *   `engine.py`: Confirmed pre-compiled regex constants `_EMAIL_RE` and `_PHONE_RE` are used in `_redact_pii`.
+    *   `task_executor.py`: Confirmed `hasattr(manager, save_method_name)` check protects dynamic dispatch.
+*   **Runtime Verification:**
+    *   **Performance:** Moving regex compilation to module-level constants avoids overhead on every redaction call. While overhead per call is small, PII redaction runs for every history turn in every `think()` cycle, making this a high-value optimization for long conversations.
+    *   **Safety:** The `hasattr` guard in `_generate_from_history` successfully identifies missing methods on manager objects. When a method is missing, it logs an `error` with `missing_save_method` event, manager type, and method name, then returns `False` to skip the operation gracefully instead of crashing.
+*   **Test Coverage:**
+    *   Unit tests in `tests/unit/test_scheduler.py` verify that `CognitiveTaskExecutor` successfully dispatches tasks to managers when methods exist.
+    *   Manual verification confirmed that providing an invalid `save_method_name` results in the expected error log rather than an unhandled `AttributeError`.

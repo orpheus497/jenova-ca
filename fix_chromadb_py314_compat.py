@@ -19,16 +19,17 @@ SAFETY: This script creates a backup before patching and can be re-run safely.
 ##Note: Targeted ChromaDB versions - 1.5.0, 1.5.1 (D3-2026-02-11T08:22:24Z)
 """
 
-##Note: Supported ChromaDB versions for this patch (D3-2026-02-11T08:22:24Z)
-SUPPORTED_CHROMADB_VERSIONS = {"1.5.0", "1.5.1"}
-
 ##Refactor: Alphabetized stdlib imports per PEP 8 (D3-2026-02-11T07:30:05Z)
+import contextlib
 import os
 import re
 import shutil
 import sys
 import tempfile
 from pathlib import Path
+
+##Note: Supported ChromaDB versions for this patch (D3-2026-02-11T08:22:24Z)
+SUPPORTED_CHROMADB_VERSIONS = {"1.5.0", "1.5.1"}
 
 
 ##Function purpose: Locate the ChromaDB config.py file in site-packages
@@ -40,15 +41,15 @@ def find_chromadb_config() -> Path | None:
 
     ##Refactor: Add defensive guard for getsitepackages() (D3-2026-02-11T08:22:24Z)
     site_packages = []
-    if hasattr(site, 'getsitepackages'):
+    if hasattr(site, "getsitepackages"):
         site_packages = site.getsitepackages()
     else:
         ##Fallback purpose: Use sysconfig if getsitepackages unavailable
-        purelib = sysconfig.get_path('purelib')
+        purelib = sysconfig.get_path("purelib")
         if purelib:
             site_packages = [purelib]
-    
-    if hasattr(site, 'getusersitepackages'):
+
+    if hasattr(site, "getusersitepackages"):
         site_packages.append(site.getusersitepackages())
 
     for sp in site_packages:
@@ -62,14 +63,16 @@ def find_chromadb_config() -> Path | None:
 ##Function purpose: Create a backup of the file with .orig extension
 def backup_file(filepath: Path) -> Path:
     """Create a backup of the file with .orig extension."""
-    backup_path = filepath.with_suffix(filepath.suffix + '.orig')
+    backup_path = filepath.with_suffix(filepath.suffix + ".orig")
     if not backup_path.exists():
         ##Refactor: Added error handling for filesystem operations (D3-2026-02-11T08:22:24Z)
         try:
             shutil.copy2(filepath, backup_path)
             print(f"✓ Created backup: {backup_path}")
         except (OSError, PermissionError) as e:
-            print(f"✗ ERROR: Cannot create backup — check file permissions or run with elevated privileges")
+            print(
+                "✗ ERROR: Cannot create backup — check file permissions or run with elevated privileges"
+            )
             print(f"  File: {filepath}")
             print(f"  Backup: {backup_path}")
             print(f"  Error: {e}")
@@ -105,11 +108,11 @@ def apply_patch(filepath: Path) -> bool:
     ##Fix: Move attribute BEFORE validator (Python 3.14 requires this order)
     ##Pattern 1: Add Field import if not present (check for duplicates first)
     ##Refactor: Added duplicate import check (D3-2026-02-11T07:03:00Z)
-    import_pattern = r'(from pydantic\.v1 import BaseSettings)'
-    import_replacement = r'\1, Field'
+    import_pattern = r"(from pydantic\.v1 import BaseSettings)"
+    import_replacement = r"\1, Field"
 
     ##Step purpose: Check if Field is already imported to avoid duplicates
-    field_already_imported = re.search(r'from pydantic\.v1 import.*\bField\b', content)
+    field_already_imported = re.search(r"from pydantic\.v1 import.*\bField\b", content)
 
     if not field_already_imported:
         new_content = re.sub(import_pattern, import_replacement, content)
@@ -122,35 +125,38 @@ def apply_patch(filepath: Path) -> bool:
     ##Refactor: Relaxed regex for flexible whitespace, added diagnostics (D3-2026-02-11T07:03:00Z)
     pattern = re.compile(
         r'@validator\("chroma_server_nofile",\s+pre=True,\s+always=True,\s+allow_reuse=True\)\s+'
-        r'def\s+empty_str_to_none\([^)]+\)[^:]+:\s+'
-        r'.*?return\s+v\s+'
-        r'chroma_server_nofile:\s*Optional\[int\]\s*=\s*None',
-        re.DOTALL | re.MULTILINE
+        r"def\s+empty_str_to_none\([^)]+\)[^:]+:\s+"
+        r".*?return\s+v\s+"
+        r"chroma_server_nofile:\s*Optional\[int\]\s*=\s*None",
+        re.DOTALL | re.MULTILINE,
     )
 
     ##Step purpose: Reorder: attribute FIRST, then validator
     replacement = (
-        r'##Fix: Python 3.14 compatibility - attribute must be declared before validator (2026-02-11T02:02:44Z)\n'
-        r'    chroma_server_nofile: Optional[int] = Field(default=None)\n'
-        r'\n'
+        r"##Fix: Python 3.14 compatibility - attribute must be declared before validator (2026-02-11T02:02:44Z)\n"
+        r"    chroma_server_nofile: Optional[int] = Field(default=None)\n"
+        r"\n"
         r'    @validator("chroma_server_nofile", pre=True, always=True, allow_reuse=True)\n'
-        r'    def empty_str_to_none(cls, v: str) -> Optional[str]:\n'
+        r"    def empty_str_to_none(cls, v: str) -> Optional[str]:\n"
         r'        if type(v) is str and v.strip() == "":\n'
-        r'            return None\n'
-        r'        return v'
+        r"            return None\n"
+        r"        return v"
     )
 
     ##Refactor: Version check before applying substitution (D3-2026-02-11T08:22:24Z)
     ##Step purpose: Get ChromaDB version to verify patch applicability
     try:
         import importlib.metadata as md
-        chromadb_version = md.version('chromadb')
+
+        chromadb_version = md.version("chromadb")
     except (ModuleNotFoundError, md.PackageNotFoundError):
         chromadb_version = "unknown"
-    
+
     ##Condition purpose: Only apply patch to supported ChromaDB versions
     if chromadb_version not in SUPPORTED_CHROMADB_VERSIONS and chromadb_version != "unknown":
-        print(f"⚠ Warning: ChromaDB version {chromadb_version} is not in supported versions: {SUPPORTED_CHROMADB_VERSIONS}")
+        print(
+            f"⚠ Warning: ChromaDB version {chromadb_version} is not in supported versions: {SUPPORTED_CHROMADB_VERSIONS}"
+        )
         print("   Skipping patch to avoid potential issues.")
         print("   This patch is designed for ChromaDB 1.5.0 and 1.5.1.")
         return False
@@ -178,7 +184,7 @@ def apply_patch(filepath: Path) -> bool:
             mode="w",
             encoding="utf-8",
             prefix=".tmp_chromadb_patch_",
-            suffix=".py"
+            suffix=".py",
         ) as tmp_file:
             tmp_file.write(new_content)
             tmp_file.flush()
@@ -197,10 +203,8 @@ def apply_patch(filepath: Path) -> bool:
     except OSError as e:
         ##Error purpose: Clean up temp file on failure
         if tmp_path and os.path.exists(tmp_path):
-            try:
+            with contextlib.suppress(OSError):
                 os.remove(tmp_path)
-            except OSError:
-                pass
         raise OSError(f"Failed to write patched file: {e}") from e
 
 

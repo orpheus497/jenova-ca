@@ -26,6 +26,20 @@ if TYPE_CHECKING:
 logger = structlog.get_logger(__name__)
 
 
+__all__ = [
+    "GraphProtocol",
+    "MemorySearchProtocol",
+    "RelatedNodeResult",
+    "CrossReference",
+    "KnowledgeGap",
+    "KnowledgeDuplication",
+    "UnifiedKnowledgeMap",
+    "ConsistencyReport",
+    "IntegrationHub",
+    "IntegrationConfig",
+]
+
+
 ##Class purpose: Protocol for graph operations needed by integration
 @runtime_checkable
 class GraphProtocol(Protocol):
@@ -70,6 +84,18 @@ class GraphProtocol(Protocol):
 
         Returns:
             List of all Node objects
+        """
+        ...
+
+    ##Method purpose: Get all nodes belonging to a specific user
+    def get_nodes_by_user(self, username: str) -> list[Node]:
+        """Get all nodes belonging to a specific user.
+
+        Args:
+            username: The username to filter by.
+
+        Returns:
+            List of Node objects.
         """
         ...
 

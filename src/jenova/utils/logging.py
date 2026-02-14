@@ -19,11 +19,11 @@ import structlog
 ##Class purpose: Extend structlog BoundLogger with Textual framework methods
 class JenovaBoundLogger(structlog.stdlib.BoundLogger):
     """Custom BoundLogger with Textual framework compatibility methods."""
-    
+
     def system(self, event: str | None = None, **kw: object) -> object:
         """System-level logging for Textual framework."""
         return self.debug(event, **kw)
-    
+
     def __call__(self, event: str | None = None, **kw: object) -> object:
         """Make logger callable for Textual framework."""
         return self.debug(event, **kw)
@@ -36,6 +36,7 @@ def _patch_structlog_lazy_proxy() -> None:
     # Patch the lazy proxy - check class dict and wrap in try/except for safety
     try:
         if "__call__" not in structlog._config.BoundLoggerLazyProxy.__dict__:
+
             def proxy_call(self, event: str | None = None, **kw: object) -> object:
                 """Make logger proxy callable."""
                 return self.bind().debug(event, **kw)
@@ -47,7 +48,7 @@ def _patch_structlog_lazy_proxy() -> None:
         logger.debug(
             "Skipped structlog BoundLoggerLazyProxy patching (API may have changed): %s",
             str(e),
-            exc_info=True
+            exc_info=True,
         )
 
 

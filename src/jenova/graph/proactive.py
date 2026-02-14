@@ -18,7 +18,13 @@ from typing import Protocol
 import structlog
 
 from jenova.assumptions.types import Assumption
-from jenova.exceptions import GraphError, NodeNotFoundError, ProactiveError
+from jenova.exceptions import (
+    AssumptionError,
+    GraphError,
+    LLMGenerationError,
+    NodeNotFoundError,
+    ProactiveError,
+)
 
 ##Class purpose: Define logger for proactive engine operations
 logger = structlog.get_logger(__name__)
@@ -422,8 +428,8 @@ class ProactiveEngine:
                         priority=0.8,
                         node_ids=node_ids,
                     )
-            except Exception as e:
-                logger.warning("assumption_manager_error", error=str(e))
+            except (AssumptionError, LLMGenerationError) as e:
+                logger.warning("assumption_manager_error", error=str(e), exc_type=type(e).__name__)
                 # Fall through to generic suggestion
 
         # Fallback to a generic verification prompt if no specific assumption found

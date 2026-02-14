@@ -53,9 +53,7 @@ logger = structlog.get_logger(__name__)
 
 ##Sec: Enhanced global regex-based redaction for PII protection (PATCH-004)
 ##Note: Matches emails while avoiding common URL contexts and trailing punctuation
-_EMAIL_RE = re.compile(
-    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", flags=re.IGNORECASE
-)
+_EMAIL_RE = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", flags=re.IGNORECASE)
 ##Note: Global phone pattern capturing optional international prefixes and groupings
 _PHONE_RE = re.compile(
     r"(?<![/\d])(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{4,6}(?![/\d])"

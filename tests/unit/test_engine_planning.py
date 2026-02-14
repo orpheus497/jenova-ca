@@ -273,8 +273,7 @@ class TestComplexityAssessment:
         ]
 
         for query in simple_queries:
-            # We access the private method directly for testing logic
-            # Use name mangling handling or protected access
+            ##Note: Intentional direct access of _assess_complexity to unit-test internal logic in isolation
             complexity = planner._assess_complexity(query)
             assert complexity == PlanComplexity.SIMPLE
 
@@ -285,7 +284,11 @@ class TestComplexityAssessment:
         complexity = planner._assess_complexity(complex_query)
 
         # Should be at least MODERATE or COMPLEX depending on length
-        assert complexity in (PlanComplexity.MODERATE, PlanComplexity.COMPLEX, PlanComplexity.VERY_COMPLEX)
+        assert complexity in (
+            PlanComplexity.MODERATE,
+            PlanComplexity.COMPLEX,
+            PlanComplexity.VERY_COMPLEX,
+        )
 
     ##Method purpose: Test word count threshold
     def test_word_count_threshold(self, planner: Planner) -> None:
@@ -301,7 +304,9 @@ class TestComplexityAssessment:
         """Multiple questions should increase complexity."""
         # Need > 40 words for VERY_COMPLEX (threshold=20)
         padding = " ".join(["word"] * 45)
-        multiple_questions = f"What is Python? How does it work? Why is it popular? explain in detail {padding}"
+        multiple_questions = (
+            f"What is Python? How does it work? Why is it popular? explain in detail {padding}"
+        )
         complexity = planner._assess_complexity(multiple_questions)
 
         # Long + indicators + multiple questions -> VERY_COMPLEX

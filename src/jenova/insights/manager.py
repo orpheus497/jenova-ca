@@ -296,11 +296,11 @@ class InsightManager:
     def _append_to_training_data(self, insight: Insight) -> None:
         """
         Append insight to training data file (JSONL format).
-        
+
         Creates a training example for contrastive learning:
         - Anchor: The insight topic/question
         - Positive: The insight content
-        
+
         Args:
             insight: The insight to export
         """
@@ -316,7 +316,7 @@ class InsightManager:
                     if parent.name == ".jenova-ai":
                         jenova_dir = parent
                         break
-                
+
                 ##Fallback: If not found in parents
                 if not jenova_dir:
                     # Check simple relative path case
@@ -324,17 +324,28 @@ class InsightManager:
                         # Construct path to .jenova-ai
                         parts = list(self._insights_root.parts)
                         idx = parts.index(".jenova-ai")
-                        jenova_dir = Path(*parts[:idx+1])
+                        jenova_dir = Path(*parts[: idx + 1])
                     else:
                         # Default to parent of insights folder
                         jenova_dir = self._insights_root.parent
 
                 train_file = jenova_dir / "training_data.jsonl"
-            
+
             ##Sec: Validate path before writing (P2-001)
             # Ensure we are writing to a .jsonl file and not traversing
             if not train_file.name.endswith(".jsonl"):
                 logger.warning("invalid_training_data_filename", path=str(train_file))
+                return
+
+            ##Step purpose: Verify path is within base directory (P2-001)
+            # We allow it to be anywhere within the parent of insights_root
+            # which is usually the project root or .jenova-ai folder
+            from jenova.utils.validation import validate_path_within_base
+
+            try:
+                validate_path_within_base(train_file, self._insights_root.parent)
+            except ValueError as e:
+                logger.warning("invalid_training_data_path", path=str(train_file), error=str(e))
                 return
 
             ##Step purpose: Create simple training example
@@ -345,17 +356,28 @@ class InsightManager:
                 "metadata": {
                     "source": "insight_manager",
                     "id": insight.cortex_id,
-                    "timestamp": insight.timestamp  # Insight.timestamp is already a string
-                }
+                    "timestamp": insight.timestamp,  # Insight.timestamp is already a string
+                },
             }
-            
-            ##Action purpose: Append to file with atomic-like append if possible, 
-            ##but simple append is standard for JSONL.
+
+            ##Action purpose: Append to file with atomic-like append if possible.
+            ##We use fcntl.flock on POSIX systems for multi-process safety.
             with open(train_file, "a", encoding="utf-8") as f:
-                f.write(json.dumps(example, ensure_ascii=False) + "\n")
-                
-            logger.debug("training_data_appended", path=str(train_file), insight_id=insight.cortex_id)
-            
+                try:
+                    import fcntl
+
+                    fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                    f.write(json.dumps(example, ensure_ascii=False) + "\n")
+                    f.flush()
+                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+                except (ImportError, OSError):
+                    # Fallback for systems without fcntl or where flock fails
+                    f.write(json.dumps(example, ensure_ascii=False) + "\n")
+
+            logger.debug(
+                "training_data_appended", path=str(train_file), insight_id=insight.cortex_id
+            )
+
         except Exception as e:
             ##Note: Training data collection is non-critical, log warning but don't fail
             logger.warning("training_data_collection_failed", error=str(e))

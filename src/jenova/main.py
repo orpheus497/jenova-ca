@@ -8,15 +8,14 @@ Wires together all components: CognitiveEngine, KnowledgeStore, LLM, UI.
 
 from __future__ import annotations
 
-##Fix: Import Python 3.14 compatibility patches FIRST (BH-2026-02-11T02:12:55Z)
-##Note: This must come before any imports that use ChromaDB/Pydantic V1
-import jenova.compat_py314  # noqa: F401
-
 import argparse
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+##Fix: Import Python 3.14 compatibility patches FIRST (BH-2026-02-11T02:12:55Z)
+##Note: This must come before any imports that use ChromaDB/Pydantic V1
+import jenova.compat_py314  # noqa: F401
 from jenova import __version__
 from jenova.config import JenovaConfig, load_config
 from jenova.utils.logging import configure_logging, get_logger
@@ -118,9 +117,10 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
 
     ##Step purpose: Import components
     from jenova.assumptions.manager import AssumptionManager
-    from jenova.core.engine import CognitiveEngine, EngineConfig, PlanningConfig
+    from jenova.core.engine import CognitiveEngine, EngineConfig
     from jenova.core.integration import IntegrationHub
     from jenova.core.knowledge import KnowledgeStore
+    from jenova.core.planning import PlanningConfig
     from jenova.core.response import ResponseConfig, ResponseGenerator
     from jenova.core.scheduler import CognitiveScheduler, SchedulerConfig
     from jenova.core.task_executor import CognitiveTaskExecutor
@@ -128,6 +128,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
     from jenova.insights.manager import InsightManager
     from jenova.llm.interface import LLMInterface
     from jenova.memory.types import MemoryType
+
     ##Update: WIRING-005 (2026-02-14) - Import Web Search Provider
     from jenova.tools.web_search import DuckDuckGoSearchProvider
 
@@ -190,7 +191,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
     ##Update: WIRING-005 (2026-02-14) - Wire Web Search
     # Note: Use standard 10s timeout, could be moved to config if needed
     web_search_provider = DuckDuckGoSearchProvider(timeout=10)
-    
+
     response_generator = ResponseGenerator(
         config=config,
         response_config=ResponseConfig(
@@ -224,12 +225,16 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
 
     ##Update: WIRING-003 (2026-02-14) — Initialize ProactiveEngine
     logger.debug("initializing_proactive_engine")
+
     ##Class purpose: Adapter for LLMInterface to match ProactiveEngine LLMProtocol
     class ProactiveLLMWrapper:
         def __init__(self, llm_interface: LLMInterface | DevelopmentLLM):
             self._llm = llm_interface
+
         def generate(self, prompt: str) -> str:
-            return self._llm.generate_text(prompt, system_prompt="You are a proactive cognitive assistant.")
+            return self._llm.generate_text(
+                prompt, system_prompt="You are a proactive cognitive assistant."
+            )
 
     ##Note: ProactiveConfig (Pydantic) and ProactiveConfig (dataclass) must stay in sync.
     ##TODO: Centralize canonical schema in a shared location if divergence becomes frequent.
@@ -241,12 +246,14 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
         llm=ProactiveLLMWrapper(llm),
     )
 
+    from typing import cast
+
     ##Step purpose: Create CognitiveEngine
     logger.debug("initializing_cognitive_engine")
     engine = CognitiveEngine(
         config=config,
         knowledge_store=knowledge_store,
-        llm=llm,
+        llm=cast("LLMInterface", llm),
         response_generator=response_generator,
         engine_config=EngineConfig(
             max_context_items=config.memory.max_results,

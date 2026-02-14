@@ -13,7 +13,8 @@ from jenova.ui.components.banner import (
     TitleBanner,
     WelcomePanel,
 )
-##Fix: Replace removed COGNITIVE_COMMANDS/LEARNING_COMMANDS with IMPLEMENTED_COMMANDS (2026-02-11T06:30:50Z)
+
+##Update: Consolidate cognitive and learning command constants into unified IMPLEMENTED_COMMANDS
 from jenova.ui.components.help_panel import (
     IMPLEMENTED_COMMANDS,
     KEYBOARD_SHORTCUTS,

@@ -115,7 +115,7 @@ class Memory:
             self._collection.add(
                 ids=[doc_id],
                 documents=[content],
-                metadatas=[metadata or {}],
+                metadatas=[metadata] if metadata else None,
             )
         except Exception as e:
             raise MemoryStoreError(content[:100], str(e)) from e

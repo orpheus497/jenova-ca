@@ -391,9 +391,9 @@ def test_generate_suggestion_graph_error(engine: ProactiveEngine, mock_graph: Mo
 def test_get_suggestion_full_flow(engine: ProactiveEngine, mock_graph: Mock) -> None:
     """##Test case: get_suggestion executes complete flow."""
     ##Step purpose: Set up mock with insight node to ensure DEVELOP works
-    mock_graph.get_nodes_by_user = Mock(return_value=[
-        {"type": "insight", "id": "1", "content": "Test insight"}
-    ])
+    mock_graph.get_nodes_by_user = Mock(
+        return_value=[{"type": "insight", "id": "1", "content": "Test insight"}]
+    )
 
     ##Action purpose: Get suggestion
     result = engine.get_suggestion("user1")

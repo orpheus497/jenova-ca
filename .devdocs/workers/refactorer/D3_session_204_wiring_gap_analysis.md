@@ -54,7 +54,7 @@ A meticulous user-provided review of the JENOVA codebase against the README has 
 | "Retrieve, Plan, Execute, Reflect" cycle | Retrieve, Plan, Execute work. **Reflect is missing** (Scheduler never triggers REFLECT task) | 75% |
 | "Self-correction and Evolution Loop" | Logic in scheduler.py + integration.py **not running** | Dormant |
 | "Multi-layered Memory" | Fully working (ChromaDB + Graph) | ✅ Verified |
-| "Modern Terminal UI" | Textual TUI with 8+ cognitive commands | ✅ Verified |
+| "Modern Terminal UI" | Textual TUI with 8 cognitive commands | ✅ Verified |
 | "Cognitive Commands (/insight, /reflect)" | UI commands exist in app.py! `/insight`, `/reflect`, `/verify`, `/develop_insight`, `/learn_procedure`, `/meta`, `/train`, `/memory-insight` | ✅ More than README claims |
 | "Unified Knowledge Map" | IntegrationHub code complete but never wired | Dormant |
 | "Memory → Cortex feedback" | engine.py has active hook (L364) but hub never injected | Dormant |
@@ -77,7 +77,7 @@ A meticulous user-provided review of the JENOVA codebase against the README has 
 | ID | Issue | Assignee | Status |
 |----|-------|----------|--------|
 | P0 | Unsanitized user input in planning | C6 (Security Patcher) | ✅ DONE |
-| P1 | VERIFY placeholder (no AssumptionManager) | C1 (Bug Hunter) | ❌ PENDING |
+| P1 | Fix ProactiveEngine VERIFY with AssumptionManager | C1 (Bug Hunter) | ❌ PENDING |
 | P1 | DEVELOP random selection (no connectivity) | C9 (Optimizer) | ✅ DONE |
 | P2 | Magic numbers in engine/memory | C10 (Janitor) | ✅ DONE |
 | P2 | PROGRESS.md timestamps | C7 (Doc Updater) | ✅ DONE |

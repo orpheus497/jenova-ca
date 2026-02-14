@@ -40,7 +40,7 @@ INJECTION_PATTERNS = [
     r"(?i)(new\s+)?(instructions?|rules?|directives?)\s*[:\-]",
     r"(?i)(new|special|override|custom)\s+mode\s*[:\-]",
     r"(?i)system\s+(prompt|message|instruction)\s*[:\-]",
-    r"(?i)you\s+are\s+now(\s+a)?",
+    r"(?i)you\s+are\s+now(?:\s+(?:a|an))?",
     r"(?i)disregard\s+the\s+above",
     r"(?i)forget\s+everything",
     r"(?i)(pretend|act|roleplay|simulate)\s+(to\s+be|as\s+if|as)\b",
@@ -53,7 +53,7 @@ INJECTION_PATTERNS = [
     r"(?i)Assistant\s+Settings\b",
     r"(?i)Override\s+Safety",
     r"(?i)Kernel\s+Prompt",
-    r"(?i)\[(SYSTEM|ADMIN|USER)\]",
+    r"(?i)\[(SYSTEM|ADMIN|USER)\](?=\s*[:\-])",
 ]
 """List of regex patterns to detect prompt injection attempts."""
 

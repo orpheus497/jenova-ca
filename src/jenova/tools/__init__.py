@@ -8,6 +8,7 @@ datetime handling and shell command execution.
 Reference: .devdocs/resources/src/jenova/tools.py
 """
 
+import os
 import shlex
 import shutil
 import subprocess
@@ -30,6 +31,7 @@ SHELL_MAX_OUTPUT_LENGTH = 10000
 def get_current_datetime(
     use_utc: bool = True,
     format_string: str | None = None,
+    include_timezone: bool = True,
 ) -> str:
     """Get the current datetime as a formatted string.
 
@@ -37,6 +39,7 @@ def get_current_datetime(
         use_utc: Use UTC timezone with timezone info (default True).
                  If False, returns naive local time.
         format_string: Custom format string (default ISO format)
+        include_timezone: Whether to include timezone info (default True)
 
     Returns:
         Formatted datetime string
@@ -47,6 +50,10 @@ def get_current_datetime(
     """
     ##Step purpose: Get current time with or without timezone
     now = datetime.now(timezone.utc) if use_utc else datetime.now()
+
+    ##Step purpose: Remove timezone info if requested
+    if not include_timezone:
+        now = now.replace(tzinfo=None)
 
     ##Condition purpose: Use custom format or ISO
     if format_string:
@@ -235,7 +242,7 @@ def get_system_info() -> dict[str, str]:
         "architecture": platform.machine(),
         "python_version": platform.python_version(),
         "hostname": platform.node(),
-        "cpu_count": str(shutil.os.cpu_count() or "unknown"),
+        "cpu_count": str(os.cpu_count() or "unknown"),
     }
 
 

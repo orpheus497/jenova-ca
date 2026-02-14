@@ -24,8 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Engine Robustness:** Broadened scheduler exception handling in `think()` loop to catch all exceptions, ensuring conversation flow continuity even if background tasks fail.
   - **Task Dispatch Optimization:** Moved task dispatch dictionary to instance level in `CognitiveTaskExecutor` to reduce per-call overhead.
 
-### Fixed
-
 ## [4.1.0] - 2026-02-11
 
 ### Added

@@ -372,8 +372,8 @@ Respond with a valid JSON object:
                 if json_match:
                     try:
                         data = safe_json_loads(json_match.group())
-                    except (json.JSONDecodeError, JSONSizeError) as e:
-                        raise LLMParseError(plan_json, f"Invalid JSON: {e}") from e
+                    except (json.JSONDecodeError, JSONSizeError) as inner_e:
+                        raise LLMParseError(plan_json, f"Invalid JSON: {inner_e}") from inner_e
                 else:
                     raise LLMParseError(plan_json, f"Invalid JSON: {e}") from e
 

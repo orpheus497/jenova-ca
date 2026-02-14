@@ -261,7 +261,9 @@ class ProactiveConfig(BaseModel):
     enable_develop: bool = Field(default=True, description="Enable development suggestions.")
     enable_connect: bool = Field(default=True, description="Enable connection suggestions.")
     enable_reflect: bool = Field(default=True, description="Enable reflection suggestions.")
-    rotation_enabled: bool = Field(default=True, description="Enable category rotation for variety.")
+    rotation_enabled: bool = Field(
+        default=True, description="Enable category rotation for variety."
+    )
 
     ##Update: WIRING-003 (2026-02-14) — Conversion method for ProactiveEngine compatibility
     def to_proactive_config(self) -> ProactiveConfigDataclass:
