@@ -193,6 +193,15 @@ class CognitiveTaskExecutor:
                 logger.debug(log_skip, reason="empty_generation")
                 return False
 
+            ##Refactor: Ensure manager has the expected save method (D3-2026-02-14)
+            if not hasattr(manager, save_method_name):
+                logger.error(
+                    "missing_save_method",
+                    manager_type=type(manager).__name__,
+                    method=save_method_name,
+                )
+                return False
+
             ##Step purpose: Save the generated item via the manager
             getattr(manager, save_method_name)(
                 content=stripped,

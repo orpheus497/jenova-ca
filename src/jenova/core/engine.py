@@ -55,6 +55,16 @@ else:
 ##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
 
+##Sec: Enhanced global regex-based redaction for PII protection (PATCH-004)
+##Note: Matches emails while avoiding common URL contexts and trailing punctuation
+_EMAIL_RE = re.compile(
+    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", flags=re.IGNORECASE
+)
+##Note: Global phone pattern capturing optional international prefixes and groupings
+_PHONE_RE = re.compile(
+    r"(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{4,6}"
+)
+
 
 ##Class purpose: Enum defining planning complexity levels
 class PlanComplexity(Enum):
@@ -847,16 +857,12 @@ Respond with a valid JSON object:
             Sanitized tuple.
         """
         user_msg, ai_msg = item
-        ##Sec: Enhanced global regex-based redaction for PII protection (PATCH-004)
-        ##Note: Matches emails while avoiding common URL contexts and trailing punctuation
-        email_pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"
-        ##Note: Global phone pattern capturing optional international prefixes and groupings
-        phone_pattern = r"(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{4,6}"
 
+        ##Refactor: Use pre-compiled regex for performance (D3-2026-02-14)
         def redact(text: str) -> str:
-            ##Step purpose: Apply redaction patterns with case-insensitivity
-            text = re.sub(email_pattern, "[EMAIL]", text, flags=re.IGNORECASE)
-            text = re.sub(phone_pattern, "[PHONE]", text)
+            ##Step purpose: Apply redaction patterns
+            text = _EMAIL_RE.sub("[EMAIL]", text)
+            text = _PHONE_RE.sub("[PHONE]", text)
             return text
 
         return (redact(user_msg), redact(ai_msg))
