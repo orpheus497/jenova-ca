@@ -43,14 +43,14 @@ if TYPE_CHECKING:
     from jenova.core.knowledge import KnowledgeStore
     from jenova.core.response import ResponseGenerator
     from jenova.core.scheduler import CognitiveScheduler
+    from jenova.graph.proactive import ProactiveEngine, Suggestion
     from jenova.insights.manager import InsightManager
     from jenova.llm.interface import LLMInterface
-    from jenova.graph.proactive import ProactiveEngine, Suggestion
 else:
     ##Step purpose: Import managers for runtime use
     from jenova.assumptions.manager import AssumptionManager
-    from jenova.insights.manager import InsightManager
     from jenova.graph.proactive import ProactiveEngine, Suggestion
+    from jenova.insights.manager import InsightManager
 
 ##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
@@ -395,9 +395,12 @@ class CognitiveEngine:
                     ##Fix: Narrow exception handling to ProactiveError
                     logger.warning("proactive_suggestion_failed", error=str(e))
                 except Exception as e:
-                    ##Sec: Handle unexpected errors by logging with stack trace and re-raising (defense-in-depth)
-                    logger.exception("unexpected_error_in_proactive_suggestions", error=str(e))
-                    raise
+                    ##Fix: Log unexpected proactive errors without re-raising to preserve response (PATCH-005)
+                    logger.exception(
+                        "unexpected_error_in_proactive_suggestions",
+                        error=str(e),
+                        username=self._current_username,
+                    )
 
             ##Action purpose: Log successful completion
             duration_ms = (time.perf_counter() - start_time) * 1000
@@ -844,12 +847,15 @@ Respond with a valid JSON object:
             Sanitized tuple.
         """
         user_msg, ai_msg = item
-        ##Sec: Simple regex-based redaction for PII protection
-        email_pattern = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"
-        phone_pattern = r"\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}"
+        ##Sec: Enhanced global regex-based redaction for PII protection (PATCH-004)
+        ##Note: Matches emails while avoiding common URL contexts and trailing punctuation
+        email_pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
+        ##Note: Global phone pattern capturing optional international prefixes and groupings
+        phone_pattern = r"(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{4,6}"
 
         def redact(text: str) -> str:
-            text = re.sub(email_pattern, "[EMAIL]", text)
+            ##Step purpose: Apply redaction patterns with case-insensitivity
+            text = re.sub(email_pattern, "[EMAIL]", text, flags=re.IGNORECASE)
             text = re.sub(phone_pattern, "[PHONE]", text)
             return text
 

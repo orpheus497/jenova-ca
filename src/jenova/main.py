@@ -1,4 +1,3 @@
-##Script function and purpose: CLI entry point with argparse for JENOVA
 """
 JENOVA CLI Entry Point
 
@@ -118,9 +117,6 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
     logger = get_logger(__name__)
 
     ##Step purpose: Import components
-    ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Added scheduler and executor imports
-    ##Update: WIRING-002 (2026-02-13T13:05:14Z) — Added IntegrationHub import
-    ##Update: WIRING-003 (2026-02-14) — Added ProactiveEngine import
     from jenova.assumptions.manager import AssumptionManager
     from jenova.core.engine import CognitiveEngine, EngineConfig
     from jenova.core.integration import IntegrationHub
@@ -228,18 +224,10 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
         def generate(self, prompt: str) -> str:
             return self._llm.generate_text(prompt, system_prompt="You are a proactive cognitive assistant.")
 
-    ##Update: Source proactive configuration from centralized JenovaConfig (Coderabbit review)
-    proactive_config = ProactiveConfig(
-        cooldown_minutes=config.proactive.cooldown_minutes,
-        max_suggestions_per_session=config.proactive.max_suggestions_per_session,
-        priority_threshold=config.proactive.priority_threshold,
-        enable_explore=config.proactive.enable_explore,
-        enable_verify=config.proactive.enable_verify,
-        enable_develop=config.proactive.enable_develop,
-        enable_connect=config.proactive.enable_connect,
-        enable_reflect=config.proactive.enable_reflect,
-        rotation_enabled=config.proactive.rotation_enabled,
-    )
+    ##Note: ProactiveConfig (Pydantic) and ProactiveConfig (dataclass) must stay in sync.
+    ##TODO: Centralize canonical schema in a shared location if divergence becomes frequent.
+    ##See: jenova.config.models.ProactiveConfig and jenova.graph.proactive.ProactiveConfig
+    proactive_config = config.proactive.to_proactive_config()
     proactive_engine = ProactiveEngine(
         config=proactive_config,
         graph=knowledge_store.graph,
@@ -274,11 +262,13 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
             config=config.integration,
         )
         engine.set_integration_hub(integration_hub)
-    except Exception as e:
+    except (RuntimeError, ValueError, KeyError, ImportError) as e:
+        ##Fix: Narrow catch and include exc_info for better diagnostics (PATCH-007)
         logger.warning(
             "integration_hub_init_failed",
             error=str(e),
             msg="Continuing without integration subsystem",
+            exc_info=True,
         )
 
     ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Wire CognitiveScheduler into engine
@@ -294,11 +284,12 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
         scheduler = CognitiveScheduler(SchedulerConfig(), executor=task_executor)
         engine.set_scheduler(scheduler)
     except Exception as e:
-        ##Fix: Handle scheduler initialization failure (Coderabbit review)
+        ##Fix: Handle scheduler initialization failure and log traceback (PATCH-008)
         logger.warning(
             "scheduler_init_failed",
             error=str(e),
             msg="Continuing without scheduler subsystem",
+            exc_info=True,
         )
 
     logger.info("engine_created")

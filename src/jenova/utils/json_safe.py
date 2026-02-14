@@ -85,7 +85,7 @@ def safe_json_loads(
         timeout: Maximum time allowed for parsing in seconds
 
     Returns:
-        Parsed JSON dict
+        Parsed JSON value
 
     Raises:
         JSONSizeError: If size or depth exceeds limits
@@ -99,7 +99,7 @@ def safe_json_loads(
 
     ##Sec: Parse JSON with timeout protection to prevent DoS attacks (P1-003 Daedelus audit)
     ##Step purpose: Define parsing function for timeout wrapper
-    def _parse_json() -> dict[str, Any]:
+    def _parse_json() -> Any:
         """Parse JSON and check depth."""
         data = json.loads(json_str)
         _check_depth(data, max_depth=max_depth)

@@ -8,26 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **ProactiveConfig Synchronization (2026-02-14T12:00:00Z):**
+  - Added `to_proactive_config()` to Pydantic `ProactiveConfig` model to centralize mapping to the engine's dataclass.
+  - Added coupling documentation and `TODO` in `main.py` regarding the Pydantic-dataclass relationship.
 
-- **CognitiveScheduler Wiring (2026-02-13T11:26:36Z):**
-  - Created `CognitiveTaskExecutor` dispatching 6 autonomous task types (GENERATE_INSIGHT, GENERATE_ASSUMPTION, VERIFY_ASSUMPTION, REFLECT, PRUNE_GRAPH, LINK_ORPHANS)
-  - Wired `CognitiveScheduler` into engine pipeline — fires after every successful `think()` call
-  - Autonomous insight and assumption generation from conversation history
-  - **User Impact:** CognitiveScheduler now enables proactive suggestions and summarized insights in conversations, improving relevance without manual prompting.
-
-- **IntegrationHub Wiring (2026-02-13T13:05:14Z):**
-  - Wired `IntegrationHub` into engine pipeline with semantic memory and Cortex graph
-  - Context expansion via graph relationships now active on every `think()` call
-  - Memory→Cortex bidirectional feedback loop now operational
-  - Unified Knowledge Map, consistency checking, and centrality scoring now available
-  - **User Impact:** IntegrationHub context expansion via `think()` delivers more context-aware responses and fewer clarifying questions, while the Unified Knowledge Map ensures consistent recommendations across long conversations.
+### Changed
+- **Architectural Refinements (2026-02-14T12:10:00Z):**
+  - Alphabetized imports in `engine.py` and `main.py` to satisfy `I001` and PEP8 standards.
+  - Broadened `safe_json_loads` typing and documentation to support all JSON-serializable types (lists, primitives).
+  - Improved diagnostic logging in `main.py` by adding `exc_info=True` to initialization warnings for non-critical subsystems.
 
 ### Fixed
-
-- **Code Quality Improvements (2026-02-11T08:39:11Z):**
-  - Reduced verbose logging in Pydantic V1 compatibility patch (warning → debug level)
-  - ChromaDB type inference fallbacks now log at debug level (expected behavior on Python 3.14)
-  - Improved diagnostic messages for type inference fallbacks
+- **Security & Robustness (2026-02-14T12:15:00Z):**
+  - **PII Redaction:** Updated `_redact_pii` with stricter, global regex patterns for emails and international phone numbers (PATCH-004).
+  - **Fault Tolerance:** Refactored `think()` to log unexpected proactive errors without re-raising, preventing cognitive cycle crashes (PATCH-005).
+  - **Prompt Sanitization:** Integrated `sanitize_for_prompt` into autonomous history summaries to prevent injection (PATCH-006).
+  - **Startup Resilience:** Narrowed exception catching during `IntegrationHub` initialization to prevent shadowing legitimate programming errors (PATCH-007).
 
 ## [4.1.0] - 2026-02-11
 

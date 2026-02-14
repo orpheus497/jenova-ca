@@ -260,6 +260,28 @@ class ProactiveConfig(BaseModel):
     enable_reflect: bool = Field(default=True, description="Enable reflection suggestions.")
     rotation_enabled: bool = Field(default=True, description="Enable category rotation for variety.")
 
+    ##Update: WIRING-003 (2026-02-14) — Conversion method for ProactiveEngine compatibility
+    def to_proactive_config(self) -> object:
+        """
+        Convert to the dataclass version expected by ProactiveEngine.
+
+        Returns:
+            ProactiveConfig dataclass instance
+        """
+        from jenova.graph.proactive import ProactiveConfig as ProactiveConfigDataclass
+
+        return ProactiveConfigDataclass(
+            cooldown_minutes=self.cooldown_minutes,
+            max_suggestions_per_session=self.max_suggestions_per_session,
+            priority_threshold=self.priority_threshold,
+            enable_explore=self.enable_explore,
+            enable_verify=self.enable_verify,
+            enable_develop=self.enable_develop,
+            enable_connect=self.enable_connect,
+            enable_reflect=self.enable_reflect,
+            rotation_enabled=self.rotation_enabled,
+        )
+
 
 ##Class purpose: Root configuration for JENOVA
 class JenovaConfig(BaseModel):

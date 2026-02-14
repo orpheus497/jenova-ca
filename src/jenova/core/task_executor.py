@@ -16,6 +16,7 @@ import structlog
 
 from jenova.core.scheduler import TaskType
 from jenova.exceptions import AssumptionDuplicateError
+from jenova.utils.sanitization import sanitize_for_prompt
 
 if TYPE_CHECKING:
     from jenova.assumptions.manager import AssumptionManager
@@ -132,9 +133,13 @@ class CognitiveTaskExecutor:
         recent = history[-_MAX_HISTORY_FOR_GENERATION:]
         lines: list[str] = []
         for user_msg, ai_response in recent:
-            lines.append(f"User: {user_msg}")
-            preview = ai_response[:_MAX_RESPONSE_PREVIEW_LENGTH]
-            if len(ai_response) > _MAX_RESPONSE_PREVIEW_LENGTH:
+            ##Sec: Sanitize messages before injecting into generation prompts (PATCH-006)
+            safe_user = sanitize_for_prompt(user_msg)
+            safe_ai = sanitize_for_prompt(ai_response)
+
+            lines.append(f"User: {safe_user}")
+            preview = safe_ai[:_MAX_RESPONSE_PREVIEW_LENGTH]
+            if len(safe_ai) > _MAX_RESPONSE_PREVIEW_LENGTH:
                 preview += "..."
             lines.append(f"JENOVA: {preview}")
         return "\n".join(lines)
