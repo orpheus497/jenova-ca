@@ -8,15 +8,13 @@ Tests the multi-level planning capabilities including:
 - Plan data structures
 """
 
+from unittest.mock import MagicMock
+
 import pytest
 
-from jenova.core.engine import (
-    EngineConfig,
-    Plan,
-    PlanComplexity,
-    PlanningConfig,
-    PlanStep,
-)
+from jenova.config.models import PersonaConfig
+from jenova.core.engine import EngineConfig
+from jenova.core.planning import Plan, PlanComplexity, Planner, PlanningConfig, PlanStep
 
 
 ##Class purpose: Tests for PlanComplexity enum
@@ -252,12 +250,20 @@ class TestEngineConfigWithPlanning:
         assert config.planning.multi_level_enabled is False
 
 
-##Class purpose: Tests for complexity assessment logic
+##Class purpose: Tests for complexity assessment logic using Planner
 class TestComplexityAssessment:
     """Tests for complexity assessment patterns."""
 
+    @pytest.fixture
+    def planner(self) -> Planner:
+        """Fixture for Planner instance."""
+        llm = MagicMock()
+        config = PlanningConfig(complexity_threshold=20)
+        persona = PersonaConfig()
+        return Planner(llm, config, persona)
+
     ##Method purpose: Test simple query patterns
-    def test_simple_query_patterns(self) -> None:
+    def test_simple_query_patterns(self, planner: Planner) -> None:
         """Simple queries should be recognized."""
         simple_queries = [
             "Hello",
@@ -266,51 +272,40 @@ class TestComplexityAssessment:
             "Thanks",
         ]
 
-        # These are short and have no complexity indicators
         for query in simple_queries:
-            words = query.split()
-            assert len(words) <= 20  # Under typical threshold
+            # We access the private method directly for testing logic
+            # Use name mangling handling or protected access
+            complexity = planner._assess_complexity(query)
+            assert complexity == PlanComplexity.SIMPLE
 
     ##Method purpose: Test complexity indicator patterns
-    def test_complexity_indicator_patterns(self) -> None:
+    def test_complexity_indicator_patterns(self, planner: Planner) -> None:
         """Complexity indicators should be recognized."""
-        indicators = [
-            "explain",
-            "compare",
-            "analyze",
-            "describe in detail",
-            "step by step",
-            "how does",
-            "why does",
-            "what are the",
-            "difference between",
-            "relationship between",
-        ]
-
         complex_query = "Can you explain step by step how does Python work?"
+        complexity = planner._assess_complexity(complex_query)
 
-        has_indicator = any(ind in complex_query.lower() for ind in indicators)
-        assert has_indicator is True
+        # Should be at least MODERATE or COMPLEX depending on length
+        assert complexity in (PlanComplexity.MODERATE, PlanComplexity.COMPLEX, PlanComplexity.VERY_COMPLEX)
 
     ##Method purpose: Test word count threshold
-    def test_word_count_threshold(self) -> None:
+    def test_word_count_threshold(self, planner: Planner) -> None:
         """Queries above threshold should be flagged."""
-        threshold = 20
-
-        short_query = "What is Python?"
         long_query = " ".join(["word"] * 25)
+        complexity = planner._assess_complexity(long_query)
 
-        assert len(short_query.split()) < threshold
-        assert len(long_query.split()) > threshold
+        # Should be at least MODERATE
+        assert complexity != PlanComplexity.SIMPLE
 
     ##Method purpose: Test multiple questions detection
-    def test_multiple_questions_detection(self) -> None:
+    def test_multiple_questions_detection(self, planner: Planner) -> None:
         """Multiple questions should increase complexity."""
-        single_question = "What is Python?"
-        multiple_questions = "What is Python? How does it work? Why is it popular?"
+        # Need > 40 words for VERY_COMPLEX (threshold=20)
+        padding = " ".join(["word"] * 45)
+        multiple_questions = f"What is Python? How does it work? Why is it popular? explain in detail {padding}"
+        complexity = planner._assess_complexity(multiple_questions)
 
-        assert single_question.count("?") == 1
-        assert multiple_questions.count("?") == 3
+        # Long + indicators + multiple questions -> VERY_COMPLEX
+        assert complexity == PlanComplexity.VERY_COMPLEX
 
 
 ##Class purpose: Tests for Plan text formatting

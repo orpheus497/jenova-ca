@@ -29,3 +29,12 @@ Refactored core components to improve type safety, security (regex), and maintai
 ### Standards
 *   **CHANGELOG.md**: Fixed MD022 linting errors by adding blank lines after headings.
 *   **src/jenova/main.py**: Removed unused `ProactiveConfig` import.
+
+## Improvements - 2026-02-14T16:00:00Z (Refactoring)
+
+### Architecture & Separation of Concerns
+*   **src/jenova/core/engine.py**: Extracted ~200 lines of planning-related logic into a dedicated `Planner` class. This significantly reduces the size of `CognitiveEngine` and strictly separates the concern of "deciding what to do" (planning) from "doing it" (execution).
+*   **src/jenova/core/planning.py**: Created new module to house `Plan`, `PlanComplexity`, `Planner`, and `PlanningConfig`.
+
+### Test Quality
+*   **tests/unit/test_engine_planning.py**: Refactored complexity assessment tests to verify the *actual implementation* logic via the `Planner` class, rather than just asserting properties of test data strings. Fixed a test case that was passing for the wrong reason (incorrect assumption about threshold logic).

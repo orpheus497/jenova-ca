@@ -37,6 +37,17 @@ graph:
   # Maximum depth for graph traversal
   max_depth: 3
 
+# Planning system configuration
+planning:
+  # Enable multi-level planning for complex queries
+  multi_level_enabled: true
+  # Maximum sub-goals in a plan
+  max_sub_goals: 5
+  # Word count threshold for complex queries
+  complexity_threshold: 20
+  # LLM temperature for plan generation
+  plan_temperature: 0.3
+
 # Persona configuration
 persona:
   # Name used in responses

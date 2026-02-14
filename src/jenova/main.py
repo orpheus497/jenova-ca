@@ -118,7 +118,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
 
     ##Step purpose: Import components
     from jenova.assumptions.manager import AssumptionManager
-    from jenova.core.engine import CognitiveEngine, EngineConfig
+    from jenova.core.engine import CognitiveEngine, EngineConfig, PlanningConfig
     from jenova.core.integration import IntegrationHub
     from jenova.core.knowledge import KnowledgeStore
     from jenova.core.response import ResponseConfig, ResponseGenerator
@@ -246,6 +246,12 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
             temperature=config.model.temperature,
             enable_learning=True,
             max_history_turns=10,
+            planning=PlanningConfig(
+                multi_level_enabled=config.planning.multi_level_enabled,
+                max_sub_goals=config.planning.max_sub_goals,
+                complexity_threshold=config.planning.complexity_threshold,
+                plan_temperature=config.planning.plan_temperature,
+            ),
         ),
         insight_manager=insight_manager,
         assumption_manager=assumption_manager,

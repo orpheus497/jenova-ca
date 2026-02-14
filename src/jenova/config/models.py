@@ -286,6 +286,34 @@ class ProactiveConfig(BaseModel):
         )
 
 
+##Class purpose: Planning system configuration
+class PlanningConfig(BaseModel):
+    """Planning system configuration."""
+
+    multi_level_enabled: bool = Field(
+        default=True,
+        description="Whether multi-level planning is enabled.",
+    )
+    max_sub_goals: int = Field(
+        default=5,
+        ge=1,
+        le=20,
+        description="Maximum number of sub-goals in a plan.",
+    )
+    complexity_threshold: int = Field(
+        default=20,
+        ge=5,
+        le=100,
+        description="Word count threshold for complex queries.",
+    )
+    plan_temperature: float = Field(
+        default=0.3,
+        ge=0.0,
+        le=1.0,
+        description="LLM temperature for plan generation.",
+    )
+
+
 ##Class purpose: Root configuration for JENOVA
 class JenovaConfig(BaseModel):
     """Root configuration for JENOVA."""
@@ -296,6 +324,7 @@ class JenovaConfig(BaseModel):
     graph: GraphConfig = Field(default_factory=GraphConfig)
     integration: IntegrationConfig = Field(default_factory=IntegrationConfig)
     proactive: ProactiveConfig = Field(default_factory=ProactiveConfig)
+    planning: PlanningConfig = Field(default_factory=PlanningConfig)
     persona: PersonaConfig = Field(default_factory=PersonaConfig)
     debug: bool = Field(default=False, description="Enable debug mode.")
 

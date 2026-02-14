@@ -17,10 +17,6 @@ from jenova.core.context_scorer import (
 from jenova.core.engine import (
     CognitiveEngine,
     EngineConfig,
-    Plan,
-    PlanComplexity,
-    PlanningConfig,
-    PlanStep,
     ThinkResult,
 )
 from jenova.core.integration import (
@@ -34,6 +30,13 @@ from jenova.core.integration import (
     UnifiedKnowledgeMap,
 )
 from jenova.core.knowledge import KnowledgeStore
+from jenova.core.planning import (
+    Plan,
+    PlanComplexity,
+    Planner,
+    PlanningConfig,
+    PlanStep,
+)
 from jenova.core.query_analyzer import (
     AnalyzedQuery,
     EntityLink,
@@ -75,6 +78,7 @@ __all__ = [
     "EngineConfig",
     "ThinkResult",
     # Planning
+    "Planner",
     "Plan",
     "PlanComplexity",
     "PlanningConfig",
