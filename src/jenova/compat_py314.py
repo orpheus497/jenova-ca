@@ -11,6 +11,7 @@ It monkey-patches Pydantic V1's type inference to work with Python 3.14.
 ##Refactor: Alphabetized stdlib imports per PEP 8 (D3-2026-02-11T07:30:05Z)
 import logging
 import sys
+import warnings
 
 
 ##Function purpose: Monkey-patch Pydantic V1 for Python 3.14 type inference compatibility
@@ -23,9 +24,12 @@ def patch_pydantic_v1_for_py314() -> None:
     try:
         ##Step purpose: Import Pydantic V1 components
         ##Refactor: Alphabetized pydantic imports (D3-2026-02-11T07:30:05Z)
-        from pydantic.v1 import fields
-        from pydantic.v1.errors import ConfigError
-        from pydantic.v1.fields import ModelField, Undefined
+        ##Fix: Suppress expected UserWarning from pydantic.v1 on Python 3.14 (D3-2026-02-15T06:44:08Z)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="Core Pydantic V1", category=UserWarning)
+            from pydantic.v1 import fields
+            from pydantic.v1.errors import ConfigError
+            from pydantic.v1.fields import ModelField, Undefined
 
         ##Step purpose: Store original _set_default_and_type method
         original_set_default_and_type = ModelField._set_default_and_type

@@ -79,6 +79,10 @@ class JenovaApp(App):
     TITLE = "JENOVA"
     SUB_TITLE = "Self-Aware AI Cognitive Architecture"
 
+    ##Fix: Disable Textual CommandPalette to prevent IndexError on screen_stack[-2] (D3-2026-02-15T06:44:08Z)
+    ##Note: JENOVA uses its own /command system; CommandPalette is not needed
+    ENABLE_COMMAND_PALETTE = False
+
     ##Step purpose: Define comprehensive app-wide CSS with responsive design
     CSS = """
     /* Layout purpose: Main screen layout with flex distribution */
