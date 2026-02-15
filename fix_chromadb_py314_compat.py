@@ -158,7 +158,11 @@ def apply_patch(filepath: Path) -> bool:
         chromadb_version = "unknown"
 
     ##Condition purpose: Only apply patch to supported ChromaDB versions
-    if chromadb_version not in SUPPORTED_CHROMADB_VERSIONS and chromadb_version != "unknown":
+    if chromadb_version == "unknown":
+        print(f"⚠ Warning: ChromaDB version is {chromadb_version} (metadata unavailable).")
+        print(f"   Supported versions are: {SUPPORTED_CHROMADB_VERSIONS}")
+        print("   Proceeding with patch cautiously...")
+    elif chromadb_version not in SUPPORTED_CHROMADB_VERSIONS:
         print(
             f"⚠ Warning: ChromaDB version {chromadb_version} is not in supported versions: {SUPPORTED_CHROMADB_VERSIONS}"
         )
