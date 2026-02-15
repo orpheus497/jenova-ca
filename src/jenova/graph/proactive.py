@@ -17,10 +17,28 @@ from typing import Protocol
 
 import structlog
 
-from jenova.exceptions import GraphError, NodeNotFoundError, ProactiveError
+from jenova.assumptions.types import Assumption
+from jenova.exceptions import (
+    AssumptionError,
+    GraphError,
+    LLMGenerationError,
+    NodeNotFoundError,
+    ProactiveError,
+)
+from jenova.graph.types import Node
 
 ##Class purpose: Define logger for proactive engine operations
 logger = structlog.get_logger(__name__)
+
+
+##Class purpose: Protocol for assumption manager access
+class AssumptionManagerProtocol(Protocol):
+    """Protocol for AssumptionManager access."""
+
+    ##Method purpose: Get assumption to verify
+    def get_assumption_to_verify(self, username: str) -> tuple[Assumption, str] | None:
+        """Get an unverified assumption and generate a verification question."""
+        ...
 
 
 ##Class purpose: Categories of proactive suggestions
@@ -89,17 +107,22 @@ class GraphProtocol(Protocol):
     """Protocol for CognitiveGraph access."""
 
     ##Method purpose: Get nodes for a user
-    def get_nodes_by_user(self, username: str) -> list[dict[str, object]]:
+    def get_nodes_by_user(self, username: str) -> list[Node]:
         """Get all nodes for a user."""
         ...
 
     ##Method purpose: Search nodes by content
-    def search(self, query: str, username: str, limit: int = 10) -> list[dict[str, object]]:
+    def search(
+        self,
+        query: str,
+        max_results: int = 10,
+        node_types: list[str] | None = None,
+    ) -> list[dict[str, str]]:
         """Search nodes by content."""
         ...
 
     ##Method purpose: Get node by ID
-    def get_node(self, node_id: str) -> dict[str, object] | None:
+    def get_node(self, node_id: str) -> Node:
         """Get a node by ID."""
         ...
 
@@ -181,6 +204,7 @@ class ProactiveEngine:
         config: ProactiveConfig,
         graph: GraphProtocol | None = None,
         llm: LLMProtocol | None = None,
+        assumption_manager: AssumptionManagerProtocol | None = None,
     ) -> None:
         """Initialize the proactive engine.
 
@@ -188,11 +212,13 @@ class ProactiveEngine:
             config: Engine configuration
             graph: Optional graph access (can be set later)
             llm: Optional LLM access (can be set later)
+            assumption_manager: Optional assumption manager (can be set later)
         """
         ##Step purpose: Store configuration and dependencies
         self._config = config
         self._graph = graph
         self._llm = llm
+        self._assumption_manager = assumption_manager
 
         ##Step purpose: Initialize tracking state
         self._last_suggestion_time: dict[SuggestionCategory, datetime] = {}
@@ -234,6 +260,11 @@ class ProactiveEngine:
     def set_llm(self, llm: LLMProtocol) -> None:
         """Set the LLM dependency."""
         self._llm = llm
+
+    ##Method purpose: Set the assumption manager dependency
+    def set_assumption_manager(self, manager: AssumptionManagerProtocol) -> None:
+        """Set the assumption manager dependency."""
+        self._assumption_manager = manager
 
     ##Method purpose: Check if a category is on cooldown
     def _is_on_cooldown(self, category: SuggestionCategory) -> bool:
@@ -372,7 +403,7 @@ class ProactiveEngine:
         ##Step purpose: Find topics with few connections
         topic_counts: dict[str, int] = {}
         for node in nodes:
-            node_type = str(node.get("type", ""))
+            node_type = node.node_type
             topic_counts[node_type] = topic_counts.get(node_type, 0) + 1
 
         ##Condition purpose: Suggest exploring less-developed areas
@@ -390,8 +421,25 @@ class ProactiveEngine:
     ##Method purpose: Generate a verification suggestion
     def _generate_verify_suggestion(self, username: str) -> Suggestion | None:
         """Generate a suggestion to verify assumptions."""
-        ##Step purpose: This would integrate with AssumptionManager
-        # For now, return a generic verification prompt
+        ##Step purpose: Check if assumption manager is available
+        if self._assumption_manager:
+            try:
+                result = self._assumption_manager.get_assumption_to_verify(username)
+                if result:
+                    assumption, question = result
+                    node_ids = (assumption.cortex_id,) if assumption.cortex_id else ()
+                    return Suggestion(
+                        category=SuggestionCategory.VERIFY,
+                        content=question,
+                        priority=0.8,
+                        node_ids=node_ids,
+                    )
+            except (AssumptionError, LLMGenerationError) as e:
+                logger.warning("assumption_manager_error", error=str(e), exc_type=type(e).__name__)
+                # Fall through to generic suggestion
+
+        # Fallback to a generic verification prompt if no specific assumption found
+        # or manager not available
         return Suggestion(
             category=SuggestionCategory.VERIFY,
             content="I've made some assumptions about your preferences. Would you like to review them?",
@@ -405,17 +453,17 @@ class ProactiveEngine:
         nodes = self._graph.get_nodes_by_user(username) if self._graph else []
 
         ##Step purpose: Find nodes with potential for development
-        insight_nodes = [n for n in nodes if str(n.get("type", "")) == "insight"]
+        insight_nodes = [n for n in nodes if n.node_type == "insight" and n.content]
 
         ##Condition purpose: Suggest developing an existing insight
         if insight_nodes:
             node = random.choice(insight_nodes)
-            content = str(node.get("content", ""))[:100]
+            content = (node.content or "")[:100]
             return Suggestion(
                 category=SuggestionCategory.DEVELOP,
                 content=f'We could develop this insight further: "{content}..."',
                 priority=0.5,
-                node_ids=(str(node.get("id", "")),),
+                node_ids=(node.id,),
             )
 
         return None

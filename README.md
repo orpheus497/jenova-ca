@@ -17,7 +17,7 @@ JENOVA operates as a system with interconnected components that mimic aspects of
 **Project Timeline:**
 - **August 2025:** Project inception as a personal experiment
 - **August 2025 - January 2026:** Development and iteration through AI-assisted methodologies
-- **January 2026:** Version 4.0.0 release - Production-ready codebase
+- **February 2026:** Version 4.1.0 release - Maintenance and Polish
 
 The development process involved:
 - **AI agents** handling code generation, documentation, testing, and maintenance
@@ -265,7 +265,7 @@ Interaction with JENOVA is primarily through natural language.
 
 JENOVA responds to commands that act as direct instructions for its cognitive processes. Commands are system actions, not conversational input, and are **not stored in conversational memory**.
 
-#### Currently Implemented Commands
+#### System Commands
 
 | Command | Description | Mode |
 |---------|-------------|------|
@@ -274,9 +274,7 @@ JENOVA responds to commands that act as direct instructions for its cognitive pr
 | `/debug` | Toggle debug logging | Headless only |
 | `exit` / `quit` | Exit the application | TUI & Headless |
 
-#### Planned Cognitive Commands
-
-The following cognitive commands are documented in the help system and will be implemented in future releases:
+#### Cognitive Commands (TUI)
 
 | Command | Description |
 |---------|-------------|
@@ -284,11 +282,11 @@ The following cognitive commands are documented in the help system and will be i
 | `/reflect` | Deep reflection: reorganize cognitive nodes, link orphans, generate meta-insights |
 | `/memory-insight` | Search all memory layers to develop new insights |
 | `/meta` | Generate higher-level meta-insights from insight clusters |
+| `/assume <text>` | Manually add an assumption about the user |
 | `/verify` | Verify an unverified assumption with a clarifying question |
-| `/develop_insight [node_id]` | Develop existing insight (with ID) or process documents (without ID) |
+| `/develop_insight [node_id]` | Develop existing insight node with additional context |
 | `/learn_procedure` | Interactive guided process to teach a new procedure |
-
-**Note:** While the underlying cognitive systems (InsightManager, AssumptionManager, CognitiveGraph) are fully implemented, the command handlers for these features are planned for future releases.
+| `/train` | Display fine-tuning instructions |
 
 ### Keyboard Shortcuts (TUI)
 
@@ -362,7 +360,9 @@ jenova-ca/
 │   │   ├── query_analyzer.py # Query analysis and intent detection
 │   │   ├── context_scorer.py  # Context scoring and ranking
 │   │   ├── context_organizer.py # Context organization
-│   │   └── scheduler.py  # Cognitive scheduler
+│   │   ├── scheduler.py  # Cognitive scheduler
+│   │   ├── task_executor.py # Cognitive task dispatch
+│   │   └── planning.py   # Multi-level planning system
 │   ├── embeddings/       # Embedding model management
 │   │   ├── model.py      # Embedding model wrapper
 │   │   └── types.py      # Embedding types
@@ -394,12 +394,15 @@ jenova-ca/
 │   │   ├── errors.py     # Error handling utilities
 │   │   ├── logging.py    # Structured logging
 │   │   └── migrations.py # Data migration system
-│   ├── tools.py          # Shell and datetime utilities
+│   ├── tools/             # Utility tools
+│   │   ├── __init__.py   # Shell and datetime utilities
+│   │   └── web_search.py # DuckDuckGo web search provider
+│   ├── compat_py314.py   # Python 3.14 compatibility patches
 │   ├── exceptions.py     # Exception hierarchy
 │   └── main.py           # CLI entry point
 ├── tests/                # Comprehensive test suites
-│   ├── unit/             # Unit tests (17 files, 365+ tests)
-│   ├── integration/      # Integration tests (4 files, 36 tests)
+│   ├── unit/             # Unit tests (410+ tests)
+│   ├── integration/      # Integration tests (36 tests)
 │   ├── security/         # Security tests (23 adversarial tests)
 │   ├── benchmarks/      # Performance benchmarks
 │   └── performance/      # Performance test utilities
@@ -481,39 +484,39 @@ ruff format src/
 
 ### 9.1. Codebase Metrics
 
-- **Total Python Files:** 48+ source files in `src/jenova/`
+- **Total Python Files:** 50+ source files in `src/jenova/`
 - **Lines of Code:** ~15,000+ lines of production code
-- **Test Coverage:** 400+ tests across unit, integration, security, and benchmark suites
+- **Test Coverage:** 430+ tests across unit, integration, security, and benchmark suites
 - **Documentation:** Comprehensive inline documentation, README, and `.devdocs/` system
 - **Architecture:** Protocol-based design with clean separation of concerns
-- **Dependencies:** 7 core dependencies, 4 dev dependencies, 2 optional finetune dependencies
+- **Dependencies:** 8 core dependencies, 7 dev dependencies, 2 optional finetune dependencies
 - **Platform Support:** Native FreeBSD and Linux support
 - **License:** AGPL-3.0 (Free and Open Source Software)
 
 ### 9.2. Development Status
 
-**Current Version:** 4.0.0 (Beta)  
-**Status:** Production-ready with comprehensive feature set
+**Current Version:** 4.1.0 (Beta)  
+**Status:** Maintenance & Polish - Production-ready with comprehensive feature set
 
 **Implemented Systems:**
 - ✅ Complete cognitive architecture (Retrieve, Plan, Execute, Reflect cycle)
 - ✅ Multi-layered memory system (Episodic, Semantic, Procedural) with ChromaDB
 - ✅ Cognitive graph with advanced features (emotion analysis, clustering, meta-insights, orphan linking, contradiction detection)
 - ✅ Insight and assumption management systems with concern-based organization
-- ✅ Integration layer for unified knowledge representation (Memory ↔ Cortex)
+- ✅ **Integration Hub:** Fully wired Context ↔ Memory bridge; active context expansion and feedback loops
 - ✅ Query analysis and context scoring with intent detection and complexity assessment
 - ✅ Context organization and prioritization
 - ✅ Multi-level planning system (simple → very complex queries)
 - ✅ Response generation with caching, persona support, and source citations
-- ✅ Cognitive scheduler for background task management
-- ✅ Proactive engine for autonomous suggestion generation
+- ✅ **Cognitive Scheduler:** Fully wired and active; manages background tasks (insights, assumptions, pruning) on turn intervals
+- ✅ **Proactive Engine:** Fully wired and active; autonomously generates suggestions based on graph state
 - ✅ Modern Textual-based TUI with responsive design
-- ✅ Comprehensive test suite (400+ tests: unit, integration, security, benchmarks)
+- ✅ Comprehensive test suite (430+ tests: unit, integration, security, benchmarks)
 - ✅ Security hardening (all P0/P1 issues resolved, prompt injection protection, input validation)
 - ✅ Utility systems (caching, performance monitoring, grammar loading, tools)
 
-**Planned Features:**
-- Command handlers for cognitive operations (`/insight`, `/reflect`, etc.)
+**Pending Work:**
+- Async cognitive engine (plan drafted, ISSUE-004)
 - Enhanced fine-tuning workflows
 - Additional cognitive capabilities
 
@@ -587,9 +590,9 @@ User Input
     ↓
 Sanitization (prompt injection protection)
     ↓
-CognitiveEngine.think()
+CognitiveEngine.think() ← [Proactive Suggestion Poll]
     ↓
-KnowledgeStore.search() → Memory + Graph
+KnowledgeStore.search() ↔ IntegrationHub (Context Expansion)
     ↓
 QueryAnalyzer.analyze() → Intent, Complexity, Topics
     ↓
@@ -603,7 +606,9 @@ LLM.generate() → Raw response
     ↓
 ResponseGenerator.generate() → Formatted response
     ↓
-Memory Storage (episodic memory)
+Memory Storage (episodic memory) ↔ IntegrationHub (Cortex Feedback)
+    ↓
+CognitiveScheduler (Post-Turn Tasks) → Insight/Assumption Generation
     ↓
 User Output
 ```

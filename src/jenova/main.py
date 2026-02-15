@@ -1,4 +1,3 @@
-##Script function and purpose: CLI entry point with argparse for JENOVA
 """
 JENOVA CLI Entry Point
 
@@ -9,21 +8,93 @@ Wires together all components: CognitiveEngine, KnowledgeStore, LLM, UI.
 
 from __future__ import annotations
 
-##Fix: Import Python 3.14 compatibility patches FIRST (BH-2026-02-11T02:12:55Z)
-##Note: This must come before any imports that use ChromaDB/Pydantic V1
-import jenova.compat_py314  # noqa: F401
-
 import argparse
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
+##Fix: Import Python 3.14 compatibility patches FIRST (BH-2026-02-11T02:12:55Z)
+##Note: This must come before any imports that use ChromaDB/Pydantic V1
+import jenova.compat_py314  # noqa: F401
 from jenova import __version__
 from jenova.config import JenovaConfig, load_config
 from jenova.utils.logging import configure_logging, get_logger
 
+##Step purpose: Common exception tuple for optional subsystem initialization
+##Refactor: Removed AttributeError/TypeError so programming bugs propagate (D3-2026-02-14T10:24:30Z)
+_SUBSYSTEM_INIT_EXCEPTIONS = (
+    RuntimeError, ValueError, KeyError, ImportError
+)
+
 if TYPE_CHECKING:
     from jenova.core.engine import CognitiveEngine
+
+
+##Class purpose: Protocol for LLM used by CognitiveEngine
+@runtime_checkable
+class EngineLLMProtocol(Protocol):
+    """Minimal LLM protocol that CognitiveEngine actually requires.
+
+    Both LLMInterface and DevelopmentLLM must satisfy this protocol.
+    """
+
+    @property
+    def is_loaded(self) -> bool: ...
+
+    def generate(self, prompt: object, params: object = None) -> object: ...
+
+    def generate_text(
+        self,
+        text: str,
+        system_prompt: str = "You are a helpful assistant.",
+        params: object = None,
+    ) -> str: ...
+
+
+##Class purpose: Minimal mock LLM for development/testing
+class DevelopmentLLM:
+    """Development mock LLM that returns echo responses."""
+
+    @property
+    def is_loaded(self) -> bool:
+        return True
+
+    def generate(self, prompt: object, params: object = None) -> object:
+        from jenova.llm.types import Completion
+        from jenova.llm.types import Prompt as LLMPrompt
+
+        ##Step purpose: Return echo response
+        user_msg = prompt.user_message if isinstance(prompt, LLMPrompt) else str(prompt)
+        return Completion(
+            content=f"[DEV MODE] Received: {user_msg}",
+            finish_reason="stop",
+            tokens_generated=10,
+            tokens_prompt=len(user_msg.split()),
+            generation_time_ms=1.0,
+        )
+
+    ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Satisfy graph.LLMProtocol for scheduler tasks
+    def generate_text(
+        self,
+        text: str,
+        system_prompt: str = "You are a helpful assistant.",
+        params: object = None,
+    ) -> str:
+        """Simple text generation for dev mode."""
+        return f"[DEV MODE] {text[:100]}"
+
+
+##Class purpose: Adapter for LLMInterface to match ProactiveEngine LLMProtocol
+class ProactiveLLMWrapper:
+    """Wraps an LLMInterface (or DevelopmentLLM) for ProactiveEngine."""
+
+    def __init__(self, llm_interface: object) -> None:
+        self._llm = llm_interface
+
+    def generate(self, prompt: str) -> str:
+        return self._llm.generate_text(
+            prompt, system_prompt="You are a proactive cognitive assistant."
+        )
 
 
 ##Function purpose: Parse command-line arguments
@@ -120,10 +191,18 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
     ##Step purpose: Import components
     from jenova.assumptions.manager import AssumptionManager
     from jenova.core.engine import CognitiveEngine, EngineConfig
+    from jenova.core.integration import IntegrationHub
     from jenova.core.knowledge import KnowledgeStore
     from jenova.core.response import ResponseConfig, ResponseGenerator
+    from jenova.core.scheduler import CognitiveScheduler, SchedulerConfig
+    from jenova.core.task_executor import CognitiveTaskExecutor
+    from jenova.graph.proactive import ProactiveEngine
     from jenova.insights.manager import InsightManager
     from jenova.llm.interface import LLMInterface
+    from jenova.memory.types import MemoryType
+
+    ##Update: WIRING-005 (2026-02-14) - Import Web Search Provider
+    from jenova.tools.web_search import DuckDuckGoSearchProvider
 
     ##Action purpose: Log initialization start
     logger.info("creating_engine", skip_model_load=skip_model_load)
@@ -139,27 +218,6 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
     logger.debug("initializing_llm", skip_load=skip_model_load)
     ##Condition purpose: Use mock or real LLM based on flag
     if skip_model_load:
-        ##Step purpose: Create minimal mock LLM for development
-        from jenova.llm.types import Completion, Prompt
-
-        ##Class purpose: Minimal mock LLM for development/testing
-        class DevelopmentLLM:
-            """Development mock LLM that returns echo responses."""
-
-            @property
-            def is_loaded(self) -> bool:
-                return True
-
-            def generate(self, prompt: Prompt, params: object = None) -> Completion:
-                ##Step purpose: Return echo response
-                return Completion(
-                    content=f"[DEV MODE] Received: {prompt.user_message}",
-                    finish_reason="stop",
-                    tokens_generated=10,
-                    tokens_prompt=len(prompt.user_message.split()),
-                    generation_time_ms=1.0,
-                )
-
         llm: LLMInterface | DevelopmentLLM = DevelopmentLLM()
     else:
         ##Step purpose: Create and load real LLM
@@ -171,6 +229,10 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
 
     ##Step purpose: Create ResponseGenerator
     logger.debug("initializing_response_generator")
+    ##Update: WIRING-005 (2026-02-14) - Wire Web Search
+    # Note: Use standard 10s timeout, could be moved to config if needed
+    web_search_provider = DuckDuckGoSearchProvider(timeout=10)
+
     response_generator = ResponseGenerator(
         config=config,
         response_config=ResponseConfig(
@@ -178,6 +240,7 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
             max_length=0,  # No limit
             format_style="default",
         ),
+        web_search=web_search_provider,
     )
 
     ##Step purpose: Initialize insight manager
@@ -201,22 +264,83 @@ def create_engine(config: JenovaConfig, skip_model_load: bool = False) -> Cognit
         llm=llm,
     )
 
+    ##Update: WIRING-003 (2026-02-14) — Initialize ProactiveEngine
+    logger.debug("initializing_proactive_engine")
+
+    ##Note: ProactiveConfig (Pydantic) and ProactiveConfig (dataclass) must stay in sync.
+    ##TODO: Centralize canonical schema in a shared location if divergence becomes frequent.
+    ##See: jenova.config.models.ProactiveConfig and jenova.graph.proactive.ProactiveConfig
+    proactive_config = config.proactive.to_proactive_config()
+    proactive_engine = ProactiveEngine(
+        config=proactive_config,
+        graph=knowledge_store.graph,
+        llm=ProactiveLLMWrapper(llm),
+    )
+    proactive_engine.set_assumption_manager(assumption_manager)
+
     ##Step purpose: Create CognitiveEngine
     logger.debug("initializing_cognitive_engine")
+    ##Refactor: Explicit check replaces assert for -O safety (D3-2026-02-14T10:24:30Z)
+    if not isinstance(llm, EngineLLMProtocol):
+        raise TypeError(
+            f"{type(llm).__name__} does not implement EngineLLMProtocol"
+        )
     engine = CognitiveEngine(
         config=config,
         knowledge_store=knowledge_store,
-        llm=llm,
+        llm=llm,  # type: ignore[arg-type]  # EngineLLMProtocol verified at runtime
         response_generator=response_generator,
         engine_config=EngineConfig(
             max_context_items=config.memory.max_results,
             temperature=config.model.temperature,
             enable_learning=True,
             max_history_turns=10,
+            planning=config.planning.to_planning_config(),
         ),
         insight_manager=insight_manager,
         assumption_manager=assumption_manager,
+        proactive_engine=proactive_engine,
     )
+
+    ##Update: WIRING-002 (2026-02-13T13:05:14Z) — Wire IntegrationHub into engine
+    logger.debug("initializing_integration_hub")
+    try:
+        semantic_memory = knowledge_store.get_memory(MemoryType.SEMANTIC)
+        integration_hub = IntegrationHub(
+            graph=knowledge_store.graph,
+            memory=semantic_memory,
+            config=config.integration,
+        )
+        engine.set_integration_hub(integration_hub)
+    except _SUBSYSTEM_INIT_EXCEPTIONS as e:
+        ##Fix: Narrow catch and include exc_info for better diagnostics (PATCH-007)
+        logger.warning(
+            "integration_hub_init_failed",
+            error=str(e),
+            msg="Continuing without integration subsystem",
+            exc_info=True,
+        )
+
+    ##Update: WIRING-001 (2026-02-13T11:26:36Z) — Wire CognitiveScheduler into engine
+    logger.debug("initializing_scheduler")
+    try:
+        task_executor = CognitiveTaskExecutor(
+            insight_manager=insight_manager,
+            assumption_manager=assumption_manager,
+            knowledge_store=knowledge_store,
+            llm=llm,
+            get_recent_history=engine.get_recent_history,
+        )
+        scheduler = CognitiveScheduler(SchedulerConfig(), executor=task_executor)
+        engine.set_scheduler(scheduler)
+    except _SUBSYSTEM_INIT_EXCEPTIONS as e:
+        ##Fix: Handle scheduler initialization failure and log traceback (PATCH-008)
+        logger.warning(
+            "scheduler_init_failed",
+            error=str(e),
+            msg="Continuing without scheduler subsystem",
+            exc_info=True,
+        )
 
     logger.info("engine_created")
     return engine

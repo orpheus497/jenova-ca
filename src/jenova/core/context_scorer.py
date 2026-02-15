@@ -213,7 +213,7 @@ class ContextScorer:
 
         ##Update: Optimize scoring with batching, caching, and early termination (P1-004)
         ##Step purpose: Use heap for top-k selection (more efficient than sorting all)
-        top_k_heap: list[tuple[float, ScoringBreakdown]] = []
+        top_k_heap: list[tuple[float, int, ScoringBreakdown]] = []
         k = min(len(context_items), 50)  # Track top 50 for early termination
 
         ##Update: Batch embedding operations (P1-004)
@@ -273,10 +273,11 @@ class ContextScorer:
             )
 
             ##Update: Use heap for top-k (P1-004)
+            ##Note: Using id(breakdown) as tie-breaker to avoid comparing dataclass instances
             if len(top_k_heap) < k:
-                heapq.heappush(top_k_heap, (breakdown.total_score, breakdown))
+                heapq.heappush(top_k_heap, (breakdown.total_score, id(breakdown), breakdown))
             elif breakdown.total_score > top_k_heap[0][0]:
-                heapq.heapreplace(top_k_heap, (breakdown.total_score, breakdown))
+                heapq.heapreplace(top_k_heap, (breakdown.total_score, id(breakdown), breakdown))
 
             ##Update: Early termination if top scores are high (P1-004)
             if len(top_k_heap) >= k and top_k_heap[0][0] >= early_termination_threshold:
@@ -284,7 +285,7 @@ class ContextScorer:
                 break
 
         ##Step purpose: Extract and sort top-k results
-        scored_items = [breakdown for _, breakdown in top_k_heap]
+        scored_items = [breakdown for _, _, breakdown in top_k_heap]
         scored_items.sort(key=lambda x: x.total_score, reverse=True)
 
         logger.info(

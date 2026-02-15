@@ -82,7 +82,7 @@ class TestQueryIntentClassification:
         """Unmatched queries default to conversation."""
         result = analyzer.analyze("hello there")
 
-        assert result.intent in (QueryIntent.CONVERSATION, QueryIntent.CONVERSATIONAL)
+        assert result.intent == QueryIntent.CONVERSATION
 
 
 ##Class purpose: Test QueryAnalyzer complexity assessment

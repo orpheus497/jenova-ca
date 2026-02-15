@@ -8,7 +8,9 @@ datetime handling and shell command execution.
 Reference: .devdocs/resources/src/jenova/tools.py
 """
 
+import os
 import shlex
+import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,14 +29,17 @@ SHELL_MAX_OUTPUT_LENGTH = 10000
 
 ##Function purpose: Get current datetime in standard format
 def get_current_datetime(
-    include_timezone: bool = True,
+    use_utc: bool = True,
     format_string: str | None = None,
+    include_timezone: bool = True,
 ) -> str:
     """Get the current datetime as a formatted string.
 
     Args:
-        include_timezone: Include timezone in output (default True)
+        use_utc: Use UTC timezone with timezone info (default True).
+                 If False, returns naive local time.
         format_string: Custom format string (default ISO format)
+        include_timezone: Whether to include timezone info (default True)
 
     Returns:
         Formatted datetime string
@@ -44,7 +49,11 @@ def get_current_datetime(
         '2026-01-19T14:30:00+00:00'
     """
     ##Step purpose: Get current time with or without timezone
-    now = datetime.now(timezone.utc) if include_timezone else datetime.now()
+    now = datetime.now(timezone.utc) if use_utc else datetime.now()
+
+    ##Step purpose: Remove timezone info if requested
+    if not include_timezone:
+        now = now.replace(tzinfo=None)
 
     ##Condition purpose: Use custom format or ISO
     if format_string:
@@ -88,12 +97,11 @@ def get_current_time(
         >>> get_current_time()
         '14:30:00'
     """
-    ##Step purpose: Build format string
-    fmt = "%H:%M" if format_24h else "%I:%M %p"
-
-    ##Condition purpose: Add seconds if requested
-    if include_seconds:
-        fmt = "%H:%M:%S" if format_24h else "%I:%M:%S %p"
+    ##Step purpose: Build format string based on options
+    if format_24h:
+        fmt = "%H:%M:%S" if include_seconds else "%H:%M"
+    else:
+        fmt = "%I:%M:%S %p" if include_seconds else "%I:%M %p"
 
     return datetime.now().strftime(fmt)
 
@@ -103,7 +111,7 @@ def execute_shell_command(
     command: str,
     timeout: int = SHELL_TIMEOUT_DEFAULT,
     working_dir: Path | str | None = None,
-    capture_stderr: bool = True,
+    include_stderr: bool = True,
     max_output_length: int = SHELL_MAX_OUTPUT_LENGTH,
 ) -> tuple[str, int]:
     """Execute a shell command safely with timeout and output limits.
@@ -112,7 +120,7 @@ def execute_shell_command(
         command: The shell command to execute
         timeout: Timeout in seconds (default 30)
         working_dir: Working directory for command (optional)
-        capture_stderr: Capture stderr in output (default True)
+        include_stderr: Include stderr in output string (default True)
         max_output_length: Maximum output length to return
 
     Returns:
@@ -170,7 +178,7 @@ def execute_shell_command(
 
         ##Step purpose: Combine output
         output = result.stdout
-        if capture_stderr and result.stderr:
+        if include_stderr and result.stderr:
             output = output + "\n" + result.stderr if output else result.stderr
 
         ##Step purpose: Truncate if too long
@@ -210,15 +218,7 @@ def command_exists(command_name: str) -> bool:
         >>> command_exists("git")
         True
     """
-    try:
-        result = subprocess.run(
-            ["which", command_name],
-            capture_output=True,
-            timeout=5,
-        )
-        return result.returncode == 0
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        return False
+    return shutil.which(command_name) is not None
 
 
 ##Function purpose: Get system information
@@ -233,7 +233,6 @@ def get_system_info() -> dict[str, str]:
         >>> print(info["platform"])
         'freebsd'
     """
-    import os
     import platform
 
     return {
@@ -271,11 +270,16 @@ def format_datetime_for_display(
 
     ##Condition purpose: Format relative time
     if relative:
-        now = datetime.now()
+        ##Step purpose: Match timezone-awareness of input
+        now = datetime.now(dt.tzinfo) if dt.tzinfo else datetime.now()
         diff = now - dt
 
         ##Step purpose: Calculate relative time
         seconds = diff.total_seconds()
+
+        ##Condition purpose: Handle future dates
+        if seconds < 0:
+            return "in the future"
 
         ##Condition purpose: Handle different time ranges
         if seconds < 60:

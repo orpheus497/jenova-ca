@@ -48,6 +48,7 @@ from textual.containers import Container, ScrollableContainer, Vertical
 from textual.widgets import Footer, Header, Input, RichLog, Static
 
 from jenova.assumptions.types import Assumption
+from jenova.exceptions import AssumptionDuplicateError
 from jenova.llm.types import GenerationParams
 from jenova.memory.types import MemoryType
 from jenova.ui.components import (
@@ -358,55 +359,62 @@ class JenovaApp(App):
             return
 
         ##Step purpose: Handle special commands
-        if message.lower() in ("exit", "quit"):
+        message = message.lstrip()
+        msg_lower = message.lower()
+        if msg_lower in ("exit", "quit"):
             self.exit()
             return
 
-        if message.lower() == "/help":
+        if msg_lower == "/help":
             self.action_toggle_help()
             return
 
         ##Update: Add /reset command handler
-        if message.lower() == "/reset":
+        if msg_lower == "/reset":
             self._handle_reset()
             return
 
         ##Update: Add /debug command handler
-        if message.lower() == "/debug":
+        if msg_lower == "/debug":
             self._handle_debug()
             return
 
         ##Step purpose: Handle Phase 1 commands (simple, no interactive flow)
-        if message.lower() == "/insight":
+        if msg_lower == "/insight":
             await self._handle_insight_command(output, status_bar)
             return
 
-        if message.lower() == "/reflect":
+        if msg_lower == "/reflect":
             await self._handle_reflect_command(output, status_bar)
             return
 
-        if message.lower() == "/memory-insight":
+        if msg_lower == "/memory-insight":
             await self._handle_memory_insight_command(output, status_bar)
             return
 
-        if message.lower() == "/meta":
+        if msg_lower == "/meta":
             await self._handle_meta_command(output, status_bar)
             return
 
-        if message.lower() == "/train":
+        ##Update: WIRING-008 (2026-02-14) - Add /assume command
+        if msg_lower == "/assume" or msg_lower.startswith("/assume "):
+            await self._handle_assume_command(message, output, status_bar)
+            return
+
+        if msg_lower == "/train":
             self._handle_train_command(output)
             return
 
         ##Step purpose: Handle Phase 2 commands (interactive flows)
-        if message.lower() == "/verify":
+        if msg_lower == "/verify":
             await self._handle_verify_command(output, status_bar)
             return
 
-        if message.lower().startswith("/develop_insight"):
+        if msg_lower == "/develop_insight" or msg_lower.startswith("/develop_insight "):
             await self._handle_develop_insight_command(message, output, status_bar)
             return
 
-        if message.lower() == "/learn_procedure":
+        if msg_lower == "/learn_procedure":
             self._handle_learn_procedure_start(output)
             return
 
@@ -455,7 +463,7 @@ class JenovaApp(App):
         import asyncio
 
         ##Action purpose: Run cognitive cycle in thread pool to avoid blocking
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(
             None,
             self._engine.think,
@@ -631,7 +639,9 @@ class JenovaApp(App):
         """
         ##Condition purpose: Check if engine is available
         if self._engine is None:
-            output.write("[bold yellow]>>[/bold yellow] Cannot generate insights: No engine connected.")
+            output.write(
+                "[bold yellow]>>[/bold yellow] Cannot generate insights: No engine connected."
+            )
             return
 
         ##Condition purpose: Check if insight manager is available
@@ -656,7 +666,7 @@ Focus on novel observations, not just summaries."""
             ##Step purpose: Generate insight using LLM
             import asyncio
 
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             insight_content = await loop.run_in_executor(
                 None,
                 self._engine.llm.generate_text,
@@ -710,17 +720,14 @@ Focus on novel observations, not just summaries."""
         try:
             ##Step purpose: Get graph and LLM from engine
             graph = self._engine.knowledge_store.graph
-            llm = self._engine.llm
 
-            ##Step purpose: Run reflection in thread pool
+            ##Step purpose: Import for async execution
             import asyncio
 
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(
                 None,
-                graph.reflect,
-                self._username,
-                llm,
+                lambda: graph.reflect(self._username, self._engine.llm),
             )
 
             ##Action purpose: Display reflection results
@@ -757,7 +764,9 @@ Focus on novel observations, not just summaries."""
         """
         ##Condition purpose: Check if engine is available
         if self._engine is None:
-            output.write("[bold yellow]>>[/bold yellow] Cannot generate memory insights: No engine connected.")
+            output.write(
+                "[bold yellow]>>[/bold yellow] Cannot generate memory insights: No engine connected."
+            )
             return
 
         ##Condition purpose: Check if insight manager is available
@@ -786,8 +795,7 @@ Focus on novel observations, not just summaries."""
 
             ##Step purpose: Use LLM to generate insight from memory patterns
             memory_content = "\n".join(
-                f"- [{m.memory_type.value}] {m.content[:100]}"
-                for m in memory_results.memories[:5]
+                f"- [{m.memory_type.value}] {m.content[:100]}" for m in memory_results.memories[:5]
             )
 
             prompt_text = f"""Analyze these memories and extract a key insight or pattern.
@@ -801,7 +809,7 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
             ##Step purpose: Generate insight using LLM
             import asyncio
 
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             insight_content = await loop.run_in_executor(
                 None,
                 self._engine.llm.generate_text,
@@ -845,7 +853,9 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
         """
         ##Condition purpose: Check if engine is available
         if self._engine is None:
-            output.write("[bold yellow]>>[/bold yellow] Cannot generate meta-insights: No engine connected.")
+            output.write(
+                "[bold yellow]>>[/bold yellow] Cannot generate meta-insights: No engine connected."
+            )
             return
 
         ##Action purpose: Set loading state
@@ -855,27 +865,28 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
         try:
             ##Step purpose: Get graph and LLM from engine
             graph = self._engine.knowledge_store.graph
-            llm = self._engine.llm
 
-            ##Step purpose: Generate meta-insights in thread pool
+            ##Step purpose: Import for async execution
             import asyncio
 
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             meta_insights = await loop.run_in_executor(
                 None,
-                graph.generate_meta_insights,
-                self._username,
-                llm,
+                lambda: graph.generate_meta_insights(self._username, self._engine.llm),
             )
 
             ##Condition purpose: Check if any meta-insights generated
             if not meta_insights:
-                output.write("[bold yellow]>>[/bold yellow] No meta-insights generated. Need more connected knowledge nodes.")
+                output.write(
+                    "[bold yellow]>>[/bold yellow] No meta-insights generated. Need more connected knowledge nodes."
+                )
                 status_bar.set_ready("Ready")
                 return
 
             ##Action purpose: Display meta-insights
-            output.write(f"[bold green]>>[/bold green] Generated {len(meta_insights)} meta-insight(s):")
+            output.write(
+                f"[bold green]>>[/bold green] Generated {len(meta_insights)} meta-insight(s):"
+            )
             for idx, insight in enumerate(meta_insights, 1):
                 output.write(f"[white]  {idx}. {insight}[/white]")
             output.write("")  ##Step purpose: Add spacing
@@ -901,6 +912,85 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
         output.write("[dim]    python3 finetune/train.py[/dim]")
         output.write("")  ##Step purpose: Add spacing
 
+    ##Update: WIRING-008 (2026-02-14) - Implementation of /assume command
+    ##Method purpose: Handle /assume command - Manually add an assumption
+    async def _handle_assume_command(
+        self,
+        message: str,
+        output: RichLog,
+        status_bar: StatusBar,
+    ) -> None:
+        """Handle /assume command to manually add an assumption.
+
+        Args:
+            message: Full command message
+            output: Output widget for feedback
+            status_bar: Status bar widget
+        """
+        ##Condition purpose: Check if engine is available
+        if self._engine is None:
+            output.write(
+                "[bold yellow]>>[/bold yellow] Cannot add assumption: No engine connected."
+            )
+            return
+
+        ##Condition purpose: Check if assumption manager is available
+        if self._engine.assumption_manager is None:
+            output.write("[bold yellow]>>[/bold yellow] Assumption manager not available.")
+            return
+
+        ##Step purpose: Parse content
+        parts = message.split(" ", 1)
+        if len(parts) < 2:
+            output.write("[bold yellow]>>[/bold yellow] Usage: /assume <assumption_text>")
+            return
+
+        content = parts[1].strip()
+        if not content:
+            output.write("[bold yellow]>>[/bold yellow] Usage: /assume <assumption_text>")
+            return
+
+        ##Action purpose: Set loading state
+        status_bar.set_loading("Adding assumption...")
+
+        ##Error purpose: Handle errors
+        try:
+            import asyncio
+
+            loop = asyncio.get_running_loop()
+
+            ##Step purpose: Add assumption
+            cortex_id = await loop.run_in_executor(
+                None,
+                self._engine.assumption_manager.add_assumption,
+                content,
+                self._username,
+            )
+
+            ##Action purpose: Display success message
+            output.write("[bold green]>>[/bold green] Assumption added:")
+            output.write(f"[white]  {content}[/white]")
+            output.write(f"[dim]  ID: {cortex_id}[/dim]")
+            output.write("")
+
+            ##Action purpose: Set ready state
+            status_bar.set_ready("Ready")
+
+        ##Refactor: Catch duplicate assumption explicitly for friendly UX (D3-2026-02-14T10:24:30Z)
+        except AssumptionDuplicateError as dup_err:
+            output.write("[bold yellow]>>[/bold yellow] This assumption already exists.")
+            status_bar.set_ready("Ready")
+            self._logger.warning(
+                "assume_command_duplicate",
+                assumption=content,
+                error=str(dup_err),
+            )
+
+        except Exception as e:
+            output.write(f"[bold red]>>[/bold red] Error adding assumption: {e}")
+            status_bar.set_error(f"Error: {type(e).__name__}")
+            self._logger.error("assume_command_failed", error=str(e), exc_info=True)
+
     ##Method purpose: Handle /verify command - Start assumption verification
     async def _handle_verify_command(
         self,
@@ -915,7 +1005,9 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
         """
         ##Condition purpose: Check if engine is available
         if self._engine is None:
-            output.write("[bold yellow]>>[/bold yellow] Cannot verify assumptions: No engine connected.")
+            output.write(
+                "[bold yellow]>>[/bold yellow] Cannot verify assumptions: No engine connected."
+            )
             return
 
         ##Condition purpose: Check if assumption manager is available
@@ -931,7 +1023,7 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
             ##Step purpose: Get assumption to verify
             import asyncio
 
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(
                 None,
                 self._engine.assumption_manager.get_assumption_to_verify,
@@ -997,7 +1089,9 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
         try:
             ##Condition purpose: Check if assumption is still pending
             if self._pending_assumption is None:
-                output.write("[bold yellow]>>[/bold yellow] No pending assumption. Verification cancelled.")
+                output.write(
+                    "[bold yellow]>>[/bold yellow] No pending assumption. Verification cancelled."
+                )
                 self._interactive_mode = "normal"
                 status_bar.set_ready("Ready")
                 return
@@ -1005,7 +1099,7 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
             ##Step purpose: Resolve assumption
             import asyncio
 
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             await loop.run_in_executor(
                 None,
                 self._engine.assumption_manager.resolve_assumption,
@@ -1053,7 +1147,9 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
         """
         ##Condition purpose: Check if engine is available
         if self._engine is None:
-            output.write("[bold yellow]>>[/bold yellow] Cannot develop insight: No engine connected.")
+            output.write(
+                "[bold yellow]>>[/bold yellow] Cannot develop insight: No engine connected."
+            )
             return
 
         ##Condition purpose: Check if insight manager is available
@@ -1086,7 +1182,7 @@ Expanded insight:"""
 
                 import asyncio
 
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
                 expanded_content = await loop.run_in_executor(
                     None,
                     self._engine.llm.generate_text,
@@ -1105,8 +1201,12 @@ Expanded insight:"""
 
             else:
                 ##Step purpose: Mode 2: Process documents (placeholder - docs directory not implemented)
-                output.write("[bold yellow]>>[/bold yellow] Document processing not yet implemented.")
-                output.write("[dim]  Use /develop_insight [node_id] to expand an existing insight.[/dim]")
+                output.write(
+                    "[bold yellow]>>[/bold yellow] Document processing not yet implemented."
+                )
+                output.write(
+                    "[dim]  Use /develop_insight [node_id] to expand an existing insight.[/dim]"
+                )
                 output.write("")  ##Step purpose: Add spacing
 
             ##Action purpose: Set ready state
@@ -1150,7 +1250,9 @@ Expanded insight:"""
 
         ##Condition purpose: Validate name is not empty
         if not name:
-            output.write("[bold yellow]>>[/bold yellow] Procedure name cannot be empty. Please enter a name:")
+            output.write(
+                "[bold yellow]>>[/bold yellow] Procedure name cannot be empty. Please enter a name:"
+            )
             return
 
         ##Step purpose: Store name and transition to steps
@@ -1159,7 +1261,9 @@ Expanded insight:"""
 
         ##Action purpose: Display confirmation and next prompt
         output.write(f"[bold green]>>[/bold green] Procedure name set to: {name}")
-        output.write("[white]  Enter procedure steps one by one. Type 'done' when finished.[/white]")
+        output.write(
+            "[white]  Enter procedure steps one by one. Type 'done' when finished.[/white]"
+        )
         output.write(f"[dim]  Step {len(self._procedure_steps) + 1}:[/dim]")
         output.write("")  ##Step purpose: Add spacing
 
@@ -1177,26 +1281,34 @@ Expanded insight:"""
         if step.lower() == "done":
             ##Condition purpose: Validate at least one step
             if not self._procedure_steps:
-                output.write("[bold yellow]>>[/bold yellow] No steps entered. Please enter at least one step:")
+                output.write(
+                    "[bold yellow]>>[/bold yellow] No steps entered. Please enter at least one step:"
+                )
                 return
 
             ##Step purpose: Transition to outcome collection
             self._interactive_mode = "learn_procedure_outcome"
-            output.write(f"[bold green]>>[/bold green] Recorded {len(self._procedure_steps)} step(s).")
+            output.write(
+                f"[bold green]>>[/bold green] Recorded {len(self._procedure_steps)} step(s)."
+            )
             output.write("[white]  Please enter the expected outcome:[/white]")
             output.write("")  ##Step purpose: Add spacing
             return
 
         ##Condition purpose: Validate step is not empty
         if not step:
-            output.write("[bold yellow]>>[/bold yellow] Empty step entered. Please enter a step or type 'done':")
+            output.write(
+                "[bold yellow]>>[/bold yellow] Empty step entered. Please enter a step or type 'done':"
+            )
             return
 
         ##Step purpose: Add step to list
         self._procedure_steps.append(step)
 
         ##Action purpose: Display confirmation and prompt for next
-        output.write(f"[bold green]>>[/bold green] Step {len(self._procedure_steps)} recorded: {step}")
+        output.write(
+            f"[bold green]>>[/bold green] Step {len(self._procedure_steps)} recorded: {step}"
+        )
         output.write(f"[dim]  Step {len(self._procedure_steps) + 1} (or type 'done'):[/dim]")
         output.write("")  ##Step purpose: Add spacing
 
@@ -1218,7 +1330,9 @@ Expanded insight:"""
 
         ##Condition purpose: Validate outcome is not empty
         if not outcome:
-            output.write("[bold yellow]>>[/bold yellow] Expected outcome cannot be empty. Please enter an outcome:")
+            output.write(
+                "[bold yellow]>>[/bold yellow] Expected outcome cannot be empty. Please enter an outcome:"
+            )
             return
 
         ##Step purpose: Store outcome
@@ -1231,7 +1345,9 @@ Expanded insight:"""
         try:
             ##Condition purpose: Check if engine is available
             if self._engine is None:
-                output.write("[bold yellow]>>[/bold yellow] Cannot save procedure: No engine connected.")
+                output.write(
+                    "[bold yellow]>>[/bold yellow] Cannot save procedure: No engine connected."
+                )
                 self._interactive_mode = "normal"
                 status_bar.set_ready("Ready")
                 return
@@ -1240,7 +1356,7 @@ Expanded insight:"""
             procedure_content = f"""Procedure: {self._procedure_name}
 
 Steps:
-{chr(10).join(f"{i+1}. {step}" for i, step in enumerate(self._procedure_steps))}
+{chr(10).join(f"{i + 1}. {step}" for i, step in enumerate(self._procedure_steps))}
 
 Expected Outcome: {self._procedure_outcome}"""
 
@@ -1253,7 +1369,9 @@ Expected Outcome: {self._procedure_outcome}"""
             )
 
             ##Action purpose: Display success message
-            output.write(f"[bold green]>>[/bold green] Procedure '{self._procedure_name}' saved to memory.")
+            output.write(
+                f"[bold green]>>[/bold green] Procedure '{self._procedure_name}' saved to memory."
+            )
             output.write(f"[white]  Steps: {len(self._procedure_steps)}[/white]")
             output.write(f"[white]  Memory ID: {memory_id}[/white]")
             output.write("")  ##Step purpose: Add spacing

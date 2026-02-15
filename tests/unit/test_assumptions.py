@@ -284,7 +284,7 @@ class TestAssumptionManager:
         manager = AssumptionManager(
             storage_path=tmp_storage / "assumptions",
             graph=MockGraph(),
-            llm=MockLLM(responses=["question?", "true"]),
+            llm=MockLLM(responses=["true"]),
         )
 
         manager.add_assumption("Test assumption", "testuser")
@@ -307,7 +307,7 @@ class TestAssumptionManager:
         manager = AssumptionManager(
             storage_path=tmp_storage / "assumptions",
             graph=graph,
-            llm=MockLLM(responses=["question?", "true"]),
+            llm=MockLLM(responses=["true"]),
         )
 
         manager.add_assumption("User prefers dark mode", "testuser")
@@ -336,7 +336,7 @@ class TestAssumptionManager:
         manager = AssumptionManager(
             storage_path=tmp_storage / "assumptions",
             graph=MockGraph(),
-            llm=MockLLM(responses=["question?", "false"]),
+            llm=MockLLM(responses=["false"]),
         )
 
         manager.add_assumption("Test assumption", "testuser")

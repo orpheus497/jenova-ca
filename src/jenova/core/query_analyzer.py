@@ -672,7 +672,7 @@ Respond with a valid JSON object:
             Tuple of (complexity, confidence)
         """
         word_count = len(query.split())
-        sentence_count = len(re.split(r"[.!?]+", query))
+        sentence_count = len([s for s in re.split(r"[.!?]+", query) if s.strip()])
 
         ##Step purpose: Count complexity indicators
         complexity_indicators = [
@@ -1086,12 +1086,15 @@ Respond with a valid JSON object:
                 ##Condition purpose: Create link for best match
                 if matching_nodes:
                     best_match = matching_nodes[0]
+                    id_val = best_match.get("id")
+                    type_val = best_match.get("type")
+                    score = best_match.get("score", 0.0)
                     entity_links.append(
                         EntityLink(
                             entity=entity,
-                            node_id=best_match["id"],
-                            node_type=best_match.get("type", "unknown"),
-                            confidence=best_match.get("score", 0.0),
+                            node_id=str(id_val) if id_val is not None else None,
+                            node_type=str(type_val) if type_val is not None else None,
+                            confidence=float(score),
                             relationship="related_to",
                         )
                     )

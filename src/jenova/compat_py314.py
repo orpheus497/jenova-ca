@@ -36,22 +36,28 @@ def patch_pydantic_v1_for_py314() -> None:
             """Patched version that handles ChromaDB's Settings attributes with type inference issues."""
             ##Condition purpose: Check if this is a ChromaDB Settings attribute with undefined type
             ##Refactor: Use sentinel identity check instead of string comparison (D3-2026-02-11T08:22:24Z)
-            if hasattr(self, 'outer_type_') and self.outer_type_ is Undefined:
+            if hasattr(self, "outer_type_") and self.outer_type_ is Undefined:
                 ##Fix: Manually infer types for Optional attributes with defaults
                 import types
-                from typing import Optional, Union, get_args, get_origin
+                from typing import Union, get_args, get_origin
 
                 ##Step purpose: Try to infer from field_info
-                if hasattr(self, 'field_info') and hasattr(self.field_info, 'annotation'):
+                if hasattr(self, "field_info") and hasattr(self.field_info, "annotation"):
                     annotation = self.field_info.annotation
                     if annotation is not None:
                         ##Condition purpose: Handle Optional[T] = None pattern
                         origin = get_origin(annotation)
                         ##Fix: Correctly detect Union/Optional types (D3-2026-02-11T07:03:00Z)
-                        if origin is Union or (hasattr(types, 'UnionType') and origin is types.UnionType):
+                        if origin is Union or (
+                            hasattr(types, "UnionType") and origin is types.UnionType
+                        ):
                             args = get_args(annotation)
-                            if args and isinstance(args[0], type):
-                                self.type_ = args[0]
+                            non_none_args = [
+                                arg for arg in args
+                                if isinstance(arg, type) and arg is not type(None)
+                            ]
+                            if non_none_args:
+                                self.type_ = non_none_args[0]
                                 self.outer_type_ = annotation
                                 self.shape = fields.SHAPE_SINGLETON
                                 self.required = False
@@ -70,13 +76,12 @@ def patch_pydantic_v1_for_py314() -> None:
                     logger.debug(
                         "Applying Pydantic type fallback (expected for ChromaDB on Python 3.14): "
                         "field=%s, fallback=Optional[str]",
-                        getattr(self, 'name', '<unknown>')
+                        getattr(self, "name", "<unknown>"),
                     )
                     ##Fix: Last resort - assume Optional[str] for string-like attributes
-                    from typing import Optional
                     if self.default is None:
                         self.type_ = str
-                        self.outer_type_ = Optional[str]
+                        self.outer_type_ = str | None
                         self.shape = fields.SHAPE_SINGLETON
                         self.required = False
                         self.allow_none = True
@@ -92,7 +97,7 @@ def patch_pydantic_v1_for_py314() -> None:
         logging.getLogger(__name__).warning(
             "Pydantic V1 not available, skipping Python 3.14 compatibility patch: %s",
             str(e),
-            exc_info=True
+            exc_info=True,
         )
     except AttributeError as e:
         ##Error purpose: Log error and re-raise if ModelField API changed (breaking change)
@@ -103,7 +108,7 @@ def patch_pydantic_v1_for_py314() -> None:
             "This indicates a breaking internal API change in Pydantic. "
             "Error: %s",
             str(e),
-            exc_info=True
+            exc_info=True,
         )
         raise RuntimeError(
             f"Failed to patch Pydantic V1: ModelField._set_default_and_type missing or changed: {e}"

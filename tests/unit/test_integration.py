@@ -68,9 +68,11 @@ class MockGraph:
     ) -> list[dict[str, str]]:
         """Search nodes by query."""
         results = []
-        query_lower = query.lower()
+        query_words = query.lower().split()
         for node in self._nodes.values():
-            if query_lower in node.content.lower() or query_lower in node.label.lower():
+            content_lower = node.content.lower()
+            label_lower = node.label.lower()
+            if any(word in content_lower or word in label_lower for word in query_words):
                 results.append(
                     {
                         "id": node.id,

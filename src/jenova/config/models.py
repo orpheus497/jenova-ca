@@ -10,13 +10,17 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import yaml
 from pydantic import BaseModel, Field, field_validator
 
 from jenova.exceptions import ConfigNotFoundError, ConfigParseError, ConfigValidationError
 from jenova.utils.errors import sanitize_path_for_error
+
+if TYPE_CHECKING:
+    from jenova.core.planning import PlanningConfig as PlanningConfigDataclass
+    from jenova.graph.proactive import ProactiveConfig as ProactiveConfigDataclass
 
 
 ##Class purpose: Hardware resource configuration
@@ -188,6 +192,153 @@ class PersonaConfig(BaseModel):
     )
 
 
+##Class purpose: Integration system configuration
+class IntegrationConfig(BaseModel):
+    """Integration system configuration."""
+
+    enabled: bool = Field(
+        default=True,
+        description="Whether integration is enabled.",
+    )
+    max_related_nodes: int = Field(
+        default=5,
+        ge=1,
+        le=50,
+        description="Maximum related nodes to find per query.",
+    )
+    max_context_expansion: int = Field(
+        default=3,
+        ge=1,
+        le=20,
+        description="Maximum items to add during context expansion.",
+    )
+    similarity_threshold: float = Field(
+        default=0.7,
+        ge=0.0,
+        le=1.0,
+        description="Minimum similarity for creating cross-references.",
+    )
+    high_centrality_threshold: float = Field(
+        default=2.0,
+        ge=0.0,
+        description="Centrality threshold for identifying important nodes.",
+    )
+    duplication_threshold: float = Field(
+        default=0.9,
+        ge=0.0,
+        le=1.0,
+        description="Similarity threshold for flagging duplications.",
+    )
+    memory_to_cortex_feedback: bool = Field(
+        default=True,
+        description="Whether to create Memory → Cortex feedback links.",
+    )
+
+
+##Class purpose: Proactive system configuration
+class ProactiveConfig(BaseModel):
+    """Proactive system configuration."""
+
+    cooldown_minutes: int = Field(
+        default=15,
+        ge=1,
+        le=1440,
+        description="Minimum minutes between suggestions of same category.",
+    )
+    max_suggestions_per_session: int = Field(
+        default=10,
+        ge=1,
+        le=100,
+        description="Maximum suggestions to generate per session.",
+    )
+    priority_threshold: float = Field(
+        default=0.3,
+        ge=0.0,
+        le=1.0,
+        description="Minimum priority to show suggestion (0-1).",
+    )
+    enable_explore: bool = Field(default=True, description="Enable exploration suggestions.")
+    enable_verify: bool = Field(default=True, description="Enable verification suggestions.")
+    enable_develop: bool = Field(default=True, description="Enable development suggestions.")
+    enable_connect: bool = Field(default=True, description="Enable connection suggestions.")
+    enable_reflect: bool = Field(default=True, description="Enable reflection suggestions.")
+    rotation_enabled: bool = Field(
+        default=True, description="Enable category rotation for variety."
+    )
+
+    ##Update: WIRING-003 (2026-02-14) — Conversion method for ProactiveEngine compatibility
+    def to_proactive_config(self) -> ProactiveConfigDataclass:
+        """
+        Convert to the dataclass version expected by ProactiveEngine.
+
+        Returns:
+            ProactiveConfig dataclass instance
+        """
+        from jenova.graph.proactive import ProactiveConfig as ProactiveConfigDataclass
+
+        return ProactiveConfigDataclass(
+            cooldown_minutes=self.cooldown_minutes,
+            max_suggestions_per_session=self.max_suggestions_per_session,
+            priority_threshold=self.priority_threshold,
+            enable_explore=self.enable_explore,
+            enable_verify=self.enable_verify,
+            enable_develop=self.enable_develop,
+            enable_connect=self.enable_connect,
+            enable_reflect=self.enable_reflect,
+            rotation_enabled=self.rotation_enabled,
+        )
+
+
+##Class purpose: Planning system configuration
+class PlanningConfig(BaseModel):
+    """Planning system configuration.
+
+    Note: This Pydantic model is used for YAML config loading/validation only.
+    The canonical PlanningConfig used by Planner and EngineConfig is the
+    dataclass in core/planning.py. Values from this model are passed to that
+    dataclass during engine construction in main.py.
+    """
+
+    multi_level_enabled: bool = Field(
+        default=True,
+        description="Whether multi-level planning is enabled.",
+    )
+    max_sub_goals: int = Field(
+        default=5,
+        ge=1,
+        le=20,
+        description="Maximum number of sub-goals in a plan.",
+    )
+    complexity_threshold: int = Field(
+        default=20,
+        ge=5,
+        le=100,
+        description="Word count threshold for complex queries.",
+    )
+    plan_temperature: float = Field(
+        default=0.3,
+        ge=0.0,
+        le=1.0,
+        description="LLM temperature for plan generation.",
+    )
+
+    ##Method purpose: Convert to the dataclass PlanningConfig used by Planner/EngineConfig
+    def to_planning_config(self) -> PlanningConfigDataclass:
+        """Convert to the dataclass version expected by Planner.
+
+        Returns:
+            core.planning.PlanningConfig dataclass instance
+        """
+        from jenova.core.planning import PlanningConfig as PlanningConfigDataclass
+
+        return PlanningConfigDataclass(
+            multi_level_enabled=self.multi_level_enabled,
+            max_sub_goals=self.max_sub_goals,
+            complexity_threshold=self.complexity_threshold,
+            plan_temperature=self.plan_temperature,
+        )
+
+
 ##Class purpose: Root configuration for JENOVA
 class JenovaConfig(BaseModel):
     """Root configuration for JENOVA."""
@@ -196,6 +347,9 @@ class JenovaConfig(BaseModel):
     model: ModelConfig = Field(default_factory=ModelConfig)
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
     graph: GraphConfig = Field(default_factory=GraphConfig)
+    integration: IntegrationConfig = Field(default_factory=IntegrationConfig)
+    proactive: ProactiveConfig = Field(default_factory=ProactiveConfig)
+    planning: PlanningConfig = Field(default_factory=PlanningConfig)
     persona: PersonaConfig = Field(default_factory=PersonaConfig)
     debug: bool = Field(default=False, description="Enable debug mode.")
 

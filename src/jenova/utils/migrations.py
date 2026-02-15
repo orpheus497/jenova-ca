@@ -14,16 +14,12 @@ import os
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
-from typing import TypeVar
 
 from jenova.exceptions import MigrationError, MigrationFailedError, SchemaVersionError
 from jenova.utils.json_safe import safe_json_loads
 
 ##Step purpose: Define current schema version constant
 SCHEMA_VERSION: int = 1
-
-##Step purpose: Type variable for generic data loading
-T = TypeVar("T", bound=dict)
 
 
 ##Function purpose: Load JSON with automatic schema migration
@@ -157,7 +153,7 @@ def save_json_atomic(path: Path, data: dict[str, object]) -> None:
 
         ##Action purpose: Ensure permissions are preserved after rename
         os.chmod(path, 0o600)
-    except (OSError, PermissionError, json.JSONEncodeError) as e:
+    except (OSError, TypeError, ValueError) as e:
         ##Fix: Catch specific exceptions instead of bare Exception - preserves error context and security visibility
         ##Action purpose: Remove temp file if write failed
         temp_path.unlink(missing_ok=True)

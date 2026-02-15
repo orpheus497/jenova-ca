@@ -29,7 +29,7 @@ def test_prompt_injection_sql() -> None:
     ##Assertion purpose: Verify safe handling (returns string, doesn't crash)
     ##Note purpose: sanitize_for_prompt prevents LLM prompt injection, not SQL injection.
     ##SQL injection should be prevented at database layer using parameterized queries.
-    assert isinstance(sanitized, str)
+    assert isinstance(sanitized.text, str)
 
 
 ##Function purpose: Test prompt injection shell
@@ -42,7 +42,7 @@ def test_prompt_injection_shell() -> None:
     sanitized = sanitize_for_prompt(malicious)
 
     ##Assertion purpose: Verify not executed (returns safely)
-    assert isinstance(sanitized, str)
+    assert isinstance(sanitized.text, str)
 
 
 ##Function purpose: Test prompt injection jailbreak
@@ -55,8 +55,8 @@ def test_prompt_injection_jailbreak() -> None:
     sanitized = sanitize_for_prompt(jailbreak)
 
     ##Assertion purpose: Verify pattern was removed (should contain [REDACTED])
-    assert isinstance(sanitized, str)
-    assert "[REDACTED]" in sanitized or sanitized != jailbreak
+    assert isinstance(sanitized.text, str)
+    assert "[REDACTED]" in sanitized.text or sanitized.text != jailbreak
 
 
 ##Function purpose: Test prompt injection context escape
@@ -69,7 +69,7 @@ def test_prompt_injection_context_escape() -> None:
     sanitized = sanitize_for_prompt(escape)
 
     ##Assertion purpose: Verify safe
-    assert isinstance(sanitized, str)
+    assert isinstance(sanitized.text, str)
 
 
 ##Function purpose: Test prompt injection hidden instructions
@@ -82,9 +82,9 @@ def test_prompt_injection_hidden_instructions() -> None:
     sanitized = sanitize_for_prompt(hidden)
 
     ##Assertion purpose: Verify sanitized (SYSTEM: pattern should be removed)
-    assert isinstance(sanitized, str)
+    assert isinstance(sanitized.text, str)
     ##Note purpose: SYSTEM: pattern matches r'(?i)system\s*:\s*' and should be replaced with [REDACTED]
-    assert "[REDACTED]" in sanitized or sanitized != hidden
+    assert "[REDACTED]" in sanitized.text or sanitized.text != hidden
 
 
 ##Function purpose: Test path traversal basic
@@ -187,7 +187,7 @@ def test_large_payload_dos_query() -> None:
     try:
         result = sanitize_for_prompt(huge_query)
         # If accepted, should be truncated to max_content_length (500 by default)
-        assert len(result) <= 500  # MAX_CONTENT_LENGTH default
+        assert len(result.text) <= 500  # MAX_CONTENT_LENGTH default
     except Exception:
         # Exception on huge payload is acceptable
         pass
@@ -232,7 +232,7 @@ def test_invalid_input_non_utf8() -> None:
         # Decode attempt should fail or be handled
         result = sanitize_for_prompt(invalid_utf8.decode("utf-8", errors="ignore"))
         ##Assertion purpose: Should return a string (sanitized)
-        assert isinstance(result, str)
+        assert isinstance(result.text, str)
     except Exception:
         # Expected
         pass
@@ -300,7 +300,7 @@ def test_exception_safety_no_unhandled() -> None:
         try:
             result = sanitize_for_prompt(malicious_input)
             # Should always return something safe
-            assert isinstance(result, str)
+            assert isinstance(result.text, str)
         except Exception:
             # Raising exception is acceptable
             pass
@@ -333,7 +333,7 @@ def test_prompt_injection_mixed_attack() -> None:
     result = sanitize_for_prompt(mixed)
 
     ##Assertion purpose: Verify safe
-    assert isinstance(result, str)
+    assert isinstance(result.text, str)
 
 
 ##Function purpose: Test path traversal combined

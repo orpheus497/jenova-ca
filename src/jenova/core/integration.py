@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 import structlog
 
+from jenova.config.models import IntegrationConfig
 from jenova.exceptions import GraphError, IntegrationError, NodeNotFoundError
 
 if TYPE_CHECKING:
@@ -23,6 +24,20 @@ if TYPE_CHECKING:
 
 ##Step purpose: Initialize module logger
 logger = structlog.get_logger(__name__)
+
+
+__all__ = [
+    "GraphProtocol",
+    "MemorySearchProtocol",
+    "RelatedNodeResult",
+    "CrossReference",
+    "KnowledgeGap",
+    "KnowledgeDuplication",
+    "UnifiedKnowledgeMap",
+    "ConsistencyReport",
+    "IntegrationHub",
+    "IntegrationConfig",
+]
 
 
 ##Class purpose: Protocol for graph operations needed by integration
@@ -69,6 +84,18 @@ class GraphProtocol(Protocol):
 
         Returns:
             List of all Node objects
+        """
+        ...
+
+    ##Method purpose: Get all nodes belonging to a specific user
+    def get_nodes_by_user(self, username: str) -> list[Node]:
+        """Get all nodes belonging to a specific user.
+
+        Args:
+            username: The username to filter by.
+
+        Returns:
+            List of Node objects. Returns empty list if user has no nodes.
         """
         ...
 
@@ -281,33 +308,6 @@ class ConsistencyReport:
             parts.append(f"{len(self.duplications)} duplications found")
 
         return "; ".join(parts) if parts else "No issues found."
-
-
-##Class purpose: Configuration for IntegrationHub
-@dataclass
-class IntegrationConfig:
-    """Configuration for IntegrationHub."""
-
-    enabled: bool = True
-    """Whether integration is enabled."""
-
-    max_related_nodes: int = 5
-    """Maximum related nodes to find per query."""
-
-    max_context_expansion: int = 3
-    """Maximum items to add during context expansion."""
-
-    similarity_threshold: float = 0.7
-    """Minimum similarity for creating cross-references."""
-
-    high_centrality_threshold: float = 2.0
-    """Centrality threshold for identifying important nodes."""
-
-    duplication_threshold: float = 0.9
-    """Similarity threshold for flagging duplications."""
-
-    memory_to_cortex_feedback: bool = True
-    """Whether to create Memory → Cortex feedback links."""
 
 
 ##Class purpose: Central hub coordinating Memory, Cortex, and Insights integration
