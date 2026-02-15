@@ -173,13 +173,14 @@ class InsightManager:
         self._llm = llm
         self._memory_search = memory_search
         self._training_data_path = training_data_path
+        self._training_data_base_dir = insights_root.parent
 
         ##Refactor: Early validation of training_data_path (D3-2026-02-14T10:24:30Z)
         ##Note: Fail fast on misconfigured path instead of silently rejecting at save time
         if training_data_path is not None:
             try:
                 validate_path_within_base(
-                    training_data_path, insights_root.parent
+                    training_data_path, self._training_data_base_dir
                 )
             except ValueError as e:
                 raise ValueError(
@@ -342,12 +343,7 @@ class InsightManager:
                 return
 
             ##Step purpose: Verify path is within base directory (P2-001)
-            ##Refactor: Use explicit path's own parent when user-supplied (D3-2026-02-14T10:24:30Z)
-            base_dir = (
-                self._training_data_path.parent
-                if self._training_data_path
-                else self._insights_root.parent
-            )
+            base_dir = self._training_data_base_dir
             try:
                 validate_path_within_base(train_file, base_dir)
             except ValueError as e:

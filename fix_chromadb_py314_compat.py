@@ -142,7 +142,7 @@ def apply_patch(filepath: Path) -> bool:
         r"    chroma_server_nofile: Optional[int] = Field(default=None)\n"
         r"\n"
         r'    @validator("chroma_server_nofile", pre=True, always=True, allow_reuse=True)\n'
-        r"    def empty_str_to_none(cls, v: str) -> Optional[str]:\n"
+        r"    def empty_str_to_none(cls, v: Optional[str | int]) -> Optional[int | str]:\n"
         r'        if type(v) is str and v.strip() == "":\n'
         r"            return None\n"
         r"        return v"

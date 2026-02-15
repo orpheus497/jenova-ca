@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from chromadb.api.types import EmbeddingFunction
@@ -43,14 +42,10 @@ class MockEmbeddingFunction(EmbeddingFunction):
 _original_memory_init = Memory.__init__
 
 
-def _patched_memory_init(self, memory_type, storage_path, embedding_function=None):
+def _patched_memory_init(self, *args, **kwargs):
     """Patch Memory.__init__ to always use MockEmbeddingFunction in integration tests."""
-    _original_memory_init(
-        self,
-        memory_type=memory_type,
-        storage_path=storage_path,
-        embedding_function=MockEmbeddingFunction(),
-    )
+    kwargs["embedding_function"] = MockEmbeddingFunction()
+    _original_memory_init(self, *args, **kwargs)
 
 
 ##Function purpose: Auto-patch Memory to use mock embeddings for all integration tests

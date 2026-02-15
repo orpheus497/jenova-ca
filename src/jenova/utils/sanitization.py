@@ -58,7 +58,7 @@ INJECTION_PATTERNS = [
     r"(?i)you\s+are\s+now(?:\s+(?:a|an))?",
     r"(?i)disregard\s+the\s+above",
     r"(?i)forget\s+everything",
-    r"(?i)(?:ignore|override)\s+.*?(pretend|act|roleplay|simulate)\s+(to\s+be|as\s+if|as)\b",
+    r"(?i)(?:ignore|override)\s+.{0,50}?(pretend|act|roleplay|simulate)\s+(to\s+be|as\s+if|as)\b",
     r"(?i)(Do\s+Anything\s+Now|\bDAN\s+mode\b|\benable\s+DAN\b|\bactivate\s+DAN\b)",
     r"(?i)(enable|activate|enter|switch\s+to)\s+Developer\s+Mode",
     r"(?i)(enable|activate|enter|switch\s+to)\s+Debug\s+Mode",

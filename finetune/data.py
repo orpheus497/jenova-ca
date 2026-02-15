@@ -91,13 +91,14 @@ class TrainingDataCollector:
         ##Step purpose: Ensure parent directory exists
         self.output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        ##Step purpose: Write examples
+        ##Step purpose: Write examples (clear only after successful write)
+        saved_count = len(self._examples)
         with open(self.output_path, "a", encoding="utf-8") as f:
             ##Loop purpose: Write each example as JSON line
             for example in self._examples:
                 f.write(json.dumps(example.to_dict()) + "\n")
+            f.flush()
 
-        saved_count = len(self._examples)
         self._examples.clear()
         return saved_count
 

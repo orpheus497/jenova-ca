@@ -453,7 +453,7 @@ class ProactiveEngine:
         nodes = self._graph.get_nodes_by_user(username) if self._graph else []
 
         ##Step purpose: Find nodes with potential for development
-        insight_nodes = [n for n in nodes if n.node_type == "insight"]
+        insight_nodes = [n for n in nodes if n.node_type == "insight" and n.content]
 
         ##Condition purpose: Suggest developing an existing insight
         if insight_nodes:

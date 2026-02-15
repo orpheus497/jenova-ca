@@ -191,6 +191,7 @@ class TestPromptSanitization:
         result = sanitize_for_prompt(special)
         ##Note purpose: Just verify it doesn't crash; exact behavior depends on impl
         assert isinstance(result.text, str)
+        assert len(result.text) > 0
 
     ##Method purpose: Test potential injection patterns
     def test_injection_patterns_handled(self) -> None:

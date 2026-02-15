@@ -486,7 +486,7 @@ ruff format src/
 
 - **Total Python Files:** 50+ source files in `src/jenova/`
 - **Lines of Code:** ~15,000+ lines of production code
-- **Test Coverage:** 410+ tests across unit, integration, security, and benchmark suites
+- **Test Coverage:** 430+ tests across unit, integration, security, and benchmark suites
 - **Documentation:** Comprehensive inline documentation, README, and `.devdocs/` system
 - **Architecture:** Protocol-based design with clean separation of concerns
 - **Dependencies:** 8 core dependencies, 7 dev dependencies, 2 optional finetune dependencies

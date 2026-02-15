@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import structlog
 
@@ -59,7 +59,7 @@ class PlanStep:
     index: int
     description: str
     reasoning: str = ""
-    status: str = "pending"
+    status: Literal["pending", "in_progress", "completed"] = "pending"
 
 
 ##Class purpose: A structured multi-level plan for query response
@@ -125,6 +125,8 @@ class Plan:
     def from_dict(cls, data: dict[str, object], complexity: PlanComplexity) -> Plan:
         """Create a structured plan from parsed dict data."""
         main_goal = str(data.get("main_goal", ""))
+        if not main_goal:
+            raise ValueError("Plan requires a non-empty main_goal")
 
         ##Step purpose: Parse sub-goals into PlanStep objects
         raw_sub_goals = data.get("sub_goals", [])
@@ -169,6 +171,14 @@ class PlanningConfig:
     max_sub_goals: int = 5
     complexity_threshold: int = 20
     plan_temperature: float = 0.3
+
+    def __post_init__(self) -> None:
+        if self.max_sub_goals < 1:
+            raise ValueError("max_sub_goals must be >= 1")
+        if self.complexity_threshold < 1:
+            raise ValueError("complexity_threshold must be >= 1")
+        if not 0.0 <= self.plan_temperature <= 2.0:
+            raise ValueError("plan_temperature must be between 0.0 and 2.0")
 
 
 ##Class purpose: Handles plan generation and complexity assessment

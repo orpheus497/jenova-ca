@@ -89,6 +89,8 @@ class CognitiveTaskExecutor:
             llm: LLM interface satisfying TaskExecutorLLMProtocol
             get_recent_history: Callable returning recent history as list[tuple[str, str]]
         """
+        if knowledge_store is None:
+            raise ValueError("knowledge_store is required and cannot be None")
         self._insight_manager = insight_manager
         self._assumption_manager = assumption_manager
         self._knowledge_store = knowledge_store
