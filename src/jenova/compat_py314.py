@@ -26,7 +26,7 @@ def patch_pydantic_v1_for_py314() -> None:
         ##Refactor: Alphabetized pydantic imports (D3-2026-02-11T07:30:05Z)
         ##Fix: Suppress expected UserWarning from pydantic.v1 on Python 3.14 (D3-2026-02-15T06:44:08Z)
         with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", message="Core Pydantic V1", category=UserWarning)
+            warnings.filterwarnings("ignore", message=r".*Core Pydantic V1", category=UserWarning)
             from pydantic.v1 import fields
             from pydantic.v1.errors import ConfigError
             from pydantic.v1.fields import ModelField, Undefined
