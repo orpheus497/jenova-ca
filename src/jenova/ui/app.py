@@ -66,7 +66,7 @@ if TYPE_CHECKING:
 
 
 ##Class purpose: Main JENOVA TUI application
-class JenovaApp(App):
+class JenovaApp(App[None]):
     """
     JENOVA Terminal User Interface.
 
