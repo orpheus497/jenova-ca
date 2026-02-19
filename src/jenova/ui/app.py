@@ -66,7 +66,7 @@ if TYPE_CHECKING:
 
 
 ##Class purpose: Main JENOVA TUI application
-class JenovaApp(App):
+class JenovaApp(App[None]):
     """
     JENOVA Terminal User Interface.
 
@@ -78,6 +78,10 @@ class JenovaApp(App):
     ##Step purpose: Define application title and subtitle
     TITLE = "JENOVA"
     SUB_TITLE = "Self-Aware AI Cognitive Architecture"
+
+    ##Fix: Disable Textual CommandPalette to prevent IndexError on screen_stack[-2] (D3-2026-02-15T06:44:08Z)
+    ##Note: JENOVA uses its own /command system; CommandPalette is not needed
+    ENABLE_COMMAND_PALETTE = False
 
     ##Step purpose: Define comprehensive app-wide CSS with responsive design
     CSS = """
