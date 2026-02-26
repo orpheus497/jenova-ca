@@ -249,7 +249,7 @@ class JenovaApp(App[None]):
         self._config = config
         self._engine: CognitiveEngine | None = None
         self._help_visible = False
-        self._logger = get_logger(__name__)
+        self._app_logger = get_logger(__name__)
 
         ##Step purpose: Initialize interactive state management
         self._interactive_mode: str = "normal"
@@ -554,7 +554,7 @@ class JenovaApp(App[None]):
         output.write("")  ##Step purpose: Add spacing
 
         ##Action purpose: Log reset action
-        self._logger.info("conversation_reset_via_tui")
+        self._app_logger.info("conversation_reset_via_tui")
 
     ##Method purpose: Handle /debug command
     def _handle_debug(self) -> None:
@@ -571,12 +571,12 @@ class JenovaApp(App[None]):
             ##Action purpose: Disable debug logging
             root_logger.setLevel(logging.INFO)
             new_level = "INFO"
-            self._logger.info("debug_logging_disabled")
+            self._app_logger.info("debug_logging_disabled")
         else:
             ##Action purpose: Enable debug logging
             root_logger.setLevel(logging.DEBUG)
             new_level = "DEBUG"
-            self._logger.debug("debug_logging_enabled")
+            self._app_logger.debug("debug_logging_enabled")
 
         ##Action purpose: Show status message
         output.write(f"[bold yellow]>>[/bold yellow] Debug mode: {new_level.lower()}")
@@ -625,7 +625,7 @@ class JenovaApp(App[None]):
             return
 
         ##Error purpose: Unknown interactive mode - reset to normal
-        self._logger.warning("unknown_interactive_mode", mode=self._interactive_mode)
+        self._app_logger.warning("unknown_interactive_mode", mode=self._interactive_mode)
         self._interactive_mode = "normal"
         output.write("[bold yellow]>>[/bold yellow] Unknown interactive mode. Resetting to normal.")
 
@@ -698,7 +698,7 @@ Focus on novel observations, not just summaries."""
             ##Error purpose: Display error message
             output.write(f"[bold red]>>[/bold red] Error generating insight: {e}")
             status_bar.set_error(f"Error: {type(e).__name__}")
-            self._logger.error("insight_generation_failed", error=str(e), exc_info=True)
+            self._app_logger.error("insight_generation_failed", error=str(e), exc_info=True)
 
     ##Method purpose: Handle /reflect command - Deep reflection on cognitive graph
     async def _handle_reflect_command(
@@ -752,7 +752,7 @@ Focus on novel observations, not just summaries."""
             ##Error purpose: Display error message
             output.write(f"[bold red]>>[/bold red] Error during reflection: {e}")
             status_bar.set_error(f"Error: {type(e).__name__}")
-            self._logger.error("reflection_failed", error=str(e), exc_info=True)
+            self._app_logger.error("reflection_failed", error=str(e), exc_info=True)
 
     ##Method purpose: Handle /memory-insight command - Generate insights from memory
     async def _handle_memory_insight_command(
@@ -841,7 +841,7 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
             ##Error purpose: Display error message
             output.write(f"[bold red]>>[/bold red] Error generating memory insight: {e}")
             status_bar.set_error(f"Error: {type(e).__name__}")
-            self._logger.error("memory_insight_generation_failed", error=str(e), exc_info=True)
+            self._app_logger.error("memory_insight_generation_failed", error=str(e), exc_info=True)
 
     ##Method purpose: Handle /meta command - Generate meta-insights from clusters
     async def _handle_meta_command(
@@ -902,7 +902,7 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
             ##Error purpose: Display error message
             output.write(f"[bold red]>>[/bold red] Error generating meta-insights: {e}")
             status_bar.set_error(f"Error: {type(e).__name__}")
-            self._logger.error("meta_insight_generation_failed", error=str(e), exc_info=True)
+            self._app_logger.error("meta_insight_generation_failed", error=str(e), exc_info=True)
 
     ##Method purpose: Handle /train command - Show fine-tuning instructions
     def _handle_train_command(self, output: RichLog) -> None:
@@ -984,7 +984,7 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
         except AssumptionDuplicateError as dup_err:
             output.write("[bold yellow]>>[/bold yellow] This assumption already exists.")
             status_bar.set_ready("Ready")
-            self._logger.warning(
+            self._app_logger.warning(
                 "assume_command_duplicate",
                 assumption=content,
                 error=str(dup_err),
@@ -993,7 +993,7 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
         except Exception as e:
             output.write(f"[bold red]>>[/bold red] Error adding assumption: {e}")
             status_bar.set_error(f"Error: {type(e).__name__}")
-            self._logger.error("assume_command_failed", error=str(e), exc_info=True)
+            self._app_logger.error("assume_command_failed", error=str(e), exc_info=True)
 
     ##Method purpose: Handle /verify command - Start assumption verification
     async def _handle_verify_command(
@@ -1059,7 +1059,7 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
             ##Error purpose: Display error message
             output.write(f"[bold red]>>[/bold red] Error starting verification: {e}")
             status_bar.set_error(f"Error: {type(e).__name__}")
-            self._logger.error("verification_start_failed", error=str(e), exc_info=True)
+            self._app_logger.error("verification_start_failed", error=str(e), exc_info=True)
 
     ##Method purpose: Handle verification response
     async def _handle_verify_response(
@@ -1129,7 +1129,7 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
             ##Error purpose: Display error message
             output.write(f"[bold red]>>[/bold red] Error during verification: {e}")
             status_bar.set_error(f"Error: {type(e).__name__}")
-            self._logger.error("verification_resolution_failed", error=str(e), exc_info=True)
+            self._app_logger.error("verification_resolution_failed", error=str(e), exc_info=True)
 
             ##Step purpose: Reset state on error
             self._interactive_mode = "normal"
@@ -1220,7 +1220,7 @@ Expanded insight:"""
             ##Error purpose: Display error message
             output.write(f"[bold red]>>[/bold red] Error developing insight: {e}")
             status_bar.set_error(f"Error: {type(e).__name__}")
-            self._logger.error("insight_development_failed", error=str(e), exc_info=True)
+            self._app_logger.error("insight_development_failed", error=str(e), exc_info=True)
 
     ##Method purpose: Start procedure learning flow
     def _handle_learn_procedure_start(self, output: RichLog) -> None:
@@ -1393,7 +1393,7 @@ Expected Outcome: {self._procedure_outcome}"""
             ##Error purpose: Display error message
             output.write(f"[bold red]>>[/bold red] Error saving procedure: {e}")
             status_bar.set_error(f"Error: {type(e).__name__}")
-            self._logger.error("procedure_save_failed", error=str(e), exc_info=True)
+            self._app_logger.error("procedure_save_failed", error=str(e), exc_info=True)
 
             ##Step purpose: Reset state on error
             self._interactive_mode = "normal"
