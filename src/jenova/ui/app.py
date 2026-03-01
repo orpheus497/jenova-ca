@@ -741,10 +741,13 @@ Focus on novel observations, not just summaries."""
             output.write("[bold green]>>[/bold green] Reflection complete:")
             output.write(f"[white]  - Orphans linked: {result.get('orphans_linked', 0)}[/white]")
             output.write(f"[white]  - Clusters found: {result.get('clusters_found', 0)}[/white]")
-            insights = result.get("insights_generated", [])
-            output.write(f"[white]  - Meta-insights generated: {len(insights)}[/white]")
-            if insights:
-                for insight in insights[:3]:  ##Step purpose: Show first 3 insights
+            raw_insights = result.get("insights_generated", [])
+            insights_list: list[str] = (
+                [str(i) for i in raw_insights] if isinstance(raw_insights, list) else []
+            )
+            output.write(f"[white]  - Meta-insights generated: {len(insights_list)}[/white]")
+            if insights_list:
+                for insight in insights_list[:3]:  ##Step purpose: Show first 3 insights
                     output.write(f"[dim]    • {insight[:100]}...[/dim]")
             output.write("")  ##Step purpose: Add spacing
 
@@ -872,6 +875,7 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
         try:
             ##Step purpose: Get graph and LLM from engine
             graph = self._engine.knowledge_store.graph
+            llm = self._engine.llm
 
             ##Step purpose: Import for async execution
             import asyncio
@@ -879,7 +883,7 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
             loop = asyncio.get_running_loop()
             meta_insights = await loop.run_in_executor(
                 None,
-                lambda: graph.generate_meta_insights(self._username, self._engine.llm),
+                lambda: graph.generate_meta_insights(self._username, llm),
             )
 
             ##Condition purpose: Check if any meta-insights generated
@@ -1105,12 +1109,30 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
                 return
 
             ##Step purpose: Resolve assumption
+            engine = self._engine
+            if engine is None:
+                output.write(
+                    "[bold yellow]>>[/bold yellow] No engine connected. Verification cancelled."
+                )
+                self._interactive_mode = "normal"
+                status_bar.set_ready("Ready")
+                return
+
+            manager = engine.assumption_manager
+            if manager is None:
+                output.write(
+                    "[bold yellow]>>[/bold yellow] Assumption manager unavailable. Verification cancelled."
+                )
+                self._interactive_mode = "normal"
+                status_bar.set_ready("Ready")
+                return
+
             import asyncio
 
             loop = asyncio.get_running_loop()
             await loop.run_in_executor(
                 None,
-                self._engine.assumption_manager.resolve_assumption,
+                manager.resolve_assumption,
                 self._pending_assumption,
                 response,
                 self._username,
