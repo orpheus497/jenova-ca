@@ -329,6 +329,24 @@ memory:
   max_results: 10
 ```
 
+### Graph
+
+```yaml
+graph:
+  storage_path: .jenova-ai/graph  # Directory for graph storage
+  max_depth: 3                    # Maximum depth for graph traversal
+```
+
+### Planning
+
+```yaml
+planning:
+  multi_level_enabled: true   # Enable multi-level planning for complex queries
+  max_sub_goals: 5            # Maximum sub-goals in a plan
+  complexity_threshold: 20    # Word count threshold for complex queries
+  plan_temperature: 0.3       # LLM temperature for plan generation
+```
+
 ### Persona
 
 ```yaml
