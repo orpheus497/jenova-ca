@@ -85,7 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed Python 3.14 compatibility issues in ChromaDB integration
   - Updated Pydantic v2 migration compatibility layer
   - Enhanced Python 3.14 guard in test configuration
-  - Added ChromaDB Python 3.14 compatibility patch (runtime module `src/jenova/compat_py314.py`, standalone utility `fix_chromadb_py314_compat.py`)
+  - Added ChromaDB Python 3.14 compatibility patch (runtime module `src/jenova/compat_py314.py`, standalone utility `./fix_chromadb_py314_compat.py`)
 
 - **Bug Fixes and Maintenance (2026-02-10T00:00:00Z - 2026-02-11T23:59:59Z):**
   - Fixed 18 bugs across 53 files (94.7% fix rate) via Bug Hunter C1 comprehensive audit
@@ -153,7 +153,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TTLCache/CacheManager**: Thread-safe caching system (`src/jenova/utils/cache.py` - ~430 lines)
 - **Performance Monitor**: Performance profiling and timing utilities (`src/jenova/utils/performance.py` - ~325 lines)
 - **Grammar Loader**: Centralized JSON grammar loading (`src/jenova/utils/grammar.py` - ~260 lines)
-- **Tools Module**: Shell command execution and datetime utilities (`src/jenova/tools/` package - ~300 lines)
+- **Tools Module**: Shell command execution and datetime utilities (`src/jenova/tools.py` - ~300 lines)
 
 #### Security & Validation
 - **LLM Output Validation**: Pydantic schemas for validating all LLM JSON responses (`src/jenova/graph/llm_schemas.py`)

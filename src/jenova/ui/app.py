@@ -39,6 +39,7 @@ Animation Timing:
 from __future__ import annotations
 
 import getpass
+import hashlib
 import logging
 from typing import TYPE_CHECKING
 
@@ -723,7 +724,9 @@ Focus on novel observations, not just summaries."""
         ##Error purpose: Handle errors during reflection
         try:
             ##Step purpose: Get graph and LLM from engine
-            graph = self._engine.knowledge_store.graph
+            engine = self._engine
+            graph = engine.knowledge_store.graph
+            llm = engine.llm
 
             ##Step purpose: Import for async execution
             import asyncio
@@ -731,7 +734,7 @@ Focus on novel observations, not just summaries."""
             loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(
                 None,
-                lambda: graph.reflect(self._username, self._engine.llm),
+                lambda: graph.reflect(self._username, llm),
             )
 
             ##Action purpose: Display reflection results
@@ -986,7 +989,8 @@ Generate a concise insight (1-2 sentences) that reveals a pattern or conclusion:
             status_bar.set_ready("Ready")
             self._app_logger.warning(
                 "assume_command_duplicate",
-                assumption=content,
+                assumption_length=len(content),
+                assumption_hash=hashlib.sha256(content.encode()).hexdigest(),
                 error=str(dup_err),
             )
 
