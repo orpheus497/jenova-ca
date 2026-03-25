@@ -1,3 +1,12 @@
+# ⚠️ PROJECT DEPRECATED & NO LONGER MAINTAINED
+
+**This repository is now an archived experiment.** The JENOVA Cognitive Architecture (JCA) served as a successful technical exploration into AI-assisted development and cognitive modeling. The lessons learned from this project have been integrated into a new, more advanced implementation.
+
+**Please visit the new repository for active development:**
+👉 **[https://github.com/orpheus497/jenova](https://github.com/orpheus497/jenova)**
+
+---
+
 # The JENOVA Cognitive Architecture: A Technical Deep Dive
 
 [![CI/CD Pipeline](https://github.com/jenova-ai/jenova-ca/actions/workflows/ci.yml/badge.svg)](https://github.com/jenova-ai/jenova-ca/actions/workflows/ci.yml)
